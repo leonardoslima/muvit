@@ -11,6 +11,7 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
+import authPlugin from './plugins/auth.js';
 import { healthRoutes } from './routes/health.js';
 
 export async function buildApp() {
@@ -24,6 +25,7 @@ export async function buildApp() {
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: env.WEB_URL, credentials: true });
   await app.register(jwt, { secret: env.JWT_SECRET });
+  await app.register(authPlugin);
 
   await app.register(swagger, {
     openapi: {
