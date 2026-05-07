@@ -4,13 +4,13 @@ export const emailSchema = z.string().email().max(255);
 export const passwordSchema = z.string().min(8).max(72);
 
 export const signupTrainerSchema = z.object({
-  name: z.string().min(1).max(150),
+  name: z.string().min(2).max(150),
   email: emailSchema,
   password: passwordSchema,
 });
 
 export const signupStudentSchema = z.object({
-  name: z.string().min(1).max(150),
+  name: z.string().min(2).max(150),
   email: emailSchema,
   password: passwordSchema,
 });

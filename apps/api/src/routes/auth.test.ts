@@ -30,12 +30,12 @@ describe('auth', () => {
     await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'A', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
     });
     const res = await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'B', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Bia', email: 'a@a.com', password: '12345678' },
     });
     expect(res.statusCode).toBe(409);
   });
@@ -44,7 +44,7 @@ describe('auth', () => {
     await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'A', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
     });
     const res = await app.inject({
       method: 'POST',
@@ -59,7 +59,7 @@ describe('auth', () => {
     await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'A', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
     });
     const res = await app.inject({
       method: 'POST',
@@ -73,7 +73,7 @@ describe('auth', () => {
     const sign = await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'A', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
     });
     const { refreshToken } = sign.json();
     const res = await app.inject({
@@ -89,7 +89,7 @@ describe('auth', () => {
     const sign = await app.inject({
       method: 'POST',
       url: '/auth/signup/trainer',
-      payload: { name: 'A', email: 'a@a.com', password: '12345678' },
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
     });
     const { accessToken } = sign.json();
     const res = await app.inject({
