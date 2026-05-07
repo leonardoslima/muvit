@@ -46,11 +46,12 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
         .limit(limit)
         .offset(offset)
         .orderBy(schema.exercises.name);
-      const [{ count }] = await db
+      const countResult = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.exercises)
         .where(where);
-      return { items, total: count };
+      const total = countResult[0]?.count ?? 0;
+      return { items, total };
     },
   );
 
@@ -69,6 +70,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
         .insert(schema.exercises)
         .values({ ...req.body, trainerId: req.user.sub })
         .returning();
+      if (!e) throw new Error('insert failed');
       return reply.code(201).send(e);
     },
   );
@@ -81,7 +83,10 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['exercises'],
         params: z.object({ id: z.string().uuid() }),
         body: updateExerciseSchema,
-        response: { 200: exerciseSchema },
+        response: {
+          200: exerciseSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {

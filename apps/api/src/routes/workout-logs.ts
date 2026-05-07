@@ -6,23 +6,23 @@ import {
   workoutLogFullSchema,
   workoutLogSummarySchema,
 } from '@muvit/validators';
-import { and, type asc, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { loadAccessibleStudent } from '../lib/student-access.js';
 
 const withSetsAndExercise = {
   sets: {
-    orderBy: (s: typeof schema.logSets, { asc: ascFn }: { asc: typeof asc }) => ascFn(s.setNumber),
+    orderBy: [asc(schema.logSets.setNumber)],
     with: {
       exercise: {
         with: {
-          exercise: true,
+          exercise: true as const,
         },
       },
     },
   },
-} as const;
+};
 
 export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.requireAuth);
@@ -34,7 +34,10 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['workout-logs'],
         body: startWorkoutLogSchema,
-        response: { 201: workoutLogSummarySchema },
+        response: {
+          201: workoutLogSummarySchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -61,6 +64,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
           completed: false,
         })
         .returning();
+      if (!log) throw new Error('insert failed');
 
       return reply.code(201).send(log);
     },
@@ -74,7 +78,12 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['workout-logs'],
         params: z.object({ id: z.string().uuid() }),
         body: finishWorkoutLogSchema,
-        response: { 200: workoutLogFullSchema },
+        response: {
+          200: workoutLogFullSchema,
+          404: z.object({ error: z.string() }),
+          409: z.object({ error: z.string() }),
+          500: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -152,7 +161,10 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['workout-logs'],
         params: z.object({ id: z.string().uuid() }),
-        response: { 200: workoutLogFullSchema },
+        response: {
+          200: workoutLogFullSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {

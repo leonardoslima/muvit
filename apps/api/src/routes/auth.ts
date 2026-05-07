@@ -16,7 +16,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/trainer',
     {
-      schema: { tags: ['auth'], body: signupTrainerSchema, response: { 201: authResponseSchema } },
+      schema: {
+        tags: ['auth'],
+        body: signupTrainerSchema,
+        response: { 201: authResponseSchema, 409: z.object({ error: z.string() }) },
+      },
     },
     async (req, reply) => {
       const existing = await db.query.trainers.findFirst({
@@ -32,6 +36,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
           passwordHash: await hashPassword(req.body.password),
         })
         .returning();
+      if (!trainer) throw new Error('insert failed');
 
       return reply.code(201).send({
         accessToken: await signAccessToken(app, { sub: trainer.id, role: 'trainer' }),
@@ -44,7 +49,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/student',
     {
-      schema: { tags: ['auth'], body: signupStudentSchema, response: { 201: authResponseSchema } },
+      schema: {
+        tags: ['auth'],
+        body: signupStudentSchema,
+        response: { 201: authResponseSchema, 409: z.object({ error: z.string() }) },
+      },
     },
     async (req, reply) => {
       const existing = await db.query.students.findFirst({
@@ -61,6 +70,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
           isIndependent: true,
         })
         .returning();
+      if (!student) throw new Error('insert failed');
 
       const email = student.email ?? req.body.email;
       return reply.code(201).send({
@@ -73,7 +83,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.post(
     '/auth/login',
-    { schema: { tags: ['auth'], body: loginSchema, response: { 200: authResponseSchema } } },
+    {
+      schema: {
+        tags: ['auth'],
+        body: loginSchema,
+        response: { 200: authResponseSchema, 401: z.object({ error: z.string() }) },
+      },
+    },
     async (req, reply) => {
       if (req.body.role === 'trainer') {
         const t = await db.query.trainers.findFirst({
@@ -109,7 +125,10 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['auth'],
         body: refreshSchema,
-        response: { 200: z.object({ accessToken: z.string() }) },
+        response: {
+          200: z.object({ accessToken: z.string() }),
+          401: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {

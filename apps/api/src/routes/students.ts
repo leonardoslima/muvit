@@ -35,11 +35,12 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         .limit(limit)
         .offset(offset)
         .orderBy(schema.students.name);
-      const [{ count }] = await db
+      const countResult = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.students)
         .where(where);
-      return { items, total: count };
+      const total = countResult[0]?.count ?? 0;
+      return { items, total };
     },
   );
 
@@ -54,6 +55,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         .insert(schema.students)
         .values({ ...req.body, trainerId: req.user.sub, isIndependent: false })
         .returning();
+      if (!s) throw new Error('insert failed');
       return reply.code(201).send(s);
     },
   );
@@ -64,7 +66,11 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['students'],
         params: z.object({ id: z.string().uuid() }),
-        response: { 200: studentSchema },
+        response: {
+          200: studentSchema,
+          404: z.object({ error: z.string() }),
+          403: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -88,7 +94,10 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['students'],
         params: z.object({ id: z.string().uuid() }),
         body: updateStudentSchema,
-        response: { 200: studentSchema },
+        response: {
+          200: studentSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {

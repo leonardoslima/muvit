@@ -41,12 +41,13 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
         .limit(limit)
         .offset(offset);
 
-      const [{ count }] = await db
+      const countResult = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(schema.assessments)
         .where(where);
+      const total = countResult[0]?.count ?? 0;
 
-      return { items, total: count };
+      return { items, total };
     },
   );
 
@@ -65,10 +66,18 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       const student = await loadAccessibleStudent(req, reply, req.params.studentId);
       if (!student) return;
 
+      const { weightKg, heightCm, bodyFatPct, ...rest } = req.body;
       const [a] = await db
         .insert(schema.assessments)
-        .values({ ...req.body, studentId: req.params.studentId })
+        .values({
+          ...rest,
+          studentId: req.params.studentId,
+          weightKg: weightKg !== undefined ? String(weightKg) : null,
+          heightCm: heightCm !== undefined ? String(heightCm) : null,
+          bodyFatPct: bodyFatPct !== undefined ? String(bodyFatPct) : null,
+        })
         .returning();
+      if (!a) throw new Error('insert failed');
 
       return reply.code(201).send(a);
     },
@@ -81,7 +90,10 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['assessments'],
         params: z.object({ id: z.string().uuid() }),
-        response: { 200: assessmentSchema },
+        response: {
+          200: assessmentSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -105,7 +117,10 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['assessments'],
         params: z.object({ id: z.string().uuid() }),
         body: updateAssessmentSchema,
-        response: { 200: assessmentSchema },
+        response: {
+          200: assessmentSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -117,11 +132,18 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       const student = await loadAccessibleStudent(req, reply, existing.studentId);
       if (!student) return;
 
+      const { weightKg, heightCm, bodyFatPct, ...restBody } = req.body;
+      const updateValues: Record<string, unknown> = { ...restBody };
+      if (weightKg !== undefined) updateValues.weightKg = String(weightKg);
+      if (heightCm !== undefined) updateValues.heightCm = String(heightCm);
+      if (bodyFatPct !== undefined) updateValues.bodyFatPct = String(bodyFatPct);
+
       const [a] = await db
         .update(schema.assessments)
-        .set(req.body)
+        .set(updateValues)
         .where(and(eq(schema.assessments.id, req.params.id)))
         .returning();
+      if (!a) throw new Error('update failed');
 
       return a;
     },

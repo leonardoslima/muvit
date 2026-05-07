@@ -5,26 +5,24 @@ import {
   workoutPlanFullSchema,
   workoutPlanSummarySchema,
 } from '@muvit/validators';
-import { type asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { loadAccessibleStudent } from '../lib/student-access.js';
 
 const withDaysAndExercises = {
   days: {
-    orderBy: (d: typeof schema.workoutDays, { asc: ascFn }: { asc: typeof asc }) =>
-      ascFn(d.dayOrder),
+    orderBy: [asc(schema.workoutDays.dayOrder)],
     with: {
       exercises: {
-        orderBy: (e: typeof schema.workoutExercises, { asc: ascFn }: { asc: typeof asc }) =>
-          ascFn(e.exerciseOrder),
+        orderBy: [asc(schema.workoutExercises.exerciseOrder)],
         with: {
-          exercise: true,
+          exercise: true as const,
         },
       },
     },
   },
-} as const;
+};
 
 export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.requireAuth);
@@ -60,6 +58,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
             notes: body.notes ?? null,
           })
           .returning();
+        if (!inserted) throw new Error('insert failed');
 
         for (const day of body.days) {
           const [insertedDay] = await tx
@@ -70,6 +69,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
               dayOrder: day.dayOrder,
             })
             .returning();
+          if (!insertedDay) throw new Error('insert failed');
 
           if (day.exercises.length > 0) {
             await tx.insert(schema.workoutExercises).values(
@@ -88,10 +88,12 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
           }
         }
 
-        return tx.query.workoutPlans.findFirst({
+        const result = await tx.query.workoutPlans.findFirst({
           where: eq(schema.workoutPlans.id, inserted.id),
           with: withDaysAndExercises,
         });
+        if (!result) throw new Error('find failed');
+        return result;
       });
 
       return reply.code(201).send(plan);
@@ -138,7 +140,10 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['workout-plans'],
         params: z.object({ id: z.string().uuid() }),
-        response: { 200: workoutPlanFullSchema },
+        response: {
+          200: workoutPlanFullSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -175,7 +180,10 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['workout-plans'],
         params: z.object({ id: z.string().uuid() }),
         body: updateWorkoutPlanSchema,
-        response: { 200: workoutPlanFullSchema },
+        response: {
+          200: workoutPlanFullSchema,
+          404: z.object({ error: z.string() }),
+        },
       },
     },
     async (req, reply) => {
@@ -230,6 +238,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
                 dayOrder: day.dayOrder,
               })
               .returning();
+            if (!insertedDay) throw new Error('insert failed');
 
             if (day.exercises.length > 0) {
               await tx.insert(schema.workoutExercises).values(

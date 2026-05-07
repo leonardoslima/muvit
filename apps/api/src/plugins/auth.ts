@@ -6,7 +6,11 @@ declare module 'fastify' {
     requireAuth: preHandlerHookHandler;
     requireRole: (role: 'trainer' | 'student') => preHandlerHookHandler;
   }
-  interface FastifyRequest {
+}
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    payload: { sub: string; role: 'trainer' | 'student' };
     user: { sub: string; role: 'trainer' | 'student' };
   }
 }

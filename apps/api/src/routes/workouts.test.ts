@@ -31,6 +31,7 @@ beforeEach(async () => {
     .insert(schema.exercises)
     .values({ name: 'Agacha', muscleGroup: 'legs' })
     .returning();
+  if (!exA || !exB) throw new Error('seed failed');
   exerciseA = exA.id;
   exerciseB = exB.id;
   trainerToken = await signupTrainer('a@a.com');

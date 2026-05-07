@@ -18,6 +18,7 @@ beforeEach(async () => {
     .insert(schema.exercises)
     .values({ name: 'Supino', muscleGroup: 'chest' })
     .returning();
+  if (!ex) throw new Error('seed failed');
 
   const sign = await app.inject({
     method: 'POST',
