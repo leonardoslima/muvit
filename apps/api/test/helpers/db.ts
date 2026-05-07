@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm';
 import { db, queryClient } from '@muvit/db';
+import { sql } from 'drizzle-orm';
 
 export async function truncateAll() {
   await db.execute(sql`

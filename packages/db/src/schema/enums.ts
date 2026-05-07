@@ -19,8 +19,4 @@ export const muscleGroupEnum = pgEnum('muscle_group', [
   'full_body',
 ]);
 
-export const workoutPlanStatusEnum = pgEnum('workout_plan_status', [
-  'active',
-  'archived',
-  'draft',
-]);
+export const workoutPlanStatusEnum = pgEnum('workout_plan_status', ['active', 'archived', 'draft']);
