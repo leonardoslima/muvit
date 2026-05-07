@@ -5,19 +5,17 @@ import swagger from '@fastify/swagger';
 import scalar from '@scalar/fastify-api-reference';
 import Fastify from 'fastify';
 import {
+  type ZodTypeProvider,
   jsonSchemaTransform,
   serializerCompiler,
   validatorCompiler,
-  type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
 import { healthRoutes } from './routes/health.js';
 
 export async function buildApp() {
   const app = Fastify({
-    logger: env.NODE_ENV === 'development'
-      ? { transport: { target: 'pino-pretty' } }
-      : true,
+    logger: env.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : true,
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
