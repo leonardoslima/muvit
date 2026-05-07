@@ -1,0 +1,11 @@
+# Enforce LF line endings for all text files so Biome formatter is consistent
+# across Windows / macOS / Linux dev machines and CI.
+* text=auto eol=lf
+
+# Binary files explicitly
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
