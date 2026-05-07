@@ -12,6 +12,7 @@ import {
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
 import authPlugin from './plugins/auth.js';
+import { assessmentsRoutes } from './routes/assessments.js';
 import { authRoutes } from './routes/auth.js';
 import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
@@ -51,6 +52,7 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(studentsRoutes);
   await app.register(exercisesRoutes);
+  await app.register(assessmentsRoutes);
 
   return app;
 }

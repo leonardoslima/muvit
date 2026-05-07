@@ -15,14 +15,34 @@ export const measurementsSchema = z
   .strict();
 
 export const createAssessmentSchema = z.object({
-  studentId: z.string().uuid(),
   date: z.string().date(),
   weightKg: z.number().positive().max(500).optional(),
   heightCm: z.number().positive().max(300).optional(),
-  bodyFatPct: z.number().min(0).max(100).optional(),
+  bodyFatPct: z.number().min(0).max(80).optional(),
   measurements: measurementsSchema.optional(),
-  photos: z.array(z.string().url()).max(10).optional(),
-  notes: z.string().max(4000).optional(),
+  photos: z.array(z.string().url()).max(6).optional(),
+  notes: z.string().max(2000).optional(),
 });
 
-export type CreateAssessmentInput = z.infer<typeof createAssessmentSchema>;
+export const updateAssessmentSchema = createAssessmentSchema.partial();
+
+export const assessmentSchema = z.object({
+  id: z.string().uuid(),
+  studentId: z.string().uuid(),
+  date: z.string().date(),
+  // Drizzle returns decimals as strings; numbers may also flow in. Accept either.
+  weightKg: z.union([z.string(), z.number()]).nullable(),
+  heightCm: z.union([z.string(), z.number()]).nullable(),
+  bodyFatPct: z.union([z.string(), z.number()]).nullable(),
+  measurements: measurementsSchema.nullable(),
+  photos: z.array(z.string()).nullable(),
+  notes: z.string().nullable(),
+  createdAt: z
+    .union([z.string(), z.date()])
+    .transform((v) => (v instanceof Date ? v.toISOString() : v)),
+});
+
+export const listAssessmentsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
