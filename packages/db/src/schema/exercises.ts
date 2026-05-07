@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { muscleGroupEnum } from './enums.js';
 import { trainers } from './trainers.js';
 
@@ -12,7 +12,10 @@ export const exercises = pgTable('exercises', {
   videoUrl: text('video_url'),
   instructions: text('instructions'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  trainerIdx: index('exercises_trainer_idx').on(t.trainerId),
+  muscleIdx: index('exercises_muscle_idx').on(t.muscleGroup),
+}));
 
 export type Exercise = typeof exercises.$inferSelect;
 export type NewExercise = typeof exercises.$inferInsert;

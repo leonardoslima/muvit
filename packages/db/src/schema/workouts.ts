@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   decimal,
+  index,
   integer,
   pgTable,
   text,
@@ -27,7 +28,9 @@ export const workoutPlans = pgTable('workout_plans', {
   status: workoutPlanStatusEnum('status').notNull().default('draft'),
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  studentIdx: index('workout_plans_student_idx').on(t.studentId),
+}));
 
 export const workoutDays = pgTable('workout_days', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -36,7 +39,9 @@ export const workoutDays = pgTable('workout_days', {
     .references(() => workoutPlans.id, { onDelete: 'cascade' }),
   label: varchar('label', { length: 50 }).notNull(),
   dayOrder: integer('day_order').notNull(),
-});
+}, (t) => ({
+  planIdx: index('workout_days_plan_idx').on(t.planId),
+}));
 
 export const workoutExercises = pgTable('workout_exercises', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -53,7 +58,9 @@ export const workoutExercises = pgTable('workout_exercises', {
   loadKg: decimal('load_kg', { precision: 5, scale: 1 }),
   tempo: varchar('tempo', { length: 10 }),
   notes: text('notes'),
-});
+}, (t) => ({
+  dayIdx: index('workout_exercises_day_idx').on(t.workoutDayId),
+}));
 
 export const workoutLogs = pgTable('workout_logs', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -69,7 +76,9 @@ export const workoutLogs = pgTable('workout_logs', {
   notes: text('notes'),
   completed: boolean('completed').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  studentDateIdx: index('workout_logs_student_date_idx').on(t.studentId, t.date),
+}));
 
 export const logSets = pgTable('log_sets', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -83,7 +92,9 @@ export const logSets = pgTable('log_sets', {
   repsDone: integer('reps_done'),
   loadKg: decimal('load_kg', { precision: 5, scale: 1 }),
   completed: boolean('completed').notNull().default(false),
-});
+}, (t) => ({
+  logIdx: index('log_sets_log_idx').on(t.workoutLogId),
+}));
 
 export type WorkoutPlan = typeof workoutPlans.$inferSelect;
 export type NewWorkoutPlan = typeof workoutPlans.$inferInsert;

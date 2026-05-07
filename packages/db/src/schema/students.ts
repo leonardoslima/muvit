@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, date, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, date, index, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { studentGenderEnum, studentStatusEnum } from './enums.js';
 import { trainers } from './trainers.js';
 
@@ -18,7 +18,10 @@ export const students = pgTable('students', {
   status: studentStatusEnum('status').notNull().default('active'),
   avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  trainerIdx: index('students_trainer_idx').on(t.trainerId),
+  emailIdx: uniqueIndex('students_email_unique').on(t.email),
+}));
 
 export type Student = typeof students.$inferSelect;
 export type NewStudent = typeof students.$inferInsert;

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { date, decimal, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { date, decimal, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { students } from './students.js';
 
 export type AssessmentMeasurements = {
@@ -27,7 +27,9 @@ export const assessments = pgTable('assessments', {
   photos: jsonb('photos').$type<string[]>(),
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  studentDateIdx: index('assessments_student_date_idx').on(t.studentId, t.date),
+}));
 
 export type Assessment = typeof assessments.$inferSelect;
 export type NewAssessment = typeof assessments.$inferInsert;
