@@ -88,21 +88,65 @@ export const workoutPlanSummarySchema = z.object({
 
 export const logSetInputSchema = z.object({
   workoutExerciseId: z.string().uuid(),
-  setNumber: z.number().int().positive(),
-  repsDone: z.number().int().nonnegative().optional(),
-  loadKg: z.number().nonnegative().optional(),
+  setNumber: z.number().int().min(1).max(20),
+  repsDone: z.number().int().min(0).max(200).optional(),
+  loadKg: z.number().min(0).max(1000).optional(),
   completed: z.boolean().default(false),
 });
 
-export const createWorkoutLogSchema = z.object({
+export const startWorkoutLogSchema = z.object({
   workoutDayId: z.string().uuid(),
   date: z.string().date(),
-  durationMin: z.number().int().nonnegative().optional(),
+});
+
+export const finishWorkoutLogSchema = z.object({
+  durationMin: z.number().int().min(1).max(600),
   rpe: z.number().int().min(1).max(10).optional(),
   notes: z.string().max(2000).optional(),
-  completed: z.boolean().default(false),
-  sets: z.array(logSetInputSchema).default([]),
+  completed: z.boolean().default(true),
+  sets: z.array(logSetInputSchema).min(1),
+});
+
+const decStrOrNumLog = z.union([z.string(), z.number()]).nullable();
+const dateOrIsoLog = z
+  .union([z.string(), z.date()])
+  .transform((v) => (v instanceof Date ? v.toISOString() : v));
+
+export const logSetSchema = z.object({
+  id: z.string().uuid(),
+  workoutLogId: z.string().uuid(),
+  workoutExerciseId: z.string().uuid(),
+  setNumber: z.number().int(),
+  repsDone: z.number().int().nullable(),
+  loadKg: decStrOrNumLog,
+  completed: z.boolean(),
+});
+
+export const workoutLogSummarySchema = z.object({
+  id: z.string().uuid(),
+  studentId: z.string().uuid(),
+  workoutDayId: z.string().uuid(),
+  date: z.string().date(),
+  durationMin: z.number().int().nullable(),
+  rpe: z.number().int().nullable(),
+  completed: z.boolean(),
+  createdAt: dateOrIsoLog,
+});
+
+export const workoutLogFullSchema = workoutLogSummarySchema.extend({
+  notes: z.string().nullable(),
+  sets: z.array(
+    logSetSchema.extend({
+      exercise: z.object({ id: z.string().uuid(), name: z.string() }),
+    }),
+  ),
+});
+
+export const listWorkoutLogsQuerySchema = z.object({
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 export type CreateWorkoutPlanInput = z.infer<typeof createWorkoutPlanSchema>;
-export type CreateWorkoutLogInput = z.infer<typeof createWorkoutLogSchema>;
