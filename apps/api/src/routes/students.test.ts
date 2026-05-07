@@ -120,7 +120,7 @@ describe('students', () => {
       method: 'POST',
       url: '/students',
       headers: { authorization: `Bearer ${trainerToken}` },
-      payload: { name: 'João Silva' },
+      payload: { name: 'Joao Silva' },
     });
     await app.inject({
       method: 'POST',

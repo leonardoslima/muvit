@@ -5,7 +5,7 @@ import {
   studentSchema,
   updateStudentSchema,
 } from '@muvit/validators';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, ilike, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 
@@ -25,10 +25,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req) => {
       const { q, status, limit, offset } = req.query;
       const conds = [eq(schema.students.trainerId, req.user.sub)];
-      if (q)
-        conds.push(
-          sql`unaccent(lower(${schema.students.name})) ilike unaccent(lower(${`%${q}%`}))`,
-        );
+      if (q) conds.push(ilike(schema.students.name, `%${q}%`));
       if (status) conds.push(eq(schema.students.status, status));
       const where = and(...conds);
       const items = await db
