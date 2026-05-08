@@ -20,7 +20,9 @@
     "@muvit/validators": "workspace:*",
     "@scalar/fastify-api-reference": "^1.25.103",
     "bcryptjs": "^2.4.3",
+    "drizzle-orm": "^0.36.4",
     "fastify": "^5.2.0",
+    "fastify-plugin": "^5.1.0",
     "fastify-type-provider-zod": "^4.0.2",
     "zod": "^3.24.1"
   },
