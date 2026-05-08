@@ -1197,3 +1197,33 @@ export type GetStudentsByStudentIdWorkoutLogsResponses = {
 };
 
 export type GetStudentsByStudentIdWorkoutLogsResponse = GetStudentsByStudentIdWorkoutLogsResponses[keyof GetStudentsByStudentIdWorkoutLogsResponses];
+
+export type GetTrainerSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainer/summary';
+};
+
+export type GetTrainerSummaryResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        students: {
+            total: number;
+            active: number;
+            paused: number;
+            inactive: number;
+            newThisWeek: number;
+        };
+        workouts: {
+            activePlans: number;
+        };
+        assessments: {
+            last30d: number;
+        };
+    };
+};
+
+export type GetTrainerSummaryResponse = GetTrainerSummaryResponses[keyof GetTrainerSummaryResponses];
