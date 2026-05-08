@@ -60,6 +60,30 @@ describe('exercises', () => {
     expect(r.statusCode).toBe(403);
   });
 
+  it('coerces scope=mine to global for students (does not leak trainer-owned exercises)', async () => {
+    // Trainer creates a custom exercise
+    await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      headers: { authorization: `Bearer ${trainerToken}` },
+      payload: { name: 'Custom do trainer', muscleGroup: 'chest' },
+    });
+    // Student signs up and asks for scope=mine
+    const s = await app.inject({
+      method: 'POST',
+      url: '/auth/signup/student',
+      payload: { name: 'Aluno', email: 's@s.com', password: '12345678' },
+    });
+    const r = await app.inject({
+      method: 'GET',
+      url: '/exercises?scope=mine',
+      headers: { authorization: `Bearer ${s.json().accessToken}` },
+    });
+    const items = r.json().items as Array<{ name: string; trainerId: string | null }>;
+    expect(items.every((e) => e.trainerId === null)).toBe(true);
+    expect(items.find((e) => e.name === 'Custom do trainer')).toBeUndefined();
+  });
+
   it('filters by muscle group', async () => {
     const r = await app.inject({
       method: 'GET',

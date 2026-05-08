@@ -82,7 +82,6 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
           200: workoutLogFullSchema,
           404: z.object({ error: z.string() }),
           409: z.object({ error: z.string() }),
-          500: z.object({ error: z.string() }),
         },
       },
     },
@@ -96,13 +95,23 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
       const student = await loadAccessibleStudent(req, reply, log.studentId);
       if (!student) return;
 
-      if (log.completed) {
-        return reply.code(409).send({ error: 'log already completed' });
-      }
-
       const { durationMin, rpe, notes, sets } = req.body;
 
-      const fullLog = await db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
+        // Atomically claim the log: only succeeds if completed=false. Concurrent finishes lose the race.
+        const claimed = await tx
+          .update(schema.workoutLogs)
+          .set({
+            durationMin,
+            rpe: rpe ?? null,
+            notes: notes ?? null,
+            completed: true,
+          })
+          .where(and(eq(schema.workoutLogs.id, log.id), eq(schema.workoutLogs.completed, false)))
+          .returning({ id: schema.workoutLogs.id });
+
+        if (claimed.length === 0) return null;
+
         await tx.insert(schema.logSets).values(
           sets.map((s) => ({
             workoutLogId: log.id,
@@ -114,23 +123,15 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
           })),
         );
 
-        await tx
-          .update(schema.workoutLogs)
-          .set({
-            durationMin,
-            rpe: rpe ?? null,
-            notes: notes ?? null,
-            completed: true,
-          })
-          .where(eq(schema.workoutLogs.id, log.id));
-
         return tx.query.workoutLogs.findFirst({
           where: eq(schema.workoutLogs.id, log.id),
           with: withSetsAndExercise,
         });
       });
 
-      if (!fullLog) return reply.code(500).send({ error: 'internal error' });
+      if (result === null) return reply.code(409).send({ error: 'log already completed' });
+      const fullLog = result;
+      if (!fullLog) throw new Error('failed to load log after finish');
 
       // Flatten the nested structure: logSet.exercise (workoutExercise) -> exercise (exercise)
       const shaped = {

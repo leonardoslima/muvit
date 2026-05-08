@@ -162,6 +162,37 @@ describe('workout logs', () => {
     expect(second.statusCode).toBe(409);
   });
 
+  it('concurrent finishes resolve to exactly one success and one 409', async () => {
+    const start = await app.inject({
+      method: 'POST',
+      url: '/workout-logs',
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { workoutDayId, date: '2026-04-01' },
+    });
+    const id = start.json().id;
+    const finish = () =>
+      app.inject({
+        method: 'PATCH',
+        url: `/workout-logs/${id}/finish`,
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: {
+          durationMin: 30,
+          sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],
+        },
+      });
+    const [a, b] = await Promise.all([finish(), finish()]);
+    const codes = [a.statusCode, b.statusCode].sort();
+    expect(codes).toEqual([200, 409]);
+
+    // Verify only one set of sets was inserted (not duplicated by the loser)
+    const get = await app.inject({
+      method: 'GET',
+      url: `/workout-logs/${id}`,
+      headers: { authorization: `Bearer ${studentToken}` },
+    });
+    expect(get.json().sets).toHaveLength(1);
+  });
+
   it('starting a log for a workoutDay the student does not own returns 404', async () => {
     const sign = await app.inject({
       method: 'POST',

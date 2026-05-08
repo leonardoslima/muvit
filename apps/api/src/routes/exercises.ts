@@ -23,18 +23,19 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req) => {
       const { q, muscleGroup, scope, limit, offset } = req.query;
+      // Students can only see global exercises — `mine`/`all` are coerced to `global` for them.
+      const effectiveScope = req.user.role === 'student' ? 'global' : scope;
       const conds = [];
-      if (scope === 'global') conds.push(isNull(schema.exercises.trainerId));
-      else if (scope === 'mine' && req.user.role === 'trainer')
+      if (effectiveScope === 'global') {
+        conds.push(isNull(schema.exercises.trainerId));
+      } else if (effectiveScope === 'mine') {
         conds.push(eq(schema.exercises.trainerId, req.user.sub));
-      else if (scope === 'all' && req.user.role === 'trainer') {
+      } else {
         const expr = or(
           isNull(schema.exercises.trainerId),
           eq(schema.exercises.trainerId, req.user.sub),
         );
         if (expr) conds.push(expr);
-      } else {
-        conds.push(isNull(schema.exercises.trainerId));
       }
       if (q) conds.push(ilike(schema.exercises.name, `%${q}%`));
       if (muscleGroup) conds.push(eq(schema.exercises.muscleGroup, muscleGroup));
