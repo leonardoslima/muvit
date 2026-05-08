@@ -4,7 +4,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@muvit/validators'],
   experimental: {
-    typedRoutes: true,
+    typedRoutes: false,
   },
 };
 
