@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { loginAction, type LoginState } from './actions';
+import Link from 'next/link';
+import { useActionState, useState } from 'react';
+import { type LoginState, loginAction } from './actions';
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, null);
@@ -16,9 +16,7 @@ export default function LoginPage() {
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">Bem-vindo de volta</h1>
-        <p className="text-sm text-muted-foreground">
-          Entre na sua conta para acessar o painel.
-        </p>
+        <p className="text-sm text-muted-foreground">Entre na sua conta para acessar o painel.</p>
       </header>
 
       <div className="grid grid-cols-2 rounded-pill bg-muted p-1 text-sm font-display font-semibold">
@@ -41,16 +39,32 @@ export default function LoginPage() {
         <input type="hidden" name="role" value={role} />
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">E-mail</Label>
-          <Input id="email" name="email" type="email" required autoComplete="email" placeholder="voce@exemplo.com" />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="voce@exemplo.com"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Senha</Label>
-            <Link href="#" className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-primary hover:underline">
+            <Link
+              href="#"
+              className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-primary hover:underline"
+            >
               Esqueci
             </Link>
           </div>
-          <Input id="password" name="password" type="password" required autoComplete="current-password" />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+          />
         </div>
         {state?.error && (
           <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">

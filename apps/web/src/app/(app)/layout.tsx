@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/sidebar';
 import { requireUser } from '@/lib/auth-server';
+import type { ReactNode } from 'react';
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await requireUser();

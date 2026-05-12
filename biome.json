@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": ["**/node_modules", "**/.next", "**/dist", "**/.turbo", "**/drizzle"]
+    "ignore": ["**/node_modules", "**/.next", "**/dist", "**/.turbo", "**/drizzle", "**/*.gen.ts"]
   },
   "formatter": {
     "enabled": true,

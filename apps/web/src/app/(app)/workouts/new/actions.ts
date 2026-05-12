@@ -1,9 +1,9 @@
 'use server';
 
-import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
 import { configureServerClient } from '@/lib/api-client';
 import { postWorkoutPlans } from '@/lib/api/sdk.gen';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 export type CreateWorkoutInput = {
   studentId: string;

@@ -1,10 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createAssessmentAction, type AssessmentState } from './actions';
+import { useActionState } from 'react';
+import { type AssessmentState, createAssessmentAction } from './actions';
 
 export function AssessmentForm({ studentId }: { studentId: string }) {
   const action = createAssessmentAction.bind(null, studentId);
@@ -13,7 +13,13 @@ export function AssessmentForm({ studentId }: { studentId: string }) {
   return (
     <form action={formAction} className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-5 md:grid-cols-4">
-        <Field label="Data" name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} />
+        <Field
+          label="Data"
+          name="date"
+          type="date"
+          required
+          defaultValue={new Date().toISOString().slice(0, 10)}
+        />
         <Field label="Peso (kg)" name="weightKg" type="number" step="0.1" />
         <Field label="Altura (cm)" name="heightCm" type="number" step="0.1" />
         <Field label="% Gordura" name="bodyFatPct" type="number" step="0.1" />
@@ -78,7 +84,14 @@ function Field({
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type={type} step={step} required={required} defaultValue={defaultValue} />
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        step={step}
+        required={required}
+        defaultValue={defaultValue}
+      />
     </div>
   );
 }

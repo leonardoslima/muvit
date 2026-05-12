@@ -1,11 +1,11 @@
-import Link from 'next/link';
-import { Trash2 } from 'lucide-react';
 import { TopBar } from '@/components/top-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getExercises } from '@/lib/api/sdk.gen';
 import { MUSCLE_GROUPS, MUSCLE_GROUP_LABEL, type MuscleGroup } from '@/lib/muscle-groups';
+import { Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { CreateExerciseDialog } from './_create-dialog';
 import { deleteExerciseAction } from './actions';
 
@@ -44,7 +44,13 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
         <span className="mx-2 h-5 w-px bg-border" />
         <GroupChip current={group} value={undefined} label="Todos os grupos" scope={scope} />
         {MUSCLE_GROUPS.map((g) => (
-          <GroupChip key={g} current={group} value={g} label={MUSCLE_GROUP_LABEL[g]} scope={scope} />
+          <GroupChip
+            key={g}
+            current={group}
+            value={g}
+            label={MUSCLE_GROUP_LABEL[g]}
+            scope={scope}
+          />
         ))}
       </div>
 
@@ -62,9 +68,13 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-display text-base font-bold leading-tight">{ex.name}</h3>
                 {ex.trainerId === null ? (
-                  <Badge variant="info" dot={false}>Global</Badge>
+                  <Badge variant="info" dot={false}>
+                    Global
+                  </Badge>
                 ) : (
-                  <Badge variant="active" dot={false}>Meu</Badge>
+                  <Badge variant="active" dot={false}>
+                    Meu
+                  </Badge>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -97,7 +107,9 @@ function ScopeChip({ current, value, label }: { current: string; value: string; 
     <Link
       href={{ pathname: '/exercises', query: { scope: value } }}
       className={`rounded-pill px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.05em] transition-colors ${
-        active ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground'
+        active
+          ? 'bg-foreground text-background'
+          : 'bg-muted text-muted-foreground hover:text-foreground'
       }`}
     >
       {label}

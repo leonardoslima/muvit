@@ -64,7 +64,10 @@ export const trainerSummaryRoutes: FastifyPluginAsyncZod = async (app) => {
         .from(schema.assessments)
         .innerJoin(schema.students, eq(schema.students.id, schema.assessments.studentId))
         .where(
-          and(eq(schema.students.trainerId, trainerId), gte(schema.assessments.createdAt, since30d)),
+          and(
+            eq(schema.students.trainerId, trainerId),
+            gte(schema.assessments.createdAt, since30d),
+          ),
         );
       const last30d = last30dRow[0]?.c ?? 0;
 

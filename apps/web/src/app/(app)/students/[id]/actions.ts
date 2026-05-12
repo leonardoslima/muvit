@@ -1,10 +1,10 @@
 'use server';
 
-import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
-import { configureServerClient } from '@/lib/api-client';
-import { patchStudentsById, deleteStudentsById } from '@/lib/api/sdk.gen';
 import type { StudentFormState } from '@/components/student-form';
+import { configureServerClient } from '@/lib/api-client';
+import { deleteStudentsById, patchStudentsById } from '@/lib/api/sdk.gen';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 function pickOpt(formData: FormData, key: string) {
   const v = String(formData.get(key) ?? '').trim();

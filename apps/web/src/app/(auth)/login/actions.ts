@@ -1,9 +1,9 @@
 'use server';
 
-import { redirect } from 'next/navigation';
-import { postAuthLogin } from '@/lib/api/sdk.gen';
 import { client } from '@/lib/api/client.gen';
+import { postAuthLogin } from '@/lib/api/sdk.gen';
 import { setAuthCookies } from '@/lib/auth-cookies';
+import { redirect } from 'next/navigation';
 
 export type LoginState = { error?: string } | null;
 

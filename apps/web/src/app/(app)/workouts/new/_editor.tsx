@@ -1,18 +1,19 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
-import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from 'lucide-react';
-import * as Dialog from '@radix-ui/react-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { MUSCLE_GROUP_LABEL, type MuscleGroup } from '@/lib/muscle-groups';
+import * as Dialog from '@radix-ui/react-dialog';
+import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from 'lucide-react';
+import { useMemo, useState, useTransition } from 'react';
 import { createWorkoutPlanAction } from './actions';
 
 type ExerciseLite = { id: string; name: string; muscleGroup: MuscleGroup };
 
 type DayState = {
+  id: string;
   label: string;
   exercises: Array<{
     exerciseId: string;
@@ -26,7 +27,19 @@ type DayState = {
   }>;
 };
 
-const DEFAULT_LABELS = ['Treino A', 'Treino B', 'Treino C', 'Treino D', 'Treino E', 'Treino F', 'Treino G'];
+const DEFAULT_LABELS = [
+  'Treino A',
+  'Treino B',
+  'Treino C',
+  'Treino D',
+  'Treino E',
+  'Treino F',
+  'Treino G',
+];
+
+function createDay(label: string): DayState {
+  return { id: crypto.randomUUID(), label, exercises: [] };
+}
 
 export function WorkoutEditor({
   studentId,
@@ -37,9 +50,7 @@ export function WorkoutEditor({
 }) {
   const [planName, setPlanName] = useState('');
   const [notes, setNotes] = useState('');
-  const [days, setDays] = useState<DayState[]>([
-    { label: 'Treino A', exercises: [] },
-  ]);
+  const [days, setDays] = useState<DayState[]>([createDay('Treino A')]);
   const [activeDay, setActiveDay] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +58,7 @@ export function WorkoutEditor({
 
   function addDay() {
     if (days.length >= 7) return;
-    setDays((d) => [...d, { label: DEFAULT_LABELS[d.length] ?? `Treino ${d.length + 1}`, exercises: [] }]);
+    setDays((d) => [...d, createDay(DEFAULT_LABELS[d.length] ?? `Treino ${d.length + 1}`)]);
     setActiveDay(days.length);
   }
   function removeDay(idx: number) {
@@ -66,7 +77,13 @@ export function WorkoutEditor({
               ...day,
               exercises: [
                 ...day.exercises,
-                { exerciseId: ex.id, exerciseName: ex.name, muscleGroup: ex.muscleGroup, sets: 3, reps: '10' },
+                {
+                  exerciseId: ex.id,
+                  exerciseName: ex.name,
+                  muscleGroup: ex.muscleGroup,
+                  sets: 3,
+                  reps: '10',
+                },
               ],
             }
           : day,
@@ -88,8 +105,10 @@ export function WorkoutEditor({
         const next = [...day.exercises];
         const t = exIdx + dir;
         if (t < 0 || t >= next.length) return day;
-        const tmp = next[exIdx]!;
-        next[exIdx] = next[t]!;
+        const tmp = next[exIdx];
+        const target = next[t];
+        if (!tmp || !target) return day;
+        next[exIdx] = target;
         next[t] = tmp;
         return { ...day, exercises: next };
       }),
@@ -142,6 +161,8 @@ export function WorkoutEditor({
       if (res?.error) setError(res.error);
     });
   }
+  const activeExercises = days[activeDay]?.exercises ?? [];
+  const activeLabel = days[activeDay]?.label ?? '';
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr]">
@@ -172,14 +193,20 @@ export function WorkoutEditor({
             <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
               Dias ({days.length})
             </span>
-            <Button type="button" variant="ghost" size="sm" onClick={addDay} disabled={days.length >= 7}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={addDay}
+              disabled={days.length >= 7}
+            >
               <Plus className="size-4" /> Adicionar
             </Button>
           </div>
           <ul className="flex flex-col gap-1">
             {days.map((d, i) => (
               <li
-                key={i}
+                key={d.id}
                 className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
                   activeDay === i ? 'bg-success-bg' : 'hover:bg-muted'
                 }`}
@@ -191,7 +218,9 @@ export function WorkoutEditor({
                 >
                   <span
                     className={`grid size-6 place-items-center rounded-pill text-xs font-display font-bold ${
-                      activeDay === i ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      activeDay === i
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {String.fromCharCode(65 + i)}
@@ -201,7 +230,9 @@ export function WorkoutEditor({
                     onChange={(e) => updateDayLabel(i, e.target.value)}
                     className="bg-transparent font-display text-sm font-semibold outline-none"
                   />
-                  <span className="ml-auto text-xs text-muted-foreground">{d.exercises.length}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {d.exercises.length}
+                  </span>
                 </button>
                 {days.length > 1 && (
                   <button
@@ -235,7 +266,7 @@ export function WorkoutEditor({
       {/* Center — current day exercises */}
       <section className="rounded-[12px] bg-card p-6 shadow-card">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold">{days[activeDay]?.label}</h2>
+          <h2 className="font-display text-lg font-bold">{activeLabel}</h2>
           <PickerDialog
             open={pickerOpen}
             onOpenChange={setPickerOpen}
@@ -244,7 +275,7 @@ export function WorkoutEditor({
           />
         </div>
 
-        {days[activeDay]?.exercises.length === 0 ? (
+        {activeExercises.length === 0 ? (
           <div className="grid place-items-center rounded-md border border-dashed border-border px-5 py-12 text-center">
             <Search className="mb-3 size-7 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -253,9 +284,9 @@ export function WorkoutEditor({
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {days[activeDay]!.exercises.map((ex, j) => (
+            {activeExercises.map((ex, j) => (
               <li
-                key={`${ex.exerciseId}-${j}`}
+                key={`${ex.exerciseId}-${ex.exerciseName}`}
                 className="flex flex-col gap-3 rounded-md border border-border p-4"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -279,7 +310,7 @@ export function WorkoutEditor({
                       type="button"
                       className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30"
                       onClick={() => moveExercise(activeDay, j, 1)}
-                      disabled={j === days[activeDay]!.exercises.length - 1}
+                      disabled={j === activeExercises.length - 1}
                       aria-label="Mover para baixo"
                     >
                       <ChevronDown className="size-4" />
@@ -395,16 +426,27 @@ function PickerDialog({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-[12px] bg-card p-6 shadow-elevated focus-visible:outline-none">
           <div className="flex items-start justify-between">
-            <Dialog.Title className="font-display text-lg font-bold">Adicionar exercício</Dialog.Title>
+            <Dialog.Title className="font-display text-lg font-bold">
+              Adicionar exercício
+            </Dialog.Title>
             <Dialog.Close asChild>
-              <button className="text-muted-foreground hover:text-foreground" aria-label="Fechar">
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Fechar"
+              >
                 <X className="size-5" />
               </button>
             </Dialog.Close>
           </div>
           <div className="relative mt-4">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar exercício…" className="pl-9" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar exercício…"
+              className="pl-9"
+            />
           </div>
           <ul className="mt-4 flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
             {filtered.map((ex) => (
@@ -415,7 +457,9 @@ function PickerDialog({
                   className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted"
                 >
                   <span className="font-display text-sm font-semibold">{ex.name}</span>
-                  <span className="text-xs text-muted-foreground">{MUSCLE_GROUP_LABEL[ex.muscleGroup]}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
+                  </span>
                 </button>
               </li>
             ))}

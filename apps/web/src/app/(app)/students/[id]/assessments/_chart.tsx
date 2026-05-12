@@ -9,6 +9,7 @@ interface Point {
 export function EvolutionChart({ points }: { points: Point[] }) {
   const weights = points.map((p) => p.weight).filter((v): v is number => v !== null);
   const fats = points.map((p) => p.bodyFat).filter((v): v is number => v !== null);
+  const weightPoints = points.filter((p): p is Point & { weight: number } => p.weight !== null);
   if (weights.length < 2 && fats.length < 2) {
     return <p className="text-sm text-muted-foreground">Sem dados suficientes para o gráfico.</p>;
   }
@@ -39,23 +40,49 @@ export function EvolutionChart({ points }: { points: Point[] }) {
         <Legend color="var(--primary)" label="Peso (kg)" />
         <Legend color="var(--secondary)" label="% Gordura" />
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-[220px] w-full overflow-visible">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-[220px] w-full overflow-visible"
+        role="img"
+        aria-labelledby="evolution-chart-title"
+      >
+        <title id="evolution-chart-title">Evolucao de peso e percentual de gordura</title>
         <line x1={padX} x2={W - padX} y1={H - padY} y2={H - padY} stroke="var(--border)" />
-        <line x1={padX} x2={W - padX} y1={padY} y2={padY} stroke="var(--border)" strokeDasharray="2 4" />
+        <line
+          x1={padX}
+          x2={W - padX}
+          y1={padY}
+          y2={padY}
+          stroke="var(--border)"
+          strokeDasharray="2 4"
+        />
         {weights.length >= 2 && (
-          <path d={lineFor(weights)} fill="none" stroke="var(--primary)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d={lineFor(weights)}
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         )}
         {fats.length >= 2 && (
-          <path d={lineFor(fats)} fill="none" stroke="var(--secondary)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d={lineFor(fats)}
+            fill="none"
+            stroke="var(--secondary)"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         )}
-        {points.map((p, i) => {
-          if (p.weight === null) return null;
+        {weightPoints.map((p, i) => {
           const min = Math.min(...weights);
-          const range = (Math.max(...weights) - min) || 1;
+          const range = Math.max(...weights) - min || 1;
           const stepX = (W - 2 * padX) / Math.max(weights.length - 1, 1);
-          const x = padX + weights.findIndex((_, idx) => idx === i) * stepX;
+          const x = padX + i * stepX;
           const y = padY + (H - 2 * padY) * (1 - (p.weight - min) / range);
-          return <circle key={`w-${i}`} cx={x} cy={y} r={3.5} fill="var(--primary)" />;
+          return <circle key={`w-${p.date}`} cx={x} cy={y} r={3.5} fill="var(--primary)" />;
         })}
       </svg>
     </div>

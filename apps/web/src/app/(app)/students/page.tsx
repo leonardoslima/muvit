@@ -1,11 +1,11 @@
-import Link from 'next/link';
-import { Plus, Search } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
 import { TopBar } from '@/components/top-bar';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudents } from '@/lib/api/sdk.gen';
+import { Plus, Search } from 'lucide-react';
+import Link from 'next/link';
 import { StudentSearch } from './_search';
 
 interface SearchParams {
@@ -20,7 +20,10 @@ export default async function StudentsPage({
 }) {
   const params = await searchParams;
   const client = await configureServerClient();
-  const res = await getStudents({ client, query: { q: params.q, status: params.status, limit: 50 } });
+  const res = await getStudents({
+    client,
+    query: { q: params.q, status: params.status, limit: 50 },
+  });
   const items = (res.data?.items ?? []) as Array<{
     id: string;
     name: string;
@@ -98,10 +101,18 @@ export default async function StudentsPage({
                 <span>
                   <Badge
                     variant={
-                      s.status === 'active' ? 'active' : s.status === 'paused' ? 'paused' : 'inactive'
+                      s.status === 'active'
+                        ? 'active'
+                        : s.status === 'paused'
+                          ? 'paused'
+                          : 'inactive'
                     }
                   >
-                    {s.status === 'active' ? 'Ativo' : s.status === 'paused' ? 'Pausado' : 'Inativo'}
+                    {s.status === 'active'
+                      ? 'Ativo'
+                      : s.status === 'paused'
+                        ? 'Pausado'
+                        : 'Inativo'}
                   </Badge>
                 </span>
                 <span className="text-sm text-muted-foreground">

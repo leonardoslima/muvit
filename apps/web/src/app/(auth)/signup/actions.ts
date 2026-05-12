@@ -1,9 +1,9 @@
 'use server';
 
-import { redirect } from 'next/navigation';
-import { postAuthSignupStudent, postAuthSignupTrainer } from '@/lib/api/sdk.gen';
 import { client } from '@/lib/api/client.gen';
+import { postAuthSignupStudent, postAuthSignupTrainer } from '@/lib/api/sdk.gen';
 import { setAuthCookies } from '@/lib/auth-cookies';
+import { redirect } from 'next/navigation';
 
 export type SignupState = { error?: string; fieldErrors?: Record<string, string> } | null;
 

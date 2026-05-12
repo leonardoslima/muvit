@@ -93,8 +93,14 @@ export default {
         display: ['var(--font-space-grotesk)', '"Space Grotesk"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'hero-display': ['72px', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' }],
-        'hero-display-mobile': ['44px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'hero-display': [
+          '72px',
+          { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '700' },
+        ],
+        'hero-display-mobile': [
+          '44px',
+          { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '700' },
+        ],
         'hero-h2': ['48px', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '700' }],
         'hero-h3': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
         'hero-lead': ['20px', { lineHeight: '1.5' }],

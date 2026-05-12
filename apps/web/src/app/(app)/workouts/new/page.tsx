@@ -1,11 +1,11 @@
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-import { redirect } from 'next/navigation';
 import { TopBar } from '@/components/top-bar';
 import { configureServerClient } from '@/lib/api-client';
 import { getExercises, getStudentsById } from '@/lib/api/sdk.gen';
-import { WorkoutEditor } from './_editor';
 import type { MuscleGroup } from '@/lib/muscle-groups';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { WorkoutEditor } from './_editor';
 
 export default async function NewWorkoutPage({
   searchParams,

@@ -1,7 +1,11 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
+import type * as React from 'react';
 
-const SIZE_MAP = { sm: 'h-8 w-8 text-xs', md: 'h-10 w-10 text-sm', lg: 'h-12 w-12 text-base' } as const;
+const SIZE_MAP = {
+  sm: 'h-8 w-8 text-xs',
+  md: 'h-10 w-10 text-sm',
+  lg: 'h-12 w-12 text-base',
+} as const;
 const TONES = ['bg-primary', 'bg-secondary', 'bg-muted text-foreground', 'bg-foreground text-card'];
 
 function getInitials(name: string) {

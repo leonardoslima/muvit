@@ -1,13 +1,13 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { StudentForm } from '@/components/student-form';
 import { TopBar } from '@/components/top-bar';
-import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { StudentForm } from '@/components/student-form';
+import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudentsById } from '@/lib/api/sdk.gen';
+import { ChevronLeft, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { deleteStudentAction, updateStudentAction } from './actions';
 
 interface Props {

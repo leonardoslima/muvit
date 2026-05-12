@@ -1,11 +1,20 @@
-import { Bell, Plus, Search, Users, ClipboardList, AlertTriangle, Sparkles, BarChart3 } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { requireUser } from '@/lib/auth-server';
-import { configureServerClient } from '@/lib/api-client';
-import { getTrainerSummary } from '@/lib/api/sdk.gen';
 import { StatCard } from '@/components/stat-card';
 import { TopBar } from '@/components/top-bar';
+import { Button } from '@/components/ui/button';
+import { configureServerClient } from '@/lib/api-client';
+import { getTrainerSummary } from '@/lib/api/sdk.gen';
+import { requireUser } from '@/lib/auth-server';
+import {
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  ClipboardList,
+  Plus,
+  Search,
+  Sparkles,
+  Users,
+} from 'lucide-react';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -50,7 +59,11 @@ export default async function DashboardPage() {
         <StatCard
           label="Alunos ativos"
           value={data.students.active}
-          hint={data.students.newThisWeek > 0 ? `+${data.students.newThisWeek} esta semana` : `${data.students.total} no total`}
+          hint={
+            data.students.newThisWeek > 0
+              ? `+${data.students.newThisWeek} esta semana`
+              : `${data.students.total} no total`
+          }
           icon={Users}
           accent="primary"
         />
@@ -80,7 +93,10 @@ export default async function DashboardPage() {
       <section className="rounded-[12px] bg-card p-6 shadow-card">
         <div className="flex items-center justify-between pb-4">
           <h2 className="font-display text-lg font-bold">Próximos passos</h2>
-          <Link href="/students" className="font-display text-[13px] font-semibold text-primary hover:underline">
+          <Link
+            href="/students"
+            className="font-display text-[13px] font-semibold text-primary hover:underline"
+          >
             Ver alunos →
           </Link>
         </div>

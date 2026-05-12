@@ -1,7 +1,7 @@
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-import { TopBar } from '@/components/top-bar';
 import { StudentForm } from '@/components/student-form';
+import { TopBar } from '@/components/top-bar';
+import { ChevronLeft } from 'lucide-react';
+import Link from 'next/link';
 import { createStudentAction } from './actions';
 
 export default function NewStudentPage() {

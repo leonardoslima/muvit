@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { signupAction, type SignupState } from './actions';
+import Link from 'next/link';
+import { useActionState, useState } from 'react';
+import { type SignupState, signupAction } from './actions';
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState<SignupState, FormData>(signupAction, null);
@@ -17,9 +17,7 @@ export default function SignupPage() {
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">Crie sua conta</h1>
-        <p className="text-sm text-muted-foreground">
-          Comece grátis. Sem cartão de crédito.
-        </p>
+        <p className="text-sm text-muted-foreground">Comece grátis. Sem cartão de crédito.</p>
       </header>
 
       <div className="grid grid-cols-2 rounded-pill bg-muted p-1 text-sm font-display font-semibold">
@@ -41,7 +39,14 @@ export default function SignupPage() {
       <form action={action} className="flex flex-col gap-5">
         <input type="hidden" name="role" value={role} />
         <Field label="Nome" name="name" type="text" required autoComplete="name" error={fe.name} />
-        <Field label="E-mail" name="email" type="email" required autoComplete="email" error={fe.email} />
+        <Field
+          label="E-mail"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          error={fe.email}
+        />
         <Field
           label="Senha"
           name="password"
@@ -93,7 +98,14 @@ function Field({
       <Label htmlFor={name} data-error={!!error}>
         {label}
       </Label>
-      <Input id={name} name={name} type={type} required={required} autoComplete={autoComplete} aria-invalid={!!error} />
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        required={required}
+        autoComplete={autoComplete}
+        aria-invalid={!!error}
+      />
       {error ? (
         <p className="text-xs text-destructive">{error}</p>
       ) : hint ? (

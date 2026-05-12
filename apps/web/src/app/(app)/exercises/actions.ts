@@ -1,9 +1,9 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { configureServerClient } from '@/lib/api-client';
-import { postExercises, deleteExercisesById } from '@/lib/api/sdk.gen';
+import { deleteExercisesById, postExercises } from '@/lib/api/sdk.gen';
 import type { MuscleGroup } from '@/lib/muscle-groups';
+import { revalidatePath } from 'next/cache';
 
 export type CreateExerciseState = { error?: string; fieldErrors?: Record<string, string> } | null;
 

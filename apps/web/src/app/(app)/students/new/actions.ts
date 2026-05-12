@@ -1,17 +1,20 @@
 'use server';
 
-import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
+import type { StudentFormState } from '@/components/student-form';
 import { configureServerClient } from '@/lib/api-client';
 import { postStudents } from '@/lib/api/sdk.gen';
-import type { StudentFormState } from '@/components/student-form';
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 function pickOpt(formData: FormData, key: string) {
   const v = String(formData.get(key) ?? '').trim();
   return v ? v : undefined;
 }
 
-export async function createStudentAction(_: StudentFormState, formData: FormData): Promise<StudentFormState> {
+export async function createStudentAction(
+  _: StudentFormState,
+  formData: FormData,
+): Promise<StudentFormState> {
   const name = String(formData.get('name') ?? '').trim();
   if (name.length < 2) return { fieldErrors: { name: 'Informe o nome.' } };
 

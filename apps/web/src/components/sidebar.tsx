@@ -1,18 +1,18 @@
 'use client';
 
+import { Avatar } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import {
+  ClipboardList,
+  Dumbbell,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Users,
-  Dumbbell,
-  ClipboardList,
-  TrendingUp,
-  Settings,
-  LogOut,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Avatar } from '@/components/ui/avatar';
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -40,7 +40,7 @@ export function Sidebar({ user }: { user: { name: string; email: string } | null
 
         <nav className="flex flex-col gap-0.5">
           {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + '/');
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
             return (
               <Link

@@ -1,9 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useActionState } from 'react';
 
 export type StudentFormState = { error?: string; fieldErrors?: Record<string, string> } | null;
 
@@ -35,9 +35,20 @@ export function StudentForm({ action, initial, submitLabel = 'Salvar' }: Props) 
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Field label="Nome" name="name" defaultValue={initial?.name} required error={fe.name} />
-        <Field label="E-mail" name="email" type="email" defaultValue={initial?.email ?? ''} error={fe.email} />
+        <Field
+          label="E-mail"
+          name="email"
+          type="email"
+          defaultValue={initial?.email ?? ''}
+          error={fe.email}
+        />
         <Field label="Telefone" name="phone" defaultValue={initial?.phone ?? ''} />
-        <Field label="Data de nascimento" name="birthDate" type="date" defaultValue={initial?.birthDate ?? ''} />
+        <Field
+          label="Data de nascimento"
+          name="birthDate"
+          type="date"
+          defaultValue={initial?.birthDate ?? ''}
+        />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="gender">Sexo</Label>
@@ -71,7 +82,11 @@ export function StudentForm({ action, initial, submitLabel = 'Salvar' }: Props) 
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <TextArea label="Objetivos" name="goals" defaultValue={initial?.goals ?? ''} />
-        <TextArea label="Restrições" name="restrictions" defaultValue={initial?.restrictions ?? ''} />
+        <TextArea
+          label="Restrições"
+          name="restrictions"
+          defaultValue={initial?.restrictions ?? ''}
+        />
       </div>
 
       {state?.error && (

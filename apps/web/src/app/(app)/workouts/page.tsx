@@ -1,15 +1,19 @@
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
 import { TopBar } from '@/components/top-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudents } from '@/lib/api/sdk.gen';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 export default async function WorkoutsPage() {
   const client = await configureServerClient();
   const res = await getStudents({ client, query: { limit: 100, status: 'active' } });
-  const items = (res.data?.items ?? []) as Array<{ id: string; name: string; email: string | null }>;
+  const items = (res.data?.items ?? []) as Array<{
+    id: string;
+    name: string;
+    email: string | null;
+  }>;
 
   return (
     <>

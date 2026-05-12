@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import { ChevronLeft, Plus } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { TopBar } from '@/components/top-bar';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudentsById, getStudentsByStudentIdAssessments } from '@/lib/api/sdk.gen';
+import { ChevronLeft, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { EvolutionChart } from './_chart';
 
 interface Props {
