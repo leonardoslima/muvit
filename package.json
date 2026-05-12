@@ -11,6 +11,7 @@
     "dev": "turbo run dev",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "db:generate": "pnpm --filter @muvit/db generate",
     "db:migrate": "pnpm --filter @muvit/db migrate",
