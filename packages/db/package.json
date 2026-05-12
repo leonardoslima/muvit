@@ -5,13 +5,14 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./schema": "./src/schema/index.ts",
+    "./seed": "./src/seed.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
     "studio": "drizzle-kit studio",
-    "seed": "tsx src/seed.ts",
+    "seed": "node --env-file=../../.env --import tsx src/seed.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
