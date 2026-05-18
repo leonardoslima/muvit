@@ -8,7 +8,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "doctor": "expo-doctor"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "expo-doctor": "^1.18.22",
     "typescript": "~5.9.2",
     "vitest": "^4.1.5"
   },
