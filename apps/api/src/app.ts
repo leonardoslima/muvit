@@ -11,7 +11,21 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
+import authPlugin from './plugins/auth.js';
+import { assessmentsRoutes } from './routes/assessments.js';
+import { authRoutes } from './routes/auth.js';
+import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
+import { studentsRoutes } from './routes/students.js';
+import { trainerSummaryRoutes } from './routes/trainer-summary.js';
+import { workoutLogsRoutes } from './routes/workout-logs.js';
+import { workoutsRoutes } from './routes/workouts.js';
+
+function corsOrigins() {
+  if (env.NODE_ENV === 'production') return env.WEB_URL;
+
+  return [env.WEB_URL, /^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+}
 
 export async function buildApp() {
   const app = Fastify({
@@ -22,8 +36,9 @@ export async function buildApp() {
   app.setSerializerCompiler(serializerCompiler);
 
   await app.register(helmet, { contentSecurityPolicy: false });
-  await app.register(cors, { origin: env.WEB_URL, credentials: true });
+  await app.register(cors, { origin: corsOrigins(), credentials: true });
   await app.register(jwt, { secret: env.JWT_SECRET });
+  await app.register(authPlugin);
 
   await app.register(swagger, {
     openapi: {
@@ -43,6 +58,13 @@ export async function buildApp() {
   });
 
   await app.register(healthRoutes);
+  await app.register(authRoutes);
+  await app.register(studentsRoutes);
+  await app.register(exercisesRoutes);
+  await app.register(assessmentsRoutes);
+  await app.register(workoutsRoutes);
+  await app.register(workoutLogsRoutes);
+  await app.register(trainerSummaryRoutes);
 
   return app;
 }

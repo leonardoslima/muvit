@@ -11,10 +11,19 @@
     "dev": "turbo run dev",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "mobile:start": "pnpm --filter @muvit/mobile start",
+    "mobile:android": "pnpm --filter @muvit/mobile android",
+    "mobile:ios": "pnpm --filter @muvit/mobile ios",
+    "mobile:web": "pnpm --filter @muvit/mobile web",
+    "mobile:test": "pnpm --filter @muvit/mobile test",
+    "mobile:typecheck": "pnpm --filter @muvit/mobile typecheck",
+    "mobile:doctor": "pnpm --filter @muvit/mobile run doctor",
     "db:generate": "pnpm --filter @muvit/db generate",
     "db:migrate": "pnpm --filter @muvit/db migrate",
-    "db:studio": "pnpm --filter @muvit/db studio"
+    "db:studio": "pnpm --filter @muvit/db studio",
+    "db:seed": "pnpm --filter @muvit/db seed"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

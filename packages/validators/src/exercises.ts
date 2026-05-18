@@ -18,14 +18,28 @@ export const createExerciseSchema = z.object({
   muscleGroup: muscleGroupSchema,
   equipment: z.string().max(100).optional(),
   videoUrl: z.string().url().optional(),
-  instructions: z.string().max(4000).optional(),
+  instructions: z.string().max(2000).optional(),
 });
 
-export const exerciseSchema = createExerciseSchema.extend({
+export const updateExerciseSchema = createExerciseSchema.partial();
+
+export const exerciseSchema = z.object({
   id: z.string().uuid(),
   trainerId: z.string().uuid().nullable(),
-  createdAt: z.string().datetime(),
+  name: z.string(),
+  muscleGroup: muscleGroupSchema,
+  equipment: z.string().nullable(),
+  videoUrl: z.string().nullable(),
+  instructions: z.string().nullable(),
+  createdAt: z
+    .union([z.string(), z.date()])
+    .transform((v) => (v instanceof Date ? v.toISOString() : v)),
 });
 
-export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
-export type Exercise = z.infer<typeof exerciseSchema>;
+export const listExercisesQuerySchema = z.object({
+  q: z.string().optional(),
+  muscleGroup: muscleGroupSchema.optional(),
+  scope: z.enum(['mine', 'global', 'all']).default('all'),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
