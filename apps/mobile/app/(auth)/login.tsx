@@ -2,7 +2,7 @@ import type { AuthResponse } from '@muvit/validators';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { ApiClient } from '../../src/lib/api';
+import { ApiClient, ApiError } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth-store';
 import { config } from '../../src/lib/config';
 import { sharedStyles } from '../../src/lib/styles';
@@ -31,8 +31,12 @@ export default function LoginScreen() {
       });
       await setTokens(response.accessToken, response.refreshToken, response.user.id);
       router.replace('/(tabs)');
-    } catch {
-      setError('Email ou senha invalidos.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Email ou senha invalidos.');
+      } else {
+        setError(`Nao consegui conectar na API em ${config.apiUrl}.`);
+      }
     } finally {
       setSubmitting(false);
     }
