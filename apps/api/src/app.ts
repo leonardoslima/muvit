@@ -21,6 +21,12 @@ import { trainerSummaryRoutes } from './routes/trainer-summary.js';
 import { workoutLogsRoutes } from './routes/workout-logs.js';
 import { workoutsRoutes } from './routes/workouts.js';
 
+function corsOrigins() {
+  if (env.NODE_ENV === 'production') return env.WEB_URL;
+
+  return [env.WEB_URL, /^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+}
+
 export async function buildApp() {
   const app = Fastify({
     logger: env.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : true,
@@ -30,7 +36,7 @@ export async function buildApp() {
   app.setSerializerCompiler(serializerCompiler);
 
   await app.register(helmet, { contentSecurityPolicy: false });
-  await app.register(cors, { origin: env.WEB_URL, credentials: true });
+  await app.register(cors, { origin: corsOrigins(), credentials: true });
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(authPlugin);
 
