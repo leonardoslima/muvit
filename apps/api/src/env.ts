@@ -13,6 +13,7 @@ const schema = z.object({
   R2_PUBLIC_URL: z.string().url(),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export const env = schema.parse(process.env);

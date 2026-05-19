@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const config: NextConfig = {
   reactStrictMode: true,
@@ -6,4 +7,6 @@ const config: NextConfig = {
   typedRoutes: false,
 };
 
-export default config;
+export default withSentryConfig(config, {
+  silent: !process.env.CI,
+});
