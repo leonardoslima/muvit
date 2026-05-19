@@ -37,6 +37,10 @@ Antes de propor, editar, mover ou criar arquivos:
 - Amplie para o monorepo inteiro somente quando houver motivo tecnico claro.
 - Execute comandos a partir da raiz do repositorio.
 - Use filtros de workspace quando fizer sentido limitar o escopo.
+- Ao criar ou usar worktree, copie os arquivos `.env` locais ignorados da raiz
+  original para a worktree antes de executar setup, testes ou builds.
+- No PowerShell, se `pnpm` falhar por bloqueio de execucao de `pnpm.ps1`, use
+  `pnpm.cmd` para rodar os mesmos comandos.
 
 ## Convencoes do projeto
 
