@@ -4,6 +4,7 @@
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "jsx": "preserve",
+    "declaration": false,
     "noEmit": true,
     "incremental": true,
     "plugins": [{ "name": "next" }]

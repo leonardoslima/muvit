@@ -3,12 +3,22 @@ import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import * as Sentry from 'sentry-expo';
+import { PushTokenRegistration } from '../src/components/push-token-registration';
 import { QueueDrain } from '../src/components/queue-drain';
 import { useAuth } from '../src/lib/auth-store';
 import { queryClient } from '../src/lib/query-client';
 import { colors } from '../src/lib/styles';
 
-export default function RootLayout() {
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 0.1,
+  });
+}
+
+function RootLayout() {
   const segments = useSegments();
   const hydrate = useAuth((state) => state.hydrate);
   const hydrated = useAuth((state) => state.hydrated);
@@ -33,8 +43,11 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       {accessToken ? <QueueDrain /> : null}
+      {accessToken ? <PushTokenRegistration /> : null}
       <StatusBar style="dark" />
       <Slot />
     </QueryClientProvider>
   );
 }
+
+export default Sentry.Native.wrap(RootLayout);

@@ -101,6 +101,24 @@ describe('auth', () => {
     expect(res.json()).toMatchObject({ email: 'a@a.com', role: 'trainer' });
   });
 
+  it('trainer completes onboarding', async () => {
+    const sign = await app.inject({
+      method: 'POST',
+      url: '/auth/signup/trainer',
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
+    });
+    const { accessToken } = sign.json();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/trainers/me/onboarding',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().onboardedAt).toEqual(expect.any(String));
+  });
+
   it('signs up an independent student', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -109,5 +127,26 @@ describe('auth', () => {
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().user.role).toBe('student');
+  });
+
+  it('rate limits repeated login attempts', async () => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        remoteAddress: '192.0.2.10',
+        payload: { email: 'missing@example.com', password: '12345678', role: 'trainer' },
+      });
+      expect(res.statusCode).toBe(401);
+    }
+
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      remoteAddress: '192.0.2.10',
+      payload: { email: 'missing@example.com', password: '12345678', role: 'trainer' },
+    });
+
+    expect(limited.statusCode).toBe(429);
   });
 });

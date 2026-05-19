@@ -12,10 +12,13 @@ import { z } from 'zod';
 import { hashPassword, verifyPassword } from '../lib/passwords.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/tokens.js';
 
+const authRateLimit = { max: 10, timeWindow: '1 minute' };
+
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/trainer',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupTrainerSchema,
@@ -49,6 +52,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/student',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupStudentSchema,
@@ -84,6 +88,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/login',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: loginSchema,
@@ -152,7 +157,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
           where: eq(schema.trainers.id, req.user.sub),
         });
         if (!t) return reply.code(404).send({ error: 'not found' });
-        return { id: t.id, name: t.name, email: t.email, role: 'trainer' };
+        return {
+          id: t.id,
+          name: t.name,
+          email: t.email,
+          role: 'trainer',
+          onboardedAt: t.onboardedAt,
+        };
       }
       const s = await db.query.students.findFirst({
         where: eq(schema.students.id, req.user.sub),
@@ -165,6 +176,33 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
         role: 'student',
         isIndependent: s.isIndependent,
       };
+    },
+  );
+
+  app.post(
+    '/trainers/me/onboarding',
+    {
+      preHandler: [app.requireAuth, app.requireRole('trainer')],
+      schema: {
+        tags: ['trainers'],
+        response: {
+          200: z.object({
+            onboardedAt: z
+              .union([z.string().datetime(), z.date()])
+              .transform((v) => (v instanceof Date ? v.toISOString() : v)),
+          }),
+        },
+      },
+    },
+    async (req) => {
+      const [trainer] = await db
+        .update(schema.trainers)
+        .set({ onboardedAt: new Date() })
+        .where(eq(schema.trainers.id, req.user.sub))
+        .returning({ onboardedAt: schema.trainers.onboardedAt });
+      if (!trainer?.onboardedAt) throw new Error('onboarding update failed');
+
+      return { onboardedAt: trainer.onboardedAt };
     },
   );
 };

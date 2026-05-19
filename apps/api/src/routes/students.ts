@@ -12,6 +12,26 @@ import { z } from 'zod';
 export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.requireAuth);
 
+  app.post(
+    '/students/me/push-token',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['students'],
+        body: z.object({ token: z.string().min(1).max(255) }),
+        response: { 204: z.undefined() },
+      },
+    },
+    async (req, reply) => {
+      await db
+        .update(schema.students)
+        .set({ expoPushToken: req.body.token })
+        .where(eq(schema.students.id, req.user.sub));
+
+      return reply.code(204).send();
+    },
+  );
+
   app.get(
     '/students',
     {

@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth-store';
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
 import { sharedStyles } from '../lib/styles';
+import { type AssessmentPhoto, uploadAssessmentPhoto } from '../lib/uploads';
 import { useApiClient } from '../lib/use-api';
 
 type AssessmentPayload = {
@@ -23,29 +24,30 @@ export function NewAssessmentScreen() {
   const [weightKg, setWeightKg] = useState('');
   const [bodyFatPct, setBodyFatPct] = useState('');
   const [notes, setNotes] = useState('');
-  const [photo, setPhoto] = useState<string>();
+  const [photo, setPhoto] = useState<AssessmentPhoto>();
   const [submitting, setSubmitting] = useState(false);
 
   async function pickPhoto() {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
-      base64: true,
       quality: 0.7,
     });
     const asset = result.assets?.[0];
-    if (!result.canceled && asset?.base64) {
-      setPhoto(`data:${asset.mimeType ?? 'image/jpeg'};base64,${asset.base64}`);
+    const contentType = toSupportedContentType(asset?.mimeType);
+    if (!result.canceled && asset?.uri && contentType) {
+      setPhoto({ uri: asset.uri, contentType });
     }
   }
 
   async function submit() {
     if (!userId) return;
     setSubmitting(true);
+    const photoUrl = photo ? await uploadAssessmentPhoto({ api, photo }) : undefined;
     const payload: AssessmentPayload = {
       date,
       weightKg: toOptionalNumber(weightKg),
       bodyFatPct: toOptionalNumber(bodyFatPct),
-      photos: photo ? [photo] : undefined,
+      photos: photoUrl ? [photoUrl] : undefined,
       notes: notes.trim() || undefined,
     };
 
@@ -108,4 +110,9 @@ function toOptionalNumber(value: string): number | undefined {
   if (!normalized) return undefined;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toSupportedContentType(value: string | undefined): AssessmentPhoto['contentType'] | null {
+  if (value === 'image/jpeg' || value === 'image/png') return value;
+  return null;
 }

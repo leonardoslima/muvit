@@ -1,0 +1,1 @@
+ALTER TABLE "students" ADD COLUMN "expo_push_token" varchar(255);
