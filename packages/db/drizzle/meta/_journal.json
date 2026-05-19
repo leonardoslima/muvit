@@ -15,6 +15,13 @@
       "when": 1779197591343,
       "tag": "0001_noisy_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779197910210,
+      "tag": "0002_foamy_echo",
+      "breakpoints": true
     }
   ]
 }

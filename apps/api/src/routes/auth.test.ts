@@ -101,6 +101,24 @@ describe('auth', () => {
     expect(res.json()).toMatchObject({ email: 'a@a.com', role: 'trainer' });
   });
 
+  it('trainer completes onboarding', async () => {
+    const sign = await app.inject({
+      method: 'POST',
+      url: '/auth/signup/trainer',
+      payload: { name: 'Ana', email: 'a@a.com', password: '12345678' },
+    });
+    const { accessToken } = sign.json();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/trainers/me/onboarding',
+      headers: { authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().onboardedAt).toEqual(expect.any(String));
+  });
+
   it('signs up an independent student', async () => {
     const res = await app.inject({
       method: 'POST',
