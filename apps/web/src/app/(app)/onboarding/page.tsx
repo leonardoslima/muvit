@@ -1,5 +1,5 @@
-import { TopBar } from '@/components/top-bar';
 import { OnboardingWizard } from '@/components/onboarding-wizard';
+import { TopBar } from '@/components/top-bar';
 import { completeOnboardingAction } from './actions';
 
 export default function OnboardingPage() {

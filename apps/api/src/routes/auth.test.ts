@@ -128,4 +128,25 @@ describe('auth', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json().user.role).toBe('student');
   });
+
+  it('rate limits repeated login attempts', async () => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        remoteAddress: '192.0.2.10',
+        payload: { email: 'missing@example.com', password: '12345678', role: 'trainer' },
+      });
+      expect(res.statusCode).toBe(401);
+    }
+
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      remoteAddress: '192.0.2.10',
+      payload: { email: 'missing@example.com', password: '12345678', role: 'trainer' },
+    });
+
+    expect(limited.statusCode).toBe(429);
+  });
 });

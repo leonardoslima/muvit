@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { registerPushToken, type PushTokenApiClient } from './push-token';
+import { type PushTokenApiClient, registerPushToken } from './push-token';
 
 describe('registerPushToken', () => {
   it('requests permission, obtains Expo token and registers it in the API', async () => {

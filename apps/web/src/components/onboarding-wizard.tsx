@@ -23,7 +23,12 @@ export function OnboardingWizard({ completeAction }: OnboardingWizardProps) {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="trainer-photo">Foto</Label>
-              <Input id="trainer-photo" name="trainerPhoto" type="file" accept="image/jpeg,image/png" />
+              <Input
+                id="trainer-photo"
+                name="trainerPhoto"
+                type="file"
+                accept="image/jpeg,image/png"
+              />
             </div>
           </div>
         </section>

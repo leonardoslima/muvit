@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import scalar from '@scalar/fastify-api-reference';
 import Fastify from 'fastify';
@@ -38,6 +39,7 @@ export async function buildApp() {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: corsOrigins(), credentials: true });
+  await app.register(rateLimit, { global: false });
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(authPlugin);
 

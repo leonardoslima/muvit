@@ -12,10 +12,13 @@ import { z } from 'zod';
 import { hashPassword, verifyPassword } from '../lib/passwords.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/tokens.js';
 
+const authRateLimit = { max: 10, timeWindow: '1 minute' };
+
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/trainer',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupTrainerSchema,
@@ -49,6 +52,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/signup/student',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupStudentSchema,
@@ -84,6 +88,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
   app.post(
     '/auth/login',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: loginSchema,
