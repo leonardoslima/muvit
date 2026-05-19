@@ -29,6 +29,7 @@ export const studentSchema = z.object({
   restrictions: z.string().nullable(),
   status: studentStatusSchema,
   avatarUrl: z.string().nullable(),
+  expoPushToken: z.string().nullable(),
   createdAt: z
     .union([z.string().datetime(), z.date()])
     .transform((v) => (v instanceof Date ? v.toISOString() : v)),

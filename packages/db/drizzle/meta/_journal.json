@@ -8,6 +8,13 @@
       "when": 1778179669588,
       "tag": "0000_lumpy_felicia_hardy",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779197591343,
+      "tag": "0001_noisy_sleeper",
+      "breakpoints": true
     }
   ]
 }

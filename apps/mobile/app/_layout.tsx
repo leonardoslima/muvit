@@ -3,6 +3,7 @@ import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { PushTokenRegistration } from '../src/components/push-token-registration';
 import { QueueDrain } from '../src/components/queue-drain';
 import { useAuth } from '../src/lib/auth-store';
 import { queryClient } from '../src/lib/query-client';
@@ -33,6 +34,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       {accessToken ? <QueueDrain /> : null}
+      {accessToken ? <PushTokenRegistration /> : null}
       <StatusBar style="dark" />
       <Slot />
     </QueryClientProvider>

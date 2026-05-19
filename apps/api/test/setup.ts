@@ -7,3 +7,5 @@ process.env.R2_ACCESS_KEY_ID ??= 'test-access-key';
 process.env.R2_SECRET_ACCESS_KEY ??= 'test-secret-key';
 process.env.R2_BUCKET ??= 'muvit-test';
 process.env.R2_PUBLIC_URL ??= 'https://cdn.example.com';
+process.env.RESEND_API_KEY ??= 'test-resend-key';
+process.env.EMAIL_FROM ??= 'Muvit <noreply@muvit.test>';

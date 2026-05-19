@@ -29,6 +29,7 @@ export const students = pgTable(
     restrictions: text('restrictions'),
     status: studentStatusEnum('status').notNull().default('active'),
     avatarUrl: text('avatar_url'),
+    expoPushToken: varchar('expo_push_token', { length: 255 }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

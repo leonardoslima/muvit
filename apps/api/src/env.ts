@@ -11,6 +11,8 @@ const schema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET: z.string().min(1),
   R2_PUBLIC_URL: z.string().url(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).optional(),
 });
 
 export const env = schema.parse(process.env);
