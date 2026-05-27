@@ -1,7 +1,7 @@
 import { db, schema } from '@muvit/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
@@ -18,13 +18,17 @@ async function signupTrainer(app: FastifyInstance, email: string) {
   return r.json().accessToken as string;
 }
 
+beforeAll(async () => {
+  app = await buildTestApp();
+});
+
 beforeEach(async () => {
   await truncateAll();
-  app = await buildTestApp();
   trainerToken = await signupTrainer(app, 'a@a.com');
   otherTrainerToken = await signupTrainer(app, 'b@b.com');
 });
 afterAll(async () => {
+  await app.close();
   await closeDb();
 });
 

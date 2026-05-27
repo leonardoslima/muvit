@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
@@ -27,14 +27,18 @@ async function createStudent(token: string, name: string): Promise<string> {
   return r.json().id as string;
 }
 
+beforeAll(async () => {
+  app = await buildTestApp();
+});
+
 beforeEach(async () => {
   await truncateAll();
-  app = await buildTestApp();
   trainerToken = await signupTrainer('a@a.com');
   otherTrainerToken = await signupTrainer('b@b.com');
   studentId = await createStudent(trainerToken, 'Aluno Teste');
 });
 afterAll(async () => {
+  await app.close();
   await closeDb();
 });
 

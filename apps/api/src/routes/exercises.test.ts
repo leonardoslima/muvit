@@ -1,15 +1,18 @@
 import { db, schema } from '@muvit/db';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 let trainerToken: string;
 
+beforeAll(async () => {
+  app = await buildTestApp();
+});
+
 beforeEach(async () => {
   await truncateAll();
-  app = await buildTestApp();
   await db.insert(schema.exercises).values({ name: 'Supino reto', muscleGroup: 'chest' });
   await db.insert(schema.exercises).values({ name: 'Agachamento', muscleGroup: 'legs' });
   const r = await app.inject({
@@ -20,6 +23,7 @@ beforeEach(async () => {
   trainerToken = r.json().accessToken;
 });
 afterAll(async () => {
+  await app.close();
   await closeDb();
 });
 
