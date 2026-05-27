@@ -1,34 +1,37 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
 
-beforeAll(async () => {
-  app = await buildTestApp();
-});
-
-beforeEach(async () => {
-  await truncateAll();
-
+async function signupTrainer(): Promise<string> {
   const response = await app.inject({
     method: 'POST',
     url: '/auth/signup/trainer',
     payload: { name: 'Trainer', email: 'trainer@example.com', password: '12345678' },
   });
 
-  trainerToken = response.json().accessToken;
+  return response.json().accessToken as string;
+}
+
+beforeEach(async () => {
+  app = await buildTestApp();
+  await truncateAll();
+});
+
+afterEach(async () => {
+  await app.close();
 });
 
 afterAll(async () => {
-  await app.close();
   await closeDb();
 });
 
 describe('uploads', () => {
   it('creates a presigned upload URL for assessment photos', async () => {
+    const trainerToken = await signupTrainer();
+
     const response = await app.inject({
       method: 'POST',
       url: '/uploads/presign',
@@ -45,6 +48,8 @@ describe('uploads', () => {
   });
 
   it('rejects unsupported content types', async () => {
+    const trainerToken = await signupTrainer();
+
     const response = await app.inject({
       method: 'POST',
       url: '/uploads/presign',

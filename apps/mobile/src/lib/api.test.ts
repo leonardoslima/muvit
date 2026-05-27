@@ -1,11 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, type Fetcher } from './api';
 
 describe('ApiClient', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('renova o access token uma vez e repete a requisicao original', async () => {
     let accessToken = 'access-antigo';
     const setTokens = vi.fn((nextAccessToken: string) => {

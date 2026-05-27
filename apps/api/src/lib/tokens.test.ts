@@ -1,15 +1,15 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from './tokens.js';
 
 let app: FastifyInstance;
 
-beforeAll(async () => {
+beforeEach(async () => {
   app = await buildTestApp();
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await app.close();
 });
 
@@ -23,7 +23,7 @@ describe('tokens', () => {
   it('access token has 15 min ttl', async () => {
     const token = await signAccessToken(app, { sub: 'u1', role: 'trainer' });
     const decoded = app.jwt.decode<{ exp: number; iat: number }>(token);
-    // biome-ignore lint/style/noNonNullAssertion: token was just signed, decode cannot return null
-    expect(decoded!.exp - decoded!.iat).toBe(15 * 60);
+    if (!decoded) throw new Error('token decode failed');
+    expect(decoded.exp - decoded.iat).toBe(15 * 60);
   });
 });

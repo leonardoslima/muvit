@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { signAccessToken } from '../lib/tokens.js';
 
 let app: FastifyInstance;
 
-beforeAll(async () => {
+beforeEach(async () => {
   app = await buildTestApp();
   app.get('/protected', { preHandler: [app.requireAuth] }, async () => ({ ok: true }));
   app.get('/me', { preHandler: [app.requireAuth] }, async (req) => req.user);
@@ -16,7 +16,7 @@ beforeAll(async () => {
   );
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await app.close();
 });
 

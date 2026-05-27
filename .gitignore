@@ -7,9 +7,14 @@ coverage
 *.log
 *.tsbuildinfo
 .env
+.env.test
 .env.local
 .env.*.local
 # local env files (explicit)
 apps/api/.env
+apps/api/.env.test
+apps/web/.env
+apps/mobile/.env
 packages/db/.env
+packages/db/.env.test
 .DS_Store

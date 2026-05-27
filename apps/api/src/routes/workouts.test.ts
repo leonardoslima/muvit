@@ -1,15 +1,11 @@
 import { db, schema } from '@muvit/db';
+import type { NewExercise } from '@muvit/db/schema';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
-let otherTrainerToken: string;
-let studentId: string;
-let exerciseA: string;
-let exerciseB: string;
 
 async function signupTrainer(email: string) {
   const r = await app.inject({
@@ -20,40 +16,51 @@ async function signupTrainer(email: string) {
   return r.json().accessToken as string;
 }
 
-beforeAll(async () => {
-  app = await buildTestApp();
-});
+async function createExercise(
+  name: string,
+  muscleGroup: NewExercise['muscleGroup'],
+): Promise<string> {
+  const [exercise] = await db.insert(schema.exercises).values({ name, muscleGroup }).returning();
+  if (!exercise) throw new Error('exercise seed failed');
+  return exercise.id;
+}
 
-beforeEach(async () => {
-  await truncateAll();
-  const [exA] = await db
-    .insert(schema.exercises)
-    .values({ name: 'Supino', muscleGroup: 'chest' })
-    .returning();
-  const [exB] = await db
-    .insert(schema.exercises)
-    .values({ name: 'Agacha', muscleGroup: 'legs' })
-    .returning();
-  if (!exA || !exB) throw new Error('seed failed');
-  exerciseA = exA.id;
-  exerciseB = exB.id;
-  trainerToken = await signupTrainer('a@a.com');
-  otherTrainerToken = await signupTrainer('b@b.com');
-  const sr = await app.inject({
+async function createStudent(token: string): Promise<string> {
+  const response = await app.inject({
     method: 'POST',
     url: '/students',
-    headers: { authorization: `Bearer ${trainerToken}` },
+    headers: { authorization: `Bearer ${token}` },
     payload: { name: 'Aluno' },
   });
-  studentId = sr.json().id;
+  return response.json().id as string;
+}
+
+async function createTrainerScenario() {
+  const exerciseA = await createExercise('Supino', 'chest');
+  const exerciseB = await createExercise('Agacha', 'legs');
+  const trainerToken = await signupTrainer('a@a.com');
+  const studentId = await createStudent(trainerToken);
+
+  return { exerciseA, exerciseB, studentId, trainerToken };
+}
+
+beforeEach(async () => {
+  app = await buildTestApp();
+  await truncateAll();
 });
-afterAll(async () => {
+
+afterEach(async () => {
   await app.close();
+});
+
+afterAll(async () => {
   await closeDb();
 });
 
 describe('workout plans', () => {
   it('trainer creates a 2-day plan with exercises', async () => {
+    const { exerciseA, exerciseB, studentId, trainerToken } = await createTrainerScenario();
+
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',
@@ -94,6 +101,8 @@ describe('workout plans', () => {
   });
 
   it('lists plans for a student (trainer view)', async () => {
+    const { studentId, trainerToken } = await createTrainerScenario();
+
     await app.inject({
       method: 'POST',
       url: '/workout-plans',
@@ -115,6 +124,9 @@ describe('workout plans', () => {
   });
 
   it('cross-tenant 404: other trainer cannot list plans for our student', async () => {
+    const { studentId } = await createTrainerScenario();
+    const otherTrainerToken = await signupTrainer('b@b.com');
+
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/workout-plans`,
@@ -124,6 +136,8 @@ describe('workout plans', () => {
   });
 
   it('independent student creates own plan (trainerId null)', async () => {
+    const exerciseA = await createExercise('Supino', 'chest');
+
     const sign = await app.inject({
       method: 'POST',
       url: '/auth/signup/student',
@@ -153,6 +167,8 @@ describe('workout plans', () => {
   });
 
   it('update replaces days idempotently', async () => {
+    const { exerciseA, exerciseB, studentId, trainerToken } = await createTrainerScenario();
+
     const c = await app.inject({
       method: 'POST',
       url: '/workout-plans',
@@ -194,6 +210,8 @@ describe('workout plans', () => {
   });
 
   it('rejects empty days array with 400', async () => {
+    const { studentId, trainerToken } = await createTrainerScenario();
+
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',

@@ -1,13 +1,11 @@
 import { db, schema } from '@muvit/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
-let otherTrainerToken: string;
 
 async function signupTrainer(app: FastifyInstance, email: string) {
   const r = await app.inject({
@@ -18,22 +16,23 @@ async function signupTrainer(app: FastifyInstance, email: string) {
   return r.json().accessToken as string;
 }
 
-beforeAll(async () => {
+beforeEach(async () => {
   app = await buildTestApp();
+  await truncateAll();
 });
 
-beforeEach(async () => {
-  await truncateAll();
-  trainerToken = await signupTrainer(app, 'a@a.com');
-  otherTrainerToken = await signupTrainer(app, 'b@b.com');
-});
-afterAll(async () => {
+afterEach(async () => {
   await app.close();
+});
+
+afterAll(async () => {
   await closeDb();
 });
 
 describe('students', () => {
   it('creates a student bound to current trainer', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     const res = await app.inject({
       method: 'POST',
       url: '/students',
@@ -46,6 +45,9 @@ describe('students', () => {
   });
 
   it('lists only my students', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+    const otherTrainerToken = await signupTrainer(app, 'b@b.com');
+
     await app.inject({
       method: 'POST',
       url: '/students',
@@ -83,6 +85,8 @@ describe('students', () => {
   });
 
   it('updates and deletes a student', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     const c = await app.inject({
       method: 'POST',
       url: '/students',
@@ -106,6 +110,9 @@ describe('students', () => {
   });
 
   it('returns 404 fetching a student that belongs to another trainer', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+    const otherTrainerToken = await signupTrainer(app, 'b@b.com');
+
     const c = await app.inject({
       method: 'POST',
       url: '/students',
@@ -122,6 +129,8 @@ describe('students', () => {
   });
 
   it('search filters by name (case-insensitive)', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     await app.inject({
       method: 'POST',
       url: '/students',

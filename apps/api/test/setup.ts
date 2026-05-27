@@ -1,11 +1,15 @@
+import { loadEnvFile } from 'node:process';
+
+loadEnvFile(new URL('../.env.test', import.meta.url));
+
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET ??= 'test-secret-test-secret-test-secret';
-process.env.DATABASE_URL ??= 'postgres://muvit:muvit@localhost:5432/muvit_test';
-process.env.WEB_URL ??= 'http://localhost:3000';
-process.env.R2_ACCOUNT_ID ??= 'test-account';
-process.env.R2_ACCESS_KEY_ID ??= 'test-access-key';
-process.env.R2_SECRET_ACCESS_KEY ??= 'test-secret-key';
-process.env.R2_BUCKET ??= 'muvit-test';
-process.env.R2_PUBLIC_URL ??= 'https://cdn.example.com';
-process.env.RESEND_API_KEY ??= 'test-resend-key';
-process.env.EMAIL_FROM ??= 'Muvit <noreply@muvit.test>';
+
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL deve existir em apps/api/.env.test para rodar os testes.');
+}
+
+if (!new URL(databaseUrl).pathname.includes('test')) {
+  throw new Error('Os testes da API devem usar um banco dedicado de teste.');
+}

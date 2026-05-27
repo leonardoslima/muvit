@@ -1,14 +1,14 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from './helpers/build.js';
 
 let app: FastifyInstance;
 
-beforeAll(async () => {
+beforeEach(async () => {
   app = await buildTestApp();
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await app.close();
 });
 

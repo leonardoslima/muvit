@@ -1,34 +1,43 @@
 import { db, schema } from '@muvit/db';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
 
-beforeAll(async () => {
-  app = await buildTestApp();
-});
-
-beforeEach(async () => {
-  await truncateAll();
-  await db.insert(schema.exercises).values({ name: 'Supino reto', muscleGroup: 'chest' });
-  await db.insert(schema.exercises).values({ name: 'Agachamento', muscleGroup: 'legs' });
-  const r = await app.inject({
+async function signupTrainer(email: string): Promise<string> {
+  const response = await app.inject({
     method: 'POST',
     url: '/auth/signup/trainer',
-    payload: { name: 'Trainer', email: 'a@a.com', password: '12345678' },
+    payload: { name: 'Trainer', email, password: '12345678' },
   });
-  trainerToken = r.json().accessToken;
+  return response.json().accessToken as string;
+}
+
+async function createGlobalExercises() {
+  await db.insert(schema.exercises).values({ name: 'Supino reto', muscleGroup: 'chest' });
+  await db.insert(schema.exercises).values({ name: 'Agachamento', muscleGroup: 'legs' });
+}
+
+beforeEach(async () => {
+  app = await buildTestApp();
+  await truncateAll();
 });
-afterAll(async () => {
+
+afterEach(async () => {
   await app.close();
+});
+
+afterAll(async () => {
   await closeDb();
 });
 
 describe('exercises', () => {
   it('lists global exercises for any authenticated user', async () => {
+    await createGlobalExercises();
+    const trainerToken = await signupTrainer('a@a.com');
+
     const r = await app.inject({
       method: 'GET',
       url: '/exercises?scope=global',
@@ -39,6 +48,8 @@ describe('exercises', () => {
   });
 
   it('trainer creates a custom exercise', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+
     const r = await app.inject({
       method: 'POST',
       url: '/exercises',
@@ -65,14 +76,16 @@ describe('exercises', () => {
   });
 
   it('coerces scope=mine to global for students (does not leak trainer-owned exercises)', async () => {
-    // Trainer creates a custom exercise
+    await createGlobalExercises();
+    const trainerToken = await signupTrainer('a@a.com');
+
     await app.inject({
       method: 'POST',
       url: '/exercises',
       headers: { authorization: `Bearer ${trainerToken}` },
       payload: { name: 'Custom do trainer', muscleGroup: 'chest' },
     });
-    // Student signs up and asks for scope=mine
+
     const s = await app.inject({
       method: 'POST',
       url: '/auth/signup/student',
@@ -89,6 +102,9 @@ describe('exercises', () => {
   });
 
   it('filters by muscle group', async () => {
+    await createGlobalExercises();
+    const trainerToken = await signupTrainer('a@a.com');
+
     const r = await app.inject({
       method: 'GET',
       url: '/exercises?muscleGroup=chest&scope=global',

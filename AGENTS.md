@@ -97,7 +97,16 @@ Antes de propor, editar, mover ou criar arquivos:
 
 - Nao acesse variaveis de ambiente diretamente em qualquer lugar.
 - Centralize validacao de ambiente em modulo proprio.
-- Atualize `.env.example` ao adicionar, remover ou renomear variaveis.
+- Nao use `.env` na raiz do monorepo para variaveis de runtime de apps ou
+  pacotes.
+- Use `.env` local em cada workspace, app ou pacote para variaveis consumidas
+  apenas por ele.
+- Reserve variaveis globais na raiz somente para configuracoes que afetam todo o
+  repositorio.
+- Atualize o `.env.example` local do workspace afetado ao adicionar, remover ou
+  renomear variaveis.
+- Testes que usam banco devem apontar para um banco dedicado de teste, nunca para
+  banco de desenvolvimento.
 - Nao edite migrations geradas manualmente quando houver fluxo oficial de geracao.
 - Mantenha schema, migration e tipos publicos consistentes na mesma alteracao.
 - Ao adicionar recurso novo, atualize validacao, tipos, persistencia, API e consumo
@@ -112,6 +121,17 @@ Antes de considerar uma tarefa concluida:
 3. Se nao puder executar alguma verificacao, explique claramente o motivo.
 4. Informe quais comandos foram executados e o resultado.
 5. Nao diga que algo esta pronto ou passando sem evidencia.
+
+## Padrao de testes
+
+- Escreva cada teste como se nenhum outro teste existisse.
+- Todo teste deve criar explicitamente os dados e estado necessarios para o
+  comportamento que valida, no proprio `it` ou em helper chamado por ele.
+- Use `beforeEach` apenas para limpeza ou setup tecnico generico do ambiente.
+- Nao dependa de dados criados por outro teste, ordem de execucao, seed implicito
+  ou estado compartilhado entre casos.
+- Quando testar listagem, busca, atualizacao, remocao ou permissao sobre uma
+  entidade, crie essa entidade no proprio cenario do teste.
 
 ## Documentacao local
 

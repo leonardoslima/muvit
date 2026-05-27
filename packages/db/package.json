@@ -9,10 +9,11 @@
     "./seed": "./src/seed.ts"
   },
   "scripts": {
-    "generate": "drizzle-kit generate",
-    "migrate": "tsx src/migrate.ts",
-    "studio": "drizzle-kit studio",
-    "seed": "node --env-file=../../.env --import tsx src/seed.ts",
+    "generate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs generate",
+    "migrate": "node --env-file=.env --import tsx src/migrate.ts",
+    "migrate:test": "node --env-file=.env.test --import tsx src/ensure-database.ts && node --env-file=.env.test --import tsx src/migrate.ts",
+    "studio": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs studio",
+    "seed": "node --env-file=.env --import tsx src/seed.ts",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

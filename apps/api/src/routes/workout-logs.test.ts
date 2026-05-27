@@ -1,42 +1,25 @@
 import { db, schema } from '@muvit/db';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let studentToken: string;
-let studentId: string;
-let otherTrainerToken: string;
-let workoutDayId: string;
-let workoutExerciseId: string;
 
-beforeAll(async () => {
-  app = await buildTestApp();
-});
-
-beforeEach(async () => {
-  await truncateAll();
-  const [ex] = await db
+async function createStudentWorkoutScenario() {
+  const [exercise] = await db
     .insert(schema.exercises)
     .values({ name: 'Supino', muscleGroup: 'chest' })
     .returning();
-  if (!ex) throw new Error('seed failed');
+  if (!exercise) throw new Error('exercise seed failed');
 
   const sign = await app.inject({
     method: 'POST',
     url: '/auth/signup/student',
     payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
   });
-  studentToken = sign.json().accessToken;
-  studentId = sign.json().user.id;
-
-  const otherTrainer = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/trainer',
-    payload: { name: 'Outro', email: 'b@b.com', password: '12345678' },
-  });
-  otherTrainerToken = otherTrainer.json().accessToken;
+  const studentToken = sign.json().accessToken as string;
+  const studentId = sign.json().user.id as string;
 
   const plan = await app.inject({
     method: 'POST',
@@ -50,22 +33,46 @@ beforeEach(async () => {
         {
           label: 'A',
           dayOrder: 0,
-          exercises: [{ exerciseId: ex.id, exerciseOrder: 0, sets: 3, reps: '10' }],
+          exercises: [{ exerciseId: exercise.id, exerciseOrder: 0, sets: 3, reps: '10' }],
         },
       ],
     },
   });
-  workoutDayId = plan.json().days[0].id;
-  workoutExerciseId = plan.json().days[0].exercises[0].id;
+
+  return {
+    studentId,
+    studentToken,
+    workoutDayId: plan.json().days[0].id as string,
+    workoutExerciseId: plan.json().days[0].exercises[0].id as string,
+  };
+}
+
+async function signupTrainer(email: string): Promise<string> {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/signup/trainer',
+    payload: { name: 'Outro', email, password: '12345678' },
+  });
+  return response.json().accessToken as string;
+}
+
+beforeEach(async () => {
+  app = await buildTestApp();
+  await truncateAll();
+});
+
+afterEach(async () => {
+  await app.close();
 });
 
 afterAll(async () => {
-  await app.close();
   await closeDb();
 });
 
 describe('workout logs', () => {
   it('student starts a log', async () => {
+    const { studentToken, workoutDayId } = await createStudentWorkoutScenario();
+
     const r = await app.inject({
       method: 'POST',
       url: '/workout-logs',
@@ -78,6 +85,8 @@ describe('workout logs', () => {
   });
 
   it('student finishes the log with sets', async () => {
+    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
@@ -105,6 +114,9 @@ describe('workout logs', () => {
   });
 
   it('other trainer cannot read independent student logs (404)', async () => {
+    const { studentToken, workoutDayId } = await createStudentWorkoutScenario();
+    const otherTrainerToken = await signupTrainer('b@b.com');
+
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
@@ -121,6 +133,8 @@ describe('workout logs', () => {
   });
 
   it('lists logs by date range', async () => {
+    const { studentId, studentToken, workoutDayId } = await createStudentWorkoutScenario();
+
     for (const date of ['2026-01-15', '2026-02-20', '2026-03-10']) {
       await app.inject({
         method: 'POST',
@@ -138,6 +152,8 @@ describe('workout logs', () => {
   });
 
   it('completed log cannot be finished again (409)', async () => {
+    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
@@ -167,6 +183,8 @@ describe('workout logs', () => {
   });
 
   it('concurrent finishes resolve to exactly one success and one 409', async () => {
+    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
@@ -198,6 +216,8 @@ describe('workout logs', () => {
   });
 
   it('starting a log for a workoutDay the student does not own returns 404', async () => {
+    const { workoutDayId } = await createStudentWorkoutScenario();
+
     const sign = await app.inject({
       method: 'POST',
       url: '/auth/signup/student',

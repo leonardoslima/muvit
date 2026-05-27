@@ -1,12 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
-let otherTrainerToken: string;
-let studentId: string;
 
 async function signupTrainer(email: string) {
   const r = await app.inject({
@@ -27,23 +24,24 @@ async function createStudent(token: string, name: string): Promise<string> {
   return r.json().id as string;
 }
 
-beforeAll(async () => {
+beforeEach(async () => {
   app = await buildTestApp();
+  await truncateAll();
 });
 
-beforeEach(async () => {
-  await truncateAll();
-  trainerToken = await signupTrainer('a@a.com');
-  otherTrainerToken = await signupTrainer('b@b.com');
-  studentId = await createStudent(trainerToken, 'Aluno Teste');
-});
-afterAll(async () => {
+afterEach(async () => {
   await app.close();
+});
+
+afterAll(async () => {
   await closeDb();
 });
 
 describe('assessments', () => {
   it('trainer creates an assessment for own student', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -60,6 +58,10 @@ describe('assessments', () => {
   });
 
   it('returns 404 when other trainer tries to create assessment for the student', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const otherTrainerToken = await signupTrainer('b@b.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -70,7 +72,10 @@ describe('assessments', () => {
   });
 
   it('lists assessments ordered by date desc', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
     const dates = ['2026-01-15', '2026-03-10', '2026-02-20'];
+
     for (const date of dates) {
       await app.inject({
         method: 'POST',
@@ -89,6 +94,9 @@ describe('assessments', () => {
   });
 
   it('updates an assessment owned by the trainer', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -107,6 +115,9 @@ describe('assessments', () => {
   });
 
   it('deletes an assessment', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,

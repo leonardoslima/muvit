@@ -14,18 +14,21 @@ function memoryStorage(seed: Record<string, string | null> = {}): QueueStorage {
   };
 }
 
-const pending: PendingWorkoutLog = {
-  workoutDayId: 'day-1',
-  date: '2026-05-12',
-  finish: {
-    durationMin: 45,
-    completed: true,
-    sets: [{ workoutExerciseId: 'we-1', setNumber: 1, repsDone: 10, completed: true }],
-  },
-};
+function pendingWorkoutLog(): PendingWorkoutLog {
+  return {
+    workoutDayId: 'day-1',
+    date: '2026-05-12',
+    finish: {
+      durationMin: 45,
+      completed: true,
+      sets: [{ workoutExerciseId: 'we-1', setNumber: 1, repsDone: 10, completed: true }],
+    },
+  };
+}
 
 describe('createLogQueue', () => {
   it('enfileira logs pendentes em storage persistente', async () => {
+    const pending = pendingWorkoutLog();
     const storage = memoryStorage();
     const queue = createLogQueue(storage);
 
@@ -35,6 +38,7 @@ describe('createLogQueue', () => {
   });
 
   it('drena a fila e remove storage quando todos os envios passam', async () => {
+    const pending = pendingWorkoutLog();
     const storage = memoryStorage({ muvit_pending_logs: JSON.stringify([pending]) });
     const queue = createLogQueue(storage);
     const sender = vi.fn(async () => undefined);
