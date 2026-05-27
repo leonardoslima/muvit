@@ -39,7 +39,10 @@ export async function buildApp() {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, { origin: corsOrigins(), credentials: true });
-  await app.register(rateLimit, { global: false });
+  await app.register(rateLimit, {
+    global: false,
+    allowList: env.NODE_ENV === 'test' ? ['127.0.0.1'] : [],
+  });
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(authPlugin);
 
