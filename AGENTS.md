@@ -2,15 +2,12 @@
 
 ## Objetivo
 
-Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, sem violar
-os padroes globais do repositorio nem as regras locais de cada workspace, app ou
-pacote.
+Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, sem violar os padroes globais do repositorio nem as regras locais de cada workspace, app ou pacote.
 
 Antes de propor, editar, mover ou criar arquivos:
 
 1. Identifique qual workspace, app, pacote ou diretorio sera afetado.
-2. Leia as instrucoes locais do alvo, como `AGENTS.md`, `CLAUDE.md`, `README.md`
-   ou documentacao equivalente.
+2. Leia as instrucoes locais do alvo, como `AGENTS.md`, `CLAUDE.md`, `README.md` ou documentacao equivalente.
 3. Aplique primeiro as regras mais especificas do diretorio afetado.
 4. Em caso de conflito, a instrucao mais local vence.
 
@@ -19,13 +16,13 @@ Antes de propor, editar, mover ou criar arquivos:
 - Trate este arquivo como fonte de regras globais do projeto.
 - Mantenha mudancas focadas em um unico objetivo.
 - Preserve a arquitetura existente e siga os padroes ja usados no workspace.
-- Antes de criar um arquivo novo, procure uma implementacao equivalente no mesmo
-  workspace.
+- Antes de criar um arquivo novo, procure uma implementacao equivalente no mesmo workspace.
 - Reutilize tipos, utilitarios, componentes, hooks, schemas e servicos existentes.
 - Nao introduza dependencia, biblioteca ou servico novo sem necessidade comprovada.
 - Nao mova, renomeie ou reorganize diretorios sem impacto tecnico direto.
 - Se mover ou renomear algo, atualize imports, scripts e documentacao afetada.
 - Preserve contratos existentes de API, schema, validacao e banco.
+- Ao criar, alterar ou remover funcionalidade, avalie o impacto ponta a ponta entre banco, API, tipos compartilhados e front-end.
 - Trate breaking changes como excecoes explicitas.
 - Registre problemas fora de escopo separadamente, sem mistura-los ao diff principal.
 - Nao deixe `TODO`, `FIXME`, codigo comentado ou placeholders em mudanca finalizada.
@@ -35,12 +32,11 @@ Antes de propor, editar, mover ou criar arquivos:
 - Identifique o workspace afetado ao iniciar qualquer tarefa.
 - Limite leitura, edicao, testes e build a esse escopo.
 - Amplie para o monorepo inteiro somente quando houver motivo tecnico claro.
+- Nao dependa de caminhos memorizados; encontre exemplos reais e siga os padroes locais de arquitetura, erros, testes e componentizacao.
 - Execute comandos a partir da raiz do repositorio.
 - Use filtros de workspace quando fizer sentido limitar o escopo.
-- Ao criar ou usar worktree, copie os arquivos `.env` locais ignorados da raiz
-  original para a worktree antes de executar setup, testes ou builds.
-- No PowerShell, se `pnpm` falhar por bloqueio de execucao de `pnpm.ps1`, use
-  `pnpm.cmd` para rodar os mesmos comandos.
+- Ao criar ou usar worktree, copie os arquivos `.env` locais ignorados da raiz original para a worktree antes de executar setup, testes ou builds.
+- No PowerShell, se `pnpm` falhar por bloqueio de execucao de `pnpm.ps1`, use `pnpm.cmd` para rodar os mesmos comandos.
 
 ## Convencoes do projeto
 
@@ -76,8 +72,7 @@ Antes de propor, editar, mover ou criar arquivos:
 - Prefira retorno antecipado para reduzir aninhamento.
 - Mantenha cada arquivo com uma responsabilidade principal.
 - Extraia partes coesas quando um arquivo acumular responsabilidades.
-- Evite valores literais repetidos; extraia constantes quando o valor controlar
-  comportamento em mais de um ponto.
+- Evite valores literais repetidos; extraia constantes quando o valor controlar comportamento em mais de um ponto.
 - Use vocabulario consistente de dominio e um unico idioma por identificador.
 
 ## Padroes de arquitetura
@@ -88,8 +83,10 @@ Antes de propor, editar, mover ou criar arquivos:
 - Nao misture logica de negocio com transporte HTTP.
 - Nao misture acesso a dados, transformacao e renderizacao no mesmo arquivo.
 - Use schemas compartilhados como contrato central quando existirem.
-- No frontend, separe componentes de apresentacao de hooks e acesso a dados
-  quando houver estado assincrono ou regra de negocio.
+- Antes de estruturar chamadas de API, consulte contratos disponiveis como Swagger/OpenAPI, schemas Zod ou tipos compartilhados do back-end.
+- Se alterar payload, rota ou contrato do back-end, atualize chamadas, tipos, estados, mocks e UI do front-end correspondentes no mesmo ciclo.
+- Quando houver geracao automatizada de SDK, hooks ou tipos, rode o script local apos mudar contratos de API para manter o front-end tipado e sincronizado.
+- No frontend, separe componentes de apresentacao de hooks e acesso a dados quando houver estado assincrono ou regra de negocio.
 - Derive estado de URL, cache ou props antes de criar estado local duplicado.
 - Nao replique regra de negocio no frontend e no backend; defina uma fonte principal.
 
@@ -97,20 +94,14 @@ Antes de propor, editar, mover ou criar arquivos:
 
 - Nao acesse variaveis de ambiente diretamente em qualquer lugar.
 - Centralize validacao de ambiente em modulo proprio.
-- Nao use `.env` na raiz do monorepo para variaveis de runtime de apps ou
-  pacotes.
-- Use `.env` local em cada workspace, app ou pacote para variaveis consumidas
-  apenas por ele.
-- Reserve variaveis globais na raiz somente para configuracoes que afetam todo o
-  repositorio.
-- Atualize o `.env.example` local do workspace afetado ao adicionar, remover ou
-  renomear variaveis.
-- Testes que usam banco devem apontar para um banco dedicado de teste, nunca para
-  banco de desenvolvimento.
+- Nao use `.env` na raiz do monorepo para variaveis de runtime de apps ou pacotes.
+- Use `.env` local em cada workspace, app ou pacote para variaveis consumidas apenas por ele.
+- Reserve variaveis globais na raiz somente para configuracoes que afetam todo o repositorio.
+- Atualize o `.env.example` local do workspace afetado ao adicionar, remover ou renomear variaveis.
+- Testes que usam banco devem apontar para um banco dedicado de teste, nunca para banco de desenvolvimento.
 - Nao edite migrations geradas manualmente quando houver fluxo oficial de geracao.
 - Mantenha schema, migration e tipos publicos consistentes na mesma alteracao.
-- Ao adicionar recurso novo, atualize validacao, tipos, persistencia, API e consumo
-  no frontend no mesmo ciclo, quando aplicavel.
+- Ao adicionar recurso novo, atualize validacao, tipos, persistencia, API e consumo no frontend no mesmo ciclo, quando aplicavel.
 
 ## Verificacao
 
@@ -125,27 +116,21 @@ Antes de considerar uma tarefa concluida:
 ## Padrao de testes
 
 - Escreva cada teste como se nenhum outro teste existisse.
-- Todo teste deve criar explicitamente os dados e estado necessarios para o
-  comportamento que valida, no proprio `it` ou em helper chamado por ele.
+- Todo teste deve criar explicitamente os dados e estado necessarios para o comportamento que valida, no proprio `it` ou em helper chamado por ele.
 - Use `beforeEach` apenas para limpeza ou setup tecnico generico do ambiente.
-- Nao dependa de dados criados por outro teste, ordem de execucao, seed implicito
-  ou estado compartilhado entre casos.
-- Quando testar listagem, busca, atualizacao, remocao ou permissao sobre uma
-  entidade, crie essa entidade no proprio cenario do teste.
+- Nao dependa de dados criados por outro teste, ordem de execucao, seed implicito ou estado compartilhado entre casos.
+- Quando testar listagem, busca, atualizacao, remocao ou permissao sobre uma entidade, crie essa entidade no proprio cenario do teste.
+- Ao criar ou alterar telas, atualize mocks, factories e dados fake relacionados ao novo formato para permitir testes isolados do back-end.
 
 ## Documentacao local
 
-Atualize documentacao local quando criar padrao recorrente, identificar risco nao
-obvio, adicionar fluxo dependente de ordem ou alterar contrato, ambiente, schema,
-operacao ou workflow.
+Atualize documentacao local quando criar padrao recorrente, identificar risco nao obvio, adicionar fluxo dependente de ordem ou alterar contrato, ambiente, schema, operacao ou workflow.
 
-Mantenha arquivos globais curtos. Coloque detalhes especificos de dominio,
-ambiente, operacao ou workflow em `docs/` ou na documentacao local do workspace.
+Mantenha arquivos globais curtos. Coloque detalhes especificos de dominio, ambiente, operacao ou workflow em `docs/` ou na documentacao local do workspace.
 
-Sempre que a IA considerar necessario ou util, podem ser criados arquivos
-`AGENTS.md` em subdiretorios para documentar padroes locais, convencoes, comandos,
-cuidados ou decisoes especificas daquela parte do projeto. Esses arquivos
-complementam este arquivo e valem para os arquivos dentro do respectivo diretorio.
+Sempre que a IA considerar necessario ou util, podem ser criados arquivos `AGENTS.md` em subdiretorios para documentar padroes locais, convencoes, comandos, cuidados ou decisoes especificas daquela parte do projeto. Esses arquivos complementam este arquivo e valem para os arquivos dentro do respectivo diretorio.
+Arquivos `AGENTS.md` especificos para LLM devem ter no maximo 200 linhas; se o conteudo passar disso, mova detalhes para `docs/` e mantenha o arquivo objetivo.
+Evite quebras artificiais de linha em arquivos `AGENTS.md`; mantenha frases em uma unica linha quando couberem com boa legibilidade.
 
 ## Comunicacao
 
@@ -153,10 +138,8 @@ complementam este arquivo e valem para os arquivos dentro do respectivo diretori
 - Aponte riscos reais, nao hipoteses vagas.
 - Se houver ambiguidade relevante, faca uma pergunta curta antes de implementar.
 - Se a suposicao for segura e reversivel, siga em frente e documente a decisao.
-- Escreva comentarios, commits, titulos e descricoes em pt-BR, salvo padrao local
-  mais especifico.
+- Escreva comentarios, commits, titulos e descricoes em pt-BR, salvo padrao local mais especifico.
 
 ## Regra final
 
-Faca a menor mudanca correta que respeite o design existente, preserve contratos
-atuais, seja verificavel e deixe o projeto mais facil de manter.
+Faca a menor mudanca correta que respeite o design existente, preserve contratos atuais, seja verificavel e deixe o projeto mais facil de manter.
