@@ -24,6 +24,16 @@ async function createStudent(token: string, name: string): Promise<string> {
   return r.json().id as string;
 }
 
+async function signupStudent(email: string) {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/signup/student',
+    payload: { name: 'Independente', email, password: '12345678' },
+  });
+  const body = response.json();
+  return { id: body.user.id as string, token: body.accessToken as string };
+}
+
 beforeEach(async () => {
   app = await buildTestApp();
   await truncateAll();
@@ -67,6 +77,18 @@ describe('assessments', () => {
       url: `/students/${studentId}/assessments`,
       headers: { authorization: `Bearer ${otherTrainerToken}` },
       payload: { date: '2026-04-01', weightKg: 80 },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
+  it('returns 404 when another student lists assessments', async () => {
+    const owner = await signupStudent('owner@i.com');
+    const other = await signupStudent('other@i.com');
+
+    const r = await app.inject({
+      method: 'GET',
+      url: `/students/${owner.id}/assessments`,
+      headers: { authorization: `Bearer ${other.token}` },
     });
     expect(r.statusCode).toBe(404);
   });
@@ -134,13 +156,7 @@ describe('assessments', () => {
   });
 
   it('independent student creates and lists own assessments', async () => {
-    const sign = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
-    });
-    const token = sign.json().accessToken;
-    const myId = sign.json().user.id;
+    const { id: myId, token } = await signupStudent('i@i.com');
 
     const c = await app.inject({
       method: 'POST',

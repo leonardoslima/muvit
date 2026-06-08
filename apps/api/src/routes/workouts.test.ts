@@ -16,6 +16,16 @@ async function signupTrainer(email: string) {
   return r.json().accessToken as string;
 }
 
+async function signupStudent(email: string) {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/signup/student',
+    payload: { name: 'Independente', email, password: '12345678' },
+  });
+  const body = response.json();
+  return { id: body.user.id as string, token: body.accessToken as string };
+}
+
 async function createExercise(
   name: string,
   muscleGroup: NewExercise['muscleGroup'],
@@ -135,16 +145,22 @@ describe('workout plans', () => {
     expect(r.statusCode).toBe(404);
   });
 
+  it('returns 404 when another student lists workout plans', async () => {
+    const owner = await signupStudent('owner@i.com');
+    const other = await signupStudent('other@i.com');
+
+    const r = await app.inject({
+      method: 'GET',
+      url: `/students/${owner.id}/workout-plans`,
+      headers: { authorization: `Bearer ${other.token}` },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
   it('independent student creates own plan (trainerId null)', async () => {
     const exerciseA = await createExercise('Supino', 'chest');
 
-    const sign = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
-    });
-    const token = sign.json().accessToken;
-    const myId = sign.json().user.id;
+    const { id: myId, token } = await signupStudent('i@i.com');
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',

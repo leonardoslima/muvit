@@ -6,6 +6,16 @@ import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
+async function signupStudent(email: string) {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/signup/student',
+    payload: { name: 'Independente', email, password: '12345678' },
+  });
+  const body = response.json();
+  return { id: body.user.id as string, token: body.accessToken as string };
+}
+
 async function createStudentWorkoutScenario() {
   const [exercise] = await db
     .insert(schema.exercises)
@@ -13,13 +23,7 @@ async function createStudentWorkoutScenario() {
     .returning();
   if (!exercise) throw new Error('exercise seed failed');
 
-  const sign = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/student',
-    payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
-  });
-  const studentToken = sign.json().accessToken as string;
-  const studentId = sign.json().user.id as string;
+  const { id: studentId, token: studentToken } = await signupStudent('i@i.com');
 
   const plan = await app.inject({
     method: 'POST',
@@ -151,6 +155,18 @@ describe('workout logs', () => {
     expect(r.json().items).toHaveLength(2);
   });
 
+  it('returns 404 when another student lists logs', async () => {
+    const { studentId } = await createStudentWorkoutScenario();
+    const other = await signupStudent('other@i.com');
+
+    const r = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}/workout-logs`,
+      headers: { authorization: `Bearer ${other.token}` },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
   it('completed log cannot be finished again (409)', async () => {
     const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
 
@@ -218,17 +234,36 @@ describe('workout logs', () => {
   it('starting a log for a workoutDay the student does not own returns 404', async () => {
     const { workoutDayId } = await createStudentWorkoutScenario();
 
-    const sign = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Outro', email: 'o@o.com', password: '12345678' },
-    });
-    const otherToken = sign.json().accessToken;
+    const other = await signupStudent('o@o.com');
     const r = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${otherToken}` },
+      headers: { authorization: `Bearer ${other.token}` },
       payload: { workoutDayId, date: '2026-04-01' },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
+  it('returns 404 when another student finishes a log', async () => {
+    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    const other = await signupStudent('other@i.com');
+
+    const start = await app.inject({
+      method: 'POST',
+      url: '/workout-logs',
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { workoutDayId, date: '2026-04-01' },
+    });
+    const id = start.json().id;
+
+    const r = await app.inject({
+      method: 'PATCH',
+      url: `/workout-logs/${id}/finish`,
+      headers: { authorization: `Bearer ${other.token}` },
+      payload: {
+        durationMin: 30,
+        sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],
+      },
     });
     expect(r.statusCode).toBe(404);
   });

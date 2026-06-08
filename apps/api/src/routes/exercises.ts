@@ -1,15 +1,17 @@
-import { db, schema } from '@muvit/db';
 import {
   createExerciseSchema,
   exerciseSchema,
   listExercisesQuerySchema,
   updateExerciseSchema,
 } from '@muvit/validators';
-import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
+import { makeExercisesModule } from '../modules/exercises/factory.js';
+import { sendUseCaseError } from '../shared/http-error.js';
 
 export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
+  const exercisesModule = makeExercisesModule();
+
   app.addHook('preHandler', app.requireAuth);
 
   app.get(
@@ -21,39 +23,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: z.object({ items: z.array(exerciseSchema), total: z.number() }) },
       },
     },
-    async (req) => {
-      const { q, muscleGroup, scope, limit, offset } = req.query;
-      // Students can only see global exercises — `mine`/`all` are coerced to `global` for them.
-      const effectiveScope = req.user.role === 'student' ? 'global' : scope;
-      const conds = [];
-      if (effectiveScope === 'global') {
-        conds.push(isNull(schema.exercises.trainerId));
-      } else if (effectiveScope === 'mine') {
-        conds.push(eq(schema.exercises.trainerId, req.user.sub));
-      } else {
-        const expr = or(
-          isNull(schema.exercises.trainerId),
-          eq(schema.exercises.trainerId, req.user.sub),
-        );
-        if (expr) conds.push(expr);
-      }
-      if (q) conds.push(ilike(schema.exercises.name, `%${q}%`));
-      if (muscleGroup) conds.push(eq(schema.exercises.muscleGroup, muscleGroup));
-      const where = and(...conds);
-      const items = await db
-        .select()
-        .from(schema.exercises)
-        .where(where)
-        .limit(limit)
-        .offset(offset)
-        .orderBy(schema.exercises.name);
-      const countResult = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(schema.exercises)
-        .where(where);
-      const total = countResult[0]?.count ?? 0;
-      return { items, total };
-    },
+    async (req) => exercisesModule.listExercises.execute(req.user, req.query),
   );
 
   app.post(
@@ -67,12 +37,8 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const [e] = await db
-        .insert(schema.exercises)
-        .values({ ...req.body, trainerId: req.user.sub })
-        .returning();
-      if (!e) throw new Error('insert failed');
-      return reply.code(201).send(e);
+      const exercise = await exercisesModule.createExercise.execute(req.user.sub, req.body);
+      return reply.code(201).send(exercise);
     },
   );
 
@@ -91,15 +57,11 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const [e] = await db
-        .update(schema.exercises)
-        .set(req.body)
-        .where(
-          and(eq(schema.exercises.id, req.params.id), eq(schema.exercises.trainerId, req.user.sub)),
-        )
-        .returning();
-      if (!e) return reply.code(404).send({ error: 'not found' });
-      return e;
+      try {
+        return await exercisesModule.updateExercise.execute(req.params.id, req.user.sub, req.body);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
@@ -110,13 +72,11 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: { tags: ['exercises'], params: z.object({ id: z.string().uuid() }) },
     },
     async (req, reply) => {
-      const r = await db
-        .delete(schema.exercises)
-        .where(
-          and(eq(schema.exercises.id, req.params.id), eq(schema.exercises.trainerId, req.user.sub)),
-        )
-        .returning({ id: schema.exercises.id });
-      if (r.length === 0) return reply.code(404).send({ error: 'not found' });
+      try {
+        await exercisesModule.deleteExercise.execute(req.params.id, req.user.sub);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
       return reply.code(204).send();
     },
   );
