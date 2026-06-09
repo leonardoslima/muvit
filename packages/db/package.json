@@ -20,7 +20,8 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
     "drizzle-orm": "^0.36.4",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@muvit/config": "workspace:*",
