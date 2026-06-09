@@ -21,11 +21,34 @@ export type WorkoutPlanSummary = {
   createdAt: Date;
 };
 
-export interface WorkoutPlansRepository {
+export interface CreateWorkoutPlanRepository {
   create(data: CreateWorkoutPlanData): Promise<WorkoutPlanFullResponse>;
+}
+
+export interface ListWorkoutPlansRepository {
   listForStudent(studentId: string): Promise<WorkoutPlanSummary[]>;
+}
+
+export interface FindWorkoutPlanFullRepository {
   findFullById(id: string): Promise<WorkoutPlanFullResponse | null>;
+}
+
+export interface FindWorkoutPlanAccessRepository {
   findAccessById(id: string): Promise<WorkoutPlanAccess | null>;
+}
+
+export interface UpdateWorkoutPlanRepository {
   update(id: string, input: UpdateWorkoutPlanInput): Promise<WorkoutPlanFullResponse | null>;
+}
+
+export interface DeleteWorkoutPlanRepository {
   delete(id: string): Promise<void>;
 }
+
+export interface WorkoutPlansRepository
+  extends CreateWorkoutPlanRepository,
+    ListWorkoutPlansRepository,
+    FindWorkoutPlanFullRepository,
+    FindWorkoutPlanAccessRepository,
+    UpdateWorkoutPlanRepository,
+    DeleteWorkoutPlanRepository {}

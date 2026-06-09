@@ -1,9 +1,9 @@
 import type { Student } from '@muvit/db/schema';
 import { describe, expect, it } from 'vitest';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type {
   CreateWorkoutPlanData,
-  WorkoutPlansRepository,
+  CreateWorkoutPlanRepository,
 } from '../repositories/workout-plans-repository.js';
 import { CreateWorkoutPlanUseCase } from './create-workout-plan.js';
 
@@ -25,7 +25,7 @@ const student: Student = {
   createdAt: new Date(),
 };
 
-class FakeWorkoutPlansRepository implements WorkoutPlansRepository {
+class FakeWorkoutPlansRepository implements CreateWorkoutPlanRepository {
   createData: CreateWorkoutPlanData | null = null;
 
   async create(data: CreateWorkoutPlanData) {
@@ -43,26 +43,6 @@ class FakeWorkoutPlansRepository implements WorkoutPlansRepository {
       days: [],
     };
   }
-
-  async listForStudent() {
-    return [];
-  }
-
-  async findFullById() {
-    return null;
-  }
-
-  async findAccessById() {
-    return null;
-  }
-
-  async update() {
-    return null;
-  }
-
-  async delete() {
-    throw new Error('not implemented');
-  }
 }
 
 describe('CreateWorkoutPlanUseCase', () => {
@@ -70,7 +50,7 @@ describe('CreateWorkoutPlanUseCase', () => {
     const repository = new FakeWorkoutPlansRepository();
     const ensureStudentAccess = {
       execute: async () => student,
-    } as unknown as EnsureStudentAccessUseCase;
+    } satisfies StudentAccessPolicy;
     const useCase = new CreateWorkoutPlanUseCase(repository, ensureStudentAccess);
 
     await useCase.execute(

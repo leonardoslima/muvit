@@ -1,7 +1,7 @@
 import type { Student } from '@muvit/db/schema';
 import { describe, expect, it } from 'vitest';
 import { UseCaseError } from '../../../shared/use-case-error.js';
-import type { StudentsRepository } from '../repositories/students-repository.js';
+import type { FindStudentByIdRepository } from '../repositories/students-repository.js';
 import { EnsureStudentAccessUseCase } from './ensure-student-access.js';
 
 const baseStudent: Student = {
@@ -22,31 +22,11 @@ const baseStudent: Student = {
   createdAt: new Date(),
 };
 
-class FakeStudentsRepository implements StudentsRepository {
+class FakeStudentsRepository implements FindStudentByIdRepository {
   constructor(private readonly student: Student | null) {}
 
   async findById() {
     return this.student;
-  }
-
-  async listForTrainer() {
-    return { items: [], total: 0 };
-  }
-
-  async createForTrainer() {
-    return baseStudent;
-  }
-
-  async updateForTrainer() {
-    return baseStudent;
-  }
-
-  async deleteForTrainer() {
-    return true;
-  }
-
-  async updatePushToken() {
-    throw new Error('not implemented');
   }
 }
 

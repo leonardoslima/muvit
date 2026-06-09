@@ -1,4 +1,4 @@
-import type { EnsureStudentAccessUseCase } from '../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../students/use-cases/student-access-policy.js';
 import { DrizzleAssessmentsRepository } from './repositories/drizzle-assessments-repository.js';
 import { CreateAssessmentUseCase } from './use-cases/create-assessment.js';
 import { DeleteAssessmentUseCase } from './use-cases/delete-assessment.js';
@@ -6,7 +6,7 @@ import { GetAssessmentUseCase } from './use-cases/get-assessment.js';
 import { ListAssessmentsUseCase } from './use-cases/list-assessments.js';
 import { UpdateAssessmentUseCase } from './use-cases/update-assessment.js';
 
-export function makeAssessmentsModule(ensureStudentAccess: EnsureStudentAccessUseCase) {
+export function makeAssessmentsModule(ensureStudentAccess: StudentAccessPolicy) {
   const repository = new DrizzleAssessmentsRepository();
 
   return {

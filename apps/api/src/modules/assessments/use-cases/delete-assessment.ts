@@ -1,12 +1,12 @@
 import type { AuthUser } from '../../../shared/auth-user.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type { AssessmentsRepository } from '../repositories/assessments-repository.js';
 
 export class DeleteAssessmentUseCase {
   constructor(
     private readonly assessmentsRepository: AssessmentsRepository,
-    private readonly ensureStudentAccess: EnsureStudentAccessUseCase,
+    private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
   async execute(user: AuthUser, id: string) {

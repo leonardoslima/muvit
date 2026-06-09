@@ -1,12 +1,12 @@
 import type { AuthUser } from '../../../shared/auth-user.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type { WorkoutPlanAccess } from '../repositories/workout-plans-repository.js';
 
 export async function assertWorkoutPlanAccess(
   user: AuthUser,
   plan: WorkoutPlanAccess,
-  ensureStudentAccess: EnsureStudentAccessUseCase,
+  ensureStudentAccess: StudentAccessPolicy,
 ) {
   await ensureStudentAccess.execute(user, plan.studentId, { studentMismatchError: 'not_found' });
 

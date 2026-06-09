@@ -1,11 +1,11 @@
 import type { AuthUser } from '../../../shared/auth-user.js';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
-import type { WorkoutPlansRepository } from '../repositories/workout-plans-repository.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
+import type { ListWorkoutPlansRepository } from '../repositories/workout-plans-repository.js';
 
 export class ListWorkoutPlansUseCase {
   constructor(
-    private readonly workoutPlansRepository: WorkoutPlansRepository,
-    private readonly ensureStudentAccess: EnsureStudentAccessUseCase,
+    private readonly workoutPlansRepository: ListWorkoutPlansRepository,
+    private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
   async execute(user: AuthUser, studentId: string) {

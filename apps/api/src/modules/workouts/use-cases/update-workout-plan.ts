@@ -1,16 +1,18 @@
 import type { AuthUser } from '../../../shared/auth-user.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type {
+  FindWorkoutPlanAccessRepository,
   UpdateWorkoutPlanInput,
-  WorkoutPlansRepository,
+  UpdateWorkoutPlanRepository,
 } from '../repositories/workout-plans-repository.js';
 import { assertWorkoutPlanAccess } from './assert-workout-plan-access.js';
 
 export class UpdateWorkoutPlanUseCase {
   constructor(
-    private readonly workoutPlansRepository: WorkoutPlansRepository,
-    private readonly ensureStudentAccess: EnsureStudentAccessUseCase,
+    private readonly workoutPlansRepository: FindWorkoutPlanAccessRepository &
+      UpdateWorkoutPlanRepository,
+    private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
   async execute(user: AuthUser, id: string, input: UpdateWorkoutPlanInput) {

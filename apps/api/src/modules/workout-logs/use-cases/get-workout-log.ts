@@ -1,12 +1,12 @@
 import type { AuthUser } from '../../../shared/auth-user.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
-import type { EnsureStudentAccessUseCase } from '../../students/use-cases/ensure-student-access.js';
+import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type { WorkoutLogsRepository } from '../repositories/workout-logs-repository.js';
 
 export class GetWorkoutLogUseCase {
   constructor(
     private readonly workoutLogsRepository: WorkoutLogsRepository,
-    private readonly ensureStudentAccess: EnsureStudentAccessUseCase,
+    private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
   async execute(user: AuthUser, id: string) {

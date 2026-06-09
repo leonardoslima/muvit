@@ -1,7 +1,7 @@
-import type { StudentsRepository } from '../repositories/students-repository.js';
+import type { UpdateStudentPushTokenRepository } from '../repositories/students-repository.js';
 
 export class RegisterStudentPushTokenUseCase {
-  constructor(private readonly studentsRepository: StudentsRepository) {}
+  constructor(private readonly studentsRepository: UpdateStudentPushTokenRepository) {}
 
   async execute(studentId: string, token: string) {
     await this.studentsRepository.updatePushToken(studentId, token);
