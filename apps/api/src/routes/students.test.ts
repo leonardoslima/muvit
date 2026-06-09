@@ -1,11 +1,11 @@
+import { db, schema } from '@muvit/db';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
-let otherTrainerToken: string;
 
 async function signupTrainer(app: FastifyInstance, email: string) {
   const r = await app.inject({
@@ -17,17 +17,22 @@ async function signupTrainer(app: FastifyInstance, email: string) {
 }
 
 beforeEach(async () => {
-  await truncateAll();
   app = await buildTestApp();
-  trainerToken = await signupTrainer(app, 'a@a.com');
-  otherTrainerToken = await signupTrainer(app, 'b@b.com');
+  await truncateAll();
 });
+
+afterEach(async () => {
+  await app.close();
+});
+
 afterAll(async () => {
   await closeDb();
 });
 
 describe('students', () => {
   it('creates a student bound to current trainer', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     const res = await app.inject({
       method: 'POST',
       url: '/students',
@@ -40,6 +45,9 @@ describe('students', () => {
   });
 
   it('lists only my students', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+    const otherTrainerToken = await signupTrainer(app, 'b@b.com');
+
     await app.inject({
       method: 'POST',
       url: '/students',
@@ -77,6 +85,8 @@ describe('students', () => {
   });
 
   it('updates and deletes a student', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     const c = await app.inject({
       method: 'POST',
       url: '/students',
@@ -100,6 +110,9 @@ describe('students', () => {
   });
 
   it('returns 404 fetching a student that belongs to another trainer', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+    const otherTrainerToken = await signupTrainer(app, 'b@b.com');
+
     const c = await app.inject({
       method: 'POST',
       url: '/students',
@@ -116,6 +129,8 @@ describe('students', () => {
   });
 
   it('search filters by name (case-insensitive)', async () => {
+    const trainerToken = await signupTrainer(app, 'a@a.com');
+
     await app.inject({
       method: 'POST',
       url: '/students',
@@ -134,5 +149,28 @@ describe('students', () => {
       headers: { authorization: `Bearer ${trainerToken}` },
     });
     expect(r.json().items).toHaveLength(1);
+  });
+
+  it('student registers its Expo push token', async () => {
+    const s = await app.inject({
+      method: 'POST',
+      url: '/auth/signup/student',
+      payload: { name: 'Aluno Push', email: 'push@s.com', password: '12345678' },
+    });
+    const token = s.json().accessToken;
+    const studentId = s.json().user.id;
+
+    const r = await app.inject({
+      method: 'POST',
+      url: '/students/me/push-token',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { token: 'ExponentPushToken[abc123]' },
+    });
+
+    expect(r.statusCode).toBe(204);
+    const student = await db.query.students.findFirst({
+      where: eq(schema.students.id, studentId),
+    });
+    expect(student?.expoPushToken).toBe('ExponentPushToken[abc123]');
   });
 });

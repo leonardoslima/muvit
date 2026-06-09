@@ -51,6 +51,11 @@ export function AssessmentForm({ studentId }: { studentId: string }) {
         />
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="photo">Foto</Label>
+        <Input id="photo" name="photo" type="file" accept="image/jpeg,image/png" />
+      </div>
+
       {state?.error && (
         <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
           {state.error}

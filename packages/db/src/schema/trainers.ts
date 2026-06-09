@@ -9,6 +9,7 @@ export const trainers = pgTable('trainers', {
   passwordHash: varchar('password_hash', { length: 255 }).notNull(),
   avatarUrl: text('avatar_url'),
   plan: trainerPlanEnum('plan').notNull().default('free'),
+  onboardedAt: timestamp('onboarded_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -1,19 +1,21 @@
-import { db, schema } from '@muvit/db';
 import {
   assessmentSchema,
   createAssessmentSchema,
   listAssessmentsQuerySchema,
   updateAssessmentSchema,
 } from '@muvit/validators';
-import { and, desc, eq, sql } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { loadAccessibleStudent } from '../lib/student-access.js';
+import { makeAssessmentsModule } from '../modules/assessments/factory.js';
+import { makeStudentsModule } from '../modules/students/factory.js';
+import { sendUseCaseError } from '../shared/http-error.js';
 
 export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
+  const studentsModule = makeStudentsModule();
+  const assessmentsModule = makeAssessmentsModule(studentsModule.ensureStudentAccess);
+
   app.addHook('preHandler', app.requireAuth);
 
-  // GET /students/:studentId/assessments
   app.get(
     '/students/:studentId/assessments',
     {
@@ -27,31 +29,18 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const student = await loadAccessibleStudent(req, reply, req.params.studentId);
-      if (!student) return;
-
-      const { limit, offset } = req.query;
-      const where = eq(schema.assessments.studentId, req.params.studentId);
-
-      const items = await db
-        .select()
-        .from(schema.assessments)
-        .where(where)
-        .orderBy(desc(schema.assessments.date))
-        .limit(limit)
-        .offset(offset);
-
-      const countResult = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(schema.assessments)
-        .where(where);
-      const total = countResult[0]?.count ?? 0;
-
-      return { items, total };
+      try {
+        return await assessmentsModule.listAssessments.execute(
+          req.user,
+          req.params.studentId,
+          req.query,
+        );
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
-  // POST /students/:studentId/assessments
   app.post(
     '/students/:studentId/assessments',
     {
@@ -63,27 +52,19 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const student = await loadAccessibleStudent(req, reply, req.params.studentId);
-      if (!student) return;
-
-      const { weightKg, heightCm, bodyFatPct, ...rest } = req.body;
-      const [a] = await db
-        .insert(schema.assessments)
-        .values({
-          ...rest,
-          studentId: req.params.studentId,
-          weightKg: weightKg !== undefined ? String(weightKg) : null,
-          heightCm: heightCm !== undefined ? String(heightCm) : null,
-          bodyFatPct: bodyFatPct !== undefined ? String(bodyFatPct) : null,
-        })
-        .returning();
-      if (!a) throw new Error('insert failed');
-
-      return reply.code(201).send(a);
+      try {
+        const assessment = await assessmentsModule.createAssessment.execute(
+          req.user,
+          req.params.studentId,
+          req.body,
+        );
+        return reply.code(201).send(assessment);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
-  // GET /assessments/:id
   app.get(
     '/assessments/:id',
     {
@@ -97,19 +78,14 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const a = await db.query.assessments.findFirst({
-        where: eq(schema.assessments.id, req.params.id),
-      });
-      if (!a) return reply.code(404).send({ error: 'not found' });
-
-      const student = await loadAccessibleStudent(req, reply, a.studentId);
-      if (!student) return;
-
-      return a;
+      try {
+        return await assessmentsModule.getAssessment.execute(req.user, req.params.id);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
-  // PATCH /assessments/:id
   app.patch(
     '/assessments/:id',
     {
@@ -124,32 +100,14 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const existing = await db.query.assessments.findFirst({
-        where: eq(schema.assessments.id, req.params.id),
-      });
-      if (!existing) return reply.code(404).send({ error: 'not found' });
-
-      const student = await loadAccessibleStudent(req, reply, existing.studentId);
-      if (!student) return;
-
-      const { weightKg, heightCm, bodyFatPct, ...restBody } = req.body;
-      const updateValues: Record<string, unknown> = { ...restBody };
-      if (weightKg !== undefined) updateValues.weightKg = String(weightKg);
-      if (heightCm !== undefined) updateValues.heightCm = String(heightCm);
-      if (bodyFatPct !== undefined) updateValues.bodyFatPct = String(bodyFatPct);
-
-      const [a] = await db
-        .update(schema.assessments)
-        .set(updateValues)
-        .where(and(eq(schema.assessments.id, req.params.id)))
-        .returning();
-      if (!a) throw new Error('update failed');
-
-      return a;
+      try {
+        return await assessmentsModule.updateAssessment.execute(req.user, req.params.id, req.body);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
-  // DELETE /assessments/:id
   app.delete(
     '/assessments/:id',
     {
@@ -159,16 +117,11 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const existing = await db.query.assessments.findFirst({
-        where: eq(schema.assessments.id, req.params.id),
-      });
-      if (!existing) return reply.code(404).send({ error: 'not found' });
-
-      const student = await loadAccessibleStudent(req, reply, existing.studentId);
-      if (!student) return;
-
-      await db.delete(schema.assessments).where(eq(schema.assessments.id, req.params.id));
-
+      try {
+        await assessmentsModule.deleteAssessment.execute(req.user, req.params.id);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
       return reply.code(204).send();
     },
   );

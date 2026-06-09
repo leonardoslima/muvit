@@ -1,14 +1,18 @@
 import { seedDemoData } from '@muvit/db/seed';
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../test/helpers/build.js';
 import { closeDb, truncateAll } from '../test/helpers/db.js';
 
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  await truncateAll();
   app = await buildTestApp();
+  await truncateAll();
+});
+
+afterEach(async () => {
+  await app.close();
 });
 
 afterAll(async () => {

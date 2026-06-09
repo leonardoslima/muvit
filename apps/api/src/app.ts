@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import scalar from '@scalar/fastify-api-reference';
 import Fastify from 'fastify';
@@ -18,8 +19,15 @@ import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
 import { studentsRoutes } from './routes/students.js';
 import { trainerSummaryRoutes } from './routes/trainer-summary.js';
+import { uploadsRoutes } from './routes/uploads.js';
 import { workoutLogsRoutes } from './routes/workout-logs.js';
 import { workoutsRoutes } from './routes/workouts.js';
+
+function corsOrigins() {
+  if (env.NODE_ENV === 'production') return env.WEB_URL;
+
+  return [env.WEB_URL, /^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/];
+}
 
 export async function buildApp() {
   const app = Fastify({
@@ -30,7 +38,11 @@ export async function buildApp() {
   app.setSerializerCompiler(serializerCompiler);
 
   await app.register(helmet, { contentSecurityPolicy: false });
-  await app.register(cors, { origin: env.WEB_URL, credentials: true });
+  await app.register(cors, { origin: corsOrigins(), credentials: true });
+  await app.register(rateLimit, {
+    global: false,
+    allowList: env.NODE_ENV === 'test' ? ['127.0.0.1'] : [],
+  });
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(authPlugin);
 
@@ -59,6 +71,7 @@ export async function buildApp() {
   await app.register(workoutsRoutes);
   await app.register(workoutLogsRoutes);
   await app.register(trainerSummaryRoutes);
+  await app.register(uploadsRoutes);
 
   return app;
 }

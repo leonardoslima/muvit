@@ -1,4 +1,3 @@
-import { db, schema } from '@muvit/db';
 import {
   authResponseSchema,
   loginSchema,
@@ -6,16 +5,20 @@ import {
   signupStudentSchema,
   signupTrainerSchema,
 } from '@muvit/validators';
-import { eq } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { hashPassword, verifyPassword } from '../lib/passwords.js';
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../lib/tokens.js';
+import { makeAuthModule } from '../modules/auth/factory.js';
+import { sendUseCaseError } from '../shared/http-error.js';
+
+const authRateLimit = { max: 10, timeWindow: '1 minute' };
 
 export const authRoutes: FastifyPluginAsyncZod = async (app) => {
+  const authModule = makeAuthModule(app);
+
   app.post(
     '/auth/signup/trainer',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupTrainerSchema,
@@ -23,32 +26,19 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const existing = await db.query.trainers.findFirst({
-        where: eq(schema.trainers.email, req.body.email),
-      });
-      if (existing) return reply.code(409).send({ error: 'email already registered' });
-
-      const [trainer] = await db
-        .insert(schema.trainers)
-        .values({
-          name: req.body.name,
-          email: req.body.email,
-          passwordHash: await hashPassword(req.body.password),
-        })
-        .returning();
-      if (!trainer) throw new Error('insert failed');
-
-      return reply.code(201).send({
-        accessToken: await signAccessToken(app, { sub: trainer.id, role: 'trainer' }),
-        refreshToken: await signRefreshToken(app, { sub: trainer.id, role: 'trainer' }),
-        user: { id: trainer.id, name: trainer.name, email: trainer.email, role: 'trainer' },
-      });
+      try {
+        const response = await authModule.signupTrainer.execute(req.body);
+        return reply.code(201).send(response);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
   app.post(
     '/auth/signup/student',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: signupStudentSchema,
@@ -56,34 +46,19 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const existing = await db.query.students.findFirst({
-        where: eq(schema.students.email, req.body.email),
-      });
-      if (existing) return reply.code(409).send({ error: 'email already registered' });
-
-      const [student] = await db
-        .insert(schema.students)
-        .values({
-          name: req.body.name,
-          email: req.body.email,
-          passwordHash: await hashPassword(req.body.password),
-          isIndependent: true,
-        })
-        .returning();
-      if (!student) throw new Error('insert failed');
-
-      const email = student.email ?? req.body.email;
-      return reply.code(201).send({
-        accessToken: await signAccessToken(app, { sub: student.id, role: 'student' }),
-        refreshToken: await signRefreshToken(app, { sub: student.id, role: 'student' }),
-        user: { id: student.id, name: student.name, email, role: 'student' },
-      });
+      try {
+        const response = await authModule.signupStudent.execute(req.body);
+        return reply.code(201).send(response);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
   app.post(
     '/auth/login',
     {
+      config: { rateLimit: authRateLimit },
       schema: {
         tags: ['auth'],
         body: loginSchema,
@@ -91,31 +66,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      if (req.body.role === 'trainer') {
-        const t = await db.query.trainers.findFirst({
-          where: eq(schema.trainers.email, req.body.email),
-        });
-        if (!t || !(await verifyPassword(req.body.password, t.passwordHash))) {
-          return reply.code(401).send({ error: 'invalid credentials' });
-        }
-        return {
-          accessToken: await signAccessToken(app, { sub: t.id, role: 'trainer' }),
-          refreshToken: await signRefreshToken(app, { sub: t.id, role: 'trainer' }),
-          user: { id: t.id, name: t.name, email: t.email, role: 'trainer' as const },
-        };
+      try {
+        return await authModule.login.execute(req.body);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
       }
-      const s = await db.query.students.findFirst({
-        where: eq(schema.students.email, req.body.email),
-      });
-      if (!s || !s.passwordHash || !(await verifyPassword(req.body.password, s.passwordHash))) {
-        return reply.code(401).send({ error: 'invalid credentials' });
-      }
-      const studentEmail = s.email ?? req.body.email;
-      return {
-        accessToken: await signAccessToken(app, { sub: s.id, role: 'student' }),
-        refreshToken: await signRefreshToken(app, { sub: s.id, role: 'student' }),
-        user: { id: s.id, name: s.name, email: studentEmail, role: 'student' as const },
-      };
     },
   );
 
@@ -133,12 +88,9 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        const decoded = await verifyRefreshToken(app, req.body.refreshToken);
-        return {
-          accessToken: await signAccessToken(app, { sub: decoded.sub, role: decoded.role }),
-        };
-      } catch {
-        return reply.code(401).send({ error: 'invalid refresh token' });
+        return await authModule.refreshToken.execute(req.body.refreshToken);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
       }
     },
   );
@@ -147,24 +99,29 @@ export const authRoutes: FastifyPluginAsyncZod = async (app) => {
     '/auth/me',
     { preHandler: [app.requireAuth], schema: { tags: ['auth'] } },
     async (req, reply) => {
-      if (req.user.role === 'trainer') {
-        const t = await db.query.trainers.findFirst({
-          where: eq(schema.trainers.id, req.user.sub),
-        });
-        if (!t) return reply.code(404).send({ error: 'not found' });
-        return { id: t.id, name: t.name, email: t.email, role: 'trainer' };
+      try {
+        return await authModule.getCurrentUser.execute(req.user);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
       }
-      const s = await db.query.students.findFirst({
-        where: eq(schema.students.id, req.user.sub),
-      });
-      if (!s) return reply.code(404).send({ error: 'not found' });
-      return {
-        id: s.id,
-        name: s.name,
-        email: s.email,
-        role: 'student',
-        isIndependent: s.isIndependent,
-      };
     },
+  );
+
+  app.post(
+    '/trainers/me/onboarding',
+    {
+      preHandler: [app.requireAuth, app.requireRole('trainer')],
+      schema: {
+        tags: ['trainers'],
+        response: {
+          200: z.object({
+            onboardedAt: z
+              .union([z.string().datetime(), z.date()])
+              .transform((value) => (value instanceof Date ? value.toISOString() : value)),
+          }),
+        },
+      },
+    },
+    async (req) => authModule.completeTrainerOnboarding.execute(req.user.sub),
   );
 };

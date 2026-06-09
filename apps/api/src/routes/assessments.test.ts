@@ -1,12 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
-let trainerToken: string;
-let otherTrainerToken: string;
-let studentId: string;
 
 async function signupTrainer(email: string) {
   const r = await app.inject({
@@ -27,19 +24,34 @@ async function createStudent(token: string, name: string): Promise<string> {
   return r.json().id as string;
 }
 
+async function signupStudent(email: string) {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/auth/signup/student',
+    payload: { name: 'Independente', email, password: '12345678' },
+  });
+  const body = response.json();
+  return { id: body.user.id as string, token: body.accessToken as string };
+}
+
 beforeEach(async () => {
-  await truncateAll();
   app = await buildTestApp();
-  trainerToken = await signupTrainer('a@a.com');
-  otherTrainerToken = await signupTrainer('b@b.com');
-  studentId = await createStudent(trainerToken, 'Aluno Teste');
+  await truncateAll();
 });
+
+afterEach(async () => {
+  await app.close();
+});
+
 afterAll(async () => {
   await closeDb();
 });
 
 describe('assessments', () => {
   it('trainer creates an assessment for own student', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -56,6 +68,10 @@ describe('assessments', () => {
   });
 
   it('returns 404 when other trainer tries to create assessment for the student', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const otherTrainerToken = await signupTrainer('b@b.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -65,8 +81,23 @@ describe('assessments', () => {
     expect(r.statusCode).toBe(404);
   });
 
+  it('returns 404 when another student lists assessments', async () => {
+    const owner = await signupStudent('owner@i.com');
+    const other = await signupStudent('other@i.com');
+
+    const r = await app.inject({
+      method: 'GET',
+      url: `/students/${owner.id}/assessments`,
+      headers: { authorization: `Bearer ${other.token}` },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
   it('lists assessments ordered by date desc', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
     const dates = ['2026-01-15', '2026-03-10', '2026-02-20'];
+
     for (const date of dates) {
       await app.inject({
         method: 'POST',
@@ -85,6 +116,9 @@ describe('assessments', () => {
   });
 
   it('updates an assessment owned by the trainer', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -103,6 +137,9 @@ describe('assessments', () => {
   });
 
   it('deletes an assessment', async () => {
+    const trainerToken = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
@@ -119,13 +156,7 @@ describe('assessments', () => {
   });
 
   it('independent student creates and lists own assessments', async () => {
-    const sign = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
-    });
-    const token = sign.json().accessToken;
-    const myId = sign.json().user.id;
+    const { id: myId, token } = await signupStudent('i@i.com');
 
     const c = await app.inject({
       method: 'POST',
