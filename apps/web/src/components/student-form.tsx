@@ -1,11 +1,10 @@
 'use client';
 
+import type { StudentFormState } from '@/application/students/student-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useActionState } from 'react';
-
-export type StudentFormState = { error?: string; fieldErrors?: Record<string, string> } | null;
 
 export type StudentFormValues = {
   id?: string;
