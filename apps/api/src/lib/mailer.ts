@@ -20,7 +20,7 @@ export function welcomeStudentTemplate(name: string): string {
 }
 
 export async function sendEmail({ to, subject, html }: MailMessage): Promise<void> {
-  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) return;
+  if (!env.EMAIL_NOTIFICATIONS_ENABLED || !env.RESEND_API_KEY || !env.EMAIL_FROM) return;
 
   const resend = new Resend(env.RESEND_API_KEY);
   const { error } = await resend.emails.send({

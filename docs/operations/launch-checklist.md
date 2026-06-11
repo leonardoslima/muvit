@@ -23,6 +23,9 @@ Cada item deve ser validado no ambiente de producao correspondente.
 - [ ] `WEB_URL` de producao aponta para o dominio publico do app web.
 - [ ] Segredos JWT, Sentry, Resend e storage estao presentes apenas nos
   ambientes que precisam deles.
+- [ ] Notificacoes por email continuam desativadas com
+  `EMAIL_NOTIFICATIONS_ENABLED=false` ate a conta Resend e o dominio de envio
+  estarem prontos.
 - [ ] Nenhuma variavel de desenvolvimento foi copiada para producao.
 
 ## Banco e backups
@@ -66,6 +69,9 @@ Cada item deve ser validado no ambiente de producao correspondente.
 - [ ] Alertas Sentry configurados para erro novo, aumento de erro e regressao.
 - [ ] Responsavel pelo primeiro atendimento de alerta definido para a semana de
   soft-launch.
+- [ ] Notificacoes por email transacional foram desenvolvidas, habilitadas com
+  `EMAIL_NOTIFICATIONS_ENABLED=true` e validadas antes de convidar usuarios
+  reais para producao.
 - [ ] Dominio Resend verificado.
 - [ ] Registros SPF, DKIM e DMARC do dominio de envio validados.
 - [ ] Envio de email transacional testado em producao.
