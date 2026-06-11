@@ -18,6 +18,9 @@ export async function createAssessmentAction(
   _: AssessmentState,
   formData: FormData,
 ): Promise<AssessmentState> {
+  const initialInput = buildAssessmentPayload(formData);
+  if (!initialInput.ok) return initialInput.state;
+
   const client = await configureServerClient();
   const photo = formData.get('photo');
   let photoUrl: string | undefined;
@@ -34,7 +37,7 @@ export async function createAssessmentAction(
     }
   }
 
-  const input = buildAssessmentPayload(formData, photoUrl);
+  const input = photoUrl ? buildAssessmentPayload(formData, photoUrl) : initialInput;
   if (!input.ok) return input.state;
 
   const res = await postStudentsByStudentIdAssessments({
