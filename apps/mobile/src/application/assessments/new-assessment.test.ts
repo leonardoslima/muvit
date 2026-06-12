@@ -67,4 +67,52 @@ describe('new assessment service', () => {
     });
     expect(invalidateAssessments).toHaveBeenCalledWith('student-id');
   });
+
+  it('submits assessment without upload when photo is absent', async () => {
+    const api = { request: vi.fn().mockResolvedValue(undefined) };
+    const uploadPhoto = vi.fn().mockResolvedValue('https://cdn.test/photo.jpg');
+    const invalidateAssessments = vi.fn().mockResolvedValue(undefined);
+
+    await submitAssessment({
+      api,
+      userId: 'student-id',
+      values: {
+        date: '2026-06-11',
+        weightKg: '',
+        bodyFatPct: '',
+        notes: '',
+      },
+      uploadPhoto,
+      invalidateAssessments,
+    });
+
+    expect(uploadPhoto).not.toHaveBeenCalled();
+    expect(api.request).toHaveBeenCalledWith('/students/student-id/assessments', {
+      method: 'POST',
+      body: JSON.stringify({ date: '2026-06-11' }),
+    });
+  });
+
+  it('does not invalidate assessments when request rejects', async () => {
+    const api = { request: vi.fn().mockRejectedValue(new Error('request failed')) };
+    const uploadPhoto = vi.fn().mockResolvedValue('https://cdn.test/photo.jpg');
+    const invalidateAssessments = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      submitAssessment({
+        api,
+        userId: 'student-id',
+        values: {
+          date: '2026-06-11',
+          weightKg: '80',
+          bodyFatPct: '20',
+          notes: '',
+        },
+        uploadPhoto,
+        invalidateAssessments,
+      }),
+    ).rejects.toThrow('request failed');
+
+    expect(invalidateAssessments).not.toHaveBeenCalled();
+  });
 });

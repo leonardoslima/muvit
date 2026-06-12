@@ -1,5 +1,3 @@
-import type { AssessmentPhoto } from '../../lib/uploads';
-
 type AssessmentPayload = {
   date: string;
   weightKg?: number;
@@ -12,12 +10,17 @@ type AssessmentApiClient = {
   request: (path: string, init?: RequestInit) => Promise<unknown>;
 };
 
+export type AssessmentPhotoInput = {
+  uri: string;
+  contentType: 'image/jpeg' | 'image/png';
+};
+
 export type AssessmentFormValues = {
   date: string;
   weightKg: string;
   bodyFatPct: string;
   notes: string;
-  photo?: AssessmentPhoto;
+  photo?: AssessmentPhotoInput;
 };
 
 export function toOptionalNumber(value: string): number | undefined {
@@ -27,7 +30,7 @@ export function toOptionalNumber(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function toSupportedContentType(value: string | undefined): AssessmentPhoto['contentType'] | null {
+export function toSupportedContentType(value: string | undefined): AssessmentPhotoInput['contentType'] | null {
   if (value === 'image/jpeg' || value === 'image/png') return value;
   return null;
 }
@@ -64,7 +67,7 @@ export async function submitAssessment({
   api: AssessmentApiClient;
   userId: string;
   values: AssessmentFormValues;
-  uploadPhoto: (photo: AssessmentPhoto) => Promise<string>;
+  uploadPhoto: (photo: AssessmentPhotoInput) => Promise<string>;
   invalidateAssessments: (userId: string) => Promise<void>;
 }): Promise<void> {
   const photoUrl = values.photo ? await uploadPhoto(values.photo) : undefined;
