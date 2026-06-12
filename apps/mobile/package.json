@@ -9,6 +9,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.global-coverage.config.ts --coverage",
+    "test:coverage:core": "vitest run --config vitest.coverage.config.ts --coverage",
     "doctor": "expo-doctor"
   },
   "dependencies": {
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "expo-doctor": "^1.18.22",
     "typescript": "~5.9.2",
     "vitest": "^4.1.5"

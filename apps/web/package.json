@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --config vitest.global-coverage.config.ts --coverage",
+    "test:coverage:core": "vitest run --config vitest.coverage.config.ts --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "api:gen": "openapi-ts -i http://localhost:3333/docs/openapi.json -o src/lib/api -c @hey-api/client-fetch"
@@ -46,6 +48,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@vitest/coverage-v8": "^4.1.5",
     "autoprefixer": "^10.4.20",
     "jsdom": "^26.1.0",
     "postcss": "^8.4.49",
