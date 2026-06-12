@@ -4,7 +4,9 @@ import { TopBar } from './top-bar';
 
 describe('TopBar', () => {
   it('renders title, optional subtitle and action slot', () => {
-    render(<TopBar title="Alunos" subtitle="ativos" actions={<button type="button">Novo</button>} />);
+    render(
+      <TopBar title="Alunos" subtitle="ativos" actions={<button type="button">Novo</button>} />,
+    );
 
     expect(screen.getByRole('heading', { name: 'Alunos' })).toBeInTheDocument();
     expect(screen.getByText('ativos')).toBeInTheDocument();

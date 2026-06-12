@@ -21,6 +21,8 @@ describe('EvolutionChart', () => {
 
     expect(screen.getByText('Peso (kg)')).toBeInTheDocument();
     expect(screen.getByText('% Gordura')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Evolucao de peso e percentual de gordura' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Evolucao de peso e percentual de gordura' }),
+    ).toBeInTheDocument();
   });
 });

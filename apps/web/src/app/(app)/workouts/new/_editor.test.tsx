@@ -12,6 +12,12 @@ const exercises = [
   { id: 'ex-2', name: 'Remada', muscleGroup: 'back' as const },
 ];
 
+function elementAt(elements: HTMLElement[], index: number): HTMLElement {
+  const element = elements.at(index);
+  if (!element) throw new Error(`Elemento esperado no indice ${index}`);
+  return element;
+}
+
 describe('WorkoutEditor', () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -27,7 +33,7 @@ describe('WorkoutEditor', () => {
   });
 
   it('adds an exercise and submits an active workout', async () => {
-    vi.mocked(createWorkoutPlanAction).mockResolvedValue(undefined);
+    vi.mocked(createWorkoutPlanAction).mockResolvedValue({ error: '' });
 
     render(<WorkoutEditor studentId="student-id" exercises={exercises} />);
 
@@ -68,7 +74,7 @@ describe('WorkoutEditor', () => {
 
     expect(screen.getByRole('heading', { name: 'Inferior' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByLabelText('Remover dia')[1]);
+    fireEvent.click(elementAt(screen.getAllByLabelText('Remover dia'), 1));
 
     expect(screen.getByText('Dias (1)')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Treino A' })).toBeInTheDocument();
@@ -82,16 +88,18 @@ describe('WorkoutEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: /exerc/i }));
     fireEvent.click(screen.getByRole('button', { name: /remada/i }));
 
-    fireEvent.change(screen.getAllByRole('spinbutton')[0], { target: { value: '4' } });
-    fireEvent.change(screen.getAllByRole('textbox')[2], { target: { value: '8-12' } });
-    fireEvent.click(screen.getAllByLabelText('Mover para cima')[1]);
+    fireEvent.change(elementAt(screen.getAllByRole('spinbutton'), 0), { target: { value: '4' } });
+    fireEvent.change(elementAt(screen.getAllByRole('textbox'), 2), { target: { value: '8-12' } });
+    fireEvent.click(elementAt(screen.getAllByLabelText('Mover para cima'), 1));
 
-    expect(screen.getAllByText(/Supino|Remada/).map((node) => node.textContent).slice(0, 2)).toEqual([
-      'Remada',
-      'Supino',
-    ]);
+    expect(
+      screen
+        .getAllByText(/Supino|Remada/)
+        .map((node) => node.textContent)
+        .slice(0, 2),
+    ).toEqual(['Remada', 'Supino']);
 
-    fireEvent.click(screen.getAllByLabelText('Remover')[0]);
+    fireEvent.click(elementAt(screen.getAllByLabelText('Remover'), 0));
 
     expect(screen.queryByText('Remada')).not.toBeInTheDocument();
     expect(screen.getByText('Supino')).toBeInTheDocument();

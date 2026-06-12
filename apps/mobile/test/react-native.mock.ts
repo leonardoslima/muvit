@@ -1,18 +1,19 @@
 import React, { type ReactNode } from 'react';
 
-type NativeProps = Record<string, unknown> & {
+type NativeProps = {
   children?: ReactNode;
   style?: unknown;
   visible?: boolean;
+  [key: string]: unknown;
 };
 
 function flattenStyle(style: unknown): Record<string, unknown> | undefined {
   if (!style) return undefined;
   if (Array.isArray(style)) {
-    return style.reduce<Record<string, unknown>>(
-      (acc, item) => ({ ...acc, ...flattenStyle(item) }),
-      {},
-    );
+    return style.reduce<Record<string, unknown>>((acc, item) => {
+      Object.assign(acc, flattenStyle(item));
+      return acc;
+    }, {});
   }
   if (typeof style === 'object') return style as Record<string, unknown>;
   return {};
@@ -20,7 +21,7 @@ function flattenStyle(style: unknown): Record<string, unknown> | undefined {
 
 function host(type: string) {
   return React.forwardRef<unknown, NativeProps>(({ children, ...props }, ref) =>
-    React.createElement(type, { ...props, ref }, children),
+    React.createElement(type, { ...props, ref }, children as ReactNode),
   );
 }
 
@@ -34,7 +35,9 @@ export const View = host('View');
 
 export const Modal = React.forwardRef<unknown, NativeProps>(
   ({ children, visible, ...props }, ref) =>
-    visible === false ? null : React.createElement('Modal', { ...props, ref }, children),
+    visible === false
+      ? null
+      : React.createElement('Modal', { ...props, ref }, children as ReactNode),
 );
 
 export const Platform = {

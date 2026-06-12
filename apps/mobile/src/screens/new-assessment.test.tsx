@@ -67,7 +67,10 @@ describe('NewAssessmentScreen', () => {
     await user.press(screen.getByText('Salvar'));
 
     await waitFor(() => {
-      expect(apiState.request).toHaveBeenCalledWith('/students/student-id/assessments', expect.any(Object));
+      expect(apiState.request).toHaveBeenCalledWith(
+        '/students/student-id/assessments',
+        expect.any(Object),
+      );
       expect(queryState.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['assessments', 'student-id'],
       });

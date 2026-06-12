@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: {
-      'react-native': fileURLToPath(new URL('./test/react-native.mock.ts', import.meta.url)),
+      'react-native': fileURLToPath(new URL('./test/react-native.mock.ts', import.meta.url).href),
     },
   },
   test: {

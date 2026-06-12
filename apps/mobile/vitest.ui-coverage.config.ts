@@ -6,7 +6,6 @@ export default mergeConfig(
   defineConfig({
     test: {
       coverage: {
-        all: true,
         provider: 'v8',
         include: [
           'src/screens/today-workout.tsx',
