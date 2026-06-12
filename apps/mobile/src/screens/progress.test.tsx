@@ -58,4 +58,26 @@ describe('ProgressScreen', () => {
     expect(screen.getByText('Gordura: 19%')).toBeTruthy();
     expect(screen.getByText('Evoluiu')).toBeTruthy();
   });
+
+  it('renders metric fallbacks when values and notes are absent', async () => {
+    apiState.request.mockResolvedValueOnce({
+      total: 1,
+      items: [
+        {
+          id: 'assessment-id',
+          date: '2026-06-12',
+          weightKg: null,
+          bodyFatPct: null,
+          notes: null,
+        },
+      ],
+    });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('2026-06-12')).toBeTruthy();
+    expect(screen.getByText('Peso: - kg')).toBeTruthy();
+    expect(screen.getByText('Gordura: -%')).toBeTruthy();
+    expect(screen.queryByText('Evoluiu')).toBeNull();
+  });
 });

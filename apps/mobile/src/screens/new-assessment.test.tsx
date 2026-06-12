@@ -31,6 +31,21 @@ vi.mock('../lib/uploads', () => ({
 }));
 
 describe('NewAssessmentScreen', () => {
+  it('keeps the photo action unchanged when picker is canceled', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce({
+      assets: [],
+      canceled: true,
+    });
+
+    render(<NewAssessmentScreen />);
+
+    await user.press(screen.getByText('Adicionar foto'));
+
+    expect(screen.getByText('Adicionar foto')).toBeTruthy();
+    expect(screen.queryByText('Foto selecionada')).toBeNull();
+  });
+
   it('selects a supported photo and submits assessment', async () => {
     const user = userEvent.setup();
     pickerState.launchImageLibraryAsync.mockResolvedValueOnce({

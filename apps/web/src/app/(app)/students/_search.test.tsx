@@ -55,4 +55,16 @@ describe('StudentSearch', () => {
 
     expect(replace).toHaveBeenLastCalledWith('?status=active');
   });
+
+  it('inicia vazio quando nao ha termo de busca na URL', () => {
+    const { replace } = renderStudentSearch('status=active');
+
+    expect(screen.getByPlaceholderText(/Buscar aluno/)).toHaveValue('');
+
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(replace).toHaveBeenLastCalledWith('?status=active');
+  });
 });

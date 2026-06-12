@@ -18,6 +18,7 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 - Server Actions devem permanecer finas: recebem entrada da borda, chamam modulo de aplicacao ou SDK, traduzem erro esperado e fazem `revalidatePath` ou `redirect`.
 - Modulos em `src/application` nao devem importar componentes React, `next/navigation`, `next/cache` ou SDK gerado diretamente quando houver comportamento de dominio ao redor.
 - Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/web test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/web test:coverage`.
+- Cobertura visual critica deve ser medida por `pnpm.cmd --dir apps/web test:coverage:ui`; use Testing Library/jsdom primeiro e Playwright somente para fluxo web que dependa de navegador real.
 
 ## API e contratos
 

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { TodayWorkoutScreen } from './today-workout';
@@ -96,5 +96,37 @@ describe('TodayWorkoutScreen', () => {
 
     expect(await screen.findByText('offline')).toBeTruthy();
     expect(screen.getByText('Plano A - Treino A')).toBeTruthy();
+  });
+
+  it('opens and closes the exercise details modal', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({
+        ...activeWorkout,
+        days: [
+          {
+            ...activeWorkout.days[0],
+            exercises: [
+              {
+                ...activeWorkout.days[0].exercises[0],
+                notes: 'Controlar cadencia',
+              },
+            ],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    await user.press(await screen.findByText('Supino'));
+
+    expect(screen.getByText('Grupo: chest')).toBeTruthy();
+    expect(screen.getByText('Controlar cadencia')).toBeTruthy();
+
+    await user.press(screen.getByText('Fechar'));
+
+    await waitFor(() => expect(screen.queryByText('Grupo: chest')).toBeNull());
   });
 });

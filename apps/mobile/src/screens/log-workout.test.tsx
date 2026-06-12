@@ -75,6 +75,7 @@ describe('LogWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Treino A')).toBeTruthy();
+    await user.press(screen.getByText('1'));
     await user.type(screen.getByPlaceholderText('reps'), '12');
     await user.type(screen.getByPlaceholderText('kg'), '42');
     await user.press(screen.getByText('Finalizar treino'));

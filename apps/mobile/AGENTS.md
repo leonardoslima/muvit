@@ -18,6 +18,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Screens devem permanecer finas: renderizam UI, conectam hooks e chamam services; dependencias concretas como storage, router, picker e query client ficam na borda.
 - Modulos em `src/application` nao devem importar `react-native`, `expo-router`, `expo-image-picker`, AsyncStorage concreto, screens ou componentes.
 - Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/mobile test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/mobile test:coverage`.
+- Cobertura visual critica deve ser medida por `pnpm.cmd --dir apps/mobile test:coverage:ui`; screens devem usar React Native Testing Library com mocks de router, API, storage e dependencias nativas.
 
 ## Dados, permissao e notificacoes
 

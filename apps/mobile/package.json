@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --config vitest.global-coverage.config.ts --coverage",
     "test:coverage:core": "vitest run --config vitest.coverage.config.ts --coverage",
+    "test:coverage:ui": "vitest run --config vitest.ui-coverage.config.ts --coverage",
     "doctor": "expo-doctor"
   },
   "dependencies": {
