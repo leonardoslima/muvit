@@ -30,7 +30,10 @@ function findImportSpecifiers(content: string): string[] {
   ];
 
   return importPatterns.flatMap((pattern) =>
-    [...content.matchAll(pattern)].map((match) => match[1]),
+    [...content.matchAll(pattern)].flatMap((match) => {
+      const specifier = match[1];
+      return specifier ? [specifier] : [];
+    }),
   );
 }
 
@@ -42,15 +45,24 @@ function findPrivateHelperNames(content: string): string[] {
   const normalizedContent = content.replace(/\s+/g, ' ');
   const functionHelperNames = [
     ...content.matchAll(/(?:^|\n)\s*(?:async\s+)?function\s+([A-Za-z0-9_]+)/g),
-  ].map((match) => match[1]);
+  ].flatMap((match) => {
+    const name = match[1];
+    return name ? [name] : [];
+  });
   const constFunctionHelperNames = [
     ...content.matchAll(/(?:^|\n)\s*const\s+([A-Za-z0-9_]+)\s*=\s*(?:async\s+)?function\b/g),
-  ].map((match) => match[1]);
+  ].flatMap((match) => {
+    const name = match[1];
+    return name ? [name] : [];
+  });
   const constArrowHelperNames = [
     ...normalizedContent.matchAll(
       /\bconst\s+([A-Za-z0-9_]+)\s*=\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z0-9_]+(?:\s*:\s*[^=]+?)?)(?:\s*:\s*[^=]+?)?\s*=>/g,
     ),
-  ].map((match) => match[1]);
+  ].flatMap((match) => {
+    const name = match[1];
+    return name ? [name] : [];
+  });
 
   return [
     ...new Set([...functionHelperNames, ...constFunctionHelperNames, ...constArrowHelperNames]),
