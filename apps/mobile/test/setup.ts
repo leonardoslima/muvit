@@ -2,6 +2,8 @@ import Module from 'node:module';
 import { afterEach, vi } from 'vitest';
 import * as ReactNativeMock from './react-native.mock';
 
+process.env.RNTL_SKIP_AUTO_CLEANUP = 'true';
+
 type ModuleLoader = (this: unknown, request: string, parent: unknown, isMain: boolean) => unknown;
 
 const moduleWithLoad = Module as typeof Module & { _load: ModuleLoader };
