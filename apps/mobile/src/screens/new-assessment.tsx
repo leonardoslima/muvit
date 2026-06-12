@@ -2,20 +2,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  submitAssessment,
+  toSupportedContentType,
+} from '../application/assessments/new-assessment';
 import { useAuth } from '../lib/auth-store';
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
 import { sharedStyles } from '../lib/styles';
 import { type AssessmentPhoto, uploadAssessmentPhoto } from '../lib/uploads';
 import { useApiClient } from '../lib/use-api';
-
-type AssessmentPayload = {
-  date: string;
-  weightKg?: number;
-  bodyFatPct?: number;
-  photos?: string[];
-  notes?: string;
-};
 
 export function NewAssessmentScreen() {
   const api = useApiClient();
@@ -42,21 +38,16 @@ export function NewAssessmentScreen() {
   async function submit() {
     if (!userId) return;
     setSubmitting(true);
-    const photoUrl = photo ? await uploadAssessmentPhoto({ api, photo }) : undefined;
-    const payload: AssessmentPayload = {
-      date,
-      weightKg: toOptionalNumber(weightKg),
-      bodyFatPct: toOptionalNumber(bodyFatPct),
-      photos: photoUrl ? [photoUrl] : undefined,
-      notes: notes.trim() || undefined,
-    };
 
     try {
-      await api.request(`/students/${userId}/assessments`, {
-        method: 'POST',
-        body: JSON.stringify(payload),
+      await submitAssessment({
+        api,
+        userId,
+        values: { date, weightKg, bodyFatPct, notes, photo },
+        uploadPhoto: (selectedPhoto) => uploadAssessmentPhoto({ api, photo: selectedPhoto }),
+        invalidateAssessments: (studentId) =>
+          queryClient.invalidateQueries({ queryKey: ['assessments', studentId] }),
       });
-      await queryClient.invalidateQueries({ queryKey: ['assessments', userId] });
       router.back();
     } finally {
       setSubmitting(false);
@@ -103,16 +94,4 @@ export function NewAssessmentScreen() {
       </Pressable>
     </ScrollView>
   );
-}
-
-function toOptionalNumber(value: string): number | undefined {
-  const normalized = value.replace(',', '.').trim();
-  if (!normalized) return undefined;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function toSupportedContentType(value: string | undefined): AssessmentPhoto['contentType'] | null {
-  if (value === 'image/jpeg' || value === 'image/png') return value;
-  return null;
 }
