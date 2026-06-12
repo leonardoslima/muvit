@@ -12,6 +12,13 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Antes de criar componente, tela ou store, procure padrao equivalente no app.
 - Persistencia sensivel deve usar armazenamento seguro ja adotado, nao AsyncStorage direto para secrets.
 
+## Piso SOLID local
+
+- Regras de aplicacao, montagem de payload, selecao de dados, fila offline, cache e upload devem ficar em `src/application` ou `src/lib`, nao diretamente em screens.
+- Screens devem permanecer finas: renderizam UI, conectam hooks e chamam services; dependencias concretas como storage, router, picker e query client ficam na borda.
+- Modulos em `src/application` nao devem importar `react-native`, `expo-router`, `expo-image-picker`, AsyncStorage concreto, screens ou componentes.
+- Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/mobile test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/mobile test:coverage`.
+
 ## Dados, permissao e notificacoes
 
 - Trate chamadas de rede com estados de loading, erro e retry quando o fluxo exigir.

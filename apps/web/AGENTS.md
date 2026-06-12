@@ -12,6 +12,13 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 - Nao replique regra de negocio do back-end; use contratos da API, SDK gerado ou schemas compartilhados.
 - Antes de criar componente, hook ou utilitario, procure equivalente em `src/components`, `src/lib` e rotas existentes.
 
+## Piso SOLID local
+
+- Regras de aplicacao, parsing de formulario, montagem de payload, upload e orquestracao testavel devem ficar em `src/application` ou `src/lib`, nao dentro de componentes ou Server Actions.
+- Server Actions devem permanecer finas: recebem entrada da borda, chamam modulo de aplicacao ou SDK, traduzem erro esperado e fazem `revalidatePath` ou `redirect`.
+- Modulos em `src/application` nao devem importar componentes React, `next/navigation`, `next/cache` ou SDK gerado diretamente quando houver comportamento de dominio ao redor.
+- Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/web test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/web test:coverage`.
+
 ## API e contratos
 
 - Consulte schemas de `@muvit/validators`, tipos gerados em `src/lib/api` e rotas da API antes de estruturar chamadas.
