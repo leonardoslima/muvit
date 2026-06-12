@@ -35,4 +35,15 @@ describe('createOfflineCache', () => {
 
     expect(result).toEqual({ data: { name: 'Treino A' }, stale: true });
   });
+
+  it('repassa erro quando fetch falha e nao ha cache', async () => {
+    const storage = memoryStorage();
+    const cache = createOfflineCache(storage);
+
+    await expect(
+      cache.get('treino-hoje', async () => {
+        throw new Error('offline');
+      }),
+    ).rejects.toThrow('offline');
+  });
 });

@@ -8,10 +8,8 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: [
-          'src/application/assessments/assessment-form-data.ts',
-          'src/application/form-data.ts',
-          'src/application/http/headers.ts',
-          'src/application/students/student-form.ts',
+          'src/application/**/*.{ts,tsx}',
+          'src/lib/uploads.ts',
           'src/lib/muscle-groups.ts',
           'src/lib/utils.ts',
         ],

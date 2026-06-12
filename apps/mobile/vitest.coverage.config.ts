@@ -8,8 +8,13 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: [
-          'src/application/assessments/new-assessment.ts',
-          'src/application/workouts/workout-log.ts',
+          'src/application/**/*.ts',
+          'src/lib/api.ts',
+          'src/lib/config-url.ts',
+          'src/lib/log-queue.ts',
+          'src/lib/offline-cache.ts',
+          'src/lib/push-token.ts',
+          'src/lib/uploads.ts',
         ],
         exclude: ['src/**/*.test.ts', 'test/**'],
         thresholds: {

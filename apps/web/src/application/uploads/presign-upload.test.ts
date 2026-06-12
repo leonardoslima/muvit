@@ -51,4 +51,25 @@ describe('presignUpload', () => {
       }),
     ).rejects.toThrow('invalid presign response');
   });
+
+  it('rejects failed presign responses before reading the payload', async () => {
+    const client = { getConfig: () => ({}) };
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ error: 'forbidden' }), { status: 403 }));
+
+    await expect(
+      presignUpload({
+        client,
+        body: { kind: 'avatar', contentType: 'image/png' },
+        fetcher,
+      }),
+    ).rejects.toThrow('presign failed');
+
+    expect(fetcher).toHaveBeenCalledWith('http://localhost:3333/uploads/presign', {
+      method: 'POST',
+      headers: expect.any(Headers),
+      body: JSON.stringify({ kind: 'avatar', contentType: 'image/png' }),
+    });
+  });
 });

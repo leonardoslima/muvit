@@ -33,4 +33,45 @@ describe('uploadAssessmentPhoto', () => {
       body: expect.any(Blob),
     });
   });
+
+  it('rejects when the local photo cannot be read', async () => {
+    const api = {
+      request: vi.fn<UploadApiClient['request']>().mockResolvedValue({
+        uploadUrl: 'https://r2.example.com/upload',
+        publicUrl: 'https://cdn.example.com/photo.jpg',
+        fields: {},
+      }),
+    };
+    const fetcher = vi.fn<UploadFetcher>().mockResolvedValue(new Response(null, { status: 404 }));
+
+    await expect(
+      uploadAssessmentPhoto({
+        api,
+        fetcher,
+        photo: { uri: 'file:///missing.jpg', contentType: 'image/png' },
+      }),
+    ).rejects.toThrow('Falha ao ler a foto selecionada.');
+  });
+
+  it('rejects when the remote upload fails', async () => {
+    const api = {
+      request: vi.fn<UploadApiClient['request']>().mockResolvedValue({
+        uploadUrl: 'https://r2.example.com/upload',
+        publicUrl: 'https://cdn.example.com/photo.jpg',
+        fields: {},
+      }),
+    };
+    const fetcher = vi
+      .fn<UploadFetcher>()
+      .mockResolvedValueOnce(new Response('image-bytes'))
+      .mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+    await expect(
+      uploadAssessmentPhoto({
+        api,
+        fetcher,
+        photo: { uri: 'file:///photo.png', contentType: 'image/png' },
+      }),
+    ).rejects.toThrow('Falha ao enviar foto.');
+  });
 });
