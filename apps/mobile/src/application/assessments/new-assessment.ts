@@ -30,7 +30,9 @@ export function toOptionalNumber(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function toSupportedContentType(value: string | undefined): AssessmentPhotoInput['contentType'] | null {
+export function toSupportedContentType(
+  value: string | undefined,
+): AssessmentPhotoInput['contentType'] | null {
   if (value === 'image/jpeg' || value === 'image/png') return value;
   return null;
 }
