@@ -75,4 +75,37 @@ describe('workout log service', () => {
       finish: buildFinishWorkoutLogInput(sets),
     });
   });
+
+  it('sends workout log without queueing when online send succeeds', async () => {
+    const api = { request: vi.fn() };
+    const queue = { enqueue: vi.fn().mockResolvedValue(undefined) };
+    const send = vi.fn().mockResolvedValue(undefined);
+    const sets = [
+      {
+        workoutExerciseId: 'workout-exercise-id',
+        setNumber: 1,
+        repsDone: '10',
+        loadKg: '40',
+        completed: true,
+      },
+    ];
+
+    await expect(
+      finishWorkoutWithOfflineFallback({
+        api,
+        queue,
+        send,
+        workoutDayId: 'day-id',
+        date: '2026-06-11',
+        sets,
+      }),
+    ).resolves.toEqual({ queued: false });
+
+    expect(send).toHaveBeenCalledWith(api, {
+      workoutDayId: 'day-id',
+      date: '2026-06-11',
+      finish: buildFinishWorkoutLogInput(sets),
+    });
+    expect(queue.enqueue).not.toHaveBeenCalled();
+  });
 });

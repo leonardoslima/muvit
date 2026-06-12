@@ -1,10 +1,11 @@
-import type { workoutPlanFullSchema, workoutPlanSummarySchema } from '@muvit/validators';
+import type { workoutPlanFullSchema } from '@muvit/validators';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import type { z } from 'zod';
+import { loadWorkoutDay } from '../application/workouts/today-workout';
 import {
   type WorkoutSetState,
   buildInitialSets,
@@ -17,7 +18,6 @@ import { createLogQueue, sendPendingWorkoutLog } from '../lib/log-queue';
 import { colors, sharedStyles } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
-type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
@@ -33,7 +33,7 @@ export function LogWorkoutScreen() {
     queryKey: ['log-workout', userId, params.dayId],
     queryFn: async () => {
       if (!userId || !params.dayId) throw new Error('treino nao encontrado');
-      const day = await loadWorkoutDay(api, userId, params.dayId);
+      const day = await loadWorkoutDay({ api, userId, dayId: params.dayId });
       setSets((current) => (current.length > 0 ? current : buildInitialSets(day.exercises)));
       return day;
     },
@@ -140,16 +140,4 @@ export function LogWorkoutScreen() {
       </Pressable>
     </ScrollView>
   );
-}
-
-async function loadWorkoutDay(api: ReturnType<typeof useApiClient>, userId: string, dayId: string) {
-  const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    `/students/${userId}/workout-plans`,
-  );
-  const active = summaries.items.find((plan) => plan.status === 'active') ?? summaries.items[0];
-  if (!active) throw new Error('sem plano');
-  const plan = await api.request<WorkoutPlan>(`/workout-plans/${active.id}`);
-  const day = plan.days.find((candidate) => candidate.id === dayId);
-  if (!day) throw new Error('dia nao encontrado');
-  return day;
 }
