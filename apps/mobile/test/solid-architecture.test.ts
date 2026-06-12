@@ -44,12 +44,12 @@ function findPrivateHelperNames(content: string): string[] {
   ].map((match) => match[1]);
   const constFunctionHelperNames = [
     ...content.matchAll(
-      /^(?:export\s+)?const\s+([A-Za-z0-9_]+)\s*=\s*(?:async\s+)?function\b/gm,
+      /^(?:export\s+)?const\s+([A-Za-z0-9_]+)(?:\s*:\s*[^=]+)?\s*=\s*(?:async\s+)?function\b/gm,
     ),
   ].map((match) => match[1]);
   const constArrowHelperNames = [
     ...content.matchAll(
-      /^(?:export\s+)?const\s+([A-Za-z0-9_]+)\s*=\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z0-9_]+(?:\s*:\s*[^=]+?)?)(?:\s*:\s*[^=]+?)?\s*=>/gm,
+      /^(?:export\s+)?const\s+([A-Za-z0-9_]+)(?:\s*:\s*[^=]+)?\s*=\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z0-9_]+(?:\s*:\s*[^=]+?)?)(?:\s*:\s*[^=]+?)?\s*=>/gm,
     ),
   ].map((match) => match[1]);
 
@@ -77,11 +77,13 @@ describe('mobile SOLID architecture rules', () => {
     const content = `
 async function namedHelper() {}
 const typedArrowHelper = (studentId: string): Payload => ({ studentId });
+const annotatedTypedArrowHelper: Builder = (studentId: string): Payload => ({ studentId });
 const multilineTypedArrowHelper = (
         studentId: string,
         workoutId: string,
       ): Promise<Payload> => createPayload(studentId, workoutId);
 const functionExpressionHelper = function () {};
+const annotatedFunctionExpressionHelper: Builder = function () {};
 function ScreenComponent() {}
       function nestedCallback() {}
     `;
@@ -89,7 +91,9 @@ function ScreenComponent() {}
     expect(findPrivateHelperNames(content)).toEqual([
       'namedHelper',
       'functionExpressionHelper',
+      'annotatedFunctionExpressionHelper',
       'typedArrowHelper',
+      'annotatedTypedArrowHelper',
       'multilineTypedArrowHelper',
     ]);
   });
