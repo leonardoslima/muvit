@@ -1,12 +1,14 @@
 # SOLID Web Mobile Coverage Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Apply SOLID boundaries and minimum 85% coverage enforcement to the testable core of `apps/web` and `apps/mobile`, while publishing broad app coverage as a visible non-blocking metric.
 
 **Architecture:** Extract application rules from UI, Server Actions, and Expo screens into small modules under `src/application`. Keep UI as composition/rendering, keep concrete framework APIs at the edge, and enforce the boundary with architecture tests.
 
 **Tech Stack:** TypeScript, Next.js App Router, Expo Router, React, React Native, Vitest, V8 coverage, Biome, Turborepo, pnpm.
+
+**Status auditado em 2026-06-17:** implementado. Todos os artefatos planejados em `apps/web` e `apps/mobile` existem, os pontos de integração delegam regras para `src/application` ou `src/lib`, as regras locais foram registradas nos `AGENTS.md` dos apps e os scripts de cobertura core/global foram adicionados. Evidência local desta auditoria: `pnpm.cmd --dir apps/web test:coverage:core` passou com 20 arquivos de teste e 54 testes; `pnpm.cmd --dir apps/mobile test:coverage:core` passou com 15 arquivos de teste e 61 testes; `pnpm.cmd --dir apps/web test:coverage` e `pnpm.cmd --dir apps/mobile test:coverage` passam como métricas amplas não bloqueantes.
 
 ---
 
@@ -81,7 +83,7 @@ Modify these mobile files:
 - Modify: `apps/web/src/app/(app)/students/new/actions.ts`
 - Modify: `apps/web/src/app/(app)/students/[id]/actions.ts`
 
-- [ ] **Step 1: Write failing tests for shared FormData readers**
+- [x] **Step 1: Write failing tests for shared FormData readers**
 
 Create `apps/web/src/application/form-data.test.ts`:
 
@@ -119,7 +121,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/form-data.test.ts`
 
 Expected: FAIL because `src/application/form-data.ts` does not exist.
 
-- [ ] **Step 2: Implement shared FormData readers**
+- [x] **Step 2: Implement shared FormData readers**
 
 Create `apps/web/src/application/form-data.ts`:
 
@@ -141,13 +143,13 @@ export function readOptionalNumber(formData: FormData, key: string): number | un
 }
 ```
 
-- [ ] **Step 3: Run FormData tests**
+- [x] **Step 3: Run FormData tests**
 
 Run: `pnpm.cmd --dir apps/web exec vitest run src/application/form-data.test.ts`
 
 Expected: PASS.
 
-- [ ] **Step 4: Write failing tests for student form payload builders**
+- [x] **Step 4: Write failing tests for student form payload builders**
 
 Create `apps/web/src/application/students/student-form.test.ts`:
 
@@ -229,7 +231,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/students/student-f
 
 Expected: FAIL because `student-form.ts` does not exist.
 
-- [ ] **Step 5: Implement student form payload builders**
+- [x] **Step 5: Implement student form payload builders**
 
 Create `apps/web/src/application/students/student-form.ts`:
 
@@ -313,7 +315,7 @@ function readStudentStatus(formData: FormData): StudentStatus | undefined {
 }
 ```
 
-- [ ] **Step 6: Move `StudentFormState` consumption out of the component**
+- [x] **Step 6: Move `StudentFormState` consumption out of the component**
 
 Modify `apps/web/src/components/student-form.tsx`:
 
@@ -323,7 +325,7 @@ import type { StudentFormState } from '@/application/students/student-form';
 
 Remove the local `export type StudentFormState = ...` declaration from the same file.
 
-- [ ] **Step 7: Refactor create student action**
+- [x] **Step 7: Refactor create student action**
 
 Modify `apps/web/src/app/(app)/students/new/actions.ts`:
 
@@ -353,7 +355,7 @@ export async function createStudentAction(
 }
 ```
 
-- [ ] **Step 8: Refactor update student action**
+- [x] **Step 8: Refactor update student action**
 
 Modify `apps/web/src/app/(app)/students/[id]/actions.ts`:
 
@@ -391,7 +393,7 @@ export async function deleteStudentAction(formData: FormData) {
 }
 ```
 
-- [ ] **Step 9: Run focused web tests and typecheck**
+- [x] **Step 9: Run focused web tests and typecheck**
 
 Run: `pnpm.cmd --dir apps/web exec vitest run src/application/form-data.test.ts src/application/students/student-form.test.ts`
 
@@ -401,7 +403,7 @@ Run: `pnpm.cmd --dir apps/web typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add apps/web/src/application/form-data.ts apps/web/src/application/form-data.test.ts apps/web/src/application/students/student-form.ts apps/web/src/application/students/student-form.test.ts apps/web/src/components/student-form.tsx apps/web/src/app/(app)/students/new/actions.ts apps/web/src/app/(app)/students/[id]/actions.ts
@@ -420,7 +422,7 @@ git commit -m "refactor(web): extrai regras de formulario de aluno"
 - Modify: `apps/web/src/app/(app)/students/[id]/assessments/actions.ts`
 - Modify: `apps/web/src/app/(app)/onboarding/actions.ts`
 
-- [ ] **Step 1: Write failing tests for header conversion**
+- [x] **Step 1: Write failing tests for header conversion**
 
 Create `apps/web/src/application/http/headers.test.ts`:
 
@@ -451,7 +453,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/http/headers.test.
 
 Expected: FAIL because `headers.ts` does not exist.
 
-- [ ] **Step 2: Implement header conversion**
+- [x] **Step 2: Implement header conversion**
 
 Create `apps/web/src/application/http/headers.ts`:
 
@@ -488,7 +490,7 @@ export function headersFromConfig(value: unknown): Headers {
 }
 ```
 
-- [ ] **Step 3: Write failing tests for assessment payload builder**
+- [x] **Step 3: Write failing tests for assessment payload builder**
 
 Create `apps/web/src/application/assessments/assessment-form-data.test.ts`:
 
@@ -563,7 +565,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/assessments/assess
 
 Expected: FAIL because `assessment-form-data.ts` does not exist.
 
-- [ ] **Step 4: Implement assessment payload builder**
+- [x] **Step 4: Implement assessment payload builder**
 
 Create `apps/web/src/application/assessments/assessment-form-data.ts`:
 
@@ -627,7 +629,7 @@ export function buildAssessmentPayload(
 }
 ```
 
-- [ ] **Step 5: Write failing tests for presign upload adapter**
+- [x] **Step 5: Write failing tests for presign upload adapter**
 
 Create `apps/web/src/application/uploads/presign-upload.test.ts`:
 
@@ -692,7 +694,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/uploads/presign-up
 
 Expected: FAIL because `presign-upload.ts` does not exist.
 
-- [ ] **Step 6: Implement presign upload adapter**
+- [x] **Step 6: Implement presign upload adapter**
 
 Create `apps/web/src/application/uploads/presign-upload.ts`:
 
@@ -760,7 +762,7 @@ function isPresignedUpload(value: unknown): value is PresignedUpload {
 }
 ```
 
-- [ ] **Step 7: Refactor assessment action and onboarding action**
+- [x] **Step 7: Refactor assessment action and onboarding action**
 
 Modify `apps/web/src/app/(app)/students/[id]/assessments/actions.ts` so it imports:
 
@@ -811,7 +813,7 @@ import { headersFromConfig } from '@/application/http/headers';
 
 Remove the local `headersFromConfig` function from that action file.
 
-- [ ] **Step 8: Run focused web tests and typecheck**
+- [x] **Step 8: Run focused web tests and typecheck**
 
 Run: `pnpm.cmd --dir apps/web exec vitest run src/application/http/headers.test.ts src/application/assessments/assessment-form-data.test.ts src/application/uploads/presign-upload.test.ts src/lib/uploads.test.ts`
 
@@ -821,7 +823,7 @@ Run: `pnpm.cmd --dir apps/web typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/web/src/application/http apps/web/src/application/assessments apps/web/src/application/uploads apps/web/src/app/(app)/students/[id]/assessments/actions.ts apps/web/src/app/(app)/onboarding/actions.ts
@@ -836,7 +838,7 @@ git commit -m "refactor(web): isola regras de avaliacao e upload"
 - Modify: `apps/web/src/app/(app)/workouts/new/_editor.tsx`
 - Modify: `apps/web/src/app/(app)/workouts/new/actions.ts`
 
-- [ ] **Step 1: Write failing tests for workout editor model**
+- [x] **Step 1: Write failing tests for workout editor model**
 
 Create `apps/web/src/application/workouts/workout-editor-model.test.ts`:
 
@@ -936,7 +938,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/application/workouts/workout-e
 
 Expected: FAIL because `workout-editor-model.ts` does not exist.
 
-- [ ] **Step 2: Implement workout editor model**
+- [x] **Step 2: Implement workout editor model**
 
 Create `apps/web/src/application/workouts/workout-editor-model.ts`:
 
@@ -1125,7 +1127,7 @@ export function buildCreateWorkoutInput({
 }
 ```
 
-- [ ] **Step 3: Refactor workout editor imports and state helpers**
+- [x] **Step 3: Refactor workout editor imports and state helpers**
 
 Modify `apps/web/src/app/(app)/workouts/new/_editor.tsx`:
 
@@ -1221,7 +1223,7 @@ startTransition(async () => {
 });
 ```
 
-- [ ] **Step 4: Reuse `CreateWorkoutInput` in the action**
+- [x] **Step 4: Reuse `CreateWorkoutInput` in the action**
 
 Modify `apps/web/src/app/(app)/workouts/new/actions.ts`:
 
@@ -1231,7 +1233,7 @@ import type { CreateWorkoutInput } from '@/application/workouts/workout-editor-m
 
 Remove the local `export type CreateWorkoutInput = ...` declaration.
 
-- [ ] **Step 5: Run focused web tests and typecheck**
+- [x] **Step 5: Run focused web tests and typecheck**
 
 Run: `pnpm.cmd --dir apps/web exec vitest run src/application/workouts/workout-editor-model.test.ts`
 
@@ -1241,7 +1243,7 @@ Run: `pnpm.cmd --dir apps/web typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/application/workouts apps/web/src/app/(app)/workouts/new/_editor.tsx apps/web/src/app/(app)/workouts/new/actions.ts
@@ -1253,7 +1255,7 @@ git commit -m "refactor(web): extrai modelo do editor de treino"
 **Files:**
 - Create: `apps/web/test/solid-architecture.test.ts`
 
-- [ ] **Step 1: Write architecture tests**
+- [x] **Step 1: Write architecture tests**
 
 Create `apps/web/test/solid-architecture.test.ts`:
 
@@ -1320,13 +1322,13 @@ describe('web SOLID architecture rules', () => {
 });
 ```
 
-- [ ] **Step 2: Run architecture tests**
+- [x] **Step 2: Run architecture tests**
 
 Run: `pnpm.cmd --dir apps/web exec vitest run test/solid-architecture.test.ts`
 
 Expected: PASS after Tasks 1-3. If it fails, fix the listed import or helper violation before continuing.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/web/test/solid-architecture.test.ts
@@ -1343,7 +1345,7 @@ git commit -m "test(web): adiciona guarda SOLID"
 - Modify: `apps/mobile/src/screens/today-workout.tsx`
 - Modify: `apps/mobile/src/screens/log-workout.tsx`
 
-- [ ] **Step 1: Write failing tests for today workout service**
+- [x] **Step 1: Write failing tests for today workout service**
 
 Create `apps/mobile/src/application/workouts/today-workout.test.ts`:
 
@@ -1387,7 +1389,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/application/workouts/today-
 
 Expected: FAIL because `today-workout.ts` does not exist.
 
-- [ ] **Step 2: Implement today workout service**
+- [x] **Step 2: Implement today workout service**
 
 Create `apps/mobile/src/application/workouts/today-workout.ts`:
 
@@ -1446,7 +1448,7 @@ export function selectNextWorkoutDay(
 }
 ```
 
-- [ ] **Step 3: Write failing tests for workout log service**
+- [x] **Step 3: Write failing tests for workout log service**
 
 Create `apps/mobile/src/application/workouts/workout-log.test.ts`:
 
@@ -1535,7 +1537,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/application/workouts/workou
 
 Expected: FAIL because `workout-log.ts` does not exist.
 
-- [ ] **Step 4: Implement workout log service**
+- [x] **Step 4: Implement workout log service**
 
 Create `apps/mobile/src/application/workouts/workout-log.ts`:
 
@@ -1638,7 +1640,7 @@ export async function finishWorkoutWithOfflineFallback({
 }
 ```
 
-- [ ] **Step 5: Refactor today workout screen**
+- [x] **Step 5: Refactor today workout screen**
 
 Modify `apps/mobile/src/screens/today-workout.tsx`:
 
@@ -1658,7 +1660,7 @@ queryFn: async () => {
 
 Remove the local `loadTodayWorkout` function and local `WorkoutPlanSummary` type. Keep UI types that are still used for rendering.
 
-- [ ] **Step 6: Refactor log workout screen**
+- [x] **Step 6: Refactor log workout screen**
 
 Modify `apps/mobile/src/screens/log-workout.tsx`:
 
@@ -1710,7 +1712,7 @@ async function finish() {
 
 Remove local `SetState`, `buildInitialSets`, and `toOptionalNumber`.
 
-- [ ] **Step 7: Run focused mobile tests and typecheck**
+- [x] **Step 7: Run focused mobile tests and typecheck**
 
 Run: `pnpm.cmd --dir apps/mobile exec vitest run src/application/workouts/today-workout.test.ts src/application/workouts/workout-log.test.ts`
 
@@ -1720,7 +1722,7 @@ Run: `pnpm.cmd --dir apps/mobile typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/mobile/src/application/workouts apps/mobile/src/screens/today-workout.tsx apps/mobile/src/screens/log-workout.tsx
@@ -1734,7 +1736,7 @@ git commit -m "refactor(mobile): extrai servicos de treino"
 - Create: `apps/mobile/src/application/assessments/new-assessment.test.ts`
 - Modify: `apps/mobile/src/screens/new-assessment.tsx`
 
-- [ ] **Step 1: Write failing tests for assessment service**
+- [x] **Step 1: Write failing tests for assessment service**
 
 Create `apps/mobile/src/application/assessments/new-assessment.test.ts`:
 
@@ -1812,7 +1814,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/application/assessments/new
 
 Expected: FAIL because `new-assessment.ts` does not exist.
 
-- [ ] **Step 2: Implement assessment service**
+- [x] **Step 2: Implement assessment service**
 
 Create `apps/mobile/src/application/assessments/new-assessment.ts`:
 
@@ -1903,7 +1905,7 @@ export async function submitAssessment({
 }
 ```
 
-- [ ] **Step 3: Refactor new assessment screen**
+- [x] **Step 3: Refactor new assessment screen**
 
 Modify `apps/mobile/src/screens/new-assessment.tsx`:
 
@@ -1939,7 +1941,7 @@ async function submit() {
 
 Remove local `AssessmentPayload`, `toOptionalNumber`, and `toSupportedContentType`.
 
-- [ ] **Step 4: Run focused mobile tests and typecheck**
+- [x] **Step 4: Run focused mobile tests and typecheck**
 
 Run: `pnpm.cmd --dir apps/mobile exec vitest run src/application/assessments/new-assessment.test.ts`
 
@@ -1949,7 +1951,7 @@ Run: `pnpm.cmd --dir apps/mobile typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/mobile/src/application/assessments apps/mobile/src/screens/new-assessment.tsx
@@ -1961,7 +1963,7 @@ git commit -m "refactor(mobile): extrai regras de nova avaliacao"
 **Files:**
 - Create: `apps/mobile/test/solid-architecture.test.ts`
 
-- [ ] **Step 1: Write architecture tests**
+- [x] **Step 1: Write architecture tests**
 
 Create `apps/mobile/test/solid-architecture.test.ts`:
 
@@ -2027,7 +2029,7 @@ describe('mobile SOLID architecture rules', () => {
 });
 ```
 
-- [ ] **Step 2: Include the mobile test directory in Vitest**
+- [x] **Step 2: Include the mobile test directory in Vitest**
 
 Modify `apps/mobile/vitest.config.ts`:
 
@@ -2042,13 +2044,13 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: Run architecture tests**
+- [x] **Step 3: Run architecture tests**
 
 Run: `pnpm.cmd --dir apps/mobile exec vitest run test/solid-architecture.test.ts`
 
 Expected: PASS after Tasks 5-6.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/mobile/test/solid-architecture.test.ts apps/mobile/vitest.config.ts
@@ -2065,7 +2067,7 @@ git commit -m "test(mobile): adiciona guarda SOLID"
 - Create: `apps/mobile/vitest.global-coverage.config.ts`
 - Modify: `apps/mobile/package.json`
 
-- [ ] **Step 1: Add web coverage configs**
+- [x] **Step 1: Add web coverage configs**
 
 Create `apps/web/vitest.coverage.config.ts`:
 
@@ -2124,7 +2126,7 @@ export default mergeConfig(
 );
 ```
 
-- [ ] **Step 2: Add web package scripts and explicit coverage provider**
+- [x] **Step 2: Add web package scripts and explicit coverage provider**
 
 Modify `apps/web/package.json`:
 
@@ -2148,7 +2150,7 @@ Add to `devDependencies`:
 "@vitest/coverage-v8": "^4.1.5"
 ```
 
-- [ ] **Step 3: Add mobile coverage configs**
+- [x] **Step 3: Add mobile coverage configs**
 
 Create `apps/mobile/vitest.coverage.config.ts`:
 
@@ -2211,7 +2213,7 @@ export default mergeConfig(
 );
 ```
 
-- [ ] **Step 4: Add mobile package scripts and explicit coverage provider**
+- [x] **Step 4: Add mobile package scripts and explicit coverage provider**
 
 Modify `apps/mobile/package.json`:
 
@@ -2235,7 +2237,7 @@ Add to `devDependencies`:
 "@vitest/coverage-v8": "^4.1.5"
 ```
 
-- [ ] **Step 5: Run coverage checks**
+- [x] **Step 5: Run coverage checks**
 
 Run: `pnpm.cmd --dir apps/web test:coverage:core`
 
@@ -2253,7 +2255,7 @@ Run: `pnpm.cmd --dir apps/mobile test:coverage`
 
 Expected: PASS and print broad coverage without enforcing 85%.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/package.json apps/web/vitest.coverage.config.ts apps/web/vitest.global-coverage.config.ts apps/mobile/package.json apps/mobile/vitest.coverage.config.ts apps/mobile/vitest.global-coverage.config.ts pnpm-lock.yaml
@@ -2266,7 +2268,7 @@ git commit -m "test: configura cobertura SOLID em web e mobile"
 - Modify: `apps/web/AGENTS.md`
 - Modify: `apps/mobile/AGENTS.md`
 
-- [ ] **Step 1: Update web local instructions**
+- [x] **Step 1: Update web local instructions**
 
 Add this section to `apps/web/AGENTS.md` after "Arquitetura web":
 
@@ -2279,7 +2281,7 @@ Add this section to `apps/web/AGENTS.md` after "Arquitetura web":
 - Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/web test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/web test:coverage`.
 ```
 
-- [ ] **Step 2: Update mobile local instructions**
+- [x] **Step 2: Update mobile local instructions**
 
 Add this section to `apps/mobile/AGENTS.md` after "Arquitetura mobile":
 
@@ -2292,7 +2294,7 @@ Add this section to `apps/mobile/AGENTS.md` after "Arquitetura mobile":
 - Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/mobile test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/mobile test:coverage`.
 ```
 
-- [ ] **Step 3: Verify AGENTS length and ASCII**
+- [x] **Step 3: Verify AGENTS length and ASCII**
 
 Run: `Get-Content apps/web/AGENTS.md | Measure-Object -Line`
 
@@ -2306,7 +2308,7 @@ Run: `rg -n "[^\\x00-\\x7F]" apps/web/AGENTS.md apps/mobile/AGENTS.md`
 
 Expected: no output.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/AGENTS.md apps/mobile/AGENTS.md
@@ -2318,7 +2320,7 @@ git commit -m "docs: registra piso SOLID de web e mobile"
 **Files:**
 - No file changes expected unless a verification command exposes a concrete issue.
 
-- [ ] **Step 1: Run web verification**
+- [x] **Step 1: Run web verification**
 
 Run: `pnpm.cmd --dir apps/web test`
 
@@ -2336,7 +2338,7 @@ Run: `pnpm.cmd --dir apps/web typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 2: Run mobile verification**
+- [x] **Step 2: Run mobile verification**
 
 Run: `pnpm.cmd --dir apps/mobile test`
 
@@ -2354,13 +2356,13 @@ Run: `pnpm.cmd --dir apps/mobile typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 3: Run Biome on affected workspaces**
+- [x] **Step 3: Run Biome on affected workspaces**
 
 Run: `pnpm.cmd exec biome check apps/web apps/mobile`
 
 Expected: PASS.
 
-- [ ] **Step 4: Inspect git diff**
+- [x] **Step 4: Inspect git diff**
 
 Run: `git status --short`
 
@@ -2370,7 +2372,7 @@ Run: `git diff --stat`
 
 Expected: changes match the tasks in this plan.
 
-- [ ] **Step 5: Final commit if any verification fixes were needed**
+- [x] **Step 5: Final commit if any verification fixes were needed**
 
 If verification required fixes, run:
 

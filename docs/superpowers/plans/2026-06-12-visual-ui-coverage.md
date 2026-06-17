@@ -1,12 +1,14 @@
 # Visual UI Coverage Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a controlled visual/UI coverage ramp for `apps/web` and `apps/mobile`, with blocking UI coverage gates for critical visual flows and broad app coverage remaining visible but non-blocking.
 
 **Architecture:** Keep visual tests at the edge: web uses Vitest + Testing Library + jsdom, mobile adds React Native Testing Library with mocked native/router/query dependencies. Coverage UI configs include only critical visual files with real behavior tests, while existing core coverage remains unchanged.
 
 **Tech Stack:** TypeScript, Vitest, V8 coverage, Testing Library, React Native Testing Library, Next.js, Expo/React Native, Biome, pnpm.
+
+**Status auditado em 2026-06-17:** implementado. Os testes visuais planejados existem para web e mobile, o harness mobile com React Native Testing Library está configurado, os scripts `test:coverage:ui` estão disponíveis nos dois apps e os gates bloqueantes de UI passam quando executados isoladamente. Evidência local desta auditoria: `pnpm.cmd --dir apps/web test:coverage:ui` passou com 20 arquivos de teste, 54 testes e cobertura UI de 95.17% statements / 85.29% branches / 92.85% functions / 95.86% lines; `pnpm.cmd --dir apps/mobile test:coverage:ui` passou com 15 arquivos de teste, 61 testes e cobertura UI de 94.89% statements / 87.67% branches / 100% functions / 100% lines.
 
 ---
 
@@ -54,7 +56,7 @@ Playwright:
 - Create: `apps/web/src/components/sidebar.test.tsx`
 - Create: `apps/web/src/components/top-bar.test.tsx`
 
-- [ ] **Step 1: Write web student form test**
+- [x] **Step 1: Write web student form test**
 
 Create `apps/web/src/components/student-form.test.tsx`:
 
@@ -108,7 +110,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/components/student-form.test.t
 
 Expected: PASS.
 
-- [ ] **Step 2: Write sidebar test with mocked pathname**
+- [x] **Step 2: Write sidebar test with mocked pathname**
 
 Create `apps/web/src/components/sidebar.test.tsx`:
 
@@ -150,7 +152,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/components/sidebar.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 3: Write top bar test**
+- [x] **Step 3: Write top bar test**
 
 Create `apps/web/src/components/top-bar.test.tsx`:
 
@@ -181,7 +183,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run src/components/top-bar.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 4: Run focused web UI shell tests**
+- [x] **Step 4: Run focused web UI shell tests**
 
 Run:
 
@@ -191,7 +193,7 @@ pnpm.cmd --dir apps/web exec vitest run src/components/student-form.test.tsx src
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit web shell tests**
+- [x] **Step 5: Commit web shell tests**
 
 ```powershell
 git add apps/web/src/components/student-form.test.tsx apps/web/src/components/sidebar.test.tsx apps/web/src/components/top-bar.test.tsx
@@ -204,7 +206,7 @@ git commit -m "test(web): cobre formulario e shell visual"
 - Create: `apps/web/src/app/(app)/students/[id]/assessments/_form.test.tsx`
 - Create: `apps/web/src/app/(app)/students/[id]/assessments/_chart.test.tsx`
 
-- [ ] **Step 1: Write assessment form tests**
+- [x] **Step 1: Write assessment form tests**
 
 Create `apps/web/src/app/(app)/students/[id]/assessments/_form.test.tsx`:
 
@@ -248,7 +250,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run "src/app/(app)/students/[id]/asses
 
 Expected: PASS.
 
-- [ ] **Step 2: Write assessment chart tests**
+- [x] **Step 2: Write assessment chart tests**
 
 Create `apps/web/src/app/(app)/students/[id]/assessments/_chart.test.tsx`:
 
@@ -285,7 +287,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run "src/app/(app)/students/[id]/asses
 
 Expected: PASS.
 
-- [ ] **Step 3: Run focused assessment UI tests**
+- [x] **Step 3: Run focused assessment UI tests**
 
 Run:
 
@@ -295,7 +297,7 @@ pnpm.cmd --dir apps/web exec vitest run "src/app/(app)/students/[id]/assessments
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit assessment UI tests**
+- [x] **Step 4: Commit assessment UI tests**
 
 ```powershell
 git add "apps/web/src/app/(app)/students/[id]/assessments/_form.test.tsx" "apps/web/src/app/(app)/students/[id]/assessments/_chart.test.tsx"
@@ -307,7 +309,7 @@ git commit -m "test(web): cobre avaliacao visual"
 **Files:**
 - Create: `apps/web/src/app/(app)/workouts/new/_editor.test.tsx`
 
-- [ ] **Step 1: Write workout editor tests**
+- [x] **Step 1: Write workout editor tests**
 
 Create `apps/web/src/app/(app)/workouts/new/_editor.test.tsx`:
 
@@ -373,7 +375,7 @@ Run: `pnpm.cmd --dir apps/web exec vitest run "src/app/(app)/workouts/new/_edito
 
 Expected: PASS. If Radix Dialog focus behavior fails under jsdom, keep this as a component test and mock `@radix-ui/react-dialog` locally in the test with simple pass-through components. Do not move to Playwright unless jsdom cannot reliably open/select/submit the editor.
 
-- [ ] **Step 2: Run all web UI tests added so far**
+- [x] **Step 2: Run all web UI tests added so far**
 
 Run:
 
@@ -383,7 +385,7 @@ pnpm.cmd --dir apps/web exec vitest run src/components/student-form.test.tsx src
 
 Expected: PASS.
 
-- [ ] **Step 3: Commit workout editor UI tests**
+- [x] **Step 3: Commit workout editor UI tests**
 
 ```powershell
 git add "apps/web/src/app/(app)/workouts/new/_editor.test.tsx"
@@ -398,7 +400,7 @@ git commit -m "test(web): cobre editor visual de treino"
 - Modify: `apps/mobile/package.json`
 - Modify: `pnpm-lock.yaml`
 
-- [ ] **Step 1: Add React Native Testing Library**
+- [x] **Step 1: Add React Native Testing Library**
 
 Run from repo root:
 
@@ -408,7 +410,7 @@ pnpm.cmd --dir apps/mobile add -D @testing-library/react-native@^13.3.3 react-te
 
 Expected: `apps/mobile/package.json` and `pnpm-lock.yaml` update.
 
-- [ ] **Step 2: Add mobile test setup file**
+- [x] **Step 2: Add mobile test setup file**
 
 Create `apps/mobile/test/setup.ts`:
 
@@ -422,7 +424,7 @@ afterEach(() => {
 });
 ```
 
-- [ ] **Step 3: Update mobile Vitest config**
+- [x] **Step 3: Update mobile Vitest config**
 
 Modify `apps/mobile/vitest.config.ts`:
 
@@ -438,13 +440,13 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 4: Run existing mobile tests**
+- [x] **Step 4: Run existing mobile tests**
 
 Run: `pnpm.cmd --dir apps/mobile test`
 
 Expected: PASS with existing mobile tests.
 
-- [ ] **Step 5: Commit mobile harness**
+- [x] **Step 5: Commit mobile harness**
 
 ```powershell
 git add apps/mobile/package.json pnpm-lock.yaml apps/mobile/test/setup.ts apps/mobile/vitest.config.ts
@@ -458,7 +460,7 @@ git commit -m "test(mobile): adiciona harness visual"
 - Create: `apps/mobile/src/screens/progress.test.tsx`
 - Create: `apps/mobile/src/screens/profile.test.tsx`
 
-- [ ] **Step 1: Write today workout screen tests**
+- [x] **Step 1: Write today workout screen tests**
 
 Create `apps/mobile/src/screens/today-workout.test.tsx`:
 
@@ -547,7 +549,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/screens/today-workout.test.
 
 Expected: PASS.
 
-- [ ] **Step 2: Write progress screen tests**
+- [x] **Step 2: Write progress screen tests**
 
 Create `apps/mobile/src/screens/progress.test.tsx`:
 
@@ -619,7 +621,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/screens/progress.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 3: Write profile screen tests**
+- [x] **Step 3: Write profile screen tests**
 
 Create `apps/mobile/src/screens/profile.test.tsx`:
 
@@ -692,7 +694,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/screens/profile.test.tsx`
 
 Expected: PASS.
 
-- [ ] **Step 4: Run focused mobile read-only screen tests**
+- [x] **Step 4: Run focused mobile read-only screen tests**
 
 Run:
 
@@ -702,7 +704,7 @@ pnpm.cmd --dir apps/mobile exec vitest run src/screens/today-workout.test.tsx sr
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit read-only mobile screen tests**
+- [x] **Step 5: Commit read-only mobile screen tests**
 
 ```powershell
 git add apps/mobile/src/screens/today-workout.test.tsx apps/mobile/src/screens/progress.test.tsx apps/mobile/src/screens/profile.test.tsx
@@ -715,7 +717,7 @@ git commit -m "test(mobile): cobre telas visuais principais"
 - Create: `apps/mobile/src/screens/log-workout.test.tsx`
 - Create: `apps/mobile/src/screens/new-assessment.test.tsx`
 
-- [ ] **Step 1: Write log workout screen test**
+- [x] **Step 1: Write log workout screen test**
 
 Create `apps/mobile/src/screens/log-workout.test.tsx`:
 
@@ -805,7 +807,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/screens/log-workout.test.ts
 
 Expected: PASS.
 
-- [ ] **Step 2: Write new assessment screen test**
+- [x] **Step 2: Write new assessment screen test**
 
 Create `apps/mobile/src/screens/new-assessment.test.tsx`:
 
@@ -876,7 +878,7 @@ Run: `pnpm.cmd --dir apps/mobile exec vitest run src/screens/new-assessment.test
 
 Expected: PASS.
 
-- [ ] **Step 3: Run focused mobile interactive screen tests**
+- [x] **Step 3: Run focused mobile interactive screen tests**
 
 Run:
 
@@ -886,7 +888,7 @@ pnpm.cmd --dir apps/mobile exec vitest run src/screens/log-workout.test.tsx src/
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit interactive mobile screen tests**
+- [x] **Step 4: Commit interactive mobile screen tests**
 
 ```powershell
 git add apps/mobile/src/screens/log-workout.test.tsx apps/mobile/src/screens/new-assessment.test.tsx
@@ -903,7 +905,7 @@ git commit -m "test(mobile): cobre interacoes visuais"
 - Modify: `apps/web/AGENTS.md`
 - Modify: `apps/mobile/AGENTS.md`
 
-- [ ] **Step 1: Add web UI coverage config**
+- [x] **Step 1: Add web UI coverage config**
 
 Create `apps/web/vitest.ui-coverage.config.ts`:
 
@@ -941,7 +943,7 @@ export default mergeConfig(
 );
 ```
 
-- [ ] **Step 2: Add mobile UI coverage config**
+- [x] **Step 2: Add mobile UI coverage config**
 
 Create `apps/mobile/vitest.ui-coverage.config.ts`:
 
@@ -975,7 +977,7 @@ export default mergeConfig(
 );
 ```
 
-- [ ] **Step 3: Add package scripts**
+- [x] **Step 3: Add package scripts**
 
 Modify `apps/web/package.json` scripts:
 
@@ -989,7 +991,7 @@ Modify `apps/mobile/package.json` scripts:
 "test:coverage:ui": "vitest run --config vitest.ui-coverage.config.ts --coverage"
 ```
 
-- [ ] **Step 4: Document local UI coverage rules**
+- [x] **Step 4: Document local UI coverage rules**
 
 Append one bullet to `apps/web/AGENTS.md` under `## Piso SOLID local`:
 
@@ -1003,7 +1005,7 @@ Append one bullet to `apps/mobile/AGENTS.md` under `## Piso SOLID local`:
 - Cobertura visual critica deve ser medida por `pnpm.cmd --dir apps/mobile test:coverage:ui`; screens devem usar React Native Testing Library com mocks de router, API, storage e dependencias nativas.
 ```
 
-- [ ] **Step 5: Run UI coverage gates**
+- [x] **Step 5: Run UI coverage gates**
 
 Run:
 
@@ -1016,7 +1018,7 @@ Expected: PASS with statements, branches, functions and lines each at least 85%.
 
 If one UI gate misses only branches in a file with real UI behavior already covered, add one targeted test for that visible branch. Do not remove the file from `include` unless the file is outside the critical UI set in this plan.
 
-- [ ] **Step 6: Verify docs constraints**
+- [x] **Step 6: Verify docs constraints**
 
 Run:
 
@@ -1028,7 +1030,7 @@ rg -n "[^\\x00-\\x7F]" apps/web/AGENTS.md apps/mobile/AGENTS.md
 
 Expected: both AGENTS files remain below 200 lines; `rg` returns no matches.
 
-- [ ] **Step 7: Commit UI coverage configs and docs**
+- [x] **Step 7: Commit UI coverage configs and docs**
 
 ```powershell
 git add apps/web/vitest.ui-coverage.config.ts apps/mobile/vitest.ui-coverage.config.ts apps/web/package.json apps/mobile/package.json apps/web/AGENTS.md apps/mobile/AGENTS.md
@@ -1040,7 +1042,7 @@ git commit -m "test: configura cobertura visual"
 **Files:**
 - No file changes expected unless verification exposes a concrete issue.
 
-- [ ] **Step 1: Run web verification**
+- [x] **Step 1: Run web verification**
 
 Run:
 
@@ -1054,7 +1056,7 @@ pnpm.cmd --dir apps/web typecheck
 
 Expected: all commands PASS. `test:coverage:core` and `test:coverage:ui` must both meet configured 85% thresholds.
 
-- [ ] **Step 2: Run mobile verification**
+- [x] **Step 2: Run mobile verification**
 
 Run:
 
@@ -1068,7 +1070,7 @@ pnpm.cmd --dir apps/mobile typecheck
 
 Expected: all commands PASS. `test:coverage:core` and `test:coverage:ui` must both meet configured 85% thresholds.
 
-- [ ] **Step 3: Run Biome**
+- [x] **Step 3: Run Biome**
 
 Run:
 
@@ -1078,7 +1080,7 @@ pnpm.cmd exec biome check apps/web apps/mobile
 
 Expected: PASS.
 
-- [ ] **Step 4: Inspect git state**
+- [x] **Step 4: Inspect git state**
 
 Run:
 
