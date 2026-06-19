@@ -1,3 +1,4 @@
+import { BackToTopButton } from '@/components/back-to-top-button';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import {
@@ -468,6 +469,7 @@ export default function LandingPage() {
       </section>
 
       <Footer />
+      <BackToTopButton />
     </div>
   );
 }
