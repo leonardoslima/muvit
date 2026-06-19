@@ -17,7 +17,7 @@
 - Test: `apps/web/src/app/(app)/students/[id]/_delete-student-dialog.test.tsx`
 - Modify: `apps/web/src/app/(app)/students/[id]/page.tsx`
 
-- [ ] **Step 1: Escrever os testes que reproduzem a exclusão sem confirmação**
+- [x] **Step 1: Escrever os testes que reproduzem a exclusão sem confirmação**
 
 Criar `_delete-student-dialog.test.tsx` com testes acessíveis para cancelamento e confirmação:
 
@@ -71,13 +71,13 @@ describe('DeleteStudentDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Executar o teste e confirmar a falha esperada**
+- [x] **Step 2: Executar o teste e confirmar a falha esperada**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/app/(app)/students/[id]/_delete-student-dialog.test.tsx"`
 
 Expected: FAIL porque `./_delete-student-dialog` ainda não existe.
 
-- [ ] **Step 3: Implementar o menor componente que satisfaz os testes**
+- [x] **Step 3: Implementar o menor componente que satisfaz os testes**
 
 Criar `_delete-student-dialog.tsx` reutilizando os componentes existentes:
 
@@ -137,7 +137,7 @@ export function DeleteStudentDialog({
 }
 ```
 
-- [ ] **Step 4: Integrar o componente à página sem alterar a Server Action**
+- [x] **Step 4: Integrar o componente à página sem alterar a Server Action**
 
 Em `page.tsx`, remover o formulário que envia diretamente `deleteStudentAction`, remover `Trash2` do import de ícones e renderizar:
 
@@ -155,13 +155,13 @@ Importar o componente com:
 import { DeleteStudentDialog } from './_delete-student-dialog';
 ```
 
-- [ ] **Step 5: Executar o teste focado e confirmar que passa**
+- [x] **Step 5: Executar o teste focado e confirmar que passa**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/app/(app)/students/[id]/_delete-student-dialog.test.tsx"`
 
 Expected: PASS com 2 testes aprovados.
 
-- [ ] **Step 6: Executar as verificações do workspace web**
+- [x] **Step 6: Executar as verificações do workspace web**
 
 Run:
 
@@ -173,7 +173,7 @@ pnpm.cmd exec biome check apps/web
 
 Expected: todos os comandos encerram com código 0.
 
-- [ ] **Step 7: Commitar a implementação**
+- [x] **Step 7: Commitar a implementação**
 
 ```powershell
 git add -- 'apps/web/src/app/(app)/students/[id]/_delete-student-dialog.tsx' 'apps/web/src/app/(app)/students/[id]/_delete-student-dialog.test.tsx' 'apps/web/src/app/(app)/students/[id]/page.tsx'

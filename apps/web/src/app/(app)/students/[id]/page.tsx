@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudentsById } from '@/lib/api/sdk.gen';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { DeleteStudentDialog } from './_delete-student-dialog';
 import { deleteStudentAction, updateStudentAction } from './actions';
 
 interface Props {
@@ -69,12 +70,11 @@ export default async function StudentDetailPage({ params }: Props) {
           <Button asChild variant="secondary">
             <Link href={`/students/${s.id}/assessments/new`}>+ Avaliação</Link>
           </Button>
-          <form action={deleteStudentAction}>
-            <input type="hidden" name="id" value={s.id} />
-            <Button type="submit" variant="ghost" size="icon" aria-label="Excluir aluno">
-              <Trash2 />
-            </Button>
-          </form>
+          <DeleteStudentDialog
+            studentId={s.id}
+            studentName={s.name}
+            deleteAction={deleteStudentAction}
+          />
         </div>
       </header>
 
