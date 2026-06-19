@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 const PUBLIC_PATHS = ['/', '/login', '/signup'];
 const AUTH_PATHS = ['/login', '/signup'];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const access = req.cookies.get('muvit_access')?.value;
 

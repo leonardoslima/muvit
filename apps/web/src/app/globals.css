@@ -1,7 +1,90 @@
+@import "tailwindcss";
 @import "tw-animate-css";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-bg: var(--destructive-bg);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-inactive: var(--inactive);
+  --color-inactive-bg: var(--inactive-bg);
+  --color-border: var(--border);
+  --color-border-dark: var(--border-dark);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-mkt-dark: var(--mkt-section-dark);
+  --color-mkt-dark-elevated: var(--mkt-section-dark-elevated);
+  --color-mkt-light: var(--mkt-section-light);
+  --color-mkt-on-dark: var(--mkt-text-on-dark);
+  --color-mkt-on-dark-muted: var(--mkt-text-on-dark-muted);
+  --color-mkt-card-border: var(--mkt-card-border);
+  --color-mkt-cta: var(--mkt-cta);
+  --color-mkt-cta-hover: var(--mkt-cta-hover);
+  --color-mkt-cta-active: var(--mkt-cta-active);
+  --color-mkt-cta-foreground: var(--mkt-cta-foreground);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --font-sans: "Inter", "Inter Fallback", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Space Grotesk Fallback", system-ui, sans-serif;
+  --text-hero-display: 72px;
+  --text-hero-display--line-height: 1.05;
+  --text-hero-display--letter-spacing: -0.02em;
+  --text-hero-display--font-weight: 700;
+  --text-hero-display-mobile: 44px;
+  --text-hero-display-mobile--line-height: 1.1;
+  --text-hero-display-mobile--letter-spacing: -0.02em;
+  --text-hero-display-mobile--font-weight: 700;
+  --text-hero-h2: 48px;
+  --text-hero-h2--line-height: 1.15;
+  --text-hero-h2--letter-spacing: -0.01em;
+  --text-hero-h2--font-weight: 700;
+  --text-hero-h3: 32px;
+  --text-hero-h3--line-height: 1.2;
+  --text-hero-h3--font-weight: 700;
+  --text-hero-lead: 20px;
+  --text-hero-lead--line-height: 1.5;
+  --shadow-subtle: 0 1px 3px 0 #0000000d;
+  --shadow-card: 0 4px 12px 0 #00000014;
+  --shadow-elevated: 0 8px 24px 0 #0000001f;
+  --background-image-mkt-hero: linear-gradient(
+    200deg,
+    var(--mkt-hero-from) 0%,
+    var(--mkt-hero-to) 100%
+  );
+  --container-container: 1280px;
+}
 
 @layer base {
   :root {
@@ -39,10 +122,6 @@
     --input: #d1ccc4;
     --ring: #2ecc71;
 
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 16px;
-    --radius-pill: 999px;
     --radius: var(--radius-md);
 
     --sidebar: #1a1a1a;
@@ -67,10 +146,6 @@
     --mkt-cta-foreground: #0a140c;
     --mkt-hero-from: #2ecc71;
     --mkt-hero-to: #0f5132;
-
-    --shadow-subtle: 0 1px 3px 0 #0000000d;
-    --shadow-card: 0 4px 12px 0 #00000014;
-    --shadow-elevated: 0 8px 24px 0 #0000001f;
   }
 
   * {

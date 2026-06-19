@@ -189,6 +189,40 @@ export type GetAuthMeResponses = {
     200: unknown;
 };
 
+export type PostTrainersMeOnboardingData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainers/me/onboarding';
+};
+
+export type PostTrainersMeOnboardingResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        onboardedAt: string;
+    };
+};
+
+export type PostTrainersMeOnboardingResponse = PostTrainersMeOnboardingResponses[keyof PostTrainersMeOnboardingResponses];
+
+export type PostStudentsMePushTokenData = {
+    body: {
+        token: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/students/me/push-token';
+};
+
+export type PostStudentsMePushTokenResponses = {
+    /**
+     * Default Response
+     */
+    204: unknown;
+};
+
 export type GetStudentsData = {
     body?: never;
     path?: never;
@@ -219,6 +253,7 @@ export type GetStudentsResponses = {
             restrictions: string | null;
             status: 'active' | 'inactive' | 'paused';
             avatarUrl: string | null;
+            expoPushToken: string | null;
             createdAt: string;
         }>;
         total: number;
@@ -260,6 +295,7 @@ export type PostStudentsResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -325,6 +361,7 @@ export type GetStudentsByIdResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -377,6 +414,7 @@ export type PatchStudentsByIdResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -1227,3 +1265,28 @@ export type GetTrainerSummaryResponses = {
 };
 
 export type GetTrainerSummaryResponse = GetTrainerSummaryResponses[keyof GetTrainerSummaryResponses];
+
+export type PostUploadsPresignData = {
+    body: {
+        kind: 'assessment-photo' | 'avatar';
+        contentType: 'image/jpeg' | 'image/png';
+    };
+    path?: never;
+    query?: never;
+    url: '/uploads/presign';
+};
+
+export type PostUploadsPresignResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        uploadUrl: string;
+        publicUrl: string;
+        fields: {
+            [key: string]: never;
+        };
+    };
+};
+
+export type PostUploadsPresignResponse = PostUploadsPresignResponses[keyof PostUploadsPresignResponses];
