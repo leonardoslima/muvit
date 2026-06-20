@@ -1,16 +1,16 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import type { ReactElement, ReactNode } from 'react';
 import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
@@ -56,23 +56,27 @@ export function ConfirmationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
         <form action={handleConfirm}>
           {Object.entries(hiddenFields).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
-          <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>Cancelar</DialogClose>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button type="button" variant="outline">
+                Cancelar
+              </Button>
+            </AlertDialogCancel>
             <ConfirmationButton confirmLabel={confirmLabel} pendingLabel={pendingLabel} />
-          </DialogFooter>
+          </AlertDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

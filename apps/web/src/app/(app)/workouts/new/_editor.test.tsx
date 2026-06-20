@@ -76,7 +76,7 @@ describe('WorkoutEditor', () => {
 
     fireEvent.click(elementAt(screen.getAllByLabelText('Remover dia'), 1));
 
-    const dialog = screen.getByRole('dialog', { name: 'Remover dia?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Remover dia?' });
     expect(screen.getByText('Dias (2)')).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remover dia' }));
 
@@ -105,7 +105,7 @@ describe('WorkoutEditor', () => {
 
     fireEvent.click(elementAt(screen.getAllByLabelText('Remover'), 0));
 
-    const dialog = screen.getByRole('dialog', { name: 'Remover exercício?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Remover exercício?' });
     expect(screen.getByText('Remada')).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remover exercício' }));
 

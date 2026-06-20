@@ -17,10 +17,16 @@ import {
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MUSCLE_GROUP_LABEL } from '@/lib/muscle-groups';
-import * as Dialog from '@radix-ui/react-dialog';
 import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from 'lucide-react';
 import { useMemo, useState, useTransition } from 'react';
 import { createWorkoutPlanAction } from './actions';
@@ -367,62 +373,62 @@ function PickerDialog({
   }, [q, exercises]);
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Trigger asChild>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus />
           Exercício
         </Button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-[12px] bg-card p-6 shadow-elevated focus-visible:outline-none">
-          <div className="flex items-start justify-between">
-            <Dialog.Title className="font-display text-lg font-bold">
-              Adicionar exercício
-            </Dialog.Title>
-            <Dialog.Close asChild>
+      </DialogTrigger>
+      <DialogContent
+        aria-describedby={undefined}
+        showCloseButton={false}
+        overlayClassName="z-40 bg-foreground/40 backdrop-blur-sm"
+        className="flex max-h-[80vh] max-w-lg flex-col rounded-[12px] bg-card p-6 text-foreground shadow-elevated ring-0 sm:max-w-lg"
+      >
+        <div className="flex items-start justify-between">
+          <DialogTitle className="font-display text-lg font-bold">Adicionar exercício</DialogTitle>
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Fechar"
+            >
+              <X className="size-5" />
+            </button>
+          </DialogClose>
+        </div>
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar exercício…"
+            className="pl-9"
+          />
+        </div>
+        <ul className="mt-4 flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
+          {filtered.map((ex) => (
+            <li key={ex.id}>
               <button
                 type="button"
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Fechar"
+                onClick={() => onPick(ex)}
+                className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted"
               >
-                <X className="size-5" />
+                <span className="font-display text-sm font-semibold">{ex.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
+                </span>
               </button>
-            </Dialog.Close>
-          </div>
-          <div className="relative mt-4">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar exercício…"
-              className="pl-9"
-            />
-          </div>
-          <ul className="mt-4 flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
-            {filtered.map((ex) => (
-              <li key={ex.id}>
-                <button
-                  type="button"
-                  onClick={() => onPick(ex)}
-                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted"
-                >
-                  <span className="font-display text-sm font-semibold">{ex.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="px-3 py-8 text-center text-sm text-muted-foreground">
-                Nenhum exercício encontrado.
-              </li>
-            )}
-          </ul>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="px-3 py-8 text-center text-sm text-muted-foreground">
+              Nenhum exercício encontrado.
+            </li>
+          )}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }

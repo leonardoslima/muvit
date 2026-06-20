@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { StudentForm } from './student-form';
 
@@ -39,5 +39,20 @@ describe('StudentForm', () => {
     expect(screen.getByLabelText('Nome')).toBeRequired();
     expect(screen.getByLabelText('Status')).toHaveValue('active');
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+  });
+
+  it('associates server validation messages with their fields', async () => {
+    const action = vi.fn(async () => ({ fieldErrors: { name: 'Informe o nome.' } }));
+    render(<StudentForm action={action} />);
+
+    const form = screen.getByRole('button', { name: 'Salvar' }).closest('form');
+    expect(form).not.toBeNull();
+    if (!form) return;
+    fireEvent.submit(form);
+
+    const message = await screen.findByRole('alert');
+    expect(message).toHaveTextContent('Informe o nome.');
+    expect(message).toHaveAttribute('id', 'name-error');
+    expect(screen.getByLabelText('Nome')).toHaveAttribute('aria-describedby', 'name-error');
   });
 });

@@ -70,6 +70,34 @@ function findPrivateHelperNames(content: string): string[] {
 }
 
 describe('web SOLID architecture rules', () => {
+  it('uses the unified radix-ui package as the only primitive library', () => {
+    const packageJson = readFileSync(join(process.cwd(), 'package.json'), 'utf8');
+    const forbiddenDependencyMatches = [
+      ...packageJson.matchAll(/"(@base-ui\/react|@radix-ui\/react-[^"]+)"/g),
+    ].flatMap((match) => {
+      const dependency = match[1];
+      return dependency ? [dependency] : [];
+    });
+    const forbiddenImport = /^@base-ui\/react(?:\/.*)?$|^@radix-ui\/react-/;
+    const importViolations = listTypeScriptFiles(srcRoot).flatMap((path) => {
+      const content = readFileSync(path, 'utf8');
+      return matchesForbiddenImport(content, forbiddenImport)
+        ? [relative(process.cwd(), path)]
+        : [];
+    });
+    const primitiveBoundaryViolations = listTypeScriptFiles(srcRoot).flatMap((path) => {
+      const content = readFileSync(path, 'utf8');
+      const importsRadix = findImportSpecifiers(content).includes('radix-ui');
+      const isPrimitive = relative(srcRoot, path).startsWith(join('components', 'ui'));
+      return importsRadix && !isPrimitive ? [relative(process.cwd(), path)] : [];
+    });
+
+    expect(packageJson).toContain('"radix-ui"');
+    expect(forbiddenDependencyMatches).toEqual([]);
+    expect(importViolations).toEqual([]);
+    expect(primitiveBoundaryViolations).toEqual([]);
+  });
+
   it('detects private helper syntax variants used in server actions', () => {
     const content = `
       async function namedHelper() {}

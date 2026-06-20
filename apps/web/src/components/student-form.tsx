@@ -89,7 +89,7 @@ export function StudentForm({ action, initial, submitLabel = 'Salvar' }: Props) 
       </div>
 
       {state?.error && (
-        <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
           {state.error}
         </p>
       )}
@@ -118,6 +118,8 @@ function Field({
   required?: boolean;
   error?: string;
 }) {
+  const errorId = `${name}-error`;
+
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={name} data-error={!!error}>
@@ -130,8 +132,13 @@ function Field({
         defaultValue={defaultValue ?? ''}
         required={required}
         aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
       />
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p id={errorId} role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

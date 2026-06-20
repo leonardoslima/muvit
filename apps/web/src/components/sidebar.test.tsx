@@ -15,7 +15,9 @@ describe('Sidebar', () => {
     render(<Sidebar user={{ name: 'Ana Trainer', email: 'ana@muvit.test' }} />);
 
     expect(screen.getByRole('link', { name: /muvit/i })).toHaveAttribute('href', '/dashboard');
-    expect(screen.getByRole('link', { name: /alunos/i })).toHaveAttribute('href', '/students');
+    expect(screen.getByRole('link', { name: /alunos/i })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: /evolução/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /configurações/i })).not.toBeInTheDocument();
     expect(screen.getByText('Ana Trainer')).toBeInTheDocument();
     expect(screen.getByText('ana@muvit.test')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();

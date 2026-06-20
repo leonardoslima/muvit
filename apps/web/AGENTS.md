@@ -30,6 +30,7 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 ## UI e acessibilidade
 
 - Siga o padrao visual existente; evite criar sistema visual paralelo.
+- Use Radix UI pelo pacote unificado `radix-ui` como unica biblioteca de primitives; nao adicione `@base-ui/react` nem pacotes individuais `@radix-ui/react-*`.
 - Use componentes e tokens existentes antes de adicionar variantes novas.
 - Trate `src/components/ui` como a camada de primitives visuais; nao adicione regra de dominio ou comportamento especifico de uma funcionalidade nesses componentes.
 - Quando um comportamento de interface realmente se repetir, crie uma composicao focada em `src/components` que reutilize os primitives existentes e mantenha uma unica responsabilidade visual ou comportamental.

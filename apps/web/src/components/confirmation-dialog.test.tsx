@@ -23,12 +23,16 @@ describe('ConfirmationDialog', () => {
     renderConfirmation(confirmAction);
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir item' }));
-    expect(screen.getByRole('dialog', { name: 'Excluir item?' })).toBeInTheDocument();
+    const dialog = screen.getByRole('alertdialog', { name: 'Excluir item?' });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Excluir item?' })).toHaveClass(
+      'font-display',
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Excluir item?' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('alertdialog', { name: 'Excluir item?' })).not.toBeInTheDocument();
     });
     expect(confirmAction).not.toHaveBeenCalled();
   });
@@ -44,7 +48,7 @@ describe('ConfirmationDialog', () => {
     renderConfirmation(confirmAction);
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir item' }));
-    const dialog = screen.getByRole('dialog', { name: 'Excluir item?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Excluir item?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Excluir item' }));
 
     await waitFor(() => expect(confirmAction).toHaveBeenCalledOnce());
@@ -56,7 +60,7 @@ describe('ConfirmationDialog', () => {
     await act(async () => resolveAction?.());
 
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Excluir item?' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('alertdialog', { name: 'Excluir item?' })).not.toBeInTheDocument();
     });
   });
 });

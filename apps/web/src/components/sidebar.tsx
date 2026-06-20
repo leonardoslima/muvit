@@ -2,15 +2,7 @@
 
 import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import {
-  ClipboardList,
-  Dumbbell,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { ClipboardList, Dumbbell, LayoutDashboard, LogOut, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -19,8 +11,6 @@ const NAV = [
   { href: '/students', icon: Users, label: 'Alunos' },
   { href: '/exercises', icon: Dumbbell, label: 'Exercícios' },
   { href: '/workouts', icon: ClipboardList, label: 'Treinos' },
-  { href: '/reports', icon: TrendingUp, label: 'Evolução' },
-  { href: '/settings', icon: Settings, label: 'Configurações' },
 ];
 
 export function Sidebar({ user }: { user: { name: string; email: string } | null }) {
@@ -46,6 +36,7 @@ export function Sidebar({ user }: { user: { name: string; email: string } | null
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex h-11 items-center gap-3 px-6 text-sm font-medium transition-colors',
                   active

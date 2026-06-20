@@ -31,7 +31,7 @@ describe('ExercisesPage', () => {
     render(await ExercisesPage({ searchParams: Promise.resolve({}) }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir Supino reto' }));
-    const dialog = screen.getByRole('dialog', { name: 'Excluir exercício?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Excluir exercício?' });
     expect(within(dialog).getByText(/Supino reto/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Excluir exercício' }));
 

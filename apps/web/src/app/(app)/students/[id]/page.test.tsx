@@ -33,7 +33,7 @@ describe('StudentDetailPage', () => {
     render(await StudentDetailPage({ params: Promise.resolve({ id: 'student-1' }) }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Excluir aluno' }));
-    const dialog = screen.getByRole('dialog', { name: 'Excluir aluno?' });
+    const dialog = screen.getByRole('alertdialog', { name: 'Excluir aluno?' });
     expect(within(dialog).getByText(/Ana Lima/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Excluir aluno' }));
 
