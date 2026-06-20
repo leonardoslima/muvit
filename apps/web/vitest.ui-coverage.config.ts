@@ -8,6 +8,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: [
+          'src/components/confirmation-dialog.tsx',
           'src/components/student-form.tsx',
           'src/components/onboarding-wizard.tsx',
           'src/components/stat-card.tsx',

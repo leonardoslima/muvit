@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { TopBar } from '@/components/top-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -85,12 +86,24 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
               </div>
               {ex.trainerId && (
                 <div className="flex items-center justify-end pt-2">
-                  <form action={deleteExerciseAction}>
-                    <input type="hidden" name="id" value={ex.id} />
-                    <Button type="submit" variant="ghost" size="icon-sm" aria-label="Excluir">
-                      <Trash2 />
-                    </Button>
-                  </form>
+                  <ConfirmationDialog
+                    trigger={
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={`Excluir ${ex.name}`}
+                      >
+                        <Trash2 />
+                      </Button>
+                    }
+                    title="Excluir exercício?"
+                    description={`Você está prestes a excluir ${ex.name}. Esta ação não pode ser desfeita.`}
+                    confirmLabel="Excluir exercício"
+                    pendingLabel="Excluindo..."
+                    confirmAction={deleteExerciseAction}
+                    hiddenFields={{ id: ex.id }}
+                  />
                 </div>
               )}
             </article>

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkoutEditor } from './_editor';
 import { createWorkoutPlanAction } from './actions';
@@ -62,7 +62,7 @@ describe('WorkoutEditor', () => {
     });
   });
 
-  it('adds, renames and removes workout days', () => {
+  it('adds, renames and removes workout days', async () => {
     render(<WorkoutEditor studentId="student-id" exercises={exercises} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Adicionar' }));
@@ -76,11 +76,15 @@ describe('WorkoutEditor', () => {
 
     fireEvent.click(elementAt(screen.getAllByLabelText('Remover dia'), 1));
 
-    expect(screen.getByText('Dias (1)')).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Remover dia?' });
+    expect(screen.getByText('Dias (2)')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remover dia' }));
+
+    await waitFor(() => expect(screen.getByText('Dias (1)')).toBeInTheDocument());
     expect(screen.getByRole('heading', { name: 'Treino A' })).toBeInTheDocument();
   });
 
-  it('edits, reorders and removes selected exercises', () => {
+  it('edits, reorders and removes selected exercises', async () => {
     render(<WorkoutEditor studentId="student-id" exercises={exercises} />);
 
     fireEvent.click(screen.getByRole('button', { name: /exerc/i }));
@@ -101,7 +105,11 @@ describe('WorkoutEditor', () => {
 
     fireEvent.click(elementAt(screen.getAllByLabelText('Remover'), 0));
 
-    expect(screen.queryByText('Remada')).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Remover exercício?' });
+    expect(screen.getByText('Remada')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Remover exercício' }));
+
+    await waitFor(() => expect(screen.queryByText('Remada')).not.toBeInTheDocument());
     expect(screen.getByText('Supino')).toBeInTheDocument();
   });
 

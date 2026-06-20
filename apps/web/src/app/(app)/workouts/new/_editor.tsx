@@ -14,6 +14,7 @@ import {
   updateWorkoutExercise,
   validateWorkoutDraft,
 } from '@/application/workouts/workout-editor-model';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,14 +171,22 @@ export function WorkoutEditor({
                   </span>
                 </button>
                 {days.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeDay(i)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Remover dia"
-                  >
-                    <X className="size-3.5" />
-                  </button>
+                  <ConfirmationDialog
+                    trigger={
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Remover dia"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    }
+                    title="Remover dia?"
+                    description={`O dia ${d.label} e seus exercícios serão removidos deste treino.`}
+                    confirmLabel="Remover dia"
+                    pendingLabel="Removendo..."
+                    confirmAction={() => removeDay(i)}
+                  />
                 )}
               </li>
             ))}
@@ -250,14 +259,22 @@ export function WorkoutEditor({
                     >
                       <ChevronDown className="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive-bg hover:text-destructive"
-                      onClick={() => removeExercise(activeDay, j)}
-                      aria-label="Remover"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <ConfirmationDialog
+                      trigger={
+                        <button
+                          type="button"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive-bg hover:text-destructive"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      }
+                      title="Remover exercício?"
+                      description={`O exercício ${ex.exerciseName} será removido deste treino.`}
+                      confirmLabel="Remover exercício"
+                      pendingLabel="Removendo..."
+                      confirmAction={() => removeExercise(activeDay, j)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

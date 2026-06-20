@@ -17,7 +17,7 @@
 - Create: `apps/web/src/components/confirmation-dialog.test.tsx`
 - Modify: `apps/web/vitest.ui-coverage.config.ts`
 
-- [ ] **Step 1: Escrever os testes da composição**
+- [x] **Step 1: Escrever os testes da composição**
 
 Criar `confirmation-dialog.test.tsx`:
 
@@ -86,13 +86,13 @@ describe('ConfirmationDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Executar o teste e confirmar RED**
+- [x] **Step 2: Executar o teste e confirmar RED**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/components/confirmation-dialog.test.tsx"`
 
 Expected: FAIL porque `./confirmation-dialog` ainda não existe.
 
-- [ ] **Step 3: Implementar a composição mínima**
+- [x] **Step 3: Implementar a composição mínima**
 
 Criar `confirmation-dialog.tsx`:
 
@@ -177,7 +177,7 @@ export function ConfirmationDialog({
 }
 ```
 
-- [ ] **Step 4: Incluir a composição na cobertura visual crítica**
+- [x] **Step 4: Incluir a composição na cobertura visual crítica**
 
 Adicionar ao array `coverage.include` de `vitest.ui-coverage.config.ts`:
 
@@ -185,7 +185,7 @@ Adicionar ao array `coverage.include` de `vitest.ui-coverage.config.ts`:
 'src/components/confirmation-dialog.tsx',
 ```
 
-- [ ] **Step 5: Executar o teste e confirmar GREEN**
+- [x] **Step 5: Executar o teste e confirmar GREEN**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/components/confirmation-dialog.test.tsx"`
 
@@ -201,7 +201,7 @@ Expected: PASS nos dois cenários da composição.
 - Modify: `apps/web/src/app/(app)/exercises/page.tsx`
 - Create: `apps/web/src/app/(app)/exercises/page.test.tsx`
 
-- [ ] **Step 1: Escrever o teste de integração da exclusão de aluno**
+- [x] **Step 1: Escrever o teste de integração da exclusão de aluno**
 
 Criar `students/[id]/page.test.tsx` com mocks do carregamento da página, abrir `Excluir aluno`, confirmar e validar que `deleteStudentAction` recebe `id=student-1` em `FormData`.
 
@@ -253,7 +253,7 @@ describe('StudentDetailPage', () => {
 });
 ```
 
-- [ ] **Step 2: Escrever o teste de integração da exclusão de exercício**
+- [x] **Step 2: Escrever o teste de integração da exclusão de exercício**
 
 Criar `exercises/page.test.tsx`:
 
@@ -303,7 +303,7 @@ describe('ExercisesPage', () => {
 });
 ```
 
-- [ ] **Step 3: Executar os testes e confirmar RED**
+- [x] **Step 3: Executar os testes e confirmar RED**
 
 Run:
 
@@ -314,7 +314,7 @@ pnpm.cmd --dir apps/web test -- "src/app/(app)/exercises/page.test.tsx"
 
 Expected: o teste de exercício falha porque a exclusão ainda é direta; o teste de aluno estabelece o contrato a preservar durante a troca do componente específico.
 
-- [ ] **Step 4: Migrar aluno para `ConfirmationDialog`**
+- [x] **Step 4: Migrar aluno para `ConfirmationDialog`**
 
 Em `students/[id]/page.tsx`, importar `ConfirmationDialog` e `Trash2`, remover `DeleteStudentDialog` e renderizar:
 
@@ -336,7 +336,7 @@ Em `students/[id]/page.tsx`, importar `ConfirmationDialog` e `Trash2`, remover `
 
 Excluir `_delete-student-dialog.tsx` e `_delete-student-dialog.test.tsx`.
 
-- [ ] **Step 5: Migrar exercícios para `ConfirmationDialog`**
+- [x] **Step 5: Migrar exercícios para `ConfirmationDialog`**
 
 Em `exercises/page.tsx`, importar `ConfirmationDialog` e substituir o formulário direto por:
 
@@ -361,7 +361,7 @@ Em `exercises/page.tsx`, importar `ConfirmationDialog` e substituir o formulári
 />
 ```
 
-- [ ] **Step 6: Executar os testes e confirmar GREEN**
+- [x] **Step 6: Executar os testes e confirmar GREEN**
 
 Run:
 
@@ -378,7 +378,7 @@ Expected: PASS nos dois fluxos persistentes.
 - Modify: `apps/web/src/app/(app)/workouts/new/_editor.tsx`
 - Modify: `apps/web/src/app/(app)/workouts/new/_editor.test.tsx`
 
-- [ ] **Step 1: Alterar os testes para exigir confirmação**
+- [x] **Step 1: Alterar os testes para exigir confirmação**
 
 Importar `within` e tornar assíncronos os dois testes de remoção. No teste de dias, substituir o clique e asserções finais por:
 
@@ -404,13 +404,13 @@ await waitFor(() => expect(screen.queryByText('Remada')).not.toBeInTheDocument()
 expect(screen.getByText('Supino')).toBeInTheDocument();
 ```
 
-- [ ] **Step 2: Executar o teste e confirmar RED**
+- [x] **Step 2: Executar o teste e confirmar RED**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/app/(app)/workouts/new/_editor.test.tsx"`
 
 Expected: FAIL porque os itens ainda são removidos no primeiro clique e nenhum diálogo é aberto.
 
-- [ ] **Step 3: Migrar a remoção de dia**
+- [x] **Step 3: Migrar a remoção de dia**
 
 Importar `ConfirmationDialog` e substituir o botão `Remover dia` por:
 
@@ -433,7 +433,7 @@ Importar `ConfirmationDialog` e substituir o botão `Remover dia` por:
 />
 ```
 
-- [ ] **Step 4: Migrar a remoção de exercício**
+- [x] **Step 4: Migrar a remoção de exercício**
 
 Substituir o botão `Remover` por:
 
@@ -456,7 +456,7 @@ Substituir o botão `Remover` por:
 />
 ```
 
-- [ ] **Step 5: Executar o teste e confirmar GREEN**
+- [x] **Step 5: Executar o teste e confirmar GREEN**
 
 Run: `pnpm.cmd --dir apps/web test -- "src/app/(app)/workouts/new/_editor.test.tsx"`
 
@@ -467,13 +467,13 @@ Expected: PASS, provando que ambas as remoções aguardam confirmação.
 **Files:**
 - Modify: `docs/superpowers/plans/2026-06-20-confirmacao-acoes-destrutivas.md`
 
-- [ ] **Step 1: Confirmar que não restaram exclusões diretas na UI web**
+- [x] **Step 1: Confirmar que não restaram exclusões diretas na UI web**
 
 Run: `rg -n -S 'form action=\{delete|onClick=\{\(\) => remove|_delete-student-dialog' apps/web/src --glob '*.tsx'`
 
 Expected: nenhum fluxo destrutivo visível fora de `ConfirmationDialog`; ocorrências legítimas não relacionadas devem ser analisadas explicitamente.
 
-- [ ] **Step 2: Executar verificações automatizadas**
+- [x] **Step 2: Executar verificações automatizadas**
 
 Run:
 
@@ -486,7 +486,7 @@ pnpm.cmd exec biome check apps/web
 
 Expected: todos os testes e gates passam. Se o Biome amplo continuar apontando apenas `apps/web/next-env.d.ts`, preservar a alteração preexistente, executar Biome nos arquivos do escopo e registrar a limitação.
 
-- [ ] **Step 3: Verificar no navegador**
+- [x] **Step 3: Verificar no navegador**
 
 Executar o dashboard local e validar:
 
@@ -495,11 +495,11 @@ Executar o dashboard local e validar:
 3. remoção de dia e exercício no editor só ocorre após confirmação;
 4. nenhum erro é emitido no console.
 
-- [ ] **Step 4: Marcar este plano como concluído**
+- [x] **Step 4: Marcar este plano como concluído**
 
 Alterar os checkboxes executados de `[ ]` para `[x]` somente após cada evidência correspondente.
 
-- [ ] **Step 5: Commitar a implementação**
+- [x] **Step 5: Commitar a implementação**
 
 ```powershell
 git add -- 'apps/web/src/components/confirmation-dialog.tsx' 'apps/web/src/components/confirmation-dialog.test.tsx' 'apps/web/vitest.ui-coverage.config.ts' 'apps/web/src/app/(app)/students/[id]/page.tsx' 'apps/web/src/app/(app)/students/[id]/page.test.tsx' 'apps/web/src/app/(app)/students/[id]/_delete-student-dialog.tsx' 'apps/web/src/app/(app)/students/[id]/_delete-student-dialog.test.tsx' 'apps/web/src/app/(app)/exercises/page.tsx' 'apps/web/src/app/(app)/exercises/page.test.tsx' 'apps/web/src/app/(app)/workouts/new/_editor.tsx' 'apps/web/src/app/(app)/workouts/new/_editor.test.tsx' 'docs/superpowers/plans/2026-06-20-confirmacao-acoes-destrutivas.md'

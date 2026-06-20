@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { StudentForm } from '@/components/student-form';
 import { TopBar } from '@/components/top-bar';
 import { Avatar } from '@/components/ui/avatar';
@@ -5,10 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudentsById } from '@/lib/api/sdk.gen';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { DeleteStudentDialog } from './_delete-student-dialog';
 import { deleteStudentAction, updateStudentAction } from './actions';
 
 interface Props {
@@ -70,10 +70,18 @@ export default async function StudentDetailPage({ params }: Props) {
           <Button asChild variant="secondary">
             <Link href={`/students/${s.id}/assessments/new`}>+ Avaliação</Link>
           </Button>
-          <DeleteStudentDialog
-            studentId={s.id}
-            studentName={s.name}
-            deleteAction={deleteStudentAction}
+          <ConfirmationDialog
+            trigger={
+              <Button type="button" variant="ghost" size="icon" aria-label="Excluir aluno">
+                <Trash2 />
+              </Button>
+            }
+            title="Excluir aluno?"
+            description={`Você está prestes a excluir ${s.name}. Esta ação não pode ser desfeita.`}
+            confirmLabel="Excluir aluno"
+            pendingLabel="Excluindo..."
+            confirmAction={deleteStudentAction}
+            hiddenFields={{ id: s.id }}
           />
         </div>
       </header>
