@@ -84,6 +84,8 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 ## Documentacao local
 
 - Atualize documentacao local ao criar padrao recorrente, risco nao obvio, fluxo dependente de ordem ou contrato de API, ambiente, schema, operacao ou workflow.
+- Trate `AGENTS.md` como manual operacional para agentes: escreva regras objetivas, verificaveis e relevantes ao escopo, evitando orientacoes vagas ou contexto excessivo.
+- Atualize o `AGENTS.md` responsavel no mesmo diff que alterar uma arquitetura, convencao ou restricao registrada nele.
 - Arquivos `AGENTS.md` especificos para LLM devem ter no maximo 200 linhas.
 - Evite quebras artificiais de linha em `AGENTS.md`; mantenha frases em uma unica linha quando couberem com boa legibilidade.
 

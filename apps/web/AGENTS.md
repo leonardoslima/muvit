@@ -31,6 +31,9 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 
 - Siga o padrao visual existente; evite criar sistema visual paralelo.
 - Use componentes e tokens existentes antes de adicionar variantes novas.
+- Trate `src/components/ui` como a camada de primitives visuais; nao adicione regra de dominio ou comportamento especifico de uma funcionalidade nesses componentes.
+- Quando um comportamento de interface realmente se repetir, crie uma composicao focada em `src/components` que reutilize os primitives existentes e mantenha uma unica responsabilidade visual ou comportamental.
+- Toda acao destrutiva visivel ao usuario deve exigir confirmacao pela composicao compartilhada `ConfirmationDialog`; a tela consumidora fornece gatilho, textos e acao concreta.
 - Garanta estados de loading, erro e vazio em telas com dados remotos.
 - Prefira controles acessiveis e texto visivel em pt-BR.
 

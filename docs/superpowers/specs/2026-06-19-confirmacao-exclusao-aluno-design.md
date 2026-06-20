@@ -1,5 +1,7 @@
 # Confirmação de exclusão de aluno
 
+> Evolução: esta solução pontual foi implementada e depois generalizada pelo design [Confirmação de ações destrutivas](./2026-06-20-confirmacao-acoes-destrutivas-design.md), que substitui o componente específico de aluno por uma composição compartilhada.
+
 ## Objetivo
 
 Impedir a exclusão imediata de um aluno ao clicar no ícone de lixeira da página de detalhes, exigindo uma confirmação explícita antes de enviar a ação existente.
