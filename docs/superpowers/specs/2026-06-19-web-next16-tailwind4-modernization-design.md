@@ -116,6 +116,24 @@ Comandos obrigatorios:
 
 A verificacao manual automatizada no navegador deve abrir `/`, navegar para `/login` e `/signup`, inspecionar console e confirmar que o servidor permanece disponivel.
 
+## Anotacoes operacionais pos-migracao
+
+### Classes canonicas de spacing no Tailwind 4
+
+O Tailwind 4 gera utilitarios numericos de spacing dinamicamente a partir de `--spacing: 0.25rem`. Com isso, `w-35` equivale a `width: calc(var(--spacing) * 35)`, ou seja, `8.75rem`/`140px` no tamanho base padrao.
+
+Quando um valor arbitrario em pixels cair exatamente nessa escala, prefira o utilitario canonico para evitar warnings do Tailwind CSS Language Server e manter consistencia com a escala do tema:
+
+- `w-[100px]` -> `w-25`
+- `w-[140px]` -> `w-35`
+- `w-[220px]` -> `w-55`
+- `min-w-[760px]` -> `min-w-190`
+- `h-[480px]` -> `h-120`
+- `max-w-[560px]` -> `max-w-140`
+- `size-[18px]` -> `size-4.5`
+
+Mantenha valores arbitrarios quando o valor depender de `calc(...)`, `var(...)`, variaveis de primitives como Radix, expressoes responsivas especificas ou medidas fora da escala do Tailwind, como `before:w-[3px]`. Antes de trocar valores derivados de design visual, confirme que a equivalencia nao altera o layout em navegador.
+
 ## Criterios de aceite
 
 - `apps/web` usa Next.js 16.2.9, React 19.2.7 e Tailwind CSS 4.3.1.
