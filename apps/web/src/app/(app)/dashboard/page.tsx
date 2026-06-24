@@ -1,9 +1,11 @@
 import { StatCard } from '@/components/stat-card';
+import { StudentListTable } from '@/components/student-list-table';
 import { TopBar } from '@/components/top-bar';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getTrainerSummary } from '@/lib/api/sdk.gen';
 import { requireUser } from '@/lib/auth-server';
+import { loadDashboardStudentList } from '@/lib/dashboard-student-list';
 import {
   AlertTriangle,
   BarChart3,
@@ -19,8 +21,11 @@ import Link from 'next/link';
 export default async function DashboardPage() {
   const user = await requireUser();
   const client = await configureServerClient();
-  const res = await getTrainerSummary({ client });
-  const data = res.data ?? {
+  const [summaryRes, studentListState] = await Promise.all([
+    getTrainerSummary({ client }),
+    loadDashboardStudentList(client),
+  ]);
+  const data = summaryRes.data ?? {
     students: { total: 0, active: 0, paused: 0, inactive: 0, newThisWeek: 0 },
     workouts: { activePlans: 0 },
     assessments: { last30d: 0 },
@@ -106,6 +111,8 @@ export default async function DashboardPage() {
           <NextStepCard icon={Sparkles} title="Adicionar exercício custom" href="/exercises" />
         </ul>
       </section>
+
+      <StudentListTable state={studentListState} />
     </>
   );
 }
