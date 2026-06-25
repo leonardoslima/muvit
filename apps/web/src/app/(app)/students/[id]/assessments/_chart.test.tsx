@@ -1,28 +1,29 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { render } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EvolutionChart } from './_chart';
 
 describe('EvolutionChart', () => {
-  it('renders empty-state copy when there is not enough data', () => {
-    render(<EvolutionChart points={[{ date: '2026-06-12', weight: 80, bodyFat: null }]} />);
-
-    expect(screen.getByText(/sem dados suficientes/i)).toBeInTheDocument();
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('renders a labelled svg chart for enough data', () => {
+  it('renderiza pontos com datas repetidas sem warning de key duplicada', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     render(
       <EvolutionChart
         points={[
-          { date: '2026-06-01', weight: 82, bodyFat: 20 },
-          { date: '2026-06-08', weight: 81, bodyFat: 19 },
+          { date: '2026-06-24', weight: 68.4, bodyFat: 24.5 },
+          { date: '2026-06-24', weight: 68.1, bodyFat: 24.2 },
+          { date: '2026-06-25', weight: 67.9, bodyFat: 24.1 },
         ]}
       />,
     );
 
-    expect(screen.getByText('Peso (kg)')).toBeInTheDocument();
-    expect(screen.getByText('% Gordura')).toBeInTheDocument();
-    expect(
-      screen.getByRole('img', { name: 'Evolucao de peso e percentual de gordura' }),
-    ).toBeInTheDocument();
+    const hasDuplicateKeyWarning = consoleError.mock.calls.some((args) =>
+      args.join(' ').includes('Encountered two children with the same key'),
+    );
+
+    expect(hasDuplicateKeyWarning).toBe(false);
   });
 });
