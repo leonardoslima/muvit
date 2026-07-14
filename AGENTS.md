@@ -51,6 +51,7 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 - Testes: Vitest onde configurado.
 - Lint/format: Biome.
 - Idioma de comunicacao, comentarios, commits e documentacao local: pt-BR, salvo padrao local mais especifico.
+- Preserve caracteres pt-BR como UTF-8 literal em codigo, testes, documentacao e textos de interface; nunca use sequencias de escape Unicode para representar acentuacao.
 
 ## Estrutura
 
@@ -80,6 +81,7 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 - Se nao puder executar alguma verificacao, explique o motivo.
 - Informe quais comandos foram executados e o resultado.
 - Nao diga que algo esta pronto ou passando sem evidencia.
+- Antes de concluir mudancas textuais, procure sequencias formadas por barra invertida, letra `u` e quatro digitos hexadecimais nos arquivos alterados e corrija qualquer ocorrencia usada para representar caracteres que devem permanecer em UTF-8 literal.
 
 ## Documentacao local
 
