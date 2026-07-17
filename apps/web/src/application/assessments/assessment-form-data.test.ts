@@ -34,10 +34,16 @@ describe('buildAssessmentPayload', () => {
     });
   });
 
-  it('includes numeric measurements and optional photo', () => {
+  it('includes numeric measurements and optional photos', () => {
     const result = buildAssessmentPayload(
-      formDataFrom({ date: '2026-06-11', weightKg: '80,5', chest: '100' }),
-      'https://cdn.muvit.test/photo.jpg',
+      formDataFrom({
+        date: '2026-06-11',
+        weightKg: '80,5',
+        chest: '100',
+        calfRight: '37,5',
+        calfLeft: '37',
+      }),
+      ['https://cdn.muvit.test/front.jpg', 'https://cdn.muvit.test/back.jpg'],
     );
 
     expect(result).toEqual({
@@ -55,8 +61,10 @@ describe('buildAssessmentPayload', () => {
           armLeft: undefined,
           thighRight: undefined,
           thighLeft: undefined,
+          calfRight: 37.5,
+          calfLeft: 37,
         },
-        photos: ['https://cdn.muvit.test/photo.jpg'],
+        photos: ['https://cdn.muvit.test/front.jpg', 'https://cdn.muvit.test/back.jpg'],
         notes: undefined,
       },
     });

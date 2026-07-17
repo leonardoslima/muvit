@@ -1,38 +1,39 @@
 'use client';
 
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
 interface Point {
   date: string;
   weight: number | null;
   bodyFat: number | null;
 }
 
+function formatChartDate(date: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(
+    new Date(date),
+  );
+}
+
 export function EvolutionChart({ points }: { points: Point[] }) {
   const weights = points.map((p) => p.weight).filter((v): v is number => v !== null);
   const fats = points.map((p) => p.bodyFat).filter((v): v is number => v !== null);
-  const weightPoints = points.filter((p): p is Point & { weight: number } => p.weight !== null);
   if (weights.length < 2 && fats.length < 2) {
     return <p className="text-sm text-muted-foreground">Sem dados suficientes para o gráfico.</p>;
   }
 
-  const W = 720;
-  const H = 220;
-  const padX = 32;
-  const padY = 24;
-
-  const lineFor = (vals: number[]) => {
-    if (vals.length < 2) return '';
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const range = max - min || 1;
-    const stepX = (W - 2 * padX) / (vals.length - 1);
-    return vals
-      .map((v, i) => {
-        const x = padX + i * stepX;
-        const y = padY + (H - 2 * padY) * (1 - (v - min) / range);
-        return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-      })
-      .join(' ');
-  };
+  const data = points.map((point, index) => ({
+    ...point,
+    chartId: `${point.date}-${index}`,
+    label: formatChartDate(point.date),
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,51 +41,44 @@ export function EvolutionChart({ points }: { points: Point[] }) {
         <Legend color="var(--primary)" label="Peso (kg)" />
         <Legend color="var(--secondary)" label="% Gordura" />
       </div>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-[220px] w-full overflow-visible"
+      <div
+        className="h-[220px] w-full"
         role="img"
-        aria-labelledby="evolution-chart-title"
+        aria-label="Evolução de peso e percentual de gordura"
       >
-        <title id="evolution-chart-title">Evolucao de peso e percentual de gordura</title>
-        <line x1={padX} x2={W - padX} y1={H - padY} y2={H - padY} stroke="var(--border)" />
-        <line
-          x1={padX}
-          x2={W - padX}
-          y1={padY}
-          y2={padY}
-          stroke="var(--border)"
-          strokeDasharray="2 4"
-        />
-        {weights.length >= 2 && (
-          <path
-            d={lineFor(weights)}
-            fill="none"
-            stroke="var(--primary)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {fats.length >= 2 && (
-          <path
-            d={lineFor(fats)}
-            fill="none"
-            stroke="var(--secondary)"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-        {weightPoints.map((p, i) => {
-          const min = Math.min(...weights);
-          const range = Math.max(...weights) - min || 1;
-          const stepX = (W - 2 * padX) / Math.max(weights.length - 1, 1);
-          const x = padX + i * stepX;
-          const y = padY + (H - 2 * padY) * (1 - (p.weight - min) / range);
-          return <circle key={`w-${p.date}`} cx={x} cy={y} r={3.5} fill="var(--primary)" />;
-        })}
-      </svg>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 20, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+            <YAxis tickLine={false} axisLine={false} fontSize={12} width={34} />
+            <Tooltip />
+            {weights.length >= 2 && (
+              <Line
+                type="monotone"
+                dataKey="weight"
+                name="Peso (kg)"
+                stroke="var(--primary)"
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: 'var(--primary)', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            )}
+            {fats.length >= 2 && (
+              <Line
+                type="monotone"
+                dataKey="bodyFat"
+                name="% Gordura"
+                stroke="var(--secondary)"
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: 'var(--secondary)', strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,8 @@ type AssessmentMeasurements = {
   armLeft?: number;
   thighRight?: number;
   thighLeft?: number;
+  calfRight?: number;
+  calfLeft?: number;
 };
 
 type AssessmentBody = {
@@ -28,7 +30,7 @@ type AssessmentPayloadResult =
 
 export function buildAssessmentPayload(
   formData: FormData,
-  photoUrl?: string,
+  photoUrls: string[] = [],
 ): AssessmentPayloadResult {
   const date = readTrimmed(formData, 'date');
   if (!date) return { ok: false, state: { error: 'Informe a data.' } };
@@ -41,6 +43,8 @@ export function buildAssessmentPayload(
     armLeft: readOptionalNumber(formData, 'armLeft'),
     thighRight: readOptionalNumber(formData, 'thighRight'),
     thighLeft: readOptionalNumber(formData, 'thighLeft'),
+    calfRight: readOptionalNumber(formData, 'calfRight'),
+    calfLeft: readOptionalNumber(formData, 'calfLeft'),
   };
   const hasMeasurements = Object.values(measurements).some((value) => value !== undefined);
 
@@ -52,7 +56,7 @@ export function buildAssessmentPayload(
       heightCm: readOptionalNumber(formData, 'heightCm'),
       bodyFatPct: readOptionalNumber(formData, 'bodyFatPct'),
       measurements: hasMeasurements ? measurements : undefined,
-      photos: photoUrl ? [photoUrl] : undefined,
+      photos: photoUrls.length > 0 ? photoUrls : undefined,
       notes: readOptionalTrimmed(formData, 'notes'),
     },
   };

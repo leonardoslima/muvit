@@ -13,6 +13,8 @@ import { redirect } from 'next/navigation';
 
 export type { AssessmentState } from '@/application/assessments/assessment-form-data';
 
+const PHOTO_FIELDS = ['photoFront', 'photoBack', 'photoSide'] as const;
+
 export async function createAssessmentAction(
   studentId: string,
   _: AssessmentState,
@@ -22,30 +24,38 @@ export async function createAssessmentAction(
   if (!initialInput.ok) return initialInput.state;
 
   const client = await configureServerClient();
-  const photo = formData.get('photo');
-  let photoUrl: string | undefined;
+  const photos = PHOTO_FIELDS.map((field) => formData.get(field)).filter(
+    (photo): photo is File => photo instanceof File && photo.size > 0,
+  );
+  let photoUrls: string[] = [];
 
-  if (photo instanceof File && photo.size > 0) {
+  if (photos.length > 0) {
     try {
-      photoUrl = await uploadFileWithPresignedUrl({
-        file: photo,
-        kind: 'assessment-photo',
-        presign: (body) => presignUpload({ client, body }),
-      });
+      photoUrls = await Promise.all(
+        photos.map((file) =>
+          uploadFileWithPresignedUrl({
+            file,
+            kind: 'assessment-photo',
+            presign: (body) => presignUpload({ client, body }),
+          }),
+        ),
+      );
     } catch {
-      return { error: 'Falha ao enviar foto da avaliacao.' };
+      return { error: 'Falha ao enviar as fotos da avaliação.' };
     }
   }
 
-  const input = photoUrl ? buildAssessmentPayload(formData, photoUrl) : initialInput;
+  const input = photoUrls.length > 0 ? buildAssessmentPayload(formData, photoUrls) : initialInput;
   if (!input.ok) return input.state;
 
-  const res = await postStudentsByStudentIdAssessments({
+  const response = await postStudentsByStudentIdAssessments({
     client,
     path: { studentId },
     body: input.body,
   });
-  if (res.error || !res.data) return { error: 'Falha ao salvar avaliação.' };
+  if (response.error || !response.data) return { error: 'Falha ao salvar avaliação.' };
+
+  revalidatePath(`/students/${studentId}`);
   revalidatePath(`/students/${studentId}/assessments`);
   redirect(`/students/${studentId}/assessments`);
 }

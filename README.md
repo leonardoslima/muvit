@@ -59,7 +59,7 @@ pnpm dev
 
 ### Dados de demonstração
 
-Depois de aplicar as migrations, execute `pnpm db:seed`. O comando cria um trainer, três alunos, exercícios globais, avaliação, plano de treino e histórico para teste manual.
+Depois de aplicar as migrations, execute `pnpm db:seed`. O comando recria um professor, dez alunos, exercícios globais, avaliações, planos de treino e histórico dos últimos 90 dias para teste manual. Todos os dados são fictícios e gerados de forma reproduzível com Faker.
 
-- Trainer: `trainer@muvit.dev` / `12345678`
-- Aluno: `alice.aluna@muvit.dev` / `12345678`
+- Professor: `trainer@muvit.dev` / `12345678`
+- Alunos: `aluno01@muvit.dev` até `aluno10@muvit.dev`, todos com a senha `12345678`.

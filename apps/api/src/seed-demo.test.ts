@@ -1,4 +1,6 @@
-import { seedDemoData } from '@muvit/db/seed';
+import { db, schema } from '@muvit/db';
+import { demoCredentials, seedDemoData } from '@muvit/db/seed';
+import { count } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildTestApp } from '../test/helpers/build.js';
@@ -20,7 +22,7 @@ afterAll(async () => {
 });
 
 describe('demo seed', () => {
-  it('creates easy login credentials and dashboard data', async () => {
+  it('cria logins simples e um cenário completo sem duplicação', async () => {
     await seedDemoData();
 
     const trainerLogin = await app.inject({
@@ -42,9 +44,9 @@ describe('demo seed', () => {
     });
     expect(summary.statusCode).toBe(200);
     expect(summary.json()).toMatchObject({
-      students: { total: 3, active: 1, paused: 1, inactive: 1 },
-      workouts: { activePlans: 1 },
-      assessments: { last30d: 1 },
+      students: { total: 10, active: 6, paused: 2, inactive: 2, newThisWeek: 2 },
+      workouts: { activePlans: 6 },
+      assessments: { last30d: 8 },
     });
 
     const students = await app.inject({
@@ -53,21 +55,43 @@ describe('demo seed', () => {
       headers: { authorization: `Bearer ${accessToken}` },
     });
     expect(students.statusCode).toBe(200);
-    expect(students.json().items.map((student: { email: string }) => student.email)).toEqual([
-      'alice.aluna@muvit.dev',
-      'bruno.aluno@muvit.dev',
-      'carla.aluna@muvit.dev',
-    ]);
+    expect(students.json().items).toHaveLength(10);
+    expect(
+      new Set(students.json().items.map((student: { email: string }) => student.email)),
+    ).toEqual(new Set(demoCredentials.students.map((student) => student.email)));
 
-    const studentLogin = await app.inject({
-      method: 'POST',
-      url: '/auth/login',
-      payload: {
-        email: 'alice.aluna@muvit.dev',
-        password: '12345678',
-        role: 'student',
-      },
+    for (const student of demoCredentials.students) {
+      const studentLogin = await app.inject({
+        method: 'POST',
+        url: '/auth/login',
+        payload: {
+          email: student.email,
+          password: demoCredentials.password,
+          role: 'student',
+        },
+      });
+      expect(studentLogin.statusCode).toBe(200);
+    }
+
+    const readTotals = async () => ({
+      trainers: (await db.select({ value: count() }).from(schema.trainers))[0]?.value ?? 0,
+      students: (await db.select({ value: count() }).from(schema.students))[0]?.value ?? 0,
+      assessments: (await db.select({ value: count() }).from(schema.assessments))[0]?.value ?? 0,
+      plans: (await db.select({ value: count() }).from(schema.workoutPlans))[0]?.value ?? 0,
+      logs: (await db.select({ value: count() }).from(schema.workoutLogs))[0]?.value ?? 0,
     });
-    expect(studentLogin.statusCode).toBe(200);
-  });
+
+    const expectedTotals = {
+      trainers: 1,
+      students: 10,
+      assessments: 24,
+      plans: 10,
+      logs: 40,
+    };
+    expect(await readTotals()).toEqual(expectedTotals);
+
+    await seedDemoData();
+
+    expect(await readTotals()).toEqual(expectedTotals);
+  }, 15_000);
 });
