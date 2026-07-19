@@ -14,7 +14,9 @@ import {
 import { env } from './env.js';
 import type { MuvitAuth } from './lib/auth.js';
 import type { ProfileProvisioner } from './modules/auth/profile-provisioner.js';
+import type { ProfileResolver } from './modules/auth/profile-resolver.js';
 import { createDrizzleAuth } from './modules/auth/repositories/drizzle-auth.js';
+import { createDrizzleProfileResolver } from './modules/auth/repositories/drizzle-profile-resolver.js';
 import authPlugin from './plugins/auth.js';
 import { assessmentsRoutes } from './routes/assessments.js';
 import { authRoutes } from './routes/auth.js';
@@ -41,6 +43,7 @@ declare module 'fastify' {
 
 export type BuildAppOptions = {
   profileProvisioner?: ProfileProvisioner;
+  profileResolver?: ProfileResolver;
 };
 
 export async function buildApp(options: BuildAppOptions = {}) {
@@ -58,7 +61,6 @@ export async function buildApp(options: BuildAppOptions = {}) {
     allowList: env.NODE_ENV === 'test' ? ['127.0.0.1'] : [],
   });
   await app.register(jwt, { secret: env.JWT_SECRET });
-  await app.register(authPlugin);
 
   const auth = createDrizzleAuth({
     profileProvisioner: options.profileProvisioner,
@@ -67,6 +69,9 @@ export async function buildApp(options: BuildAppOptions = {}) {
     trustedOrigins: [env.WEB_URL, ...env.EXPO_TRUSTED_ORIGINS],
   });
   app.decorate('auth', auth);
+  await app.register(authPlugin, {
+    profileResolver: options.profileResolver ?? createDrizzleProfileResolver(),
+  });
 
   await app.register(swagger, {
     openapi: {
