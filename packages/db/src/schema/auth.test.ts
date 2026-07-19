@@ -12,6 +12,22 @@ describe('schema Better Auth', () => {
     expect(getTableConfig(authVerifications).name).toBe('auth_verifications');
   });
 
+  it('mantém e-mail e token globalmente únicos', () => {
+    const userIndexes = getTableConfig(authUsers).indexes;
+    const sessionIndexes = getTableConfig(authSessions).indexes;
+
+    expect(
+      userIndexes.some(
+        (index) => index.config.name === 'auth_users_email_unique' && index.config.unique,
+      ),
+    ).toBe(true);
+    expect(
+      sessionIndexes.some(
+        (index) => index.config.name === 'auth_sessions_token_unique' && index.config.unique,
+      ),
+    ).toBe(true);
+  });
+
   it('liga perfis à identidade sem autenticar aluno gerenciado', () => {
     expect(trainers.authUserId.notNull).toBe(true);
     expect(students.authUserId.notNull).toBe(false);

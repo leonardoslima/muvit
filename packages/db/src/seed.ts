@@ -239,13 +239,6 @@ export async function seedDemoData(referenceDate: Date = new Date()): Promise<vo
     );
   }
 
-  console.log(
-    `demo trainer: ${scenario.credentials.trainer.email} / ${scenario.credentials.password}`,
-  );
-  console.log('demo students:');
-  for (const student of scenario.credentials.students) {
-    console.log(`- ${student.email} / ${scenario.credentials.password}`);
-  }
 }
 
 async function main(): Promise<void> {
