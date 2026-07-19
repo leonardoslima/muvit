@@ -1,4 +1,4 @@
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type {
   CreateWorkoutPlanInput,
@@ -11,11 +11,11 @@ export class CreateWorkoutPlanUseCase {
     private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
-  async execute(user: AuthUser, input: CreateWorkoutPlanInput) {
-    await this.ensureStudentAccess.execute(user, input.studentId, {
+  async execute(identity: RequestIdentity, input: CreateWorkoutPlanInput) {
+    await this.ensureStudentAccess.execute(identity, input.studentId, {
       studentMismatchError: 'not_found',
     });
-    const trainerId = user.role === 'trainer' ? user.sub : null;
+    const trainerId = identity.role === 'trainer' ? identity.profileId : null;
     return this.workoutPlansRepository.create({ ...input, trainerId });
   }
 }

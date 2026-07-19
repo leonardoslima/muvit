@@ -1,3 +1,5 @@
+import { db, schema } from '@muvit/db';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 
 export type SignUpInput = {
@@ -21,8 +23,20 @@ export async function signUpWithSession(app: FastifyInstance, input: SignUpInput
     payload: input,
   });
 
+  const body = response.json<{ user?: { id?: string } }>();
+  const authUserId = body.user?.id;
+  const profile =
+    authUserId === undefined
+      ? undefined
+      : input.role === 'trainer'
+        ? await db.query.trainers.findFirst({ where: eq(schema.trainers.authUserId, authUserId) })
+        : await db.query.students.findFirst({ where: eq(schema.students.authUserId, authUserId) });
+
   return {
     response,
     cookie: cookieHeaderFromSetCookie(response.headers['set-cookie']),
+    authUserId,
+    profileId: profile?.id,
+    role: input.role,
   };
 }

@@ -31,7 +31,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       try {
         return await assessmentsModule.listAssessments.execute(
-          req.user,
+          req.identity,
           req.params.studentId,
           req.query,
         );
@@ -54,7 +54,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       try {
         const assessment = await assessmentsModule.createAssessment.execute(
-          req.user,
+          req.identity,
           req.params.studentId,
           req.body,
         );
@@ -79,7 +79,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await assessmentsModule.getAssessment.execute(req.user, req.params.id);
+        return await assessmentsModule.getAssessment.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -101,7 +101,11 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await assessmentsModule.updateAssessment.execute(req.user, req.params.id, req.body);
+        return await assessmentsModule.updateAssessment.execute(
+          req.identity,
+          req.params.id,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -118,7 +122,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        await assessmentsModule.deleteAssessment.execute(req.user, req.params.id);
+        await assessmentsModule.deleteAssessment.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }

@@ -1,4 +1,4 @@
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type {
   AssessmentsRepository,
@@ -11,8 +11,10 @@ export class ListAssessmentsUseCase {
     private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
-  async execute(user: AuthUser, studentId: string, query: ListAssessmentsQuery) {
-    await this.ensureStudentAccess.execute(user, studentId, { studentMismatchError: 'not_found' });
+  async execute(identity: RequestIdentity, studentId: string, query: ListAssessmentsQuery) {
+    await this.ensureStudentAccess.execute(identity, studentId, {
+      studentMismatchError: 'not_found',
+    });
     return this.assessmentsRepository.listForStudent(studentId, query);
   }
 }

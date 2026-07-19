@@ -50,17 +50,21 @@ describe('FinishWorkoutLogUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ sub: 'student-id', role: 'student' }, 'log-id', {
-        durationMin: 45,
-        completed: true,
-        sets: [
-          {
-            workoutExerciseId: 'workout-exercise-id',
-            setNumber: 1,
-            completed: true,
-          },
-        ],
-      }),
+      useCase.execute(
+        { authUserId: 'student-auth-id', profileId: 'student-id', role: 'student' },
+        'log-id',
+        {
+          durationMin: 45,
+          completed: true,
+          sets: [
+            {
+              workoutExerciseId: 'workout-exercise-id',
+              setNumber: 1,
+              completed: true,
+            },
+          ],
+        },
+      ),
     ).rejects.toMatchObject(new UseCaseError('conflict', 'log already completed'));
   });
 });

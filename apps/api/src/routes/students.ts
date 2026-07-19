@@ -25,7 +25,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      await studentsModule.registerStudentPushToken.execute(req.user.sub, req.body.token);
+      await studentsModule.registerStudentPushToken.execute(req.identity.profileId, req.body.token);
       return reply.code(204).send();
     },
   );
@@ -40,7 +40,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: z.object({ items: z.array(studentSchema), total: z.number() }) },
       },
     },
-    async (req) => studentsModule.listStudents.execute(req.user.sub, req.query),
+    async (req) => studentsModule.listStudents.execute(req.identity.profileId, req.query),
   );
 
   app.post(
@@ -50,7 +50,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: { tags: ['students'], body: createStudentSchema, response: { 201: studentSchema } },
     },
     async (req, reply) => {
-      const student = await studentsModule.createStudent.execute(req.user.sub, req.body);
+      const student = await studentsModule.createStudent.execute(req.identity.profileId, req.body);
       return reply.code(201).send(student);
     },
   );
@@ -70,7 +70,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await studentsModule.getStudent.execute(req.user, req.params.id);
+        return await studentsModule.getStudent.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -93,7 +93,11 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await studentsModule.updateStudent.execute(req.params.id, req.user.sub, req.body);
+        return await studentsModule.updateStudent.execute(
+          req.params.id,
+          req.identity.profileId,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -108,7 +112,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        await studentsModule.deleteStudent.execute(req.params.id, req.user.sub);
+        await studentsModule.deleteStudent.execute(req.params.id, req.identity.profileId);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }

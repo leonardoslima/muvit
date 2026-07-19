@@ -1,19 +1,25 @@
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
 import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type { WorkoutPlanAccess } from '../repositories/workout-plans-repository.js';
 
 export async function assertWorkoutPlanAccess(
-  user: AuthUser,
+  identity: RequestIdentity,
   plan: WorkoutPlanAccess,
   ensureStudentAccess: StudentAccessPolicy,
 ) {
-  await ensureStudentAccess.execute(user, plan.studentId, { studentMismatchError: 'not_found' });
+  await ensureStudentAccess.execute(identity, plan.studentId, {
+    studentMismatchError: 'not_found',
+  });
 
-  if (user.role === 'trainer' && plan.trainerId !== user.sub) {
+  if (identity.role === 'trainer' && plan.trainerId !== identity.profileId) {
     throw new UseCaseError('not_found', 'not found');
   }
-  if (user.role === 'student' && plan.trainerId !== null && plan.studentId !== user.sub) {
+  if (
+    identity.role === 'student' &&
+    plan.trainerId !== null &&
+    plan.studentId !== identity.profileId
+  ) {
     throw new UseCaseError('not_found', 'not found');
   }
 }

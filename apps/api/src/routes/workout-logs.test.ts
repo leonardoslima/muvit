@@ -1,19 +1,22 @@
 import { db, schema } from '@muvit/db';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
 async function signupStudent(email: string) {
-  const response = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/student',
-    payload: { name: 'Independente', email, password: '12345678' },
+  const session = await signUpWithSession(app, {
+    name: 'Independente',
+    email,
+    password: '12345678',
+    role: 'student',
   });
-  const body = response.json();
-  return { id: body.user.id as string, token: body.accessToken as string };
+  const id = session.profileId;
+  if (id === undefined) throw new Error('student profile not provisioned');
+  return { id, cookie: session.cookie };
 }
 
 async function createStudentWorkoutScenario() {
@@ -23,12 +26,12 @@ async function createStudentWorkoutScenario() {
     .returning();
   if (!exercise) throw new Error('exercise seed failed');
 
-  const { id: studentId, token: studentToken } = await signupStudent('i@i.com');
+  const { id: studentId, cookie: studentCookie } = await signupStudent('i@i.com');
 
   const plan = await app.inject({
     method: 'POST',
     url: '/workout-plans',
-    headers: { authorization: `Bearer ${studentToken}` },
+    headers: { cookie: studentCookie },
     payload: {
       studentId,
       name: 'Plano',
@@ -45,19 +48,19 @@ async function createStudentWorkoutScenario() {
 
   return {
     studentId,
-    studentToken,
+    studentCookie,
     workoutDayId: plan.json().days[0].id as string,
     workoutExerciseId: plan.json().days[0].exercises[0].id as string,
   };
 }
 
-async function signupTrainer(email: string): Promise<string> {
-  const response = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/trainer',
-    payload: { name: 'Outro', email, password: '12345678' },
+async function signupTrainer(email: string) {
+  return signUpWithSession(app, {
+    name: 'Outro',
+    email,
+    password: '12345678',
+    role: 'trainer',
   });
-  return response.json().accessToken as string;
 }
 
 beforeEach(async () => {
@@ -75,12 +78,12 @@ afterAll(async () => {
 
 describe('workout logs', () => {
   it('student starts a log', async () => {
-    const { studentToken, workoutDayId } = await createStudentWorkoutScenario();
+    const { studentCookie, workoutDayId } = await createStudentWorkoutScenario();
 
     const r = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     expect(r.statusCode).toBe(201);
@@ -89,19 +92,19 @@ describe('workout logs', () => {
   });
 
   it('student finishes the log with sets', async () => {
-    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    const { studentCookie, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
 
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     const id = start.json().id;
     const r = await app.inject({
       method: 'PATCH',
       url: `/workout-logs/${id}/finish`,
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: {
         durationMin: 55,
         rpe: 8,
@@ -118,39 +121,39 @@ describe('workout logs', () => {
   });
 
   it('other trainer cannot read independent student logs (404)', async () => {
-    const { studentToken, workoutDayId } = await createStudentWorkoutScenario();
-    const otherTrainerToken = await signupTrainer('b@b.com');
+    const { studentCookie, workoutDayId } = await createStudentWorkoutScenario();
+    const otherTrainer = await signupTrainer('b@b.com');
 
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     const id = start.json().id;
     const r = await app.inject({
       method: 'GET',
       url: `/workout-logs/${id}`,
-      headers: { authorization: `Bearer ${otherTrainerToken}` },
+      headers: { cookie: otherTrainer.cookie },
     });
     expect(r.statusCode).toBe(404);
   });
 
   it('lists logs by date range', async () => {
-    const { studentId, studentToken, workoutDayId } = await createStudentWorkoutScenario();
+    const { studentId, studentCookie, workoutDayId } = await createStudentWorkoutScenario();
 
     for (const date of ['2026-01-15', '2026-02-20', '2026-03-10']) {
       await app.inject({
         method: 'POST',
         url: '/workout-logs',
-        headers: { authorization: `Bearer ${studentToken}` },
+        headers: { cookie: studentCookie },
         payload: { workoutDayId, date },
       });
     }
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/workout-logs?from=2026-02-01&to=2026-03-31`,
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
     });
     expect(r.json().items).toHaveLength(2);
   });
@@ -162,25 +165,25 @@ describe('workout logs', () => {
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/workout-logs`,
-      headers: { authorization: `Bearer ${other.token}` },
+      headers: { cookie: other.cookie },
     });
     expect(r.statusCode).toBe(404);
   });
 
   it('completed log cannot be finished again (409)', async () => {
-    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    const { studentCookie, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
 
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     const id = start.json().id;
     await app.inject({
       method: 'PATCH',
       url: `/workout-logs/${id}/finish`,
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: {
         durationMin: 30,
         sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],
@@ -189,7 +192,7 @@ describe('workout logs', () => {
     const second = await app.inject({
       method: 'PATCH',
       url: `/workout-logs/${id}/finish`,
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: {
         durationMin: 30,
         sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],
@@ -199,12 +202,12 @@ describe('workout logs', () => {
   });
 
   it('concurrent finishes resolve to exactly one success and one 409', async () => {
-    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    const { studentCookie, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
 
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     const id = start.json().id;
@@ -212,7 +215,7 @@ describe('workout logs', () => {
       app.inject({
         method: 'PATCH',
         url: `/workout-logs/${id}/finish`,
-        headers: { authorization: `Bearer ${studentToken}` },
+        headers: { cookie: studentCookie },
         payload: {
           durationMin: 30,
           sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],
@@ -226,7 +229,7 @@ describe('workout logs', () => {
     const get = await app.inject({
       method: 'GET',
       url: `/workout-logs/${id}`,
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
     });
     expect(get.json().sets).toHaveLength(1);
   });
@@ -238,20 +241,20 @@ describe('workout logs', () => {
     const r = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${other.token}` },
+      headers: { cookie: other.cookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     expect(r.statusCode).toBe(404);
   });
 
   it('returns 404 when another student finishes a log', async () => {
-    const { studentToken, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    const { studentCookie, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
     const other = await signupStudent('other@i.com');
 
     const start = await app.inject({
       method: 'POST',
       url: '/workout-logs',
-      headers: { authorization: `Bearer ${studentToken}` },
+      headers: { cookie: studentCookie },
       payload: { workoutDayId, date: '2026-04-01' },
     });
     const id = start.json().id;
@@ -259,7 +262,7 @@ describe('workout logs', () => {
     const r = await app.inject({
       method: 'PATCH',
       url: `/workout-logs/${id}/finish`,
-      headers: { authorization: `Bearer ${other.token}` },
+      headers: { cookie: other.cookie },
       payload: {
         durationMin: 30,
         sets: [{ workoutExerciseId, setNumber: 1, repsDone: 8, loadKg: 50, completed: true }],

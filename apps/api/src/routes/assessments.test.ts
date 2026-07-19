@@ -1,37 +1,40 @@
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
 async function signupTrainer(email: string) {
-  const r = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/trainer',
-    payload: { name: 'Trainer', email, password: '12345678' },
+  return signUpWithSession(app, {
+    name: 'Trainer',
+    email,
+    password: '12345678',
+    role: 'trainer',
   });
-  return r.json().accessToken as string;
 }
 
-async function createStudent(token: string, name: string): Promise<string> {
+async function createStudent(cookie: string, name: string): Promise<string> {
   const r = await app.inject({
     method: 'POST',
     url: '/students',
-    headers: { authorization: `Bearer ${token}` },
+    headers: { cookie },
     payload: { name },
   });
   return r.json().id as string;
 }
 
 async function signupStudent(email: string) {
-  const response = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/student',
-    payload: { name: 'Independente', email, password: '12345678' },
+  const session = await signUpWithSession(app, {
+    name: 'Independente',
+    email,
+    password: '12345678',
+    role: 'student',
   });
-  const body = response.json();
-  return { id: body.user.id as string, token: body.accessToken as string };
+  const id = session.profileId;
+  if (id === undefined) throw new Error('student profile not provisioned');
+  return { id, cookie: session.cookie };
 }
 
 beforeEach(async () => {
@@ -49,13 +52,13 @@ afterAll(async () => {
 
 describe('assessments', () => {
   it('trainer creates an assessment for own student', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
-    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+    const trainer = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno Teste');
 
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: {
         date: '2026-04-01',
         weightKg: 78.5,
@@ -68,14 +71,14 @@ describe('assessments', () => {
   });
 
   it('returns 404 when other trainer tries to create assessment for the student', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
-    const otherTrainerToken = await signupTrainer('b@b.com');
-    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+    const trainer = await signupTrainer('a@a.com');
+    const otherTrainer = await signupTrainer('b@b.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno Teste');
 
     const r = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
-      headers: { authorization: `Bearer ${otherTrainerToken}` },
+      headers: { cookie: otherTrainer.cookie },
       payload: { date: '2026-04-01', weightKg: 80 },
     });
     expect(r.statusCode).toBe(404);
@@ -88,48 +91,48 @@ describe('assessments', () => {
     const r = await app.inject({
       method: 'GET',
       url: `/students/${owner.id}/assessments`,
-      headers: { authorization: `Bearer ${other.token}` },
+      headers: { cookie: other.cookie },
     });
     expect(r.statusCode).toBe(404);
   });
 
   it('lists assessments ordered by date desc', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
-    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+    const trainer = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno Teste');
     const dates = ['2026-01-15', '2026-03-10', '2026-02-20'];
 
     for (const date of dates) {
       await app.inject({
         method: 'POST',
         url: `/students/${studentId}/assessments`,
-        headers: { authorization: `Bearer ${trainerToken}` },
+        headers: { cookie: trainer.cookie },
         payload: { date },
       });
     }
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/assessments`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
     });
     const items = r.json().items as Array<{ date: string }>;
     expect(items.map((i) => i.date)).toEqual(['2026-03-10', '2026-02-20', '2026-01-15']);
   });
 
   it('updates an assessment owned by the trainer', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
-    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+    const trainer = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno Teste');
 
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: { date: '2026-04-01', weightKg: 80 },
     });
     const id = c.json().id;
     const u = await app.inject({
       method: 'PATCH',
       url: `/assessments/${id}`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: { weightKg: 79.5, notes: 'check' },
     });
     expect(u.statusCode).toBe(200);
@@ -137,31 +140,31 @@ describe('assessments', () => {
   });
 
   it('deletes an assessment', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
-    const studentId = await createStudent(trainerToken, 'Aluno Teste');
+    const trainer = await signupTrainer('a@a.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno Teste');
 
     const c = await app.inject({
       method: 'POST',
       url: `/students/${studentId}/assessments`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: { date: '2026-04-01' },
     });
     const id = c.json().id;
     const d = await app.inject({
       method: 'DELETE',
       url: `/assessments/${id}`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
     });
     expect(d.statusCode).toBe(204);
   });
 
   it('independent student creates and lists own assessments', async () => {
-    const { id: myId, token } = await signupStudent('i@i.com');
+    const { id: myId, cookie } = await signupStudent('i@i.com');
 
     const c = await app.inject({
       method: 'POST',
       url: `/students/${myId}/assessments`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: { cookie },
       payload: { date: '2026-04-01', weightKg: 70 },
     });
     expect(c.statusCode).toBe(201);
@@ -169,7 +172,7 @@ describe('assessments', () => {
     const l = await app.inject({
       method: 'GET',
       url: `/students/${myId}/assessments`,
-      headers: { authorization: `Bearer ${token}` },
+      headers: { cookie },
     });
     expect(l.json().items).toHaveLength(1);
   });

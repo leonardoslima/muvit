@@ -31,7 +31,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        const log = await workoutLogsModule.startWorkoutLog.execute(req.user, req.body);
+        const log = await workoutLogsModule.startWorkoutLog.execute(req.identity, req.body);
         return reply.code(201).send(log);
       } catch (error) {
         return sendUseCaseError(reply, error);
@@ -55,7 +55,11 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await workoutLogsModule.finishWorkoutLog.execute(req.user, req.params.id, req.body);
+        return await workoutLogsModule.finishWorkoutLog.execute(
+          req.identity,
+          req.params.id,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -76,7 +80,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await workoutLogsModule.getWorkoutLog.execute(req.user, req.params.id);
+        return await workoutLogsModule.getWorkoutLog.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -96,7 +100,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       try {
         return await workoutLogsModule.listWorkoutLogs.execute(
-          req.user,
+          req.identity,
           req.params.studentId,
           req.query,
         );

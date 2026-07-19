@@ -1,4 +1,4 @@
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import { UseCaseError } from '../../../shared/use-case-error.js';
 import type { StudentAccessPolicy } from '../../students/use-cases/student-access-policy.js';
 import type {
@@ -12,10 +12,10 @@ export class FinishWorkoutLogUseCase {
     private readonly ensureStudentAccess: StudentAccessPolicy,
   ) {}
 
-  async execute(user: AuthUser, id: string, input: FinishWorkoutLogInput) {
+  async execute(identity: RequestIdentity, id: string, input: FinishWorkoutLogInput) {
     const log = await this.workoutLogsRepository.findById(id);
     if (!log) throw new UseCaseError('not_found', 'not found');
-    await this.ensureStudentAccess.execute(user, log.studentId, {
+    await this.ensureStudentAccess.execute(identity, log.studentId, {
       studentMismatchError: 'not_found',
     });
 

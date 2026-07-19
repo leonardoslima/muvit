@@ -13,7 +13,7 @@ const student: Student = {
   isIndependent: true,
   name: 'Aluno',
   email: 'student@example.com',
-  passwordHash: 'hash',
+  authUserId: 'student-auth-id',
   phone: null,
   birthDate: null,
   gender: null,
@@ -54,7 +54,7 @@ describe('CreateWorkoutPlanUseCase', () => {
     const useCase = new CreateWorkoutPlanUseCase(repository, ensureStudentAccess);
 
     await useCase.execute(
-      { sub: 'student-id', role: 'student' },
+      { authUserId: 'student-auth-id', profileId: 'student-id', role: 'student' },
       {
         studentId: 'student-id',
         name: 'Meu Treino',
