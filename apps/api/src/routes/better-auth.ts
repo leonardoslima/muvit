@@ -4,6 +4,19 @@ import { env } from '../env.js';
 
 const authRateLimit = { max: 10, timeWindow: '1 minute' };
 
+export async function forwardBetterAuthResponse(reply: FastifyReply, response: Response) {
+  reply.status(response.status);
+  for (const [name, value] of response.headers.entries()) {
+    if (name !== 'set-cookie') reply.header(name, value);
+  }
+
+  const setCookies = response.headers.getSetCookie();
+  if (setCookies.length > 0) reply.header('set-cookie', setCookies);
+
+  const body = response.body === null ? null : await response.text();
+  return reply.send(body);
+}
+
 export const betterAuthRoutes: FastifyPluginAsync = async (app) => {
   async function handleBetterAuth(request: FastifyRequest, reply: FastifyReply) {
     const url = new URL(request.url, env.BETTER_AUTH_URL);
@@ -15,16 +28,7 @@ export const betterAuthRoutes: FastifyPluginAsync = async (app) => {
       }),
     );
 
-    reply.status(response.status);
-    for (const [name, value] of response.headers.entries()) {
-      if (name !== 'set-cookie') reply.header(name, value);
-    }
-
-    const setCookies = response.headers.getSetCookie();
-    if (setCookies.length > 0) reply.header('set-cookie', setCookies);
-
-    const body = response.body === null ? null : await response.text();
-    return reply.send(body);
+    return forwardBetterAuthResponse(reply, response);
   }
 
   app.route({

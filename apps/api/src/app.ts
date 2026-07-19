@@ -3,7 +3,6 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
-import { db } from '@muvit/db';
 import scalar from '@scalar/fastify-api-reference';
 import Fastify from 'fastify';
 import {
@@ -13,9 +12,9 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
-import { type MuvitAuth, createMuvitAuth } from './lib/auth.js';
+import type { MuvitAuth } from './lib/auth.js';
 import type { ProfileProvisioner } from './modules/auth/profile-provisioner.js';
-import { DrizzleProfileProvisioner } from './modules/auth/repositories/drizzle-profile-provisioner.js';
+import { createDrizzleAuth } from './modules/auth/repositories/drizzle-auth.js';
 import authPlugin from './plugins/auth.js';
 import { assessmentsRoutes } from './routes/assessments.js';
 import { authRoutes } from './routes/auth.js';
@@ -61,10 +60,8 @@ export async function buildApp(options: BuildAppOptions = {}) {
   await app.register(jwt, { secret: env.JWT_SECRET });
   await app.register(authPlugin);
 
-  const profileProvisioner = options.profileProvisioner ?? new DrizzleProfileProvisioner(db);
-  const auth = createMuvitAuth({
-    db,
-    profileProvisioner,
+  const auth = createDrizzleAuth({
+    profileProvisioner: options.profileProvisioner,
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.WEB_URL, ...env.EXPO_TRUSTED_ORIGINS],
