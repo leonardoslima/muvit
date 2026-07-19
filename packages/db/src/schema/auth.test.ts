@@ -32,4 +32,12 @@ describe('schema Better Auth', () => {
     expect(trainers.authUserId.notNull).toBe(true);
     expect(students.authUserId.notNull).toBe(false);
   });
+
+  it('gera UUIDs no banco para todas as identidades do Better Auth', () => {
+    expect(
+      [authUsers, authAccounts, authSessions, authVerifications].every(
+        (table) => table.id.hasDefault,
+      ),
+    ).toBe(true);
+  });
 });

@@ -14,7 +14,7 @@ export const authRoleEnum = pgEnum('auth_role', ['trainer', 'student']);
 export const authUsers = pgTable(
   'auth_users',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     email: text('email').notNull(),
     emailVerified: boolean('email_verified').notNull().default(false),
@@ -29,7 +29,7 @@ export const authUsers = pgTable(
 export const authSessions = pgTable(
   'auth_sessions',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     token: text('token').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     ipAddress: text('ip_address'),
@@ -49,7 +49,7 @@ export const authSessions = pgTable(
 export const authAccounts = pgTable(
   'auth_accounts',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(),
     userId: uuid('user_id')
@@ -74,7 +74,7 @@ export const authAccounts = pgTable(
 export const authVerifications = pgTable(
   'auth_verifications',
   {
-    id: uuid('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
