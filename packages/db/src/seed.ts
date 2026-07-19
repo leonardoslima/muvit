@@ -6,7 +6,7 @@ import { globalExercises } from './seeds/exercises.js';
 
 export { demoCredentials } from './seeds/demo.js';
 
-const demoPasswordHash = '$2a$10$dFP5Ssm4SVP5zZwOl8aqFeORsVWb9Mn1hmwAYboTcZZisCymYiQM2';
+const demoTrainerAuthUserId = '00000000-0000-4000-8000-000000000001';
 
 const legacyStudentEmails: string[] = [
   'alice.aluna@muvit.dev',
@@ -40,6 +40,7 @@ async function clearDemoData(): Promise<void> {
 
   await db.delete(schema.students).where(inArray(schema.students.email, legacyStudentEmails));
   await db.delete(schema.trainers).where(eq(schema.trainers.email, demoCredentials.trainer.email));
+  await db.delete(schema.authUsers).where(eq(schema.authUsers.email, demoCredentials.trainer.email));
 }
 
 async function seedGlobalExercises(): Promise<PersistedExercise[]> {
@@ -82,12 +83,23 @@ export async function seedDemoData(referenceDate: Date = new Date()): Promise<vo
   await clearDemoData();
   const exercises = await seedGlobalExercises();
 
+  const [authUser] = await db
+    .insert(schema.authUsers)
+    .values({
+      id: demoTrainerAuthUserId,
+      email: scenario.credentials.trainer.email,
+      name: scenario.credentials.trainer.name,
+      role: 'trainer',
+    })
+    .returning();
+  if (!authUser) throw new Error('failed to seed demo auth user');
+
   const [trainer] = await db
     .insert(schema.trainers)
     .values({
+      authUserId: authUser.id,
       email: scenario.credentials.trainer.email,
       name: scenario.credentials.trainer.name,
-      passwordHash: demoPasswordHash,
       plan: 'pro',
     })
     .returning();
@@ -99,7 +111,6 @@ export async function seedDemoData(referenceDate: Date = new Date()): Promise<vo
       scenario.students.map((student) => ({
         ...student,
         trainerId: trainer.id,
-        passwordHash: demoPasswordHash,
       })),
     )
     .returning();
