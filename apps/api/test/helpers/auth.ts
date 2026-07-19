@@ -23,20 +23,25 @@ export async function signUpWithSession(app: FastifyInstance, input: SignUpInput
     payload: input,
   });
 
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error('Signup de teste falhou');
+  }
+
   const body = response.json<{ user?: { id?: string } }>();
   const authUserId = body.user?.id;
+  if (authUserId === undefined) throw new Error('Identidade de teste ausente');
+
   const profile =
-    authUserId === undefined
-      ? undefined
-      : input.role === 'trainer'
-        ? await db.query.trainers.findFirst({ where: eq(schema.trainers.authUserId, authUserId) })
-        : await db.query.students.findFirst({ where: eq(schema.students.authUserId, authUserId) });
+    input.role === 'trainer'
+      ? await db.query.trainers.findFirst({ where: eq(schema.trainers.authUserId, authUserId) })
+      : await db.query.students.findFirst({ where: eq(schema.students.authUserId, authUserId) });
+  if (profile === undefined) throw new Error('Perfil de teste ausente');
 
   return {
     response,
     cookie: cookieHeaderFromSetCookie(response.headers['set-cookie']),
     authUserId,
-    profileId: profile?.id,
+    profileId: profile.id,
     role: input.role,
   };
 }
