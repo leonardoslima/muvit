@@ -36,6 +36,24 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
+    '/students/me/workout-plans',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['workout-plans'],
+        response: { 200: z.object({ items: z.array(workoutPlanSummarySchema) }) },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await workoutsModule.listWorkoutPlans.execute(req.identity, req.identity.profileId);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.get(
     '/students/:studentId/workout-plans',
     {
       schema: {

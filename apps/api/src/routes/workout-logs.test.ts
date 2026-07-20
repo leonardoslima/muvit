@@ -158,6 +158,38 @@ describe('workout logs', () => {
     expect(r.json().items).toHaveLength(2);
   });
 
+  it('student lists own logs without sending a student ID', async () => {
+    const { studentId, studentCookie, workoutDayId } = await createStudentWorkoutScenario();
+
+    await app.inject({
+      method: 'POST',
+      url: '/workout-logs',
+      headers: { cookie: studentCookie },
+      payload: { workoutDayId, date: '2026-04-01' },
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-logs',
+      headers: { cookie: studentCookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items).toEqual([expect.objectContaining({ studentId, workoutDayId })]);
+  });
+
+  it('rejects trainer access to self-scoped workout logs', async () => {
+    const trainer = await signupTrainer('self-trainer@a.com');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-logs',
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
   it('returns 404 when another student lists logs', async () => {
     const { studentId } = await createStudentWorkoutScenario();
     const other = await signupStudent('other@i.com');

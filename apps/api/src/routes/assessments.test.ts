@@ -34,7 +34,7 @@ async function signupStudent(email: string) {
   });
   const id = session.profileId;
   if (id === undefined) throw new Error('student profile not provisioned');
-  return { id, cookie: session.cookie };
+  return { authUserId: session.authUserId, id, cookie: session.cookie };
 }
 
 beforeEach(async () => {
@@ -175,5 +175,44 @@ describe('assessments', () => {
       headers: { cookie },
     });
     expect(l.json().items).toHaveLength(1);
+  });
+
+  it('independent student creates and lists own assessments without sending a student ID', async () => {
+    const { authUserId, id: profileId, cookie } = await signupStudent('self@i.com');
+
+    expect(authUserId).not.toBe(profileId);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students/me/assessments',
+      headers: { cookie },
+      payload: { date: '2026-04-02', weightKg: 69 },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({ studentId: profileId, date: '2026-04-02' });
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/students/me/assessments',
+      headers: { cookie },
+    });
+
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().items).toHaveLength(1);
+    expect(listed.json().items[0].studentId).toBe(profileId);
+  });
+
+  it('rejects trainer access to self-scoped assessments', async () => {
+    const trainer = await signupTrainer('self-trainer@a.com');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students/me/assessments',
+      headers: { cookie: trainer.cookie },
+      payload: { date: '2026-04-02' },
+    });
+
+    expect(response.statusCode).toBe(403);
   });
 });

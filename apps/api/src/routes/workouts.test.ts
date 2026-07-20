@@ -185,6 +185,69 @@ describe('workout plans', () => {
     expect(r.json().trainerId).toBeNull();
   });
 
+  it('independent student lists own plans and loads the full plan without sending a student ID', async () => {
+    const exerciseId = await createExercise('Remada', 'back');
+    const { id: profileId, cookie } = await signupStudent('self@i.com');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/workout-plans',
+      headers: { cookie },
+      payload: {
+        studentId: profileId,
+        name: 'Meu Plano',
+        status: 'active',
+        days: [
+          {
+            label: 'Treino A',
+            dayOrder: 0,
+            exercises: [{ exerciseId, exerciseOrder: 0, sets: 3, reps: '10' }],
+          },
+        ],
+      },
+    });
+    const planId = created.json().id as string;
+    const dayId = created.json().days[0].id as string;
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-plans',
+      headers: { cookie },
+    });
+
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().items).toEqual([
+      expect.objectContaining({ id: planId, studentId: profileId, status: 'active' }),
+    ]);
+
+    const full = await app.inject({
+      method: 'GET',
+      url: `/workout-plans/${planId}`,
+      headers: { cookie },
+    });
+
+    expect(full.statusCode).toBe(200);
+    expect(full.json().days).toEqual([
+      expect.objectContaining({
+        id: dayId,
+        exercises: [
+          expect.objectContaining({ exercise: expect.objectContaining({ id: exerciseId }) }),
+        ],
+      }),
+    ]);
+  });
+
+  it('rejects trainer access to self-scoped workout plans', async () => {
+    const trainer = await signupTrainer('self-trainer@a.com');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-plans',
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
   it('update replaces days idempotently', async () => {
     const { exerciseA, exerciseB, studentId, trainerCookie } = await createTrainerScenario();
 

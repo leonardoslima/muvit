@@ -88,6 +88,29 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
   );
 
   app.get(
+    '/students/me/workout-logs',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['workout-logs'],
+        querystring: listWorkoutLogsQuerySchema,
+        response: { 200: z.object({ items: z.array(workoutLogSummarySchema) }) },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await workoutLogsModule.listWorkoutLogs.execute(
+          req.identity,
+          req.identity.profileId,
+          req.query,
+        );
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.get(
     '/students/:studentId/workout-logs',
     {
       schema: {

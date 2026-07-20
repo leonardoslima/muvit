@@ -17,6 +17,55 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.requireAuth);
 
   app.get(
+    '/students/me/assessments',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['assessments'],
+        querystring: listAssessmentsQuerySchema,
+        response: {
+          200: z.object({ items: z.array(assessmentSchema), total: z.number() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await assessmentsModule.listAssessments.execute(
+          req.identity,
+          req.identity.profileId,
+          req.query,
+        );
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.post(
+    '/students/me/assessments',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['assessments'],
+        body: createAssessmentSchema,
+        response: { 201: assessmentSchema },
+      },
+    },
+    async (req, reply) => {
+      try {
+        const assessment = await assessmentsModule.createAssessment.execute(
+          req.identity,
+          req.identity.profileId,
+          req.body,
+        );
+        return reply.code(201).send(assessment);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.get(
     '/students/:studentId/assessments',
     {
       schema: {
