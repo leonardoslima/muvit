@@ -6,7 +6,7 @@ Estas regras valem para `apps/api/src/modules/auth` e complementam `apps/api/AGE
 
 ## Autenticação e autorização
 
-- Better Auth é a única fonte de senha, sessão e cookie; não recrie JWTs, refresh tokens, hashing próprio ou endpoints legados.
+- Better Auth é a única fonte de senha, sessão e cookie; não recrie mecanismos de token, hashing próprio ou endpoints paralelos.
 - Papéis `trainer` e `student` são imutáveis depois da criação da identidade.
 - Casos de uso de negócio recebem `RequestIdentity` ou IDs de domínio, nunca tipos, sessões, cookies ou tabelas do Better Auth.
 - Resolva o perfil de domínio a partir de `authUserId`; relações e regras de negócio usam somente `profileId`.

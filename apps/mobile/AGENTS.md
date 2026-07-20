@@ -23,6 +23,11 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 ## Dados, permissao e notificacoes
 
 - Trate chamadas de rede com estados de loading, erro e retry quando o fluxo exigir.
+- Use `authClient.useSession()` como fonte unica de hidratacao e identidade; o plugin Expo do Better Auth e o unico responsavel por persistir a sessao no SecureStore.
+- Encaminhe `authClient.getCookie()` no header `Cookie` das chamadas nativas e use `credentials: 'omit'`; nao crie store paralela ou tokens proprios.
+- Chamadas de dominio do aluno usam rotas self-scoped `/students/me/*`; nunca trate o ID do usuario Better Auth como `profileId`.
+- O fluxo mobile autenticavel e exclusivo de `student`; rejeite e encerre sessoes com outro papel.
+- Particione cache persistente privado pela identidade autenticada ou limpe-o ao trocar de conta.
 - Solicite permissoes nativas no ponto de uso e trate negacao de forma explicita.
 - Push tokens e dados de sessao devem seguir os contratos da API.
 - Dados offline ou cache local devem ter origem e invalidez claras.
