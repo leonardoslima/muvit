@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAssessmentsByIdData, DeleteAssessmentsByIdResponses, DeleteExercisesByIdData, DeleteExercisesByIdResponses, DeleteStudentsByIdData, DeleteStudentsByIdResponses, DeleteWorkoutPlansByIdData, DeleteWorkoutPlansByIdResponses, GetAssessmentsByIdData, GetAssessmentsByIdErrors, GetAssessmentsByIdResponses, GetAuthMeData, GetAuthMeResponses, GetExercisesData, GetExercisesResponses, GetHealthData, GetHealthResponses, GetStudentsByIdData, GetStudentsByIdErrors, GetStudentsByIdResponses, GetStudentsByStudentIdAssessmentsData, GetStudentsByStudentIdAssessmentsResponses, GetStudentsByStudentIdWorkoutLogsData, GetStudentsByStudentIdWorkoutLogsResponses, GetStudentsByStudentIdWorkoutPlansData, GetStudentsByStudentIdWorkoutPlansResponses, GetStudentsData, GetStudentsResponses, GetTrainerSummaryData, GetTrainerSummaryResponses, GetWorkoutLogsByIdData, GetWorkoutLogsByIdErrors, GetWorkoutLogsByIdResponses, GetWorkoutPlansByIdData, GetWorkoutPlansByIdErrors, GetWorkoutPlansByIdResponses, PatchAssessmentsByIdData, PatchAssessmentsByIdErrors, PatchAssessmentsByIdResponses, PatchExercisesByIdData, PatchExercisesByIdErrors, PatchExercisesByIdResponses, PatchStudentsByIdData, PatchStudentsByIdErrors, PatchStudentsByIdResponses, PatchWorkoutLogsByIdFinishData, PatchWorkoutLogsByIdFinishErrors, PatchWorkoutLogsByIdFinishResponses, PatchWorkoutPlansByIdData, PatchWorkoutPlansByIdErrors, PatchWorkoutPlansByIdResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthRefreshData, PostAuthRefreshErrors, PostAuthRefreshResponses, PostAuthSignupStudentData, PostAuthSignupStudentErrors, PostAuthSignupStudentResponses, PostAuthSignupTrainerData, PostAuthSignupTrainerErrors, PostAuthSignupTrainerResponses, PostExercisesData, PostExercisesResponses, PostStudentsByStudentIdAssessmentsData, PostStudentsByStudentIdAssessmentsResponses, PostStudentsData, PostStudentsMePushTokenData, PostStudentsMePushTokenResponses, PostStudentsResponses, PostTrainersMeOnboardingData, PostTrainersMeOnboardingResponses, PostUploadsPresignData, PostUploadsPresignResponses, PostWorkoutLogsData, PostWorkoutLogsErrors, PostWorkoutLogsResponses, PostWorkoutPlansData, PostWorkoutPlansResponses } from './types.gen';
+import type { DeleteAssessmentsByIdData, DeleteAssessmentsByIdResponses, DeleteExercisesByIdData, DeleteExercisesByIdResponses, DeleteStudentsByIdData, DeleteStudentsByIdResponses, DeleteWorkoutPlansByIdData, DeleteWorkoutPlansByIdResponses, GetApiAuthBy__Data, GetApiAuthBy__Responses, GetAssessmentsByIdData, GetAssessmentsByIdErrors, GetAssessmentsByIdResponses, GetExercisesData, GetExercisesResponses, GetHealthData, GetHealthResponses, GetStudentsByIdData, GetStudentsByIdErrors, GetStudentsByIdResponses, GetStudentsByStudentIdAssessmentsData, GetStudentsByStudentIdAssessmentsResponses, GetStudentsByStudentIdWorkoutLogsData, GetStudentsByStudentIdWorkoutLogsResponses, GetStudentsByStudentIdWorkoutPlansData, GetStudentsByStudentIdWorkoutPlansResponses, GetStudentsData, GetStudentsMeAssessmentsData, GetStudentsMeAssessmentsResponses, GetStudentsMeWorkoutLogsData, GetStudentsMeWorkoutLogsResponses, GetStudentsMeWorkoutPlansData, GetStudentsMeWorkoutPlansResponses, GetStudentsResponses, GetTrainerSummaryData, GetTrainerSummaryResponses, GetWorkoutLogsByIdData, GetWorkoutLogsByIdErrors, GetWorkoutLogsByIdResponses, GetWorkoutPlansByIdData, GetWorkoutPlansByIdErrors, GetWorkoutPlansByIdResponses, PatchAssessmentsByIdData, PatchAssessmentsByIdErrors, PatchAssessmentsByIdResponses, PatchExercisesByIdData, PatchExercisesByIdErrors, PatchExercisesByIdResponses, PatchStudentsByIdData, PatchStudentsByIdErrors, PatchStudentsByIdResponses, PatchWorkoutLogsByIdFinishData, PatchWorkoutLogsByIdFinishErrors, PatchWorkoutLogsByIdFinishResponses, PatchWorkoutPlansByIdData, PatchWorkoutPlansByIdErrors, PatchWorkoutPlansByIdResponses, PostApiAuthBy__Data, PostApiAuthBy__Responses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailResponses, PostExercisesData, PostExercisesResponses, PostStudentsByStudentIdAssessmentsData, PostStudentsByStudentIdAssessmentsResponses, PostStudentsData, PostStudentsMeAssessmentsData, PostStudentsMeAssessmentsResponses, PostStudentsMePushTokenData, PostStudentsMePushTokenResponses, PostStudentsResponses, PostTrainersOnboardingData, PostTrainersOnboardingResponses, PostUploadsPresignData, PostUploadsPresignResponses, PostWorkoutLogsData, PostWorkoutLogsErrors, PostWorkoutLogsResponses, PostWorkoutPlansData, PostWorkoutPlansResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -23,45 +23,13 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/health', ...options });
 
-export const postAuthSignupTrainer = <ThrowOnError extends boolean = false>(options: Options<PostAuthSignupTrainerData, ThrowOnError>): RequestResult<PostAuthSignupTrainerResponses, PostAuthSignupTrainerErrors, ThrowOnError> => (options.client ?? client).post<PostAuthSignupTrainerResponses, PostAuthSignupTrainerErrors, ThrowOnError>({
-    url: '/auth/signup/trainer',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const postApiAuthSignUpEmail = <ThrowOnError extends boolean = false>(options?: Options<PostApiAuthSignUpEmailData, ThrowOnError>): RequestResult<PostApiAuthSignUpEmailResponses, unknown, ThrowOnError> => (options?.client ?? client).post<PostApiAuthSignUpEmailResponses, unknown, ThrowOnError>({ url: '/api/auth/sign-up/email', ...options });
 
-export const postAuthSignupStudent = <ThrowOnError extends boolean = false>(options: Options<PostAuthSignupStudentData, ThrowOnError>): RequestResult<PostAuthSignupStudentResponses, PostAuthSignupStudentErrors, ThrowOnError> => (options.client ?? client).post<PostAuthSignupStudentResponses, PostAuthSignupStudentErrors, ThrowOnError>({
-    url: '/auth/signup/student',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const postApiAuthSignInEmail = <ThrowOnError extends boolean = false>(options?: Options<PostApiAuthSignInEmailData, ThrowOnError>): RequestResult<PostApiAuthSignInEmailResponses, unknown, ThrowOnError> => (options?.client ?? client).post<PostApiAuthSignInEmailResponses, unknown, ThrowOnError>({ url: '/api/auth/sign-in/email', ...options });
 
-export const postAuthLogin = <ThrowOnError extends boolean = false>(options: Options<PostAuthLoginData, ThrowOnError>): RequestResult<PostAuthLoginResponses, PostAuthLoginErrors, ThrowOnError> => (options.client ?? client).post<PostAuthLoginResponses, PostAuthLoginErrors, ThrowOnError>({
-    url: '/auth/login',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const getApiAuthBy__ = <ThrowOnError extends boolean = false>(options: Options<GetApiAuthBy__Data, ThrowOnError>): RequestResult<GetApiAuthBy__Responses, unknown, ThrowOnError> => (options.client ?? client).get<GetApiAuthBy__Responses, unknown, ThrowOnError>({ url: '/api/auth/{*}', ...options });
 
-export const postAuthRefresh = <ThrowOnError extends boolean = false>(options: Options<PostAuthRefreshData, ThrowOnError>): RequestResult<PostAuthRefreshResponses, PostAuthRefreshErrors, ThrowOnError> => (options.client ?? client).post<PostAuthRefreshResponses, PostAuthRefreshErrors, ThrowOnError>({
-    url: '/auth/refresh',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-export const getAuthMe = <ThrowOnError extends boolean = false>(options?: Options<GetAuthMeData, ThrowOnError>): RequestResult<GetAuthMeResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetAuthMeResponses, unknown, ThrowOnError>({ url: '/auth/me', ...options });
-
-export const postTrainersMeOnboarding = <ThrowOnError extends boolean = false>(options?: Options<PostTrainersMeOnboardingData, ThrowOnError>): RequestResult<PostTrainersMeOnboardingResponses, unknown, ThrowOnError> => (options?.client ?? client).post<PostTrainersMeOnboardingResponses, unknown, ThrowOnError>({ url: '/trainers/me/onboarding', ...options });
+export const postApiAuthBy__ = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthBy__Data, ThrowOnError>): RequestResult<PostApiAuthBy__Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostApiAuthBy__Responses, unknown, ThrowOnError>({ url: '/api/auth/{*}', ...options });
 
 export const postStudentsMePushToken = <ThrowOnError extends boolean = false>(options: Options<PostStudentsMePushTokenData, ThrowOnError>): RequestResult<PostStudentsMePushTokenResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostStudentsMePushTokenResponses, unknown, ThrowOnError>({
     url: '/students/me/push-token',
@@ -118,6 +86,19 @@ export const patchExercisesById = <ThrowOnError extends boolean = false>(options
     }
 });
 
+export const postTrainersOnboarding = <ThrowOnError extends boolean = false>(options?: Options<PostTrainersOnboardingData, ThrowOnError>): RequestResult<PostTrainersOnboardingResponses, unknown, ThrowOnError> => (options?.client ?? client).post<PostTrainersOnboardingResponses, unknown, ThrowOnError>({ url: '/trainers/onboarding', ...options });
+
+export const getStudentsMeAssessments = <ThrowOnError extends boolean = false>(options?: Options<GetStudentsMeAssessmentsData, ThrowOnError>): RequestResult<GetStudentsMeAssessmentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStudentsMeAssessmentsResponses, unknown, ThrowOnError>({ url: '/students/me/assessments', ...options });
+
+export const postStudentsMeAssessments = <ThrowOnError extends boolean = false>(options: Options<PostStudentsMeAssessmentsData, ThrowOnError>): RequestResult<PostStudentsMeAssessmentsResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostStudentsMeAssessmentsResponses, unknown, ThrowOnError>({
+    url: '/students/me/assessments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const getStudentsByStudentIdAssessments = <ThrowOnError extends boolean = false>(options: Options<GetStudentsByStudentIdAssessmentsData, ThrowOnError>): RequestResult<GetStudentsByStudentIdAssessmentsResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetStudentsByStudentIdAssessmentsResponses, unknown, ThrowOnError>({ url: '/students/{studentId}/assessments', ...options });
 
 export const postStudentsByStudentIdAssessments = <ThrowOnError extends boolean = false>(options: Options<PostStudentsByStudentIdAssessmentsData, ThrowOnError>): RequestResult<PostStudentsByStudentIdAssessmentsResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostStudentsByStudentIdAssessmentsResponses, unknown, ThrowOnError>({
@@ -150,6 +131,8 @@ export const postWorkoutPlans = <ThrowOnError extends boolean = false>(options: 
         ...options.headers
     }
 });
+
+export const getStudentsMeWorkoutPlans = <ThrowOnError extends boolean = false>(options?: Options<GetStudentsMeWorkoutPlansData, ThrowOnError>): RequestResult<GetStudentsMeWorkoutPlansResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStudentsMeWorkoutPlansResponses, unknown, ThrowOnError>({ url: '/students/me/workout-plans', ...options });
 
 export const getStudentsByStudentIdWorkoutPlans = <ThrowOnError extends boolean = false>(options: Options<GetStudentsByStudentIdWorkoutPlansData, ThrowOnError>): RequestResult<GetStudentsByStudentIdWorkoutPlansResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetStudentsByStudentIdWorkoutPlansResponses, unknown, ThrowOnError>({ url: '/students/{studentId}/workout-plans', ...options });
 
@@ -185,6 +168,8 @@ export const patchWorkoutLogsByIdFinish = <ThrowOnError extends boolean = false>
 });
 
 export const getWorkoutLogsById = <ThrowOnError extends boolean = false>(options: Options<GetWorkoutLogsByIdData, ThrowOnError>): RequestResult<GetWorkoutLogsByIdResponses, GetWorkoutLogsByIdErrors, ThrowOnError> => (options.client ?? client).get<GetWorkoutLogsByIdResponses, GetWorkoutLogsByIdErrors, ThrowOnError>({ url: '/workout-logs/{id}', ...options });
+
+export const getStudentsMeWorkoutLogs = <ThrowOnError extends boolean = false>(options?: Options<GetStudentsMeWorkoutLogsData, ThrowOnError>): RequestResult<GetStudentsMeWorkoutLogsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStudentsMeWorkoutLogsResponses, unknown, ThrowOnError>({ url: '/students/me/workout-logs', ...options });
 
 export const getStudentsByStudentIdWorkoutLogs = <ThrowOnError extends boolean = false>(options: Options<GetStudentsByStudentIdWorkoutLogsData, ThrowOnError>): RequestResult<GetStudentsByStudentIdWorkoutLogsResponses, unknown, ThrowOnError> => (options.client ?? client).get<GetStudentsByStudentIdWorkoutLogsResponses, unknown, ThrowOnError>({ url: '/students/{studentId}/workout-logs', ...options });
 
