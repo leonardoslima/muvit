@@ -1,6 +1,5 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import scalar from '@scalar/fastify-api-reference';
@@ -19,12 +18,12 @@ import { createDrizzleAuth } from './modules/auth/repositories/drizzle-auth.js';
 import { createDrizzleProfileResolver } from './modules/auth/repositories/drizzle-profile-resolver.js';
 import authPlugin from './plugins/auth.js';
 import { assessmentsRoutes } from './routes/assessments.js';
-import { authRoutes } from './routes/auth.js';
 import { betterAuthRoutes } from './routes/better-auth.js';
 import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
 import { studentsRoutes } from './routes/students.js';
 import { trainerSummaryRoutes } from './routes/trainer-summary.js';
+import { trainersRoutes } from './routes/trainers.js';
 import { uploadsRoutes } from './routes/uploads.js';
 import { workoutLogsRoutes } from './routes/workout-logs.js';
 import { workoutsRoutes } from './routes/workouts.js';
@@ -60,7 +59,6 @@ export async function buildApp(options: BuildAppOptions = {}) {
     global: false,
     allowList: env.NODE_ENV === 'test' ? ['127.0.0.1'] : [],
   });
-  await app.register(jwt, { secret: env.JWT_SECRET });
 
   const auth = createDrizzleAuth({
     profileProvisioner: options.profileProvisioner,
@@ -92,9 +90,9 @@ export async function buildApp(options: BuildAppOptions = {}) {
 
   await app.register(healthRoutes);
   await app.register(betterAuthRoutes);
-  await app.register(authRoutes);
   await app.register(studentsRoutes);
   await app.register(exercisesRoutes);
+  await app.register(trainersRoutes);
   await app.register(assessmentsRoutes);
   await app.register(workoutsRoutes);
   await app.register(workoutLogsRoutes);

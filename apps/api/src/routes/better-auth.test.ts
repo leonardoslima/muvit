@@ -101,11 +101,15 @@ describe('Better Auth', () => {
       role: 'trainer',
     });
 
-    const { response } = await signUpWithSession(currentApp(), {
-      name: 'Ana Lima',
-      email: 'papel@example.com',
-      password: 'senha-segura-123',
-      role: 'student',
+    const response = await currentApp().inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      payload: {
+        name: 'Ana Lima',
+        email: 'papel@example.com',
+        password: 'senha-segura-123',
+        role: 'student',
+      },
     });
 
     expect(response.statusCode).toBeGreaterThanOrEqual(400);
@@ -166,11 +170,15 @@ describe('Better Auth', () => {
     };
     app = await buildTestApp({ profileProvisioner: failingProvisioner });
 
-    const { response } = await signUpWithSession(currentApp(), {
-      name: 'Falha Controlada',
-      email: 'falha@example.com',
-      password: 'senha-segura-123',
-      role: 'trainer',
+    const response = await currentApp().inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      payload: {
+        name: 'Falha Controlada',
+        email: 'falha@example.com',
+        password: 'senha-segura-123',
+        role: 'trainer',
+      },
     });
 
     expect(response.statusCode).toBe(500);

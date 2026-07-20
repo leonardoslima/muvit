@@ -17,6 +17,15 @@ export type AuthDependencies = {
   trustedOrigins: string[];
 };
 
+export type MuvitAuth = {
+  handler(request: Request): Promise<Response>;
+  api: {
+    getSession(options: {
+      headers: Headers;
+    }): Promise<{ user: { id: string; role: unknown } } | null>;
+  };
+};
+
 function isAuthRole(value: unknown): value is 'trainer' | 'student' {
   return value === 'trainer' || value === 'student';
 }
@@ -26,8 +35,8 @@ function readRole(body: unknown): unknown {
   return body.role;
 }
 
-export function createMuvitAuth(dependencies: AuthDependencies) {
-  return betterAuth({
+export function createMuvitAuth(dependencies: AuthDependencies): MuvitAuth {
+  const auth = betterAuth({
     database: drizzleAdapter(dependencies.db, {
       provider: 'pg',
       schema: {
@@ -89,6 +98,16 @@ export function createMuvitAuth(dependencies: AuthDependencies) {
       }),
     },
   });
-}
 
-export type MuvitAuth = ReturnType<typeof createMuvitAuth>;
+  return {
+    handler: (request: Request) => auth.handler(request),
+    api: {
+      getSession: async (options: { headers: Headers }) => {
+        const session = await auth.api.getSession(options);
+        if (session === null) return null;
+
+        return { user: { id: session.user.id, role: session.user.role } };
+      },
+    },
+  };
+}

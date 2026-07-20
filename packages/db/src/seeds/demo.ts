@@ -9,7 +9,7 @@ import type {
 export const DEMO_PASSWORD = '12345678';
 export const DEMO_RANDOM_SEED = 20260716;
 
-export type DemoStudent = Omit<NewStudent, 'trainerId' | 'passwordHash'> & {
+export type DemoStudent = Omit<NewStudent, 'trainerId'> & {
   email: string;
 };
 

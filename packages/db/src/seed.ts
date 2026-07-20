@@ -6,7 +6,7 @@ import { globalExercises } from './seeds/exercises.js';
 
 export { demoCredentials } from './seeds/demo.js';
 
-const demoTrainerAuthUserId = '00000000-0000-4000-8000-000000000001';
+const demoTrainerIdentityId = '00000000-0000-4000-8000-000000000001';
 
 const legacyStudentEmails: string[] = [
   'alice.aluna@muvit.dev',
@@ -40,7 +40,9 @@ async function clearDemoData(): Promise<void> {
 
   await db.delete(schema.students).where(inArray(schema.students.email, legacyStudentEmails));
   await db.delete(schema.trainers).where(eq(schema.trainers.email, demoCredentials.trainer.email));
-  await db.delete(schema.authUsers).where(eq(schema.authUsers.email, demoCredentials.trainer.email));
+  await db
+    .delete(schema.authUsers)
+    .where(eq(schema.authUsers.email, demoCredentials.trainer.email));
 }
 
 async function seedGlobalExercises(): Promise<PersistedExercise[]> {
@@ -86,7 +88,7 @@ export async function seedDemoData(referenceDate: Date = new Date()): Promise<vo
   const [authUser] = await db
     .insert(schema.authUsers)
     .values({
-      id: demoTrainerAuthUserId,
+      id: demoTrainerIdentityId,
       email: scenario.credentials.trainer.email,
       name: scenario.credentials.trainer.name,
       role: 'trainer',
@@ -238,7 +240,6 @@ export async function seedDemoData(referenceDate: Date = new Date()): Promise<vo
       }),
     );
   }
-
 }
 
 async function main(): Promise<void> {
