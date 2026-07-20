@@ -6,8 +6,19 @@ import type {
   NewWorkoutPlan,
 } from '../schema/index.js';
 
-export const DEMO_PASSWORD = '12345678';
 export const DEMO_RANDOM_SEED = 20260716;
+
+export type DemoIdentity = {
+  authUserId: string;
+  profileId: string;
+  email: string;
+  name: string;
+};
+
+export type DemoIdentities = {
+  trainer: DemoIdentity;
+  independentStudent: DemoIdentity;
+};
 
 export type DemoStudent = Omit<NewStudent, 'trainerId'> & {
   email: string;
@@ -60,11 +71,7 @@ export type DemoLog = {
 };
 
 export type DemoScenario = {
-  credentials: {
-    password: typeof DEMO_PASSWORD;
-    trainer: { email: string; name: string };
-    students: Array<{ email: string; name: string }>;
-  };
+  trainer: DemoIdentity;
   students: DemoStudent[];
   assessments: DemoAssessment[];
   plans: DemoPlan[];
@@ -123,9 +130,10 @@ const planStatuses = [
   'draft',
   'archived',
   'archived',
+  'active',
 ] as const;
 
-const logCounts = [7, 7, 6, 6, 5, 5, 2, 2, 0, 0] as const;
+const logCounts = [7, 7, 6, 6, 5, 5, 2, 2, 0, 0, 1] as const;
 
 const exerciseNames = [
   'Agachamento livre',
@@ -187,8 +195,8 @@ const buildMeasurements = (baseWaist: number, assessmentIndex: number): Assessme
   calfLeft: 36,
 });
 
-const buildStudents = (referenceDate: Date): DemoStudent[] =>
-  studentStatuses.map((status, studentIndex) => {
+const buildStudents = (identities: DemoIdentities, referenceDate: Date): DemoStudent[] => {
+  const managedStudents = studentStatuses.map((status, studentIndex): DemoStudent => {
     const createdOffset = createdOffsets[studentIndex];
     const gender = studentGenders[studentIndex];
     if (createdOffset === undefined || gender === undefined) {
@@ -196,6 +204,7 @@ const buildStudents = (referenceDate: Date): DemoStudent[] =>
     }
 
     return {
+      authUserId: null,
       isIndependent: false,
       name: fakerPT_BR.person.fullName(),
       email: `aluno${String(studentIndex + 1).padStart(2, '0')}@muvit.dev`,
@@ -210,6 +219,27 @@ const buildStudents = (referenceDate: Date): DemoStudent[] =>
       createdAt: daysBefore(referenceDate, createdOffset),
     };
   });
+
+  return [
+    ...managedStudents,
+    {
+      id: identities.independentStudent.profileId,
+      authUserId: identities.independentStudent.authUserId,
+      isIndependent: true,
+      name: identities.independentStudent.name,
+      email: identities.independentStudent.email,
+      phone: null,
+      birthDate: null,
+      gender: null,
+      goals: 'Manter uma rotina de treinos com autonomia.',
+      restrictions: null,
+      status: 'active',
+      avatarUrl: null,
+      expoPushToken: null,
+      createdAt: daysBefore(referenceDate, 45),
+    },
+  ];
+};
 
 const buildAssessments = (referenceDate: Date): DemoAssessment[] =>
   assessmentOffsets.flatMap((offsets, studentIndex) => {
@@ -317,26 +347,23 @@ const buildLogs = (referenceDate: Date, plans: DemoPlan[]): DemoLog[] =>
     });
   });
 
-export const buildDemoScenario = (referenceDate: Date = new Date()): DemoScenario => {
+export const buildDemoScenario = (
+  identities: DemoIdentities,
+  referenceDate: Date = new Date(),
+): DemoScenario => {
   fakerPT_BR.seed(DEMO_RANDOM_SEED);
   fakerPT_BR.setDefaultRefDate(referenceDate);
 
-  const students = buildStudents(referenceDate);
+  const students = buildStudents(identities, referenceDate);
   const assessments = buildAssessments(referenceDate);
   const plans = buildPlans(referenceDate);
   const logs = buildLogs(referenceDate, plans);
 
   return {
-    credentials: {
-      password: DEMO_PASSWORD,
-      trainer: { email: 'trainer@muvit.dev', name: 'Professor Demo' },
-      students: students.map((student) => ({ email: student.email, name: student.name })),
-    },
+    trainer: identities.trainer,
     students,
     assessments,
     plans,
     logs,
   };
 };
-
-export const demoCredentials = buildDemoScenario(new Date('2026-01-01T12:00:00.000Z')).credentials;

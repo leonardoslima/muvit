@@ -17,9 +17,23 @@ export type AuthDependencies = {
   trustedOrigins: string[];
 };
 
+export type SignUpEmailInput = {
+  name: string;
+  email: string;
+  password: string;
+  role: 'trainer' | 'student';
+};
+
+export type SignedUpIdentity = {
+  user: {
+    id: string;
+  };
+};
+
 export type MuvitAuth = {
   handler(request: Request): Promise<Response>;
   api: {
+    signUpEmail(options: { body: SignUpEmailInput }): Promise<SignedUpIdentity>;
     getSession(options: {
       headers: Headers;
     }): Promise<{ user: { id: string; role: unknown } } | null>;
@@ -102,6 +116,10 @@ export function createMuvitAuth(dependencies: AuthDependencies): MuvitAuth {
   return {
     handler: (request: Request) => auth.handler(request),
     api: {
+      signUpEmail: async (options: { body: SignUpEmailInput }) => {
+        const identity = await auth.api.signUpEmail(options);
+        return { user: { id: identity.user.id } };
+      },
       getSession: async (options: { headers: Headers }) => {
         const session = await auth.api.getSession(options);
         if (session === null) return null;

@@ -59,7 +59,9 @@ pnpm dev
 
 ### Dados de demonstração
 
-Depois de aplicar as migrations, execute `pnpm db:seed`. O comando recria um professor, dez alunos, exercícios globais, avaliações, planos de treino e histórico dos últimos 90 dias para teste manual. Todos os dados são fictícios e gerados de forma reproduzível com Faker.
+Depois de aplicar as migrations, execute `pnpm db:seed`. O comando cria um professor autenticável, dez alunos gerenciados sem login, um aluno independente autenticável, exercícios globais, avaliações, planos de treino e histórico para teste manual. Todos os dados são fictícios e gerados de forma reproduzível com Faker.
 
-- Professor: `trainer@muvit.dev` / `12345678`
-- Alunos: `aluno01@muvit.dev` até `aluno10@muvit.dev`, todos com a senha `12345678`.
+- Dashboard — professor: `trainer@muvit.dev` / `12345678`
+- Mobile — aluno independente: `aluno.independente@muvit.dev` / `12345678`
+
+Os dez alunos gerenciados não possuem conta ou senha. O seed não preserva autenticação anterior à migração e deve ser executado somente contra um banco descartável.

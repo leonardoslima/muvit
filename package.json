@@ -23,7 +23,7 @@
     "db:generate": "pnpm --filter @muvit/db generate",
     "db:migrate": "pnpm --filter @muvit/db migrate",
     "db:studio": "pnpm --filter @muvit/db studio",
-    "db:seed": "pnpm --filter @muvit/db seed"
+    "db:seed": "pnpm --filter @muvit/api seed"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
