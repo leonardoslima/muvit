@@ -39,7 +39,6 @@ describe('new assessment service', () => {
 
     await submitAssessment({
       api,
-      userId: 'student-id',
       values: {
         date: '2026-06-11',
         weightKg: '80',
@@ -55,7 +54,7 @@ describe('new assessment service', () => {
       uri: 'file://photo.jpg',
       contentType: 'image/jpeg',
     });
-    expect(api.request).toHaveBeenCalledWith('/students/student-id/assessments', {
+    expect(api.request).toHaveBeenCalledWith('/students/me/assessments', {
       method: 'POST',
       body: JSON.stringify({
         date: '2026-06-11',
@@ -65,7 +64,7 @@ describe('new assessment service', () => {
         notes: undefined,
       }),
     });
-    expect(invalidateAssessments).toHaveBeenCalledWith('student-id');
+    expect(invalidateAssessments).toHaveBeenCalledWith();
   });
 
   it('submits assessment without upload when photo is absent', async () => {
@@ -75,7 +74,6 @@ describe('new assessment service', () => {
 
     await submitAssessment({
       api,
-      userId: 'student-id',
       values: {
         date: '2026-06-11',
         weightKg: '',
@@ -87,7 +85,7 @@ describe('new assessment service', () => {
     });
 
     expect(uploadPhoto).not.toHaveBeenCalled();
-    expect(api.request).toHaveBeenCalledWith('/students/student-id/assessments', {
+    expect(api.request).toHaveBeenCalledWith('/students/me/assessments', {
       method: 'POST',
       body: JSON.stringify({ date: '2026-06-11' }),
     });
@@ -101,7 +99,6 @@ describe('new assessment service', () => {
     await expect(
       submitAssessment({
         api,
-        userId: 'student-id',
         values: {
           date: '2026-06-11',
           weightKg: '80',

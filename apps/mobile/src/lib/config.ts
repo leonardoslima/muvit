@@ -13,6 +13,7 @@ export const config = {
     extra.apiUrl ?? process.env.EXPO_PUBLIC_API_URL,
     readExpoHostUri(),
     Platform.OS,
+    process.env.NODE_ENV !== 'production',
   ),
 };
 

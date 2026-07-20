@@ -61,16 +61,14 @@ export function buildAssessmentPayload({
 
 export async function submitAssessment({
   api,
-  userId,
   values,
   uploadPhoto,
   invalidateAssessments,
 }: {
   api: AssessmentApiClient;
-  userId: string;
   values: AssessmentFormValues;
   uploadPhoto: (photo: AssessmentPhotoInput) => Promise<string>;
-  invalidateAssessments: (userId: string) => Promise<void>;
+  invalidateAssessments: () => Promise<void>;
 }): Promise<void> {
   const photoUrl = values.photo ? await uploadPhoto(values.photo) : undefined;
   const payload = buildAssessmentPayload({
@@ -81,9 +79,9 @@ export async function submitAssessment({
     photoUrl,
   });
 
-  await api.request(`/students/${userId}/assessments`, {
+  await api.request('/students/me/assessments', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  await invalidateAssessments(userId);
+  await invalidateAssessments();
 }

@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TodayWorkoutScreen } from './today-workout';
 
-const authState = vi.hoisted(() => ({ userId: 'student-id' }));
+const authState = vi.hoisted(() => ({ userId: 'auth-user-a' }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const storageState = vi.hoisted(() => ({
   getItem: vi.fn(),
@@ -12,8 +12,10 @@ const storageState = vi.hoisted(() => ({
   setItem: vi.fn(),
 }));
 
-vi.mock('../lib/auth-store', () => ({
-  useAuth: (selector: (state: typeof authState) => unknown) => selector(authState),
+vi.mock('../lib/auth-client', () => ({
+  authClient: {
+    useSession: () => ({ data: { user: { id: authState.userId } } }),
+  },
 }));
 
 vi.mock('../lib/use-api', () => ({
@@ -60,6 +62,14 @@ const activeWorkout = {
 
 describe('TodayWorkoutScreen', () => {
   it('renders empty state when there is no active workout', async () => {
+    beforeEach(() => {
+      authState.userId = 'auth-user-a';
+      apiState.request.mockReset();
+      storageState.getItem.mockReset();
+      storageState.removeItem.mockReset();
+      storageState.setItem.mockReset();
+    });
+
     apiState.request.mockResolvedValueOnce({ items: [] });
 
     renderWithQueryClient();
@@ -96,6 +106,34 @@ describe('TodayWorkoutScreen', () => {
 
     expect(await screen.findByText('offline')).toBeTruthy();
     expect(screen.getByText('Plano A - Treino A')).toBeTruthy();
+  });
+
+  it('isolates the offline cache when the authenticated account changes', async () => {
+    apiState.request.mockRejectedValue(new Error('offline'));
+    storageState.getItem.mockResolvedValue(
+      JSON.stringify({
+        plan: { id: 'plan-id', name: 'Plano A' },
+        day: activeWorkout.days[0],
+      }),
+    );
+
+    const firstRender = renderWithQueryClient();
+
+    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(storageState.getItem).toHaveBeenLastCalledWith('today-workout:auth-user-a');
+
+    authState.userId = 'auth-user-b';
+    const nextQueryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    firstRender.rerender(
+      <QueryClientProvider client={nextQueryClient}>
+        <TodayWorkoutScreen key="auth-user-b" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(storageState.getItem).toHaveBeenLastCalledWith('today-workout:auth-user-b');
   });
 
   it('opens and closes the exercise details modal', async () => {

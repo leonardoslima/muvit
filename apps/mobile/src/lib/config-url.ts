@@ -4,8 +4,16 @@ export function resolveApiUrl(
   configuredUrl: string | undefined,
   expoHostUri: string | undefined,
   platform: RuntimePlatform,
+  allowDevelopmentFallback = true,
 ): string {
-  const fallbackUrl = configuredUrl ?? 'http://localhost:3333';
+  let fallbackUrl = configuredUrl;
+  if (!fallbackUrl) {
+    if (!allowDevelopmentFallback) {
+      throw new Error('EXPO_PUBLIC_API_URL é obrigatória em produção.');
+    }
+
+    fallbackUrl = 'http://localhost:3333';
+  }
   if (platform === 'web') return fallbackUrl;
   if (!isLocalhostUrl(fallbackUrl) || !expoHostUri) return fallbackUrl;
 

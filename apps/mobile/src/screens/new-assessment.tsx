@@ -6,7 +6,7 @@ import {
   submitAssessment,
   toSupportedContentType,
 } from '../application/assessments/new-assessment';
-import { useAuth } from '../lib/auth-store';
+
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
 import { sharedStyles } from '../lib/styles';
@@ -15,7 +15,7 @@ import { useApiClient } from '../lib/use-api';
 
 export function NewAssessmentScreen() {
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
+
   const [date, setDate] = useState(todayIsoDate());
   const [weightKg, setWeightKg] = useState('');
   const [bodyFatPct, setBodyFatPct] = useState('');
@@ -36,17 +36,16 @@ export function NewAssessmentScreen() {
   }
 
   async function submit() {
-    if (!userId) return;
     setSubmitting(true);
 
     try {
       await submitAssessment({
         api,
-        userId,
+
         values: { date, weightKg, bodyFatPct, notes, photo },
         uploadPhoto: (selectedPhoto) => uploadAssessmentPhoto({ api, photo: selectedPhoto }),
-        invalidateAssessments: (studentId) =>
-          queryClient.invalidateQueries({ queryKey: ['assessments', studentId] }),
+        invalidateAssessments: () =>
+          queryClient.invalidateQueries({ queryKey: ['assessments', 'me'] }),
       });
       router.back();
     } finally {

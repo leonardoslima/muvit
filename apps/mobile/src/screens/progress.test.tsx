@@ -4,12 +4,7 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProgressScreen } from './progress';
 
-const authState = vi.hoisted(() => ({ userId: 'student-id' }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-
-vi.mock('../lib/auth-store', () => ({
-  useAuth: (selector: (state: typeof authState) => unknown) => selector(authState),
-}));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,

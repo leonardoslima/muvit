@@ -7,7 +7,7 @@ describe('loadTodayWorkout', () => {
       request: vi.fn().mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'draft' }] }),
     };
 
-    await expect(loadTodayWorkout({ api, userId: 'student-id' })).resolves.toBeNull();
+    await expect(loadTodayWorkout({ api })).resolves.toBeNull();
   });
 
   it('selects the first non-completed day from the active plan', async () => {
@@ -26,7 +26,7 @@ describe('loadTodayWorkout', () => {
         .mockResolvedValueOnce({ items: [{ workoutDayId: 'day-a', completed: true }] }),
     };
 
-    await expect(loadTodayWorkout({ api, userId: 'student-id' })).resolves.toMatchObject({
+    await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
       day: { id: 'day-b' },
     });
   });
@@ -40,7 +40,7 @@ describe('loadTodayWorkout', () => {
         .mockResolvedValueOnce({ items: [] }),
     };
 
-    await expect(loadTodayWorkout({ api, userId: 'student-id' })).resolves.toBeNull();
+    await expect(loadTodayWorkout({ api })).resolves.toBeNull();
   });
 });
 
@@ -82,9 +82,7 @@ describe('loadWorkoutDay', () => {
         }),
     };
 
-    await expect(
-      loadWorkoutDay({ api, userId: 'student-id', dayId: 'day-b' }),
-    ).resolves.toMatchObject({ id: 'day-b' });
+    await expect(loadWorkoutDay({ api, dayId: 'day-b' })).resolves.toMatchObject({ id: 'day-b' });
     expect(api.request).toHaveBeenNthCalledWith(2, '/workout-plans/active-plan-id');
   });
 
@@ -105,9 +103,7 @@ describe('loadWorkoutDay', () => {
         }),
     };
 
-    await expect(
-      loadWorkoutDay({ api, userId: 'student-id', dayId: 'day-a' }),
-    ).resolves.toMatchObject({ id: 'day-a' });
+    await expect(loadWorkoutDay({ api, dayId: 'day-a' })).resolves.toMatchObject({ id: 'day-a' });
     expect(api.request).toHaveBeenNthCalledWith(2, '/workout-plans/first-plan-id');
   });
 
@@ -123,9 +119,9 @@ describe('loadWorkoutDay', () => {
         }),
     };
 
-    await expect(
-      loadWorkoutDay({ api, userId: 'student-id', dayId: 'missing-day' }),
-    ).rejects.toThrow('dia nao encontrado');
+    await expect(loadWorkoutDay({ api, dayId: 'missing-day' })).rejects.toThrow(
+      'dia não encontrado',
+    );
   });
 
   it('rejects when there is no workout plan to load from', async () => {
@@ -133,8 +129,6 @@ describe('loadWorkoutDay', () => {
       request: vi.fn().mockResolvedValueOnce({ items: [] }),
     };
 
-    await expect(loadWorkoutDay({ api, userId: 'student-id', dayId: 'day-a' })).rejects.toThrow(
-      'sem plano',
-    );
+    await expect(loadWorkoutDay({ api, dayId: 'day-a' })).rejects.toThrow('sem plano');
   });
 });

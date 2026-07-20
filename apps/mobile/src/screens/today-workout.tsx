@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { z } from 'zod';
 import { loadTodayWorkout } from '../application/workouts/today-workout';
-import { useAuth } from '../lib/auth-store';
+import { authClient } from '../lib/auth-client';
 import { createOfflineCache } from '../lib/offline-cache';
 import { colors, sharedStyles } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
@@ -17,14 +17,18 @@ type WorkoutExercise = WorkoutDay['exercises'][number];
 
 export function TodayWorkoutScreen() {
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
+  const authUserId = authClient.useSession().data?.user.id;
+
   const query = useQuery({
-    enabled: Boolean(userId),
-    queryKey: ['today-workout', userId],
+    enabled: Boolean(authUserId),
+    queryKey: ['today-workout', authUserId],
     queryFn: async () => {
-      if (!userId) throw new Error('usuario nao autenticado');
+      if (!authUserId) {
+        throw new Error('Sessão não autenticada.');
+      }
+
       const cache = createOfflineCache(AsyncStorage);
-      return cache.get(`today-workout:${userId}`, async () => loadTodayWorkout({ api, userId }));
+      return cache.get(`today-workout:${authUserId}`, async () => loadTodayWorkout({ api }));
     },
   });
 
