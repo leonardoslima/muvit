@@ -3,14 +3,57 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { type AuthRole, authClient } from '@/lib/auth-client';
+import { getAuthErrorMessage } from '@/lib/auth-errors';
 import Link from 'next/link';
-import { useActionState, useState } from 'react';
-import { type LoginState, loginAction } from './actions';
+import { useRouter } from 'next/navigation';
+import { type FormEvent, useState } from 'react';
+
+function getDestination(role: AuthRole): '/dashboard' | '/me' {
+  return role === 'trainer' ? '/dashboard' : '/me';
+}
+
+function isAuthRole(value: unknown): value is AuthRole {
+  return value === 'trainer' || value === 'student';
+}
 
 export default function LoginPage() {
-  const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, null);
-  const [role, setRole] = useState<'trainer' | 'student'>('trainer');
+  const router = useRouter();
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get('email') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+
+    if (!email || !password) {
+      setError('Informe e-mail e senha.');
+      return;
+    }
+
+    setError(undefined);
+    setPending(true);
+
+    try {
+      const result = await authClient.signIn.email({ email, password });
+      const role = result.data?.user.role;
+
+      if (result.error || !isAuthRole(role)) {
+        setError(getAuthErrorMessage(result.error, 'login'));
+        return;
+      }
+
+      router.replace(getDestination(role));
+      router.refresh();
+    } catch (requestError: unknown) {
+      setError(getAuthErrorMessage(requestError, 'login'));
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -19,24 +62,7 @@ export default function LoginPage() {
         <p className="text-sm text-muted-foreground">Entre na sua conta para acessar o painel.</p>
       </header>
 
-      <div className="grid grid-cols-2 rounded-pill bg-muted p-1 text-sm font-display font-semibold">
-        {(['trainer', 'student'] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => setRole(r)}
-            className={cn(
-              'rounded-pill py-2 transition-colors',
-              role === r ? 'bg-card text-foreground shadow-subtle' : 'text-muted-foreground',
-            )}
-          >
-            {r === 'trainer' ? 'Personal' : 'Aluno'}
-          </button>
-        ))}
-      </div>
-
-      <form action={action} className="flex flex-col gap-5">
-        <input type="hidden" name="role" value={role} />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email">E-mail</Label>
           <Input
@@ -66,10 +92,8 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </div>
-        {state?.error && (
-          <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
-            {state.error}
-          </p>
+        {error && (
+          <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">{error}</p>
         )}
         <Button type="submit" disabled={pending} size="lg">
           {pending ? 'Entrando…' : 'Entrar'}

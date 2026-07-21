@@ -1,6 +1,5 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { configureServerClient } from './api-client';
-import { getAuthMe } from './api/sdk.gen';
 
 export type AuthUser = {
   id: string;
@@ -9,11 +8,47 @@ export type AuthUser = {
   role: 'trainer' | 'student';
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function readAuthUser(payload: unknown): AuthUser | null {
+  if (!isRecord(payload) || !isRecord(payload.user)) return null;
+
+  const { id, name, email, role } = payload.user;
+  if (
+    typeof id !== 'string' ||
+    typeof name !== 'string' ||
+    typeof email !== 'string' ||
+    (role !== 'trainer' && role !== 'student')
+  ) {
+    return null;
+  }
+
+  return { id, name, email, role };
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const client = await configureServerClient();
-  const res = await getAuthMe({ client });
-  if (res.error || !res.data) return null;
-  return res.data as AuthUser;
+  const requestHeaders = await headers();
+  const cookie = requestHeaders.get('cookie');
+  const forwardedHeaders = new Headers();
+  if (cookie) forwardedHeaders.set('cookie', cookie);
+
+  const baseUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333').replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}/api/auth/get-session`, {
+    method: 'GET',
+    headers: forwardedHeaders,
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
+  if (response.status === 401) return null;
+  if (!response.ok) {
+    throw new Error('Falha ao consultar a sessão atual.');
+  }
+
+  const payload: unknown = await response.json();
+  return readAuthUser(payload);
 }
 
 export async function requireUser(): Promise<AuthUser> {

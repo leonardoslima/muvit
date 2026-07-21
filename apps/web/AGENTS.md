@@ -23,6 +23,10 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 ## API e contratos
 
 - Consulte schemas de `@muvit/validators`, tipos gerados em `src/lib/api` e rotas da API antes de estruturar chamadas.
+- Use o cliente Better Auth no navegador; codigo executado no servidor deve encaminhar o header `Cookie` integral da request ao consultar sessao ou rotas de negocio.
+- Nao crie cookies ou tokens de autenticacao proprios na web.
+- Crie clientes de API server-side por request; nao mantenha headers de uma sessao em singleton compartilhado.
+- O proxy Next faz apenas triagem otimista pela presenca do cookie; autenticacao e autorizacao reais pertencem a API.
 - Se o contrato da API mudar, rode o fluxo local de geracao com `pnpm.cmd --dir apps/web api:gen` quando a API estiver servindo OpenAPI atualizada.
 - Ao alterar formato de payload, atualize estados, mocks, factories e testes relacionados.
 - Erros vindos da API devem ser tratados na borda de UI com mensagens claras e sem vazar detalhe interno.

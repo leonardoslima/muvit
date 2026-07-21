@@ -1,102 +1,88 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiError, type Fetcher, parseResponse } from './api';
 
+function createClient({
+  fetcher,
+  cookie = 'muvit.session_token=session-value',
+  onUnauthorized = vi.fn(),
+}: {
+  fetcher: Fetcher;
+  cookie?: string;
+  onUnauthorized?: () => void | Promise<void>;
+}) {
+  return new ApiClient({
+    baseUrl: 'https://api.muvit.test/',
+    fetcher,
+    getCookie: () => cookie,
+    onUnauthorized,
+  });
+}
+
 describe('ApiClient', () => {
-  it('renova o access token uma vez e repete a requisicao original', async () => {
-    let accessToken = 'access-antigo';
-    const setTokens = vi.fn((nextAccessToken: string) => {
-      accessToken = nextAccessToken;
-    });
+  it('encaminha o cookie nativo sem Authorization e omite credenciais do runtime', async () => {
     const fetcher = vi
       .fn<Fetcher>()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ accessToken: 'novo-access' }), { status: 200 }),
-      )
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const client = createClient({ fetcher });
 
-    const client = new ApiClient({
-      baseUrl: 'https://api.muvit.test',
-      fetcher,
-      getAccessToken: () => accessToken,
-      getRefreshToken: () => 'refresh-token',
-      setAccessToken: setTokens,
-      clearAuth: vi.fn(),
-    });
+    await expect(client.request('/students/me')).resolves.toEqual({ ok: true });
 
-    await expect(client.request('/auth/me')).resolves.toEqual({ ok: true });
-    expect(setTokens).toHaveBeenCalledWith('novo-access');
-    const retryInit = fetcher.mock.calls[2]?.[1];
-    expect(fetcher.mock.calls[2]?.[0]).toBe('https://api.muvit.test/auth/me');
-    expect(retryInit?.headers).toBeInstanceOf(Headers);
-    expect((retryInit?.headers as Headers).get('authorization')).toBe('Bearer novo-access');
+    const init = fetcher.mock.calls[0]?.[1];
+    expect(fetcher.mock.calls[0]?.[0]).toBe('https://api.muvit.test/students/me');
+    expect(init?.headers).toBeInstanceOf(Headers);
+    expect((init?.headers as Headers).get('cookie')).toBe('muvit.session_token=session-value');
+    expect((init?.headers as Headers).has('authorization')).toBe(false);
+    expect(init?.credentials).toBe('omit');
   });
 
-  it('limpa auth quando refresh falha', async () => {
-    const clearAuth = vi.fn();
-    const fetcher = vi
-      .fn<Fetcher>()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'invalid refresh token' }), { status: 401 }),
-      );
-
-    const client = new ApiClient({
-      baseUrl: 'https://api.muvit.test',
-      fetcher,
-      getAccessToken: () => 'access-antigo',
-      getRefreshToken: () => 'refresh-token',
-      setAccessToken: vi.fn(),
-      clearAuth,
-    });
-
-    await expect(client.request('/auth/me')).rejects.toThrow('invalid refresh token');
-    expect(clearAuth).toHaveBeenCalledOnce();
-  });
-
-  it('limpa auth sem refresh token e retorna o erro original', async () => {
-    const clearAuth = vi.fn();
+  it('em 401 encerra a sessão uma vez, propaga o erro e não repete a request', async () => {
+    const onUnauthorized = vi.fn();
     const fetcher = vi
       .fn<Fetcher>()
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }),
       );
+    const legacyRefreshPath = ['auth', 'refresh'].join('/');
+    const client = createClient({ fetcher, onUnauthorized });
 
-    const client = new ApiClient({
-      baseUrl: 'https://api.muvit.test/',
-      fetcher,
-      getAccessToken: () => undefined,
-      getRefreshToken: () => undefined,
-      setAccessToken: vi.fn(),
-      clearAuth,
-    });
+    await expect(client.request('/students/me')).rejects.toEqual(new ApiError('unauthorized', 401));
 
-    await expect(client.request('auth/me')).rejects.toMatchObject({
-      message: 'unauthorized',
-      status: 401,
-    });
-    expect(fetcher).toHaveBeenCalledWith('https://api.muvit.test/auth/me', {
-      headers: expect.any(Headers),
-    });
-    expect(clearAuth).toHaveBeenCalledOnce();
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(fetcher.mock.calls.some(([url]) => url.endsWith(legacyRefreshPath))).toBe(false);
   });
 
-  it('adds content type for request bodies without overwriting existing headers', async () => {
+  it('permite request pública explicitamente sem cookie', async () => {
     const fetcher = vi
       .fn<Fetcher>()
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
-    const client = new ApiClient({
-      baseUrl: 'https://api.muvit.test',
-      fetcher,
-      getAccessToken: () => 'access-token',
-      getRefreshToken: () => undefined,
-      setAccessToken: vi.fn(),
-      clearAuth: vi.fn(),
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const client = createClient({ fetcher, cookie: '' });
+
+    await expect(client.request('/health', {}, { allowAnonymous: true })).resolves.toEqual({
+      ok: true,
     });
+
+    const init = fetcher.mock.calls[0]?.[1];
+    expect((init?.headers as Headers).has('cookie')).toBe(false);
+    expect(init?.credentials).toBe('omit');
+  });
+
+  it('não envia request privada quando o cookie está ausente', async () => {
+    const onUnauthorized = vi.fn();
+    const fetcher = vi.fn<Fetcher>();
+    const client = createClient({ fetcher, cookie: '', onUnauthorized });
+
+    await expect(client.request('/students/me')).rejects.toEqual(new ApiError('unauthorized', 401));
+
+    expect(onUnauthorized).toHaveBeenCalledOnce();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('preserva content-type explícito em requests com corpo', async () => {
+    const fetcher = vi
+      .fn<Fetcher>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const client = createClient({ fetcher });
 
     await client.request('/students/me', {
       method: 'PATCH',
@@ -105,41 +91,31 @@ describe('ApiClient', () => {
     });
 
     const init = fetcher.mock.calls[0]?.[1];
-    expect(init?.headers).toBeInstanceOf(Headers);
-    expect((init?.headers as Headers).get('authorization')).toBe('Bearer access-token');
     expect((init?.headers as Headers).get('content-type')).toBe('application/merge-patch+json');
   });
 
-  it('parses empty successful responses as null', async () => {
+  it('adiciona content-type JSON quando o corpo não define um', async () => {
+    const fetcher = vi
+      .fn<Fetcher>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const client = createClient({ fetcher });
+
+    await client.request('/students/me', {
+      method: 'PATCH',
+      body: JSON.stringify({ name: 'Ana' }),
+    });
+
+    const init = fetcher.mock.calls[0]?.[1];
+    expect((init?.headers as Headers).get('content-type')).toBe('application/json');
+  });
+
+  it('interpreta resposta de sucesso vazia como null', async () => {
     await expect(parseResponse(new Response(null, { status: 204 }))).resolves.toBeNull();
   });
 
-  it('uses a fallback error message when the API error body has no string error', async () => {
+  it('usa mensagem segura quando o erro não possui campo error textual', async () => {
     await expect(
       parseResponse(new Response(JSON.stringify({ message: 'bad' }), { status: 500 })),
     ).rejects.toEqual(new ApiError('request failed with status 500', 500));
-  });
-
-  it('rejects invalid refresh payloads without retrying forever', async () => {
-    const fetcher = vi
-      .fn<Fetcher>()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }),
-      )
-      .mockResolvedValueOnce(new Response(JSON.stringify({ token: 'missing-field' })));
-
-    const client = new ApiClient({
-      baseUrl: 'https://api.muvit.test',
-      fetcher,
-      getAccessToken: () => 'access-token',
-      getRefreshToken: () => 'refresh-token',
-      setAccessToken: vi.fn(),
-      clearAuth: vi.fn(),
-    });
-
-    await expect(client.request('/auth/me')).rejects.toThrow(
-      'invalid response: missing accessToken',
-    );
-    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });

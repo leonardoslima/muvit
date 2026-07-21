@@ -21,41 +21,37 @@ export type TodayWorkout = {
 
 export async function loadWorkoutDay({
   api,
-  userId,
   dayId,
 }: {
   api: WorkoutApiClient;
-  userId: string;
   dayId: string;
 }): Promise<WorkoutDay> {
   const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    `/students/${userId}/workout-plans`,
+    '/students/me/workout-plans',
   );
   const selected = selectWorkoutLogPlan(summaries.items);
   if (!selected) throw new Error('sem plano');
 
   const plan = await api.request<WorkoutPlan>(`/workout-plans/${selected.id}`);
   const day = plan.days.find((candidate) => candidate.id === dayId);
-  if (!day) throw new Error('dia nao encontrado');
+  if (!day) throw new Error('dia não encontrado');
   return day;
 }
 
 export async function loadTodayWorkout({
   api,
-  userId,
 }: {
   api: WorkoutApiClient;
-  userId: string;
 }): Promise<TodayWorkout | null> {
   const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    `/students/${userId}/workout-plans`,
+    '/students/me/workout-plans',
   );
   const active = summaries.items.find((plan) => plan.status === 'active');
   if (!active) return null;
 
   const [plan, logs] = await Promise.all([
     api.request<WorkoutPlan>(`/workout-plans/${active.id}`),
-    api.request<{ items: WorkoutLogSummary[] }>(`/students/${userId}/workout-logs?limit=30`),
+    api.request<{ items: WorkoutLogSummary[] }>('/students/me/workout-logs?limit=30'),
   ]);
 
   const day = selectNextWorkoutDay(plan.days, logs.items);

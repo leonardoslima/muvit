@@ -1,7 +1,6 @@
 import { db, schema } from '@muvit/db';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
-import { hashPassword } from '../lib/passwords.js';
 import { runDailyNotifications } from './notifications.js';
 
 beforeEach(async () => {
@@ -14,10 +13,19 @@ afterAll(async () => {
 
 describe('runDailyNotifications', () => {
   it('sends push to inactive students and emails trainers for stale assessments', async () => {
-    const passwordHash = await hashPassword('12345678');
+    const [authUser] = await db
+      .insert(schema.authUsers)
+      .values({
+        name: 'Trainer',
+        email: 'trainer@example.com',
+        emailVerified: true,
+        role: 'trainer',
+      })
+      .returning();
+    if (!authUser) throw new Error('auth user not inserted');
     const [trainer] = await db
       .insert(schema.trainers)
-      .values({ name: 'Trainer', email: 'trainer@example.com', passwordHash })
+      .values({ authUserId: authUser.id, name: authUser.name, email: authUser.email })
       .returning();
     if (!trainer) throw new Error('trainer not inserted');
 

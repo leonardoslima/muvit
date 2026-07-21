@@ -28,6 +28,10 @@ Leia tambem subarquivos `AGENTS.md` dentro do modulo afetado. Para autenticacao,
 ## Contratos, ambiente e testes
 
 - Valide entrada e saida nas bordas HTTP com schemas Zod e contratos compartilhados.
+- Better Auth e a unica fonte de senha, sessao e cookie; nao introduza mecanismos de token ou endpoints de autenticacao paralelos.
+- Resolva a sessao na borda HTTP como `RequestIdentity`; rotas e casos de uso de negocio usam `profileId`, nunca o ID do usuario Better Auth como ownership de dominio.
+- Encaminhe todos os headers `Set-Cookie` produzidos pelo Better Auth sem concatena-los.
+- Configure `WEB_URL` e `EXPO_TRUSTED_ORIGINS` com origens exatas por ambiente; wildcard nao e permitido em producao.
 - Se alterar payload, rota ou contrato, atualize validators, tipos, mocks e consumidores correspondentes no mesmo ciclo.
 - Nao acesse variaveis de ambiente diretamente fora de `src/env.ts` ou adaptadores de infraestrutura que consomem o objeto `env`.
 - Testes de rota devem criar explicitamente os dados que validam; nao dependa de seed implicito ou ordem de execucao.

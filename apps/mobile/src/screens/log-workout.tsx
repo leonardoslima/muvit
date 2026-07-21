@@ -12,7 +12,7 @@ import {
   finishWorkoutWithOfflineFallback,
   groupSetsByExercise,
 } from '../application/workouts/workout-log';
-import { useAuth } from '../lib/auth-store';
+
 import { todayIsoDate } from '../lib/date';
 import { createLogQueue, sendPendingWorkoutLog } from '../lib/log-queue';
 import { colors, sharedStyles } from '../lib/styles';
@@ -25,15 +25,15 @@ type WorkoutExercise = WorkoutDay['exercises'][number];
 export function LogWorkoutScreen() {
   const params = useLocalSearchParams<{ dayId: string }>();
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
+
   const [sets, setSets] = useState<WorkoutSetState[]>([]);
   const [saving, setSaving] = useState(false);
   const query = useQuery({
-    enabled: Boolean(userId && params.dayId),
-    queryKey: ['log-workout', userId, params.dayId],
+    enabled: Boolean(params.dayId),
+    queryKey: ['log-workout', params.dayId],
     queryFn: async () => {
-      if (!userId || !params.dayId) throw new Error('treino nao encontrado');
-      const day = await loadWorkoutDay({ api, userId, dayId: params.dayId });
+      if (!params.dayId) throw new Error('treino não encontrado');
+      const day = await loadWorkoutDay({ api, dayId: params.dayId });
       setSets((current) => (current.length > 0 ? current : buildInitialSets(day.exercises)));
       return day;
     },

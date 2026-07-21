@@ -9,17 +9,17 @@ import type {
 
 export class DrizzleExercisesRepository implements ExercisesRepository {
   async list(params: ExerciseListParams) {
-    const { q, muscleGroup, scope, limit, offset, user } = params;
+    const { q, muscleGroup, scope, limit, offset, identity } = params;
     const conds = [];
 
     if (scope === 'global') {
       conds.push(isNull(schema.exercises.trainerId));
     } else if (scope === 'mine') {
-      conds.push(eq(schema.exercises.trainerId, user.sub));
+      conds.push(eq(schema.exercises.trainerId, identity.profileId));
     } else {
       const visibleExercises = or(
         isNull(schema.exercises.trainerId),
-        eq(schema.exercises.trainerId, user.sub),
+        eq(schema.exercises.trainerId, identity.profileId),
       );
       if (visibleExercises) conds.push(visibleExercises);
     }

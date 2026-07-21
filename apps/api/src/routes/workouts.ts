@@ -27,8 +27,26 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        const plan = await workoutsModule.createWorkoutPlan.execute(req.user, req.body);
+        const plan = await workoutsModule.createWorkoutPlan.execute(req.identity, req.body);
         return reply.code(201).send(plan);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.get(
+    '/students/me/workout-plans',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['workout-plans'],
+        response: { 200: z.object({ items: z.array(workoutPlanSummarySchema) }) },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await workoutsModule.listWorkoutPlans.execute(req.identity, req.identity.profileId);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -46,7 +64,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await workoutsModule.listWorkoutPlans.execute(req.user, req.params.studentId);
+        return await workoutsModule.listWorkoutPlans.execute(req.identity, req.params.studentId);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -67,7 +85,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await workoutsModule.getWorkoutPlan.execute(req.user, req.params.id);
+        return await workoutsModule.getWorkoutPlan.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -89,7 +107,11 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await workoutsModule.updateWorkoutPlan.execute(req.user, req.params.id, req.body);
+        return await workoutsModule.updateWorkoutPlan.execute(
+          req.identity,
+          req.params.id,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -106,7 +128,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        await workoutsModule.deleteWorkoutPlan.execute(req.user, req.params.id);
+        await workoutsModule.deleteWorkoutPlan.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }

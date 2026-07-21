@@ -5,10 +5,10 @@ import type {
   updateExerciseSchema,
 } from '@muvit/validators';
 import type { z } from 'zod';
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 
 export type ExerciseListQuery = z.infer<typeof listExercisesQuerySchema>;
-export type ExerciseListParams = ExerciseListQuery & { user: AuthUser };
+export type ExerciseListParams = ExerciseListQuery & { identity: RequestIdentity };
 export type CreateExerciseInput = z.infer<typeof createExerciseSchema>;
 export type UpdateExerciseInput = z.infer<typeof updateExerciseSchema>;
 

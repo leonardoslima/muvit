@@ -23,7 +23,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: z.object({ items: z.array(exerciseSchema), total: z.number() }) },
       },
     },
-    async (req) => exercisesModule.listExercises.execute(req.user, req.query),
+    async (req) => exercisesModule.listExercises.execute(req.identity, req.query),
   );
 
   app.post(
@@ -37,7 +37,10 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       },
     },
     async (req, reply) => {
-      const exercise = await exercisesModule.createExercise.execute(req.user.sub, req.body);
+      const exercise = await exercisesModule.createExercise.execute(
+        req.identity.profileId,
+        req.body,
+      );
       return reply.code(201).send(exercise);
     },
   );
@@ -58,7 +61,11 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await exercisesModule.updateExercise.execute(req.params.id, req.user.sub, req.body);
+        return await exercisesModule.updateExercise.execute(
+          req.params.id,
+          req.identity.profileId,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -73,7 +80,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        await exercisesModule.deleteExercise.execute(req.params.id, req.user.sub);
+        await exercisesModule.deleteExercise.execute(req.params.id, req.identity.profileId);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }

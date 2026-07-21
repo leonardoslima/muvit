@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LogWorkoutScreen } from './log-workout';
 
 const routerState = vi.hoisted(() => ({ back: vi.fn(), dayId: 'day-id' }));
-const authState = vi.hoisted(() => ({ userId: 'student-id' }));
+
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const storageState = vi.hoisted(() => ({
   getItem: vi.fn(),
@@ -15,10 +15,6 @@ const storageState = vi.hoisted(() => ({
 vi.mock('expo-router', () => ({
   router: { back: routerState.back },
   useLocalSearchParams: () => ({ dayId: routerState.dayId }),
-}));
-
-vi.mock('../lib/auth-store', () => ({
-  useAuth: (selector: (state: typeof authState) => unknown) => selector(authState),
 }));
 
 vi.mock('../lib/use-api', () => ({

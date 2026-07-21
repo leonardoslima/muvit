@@ -1,10 +1,14 @@
 'use client';
 
 import { Avatar } from '@/components/ui/avatar';
+import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { ClipboardList, Dumbbell, LayoutDashboard, LogOut, Users } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+const LOGOUT_ERROR_MESSAGE = 'Não foi possível sair. Tente novamente.';
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -15,6 +19,34 @@ const NAV = [
 
 export function Sidebar({ user }: { user: { name: string; email: string } | null }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string>();
+
+  async function handleLogout(): Promise<void> {
+    if (loggingOut) {
+      return;
+    }
+
+    setLogoutError(undefined);
+    setLoggingOut(true);
+
+    try {
+      const result = await authClient.signOut();
+
+      if (result.error) {
+        setLogoutError(LOGOUT_ERROR_MESSAGE);
+        return;
+      }
+
+      router.replace('/login');
+      router.refresh();
+    } catch {
+      setLogoutError(LOGOUT_ERROR_MESSAGE);
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   return (
     <aside className="flex w-[260px] shrink-0 flex-col justify-between bg-sidebar py-8 text-sidebar-foreground">
@@ -64,18 +96,23 @@ export function Sidebar({ user }: { user: { name: string; email: string } | null
                 </span>
                 <span className="truncate text-xs text-sidebar-muted">{user.email}</span>
               </div>
-              <form action="/api/logout" method="post">
-                <button
-                  type="submit"
-                  className="text-sidebar-muted hover:text-sidebar-foreground"
-                  aria-label="Sair"
-                >
-                  <LogOut className="size-4" />
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="text-sidebar-muted hover:text-sidebar-foreground disabled:opacity-50"
+                aria-label="Sair"
+              >
+                <LogOut className="size-4" />
+              </button>
             </>
           )}
         </div>
+        {logoutError && (
+          <p role="alert" className="px-6 text-xs text-destructive">
+            {logoutError}
+          </p>
+        )}
       </div>
     </aside>
   );

@@ -10,7 +10,7 @@ const baseStudent: Student = {
   isIndependent: false,
   name: 'Aluno',
   email: null,
-  passwordHash: null,
+  authUserId: null,
   phone: null,
   birthDate: null,
   gender: null,
@@ -35,7 +35,10 @@ describe('EnsureStudentAccessUseCase', () => {
     const useCase = new EnsureStudentAccessUseCase(new FakeStudentsRepository(baseStudent));
 
     await expect(
-      useCase.execute({ sub: 'other-trainer-id', role: 'trainer' }, 'student-id'),
+      useCase.execute(
+        { authUserId: 'trainer-auth-id', profileId: 'other-trainer-id', role: 'trainer' },
+        'student-id',
+      ),
     ).rejects.toMatchObject(new UseCaseError('not_found', 'not found'));
   });
 
@@ -43,7 +46,10 @@ describe('EnsureStudentAccessUseCase', () => {
     const useCase = new EnsureStudentAccessUseCase(new FakeStudentsRepository(baseStudent));
 
     await expect(
-      useCase.execute({ sub: 'other-student-id', role: 'student' }, 'student-id'),
+      useCase.execute(
+        { authUserId: 'student-auth-id', profileId: 'other-student-id', role: 'student' },
+        'student-id',
+      ),
     ).rejects.toMatchObject(new UseCaseError('forbidden', 'forbidden'));
   });
 
@@ -51,9 +57,13 @@ describe('EnsureStudentAccessUseCase', () => {
     const useCase = new EnsureStudentAccessUseCase(new FakeStudentsRepository(baseStudent));
 
     await expect(
-      useCase.execute({ sub: 'other-student-id', role: 'student' }, 'student-id', {
-        studentMismatchError: 'not_found',
-      }),
+      useCase.execute(
+        { authUserId: 'student-auth-id', profileId: 'other-student-id', role: 'student' },
+        'student-id',
+        {
+          studentMismatchError: 'not_found',
+        },
+      ),
     ).rejects.toMatchObject(new UseCaseError('not_found', 'not found'));
   });
 });

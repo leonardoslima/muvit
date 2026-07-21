@@ -1,6 +1,6 @@
 import type { Exercise } from '@muvit/db/schema';
 import { describe, expect, it } from 'vitest';
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import type {
   ExerciseListParams,
   ExercisesRepository,
@@ -42,12 +42,16 @@ describe('ListExercisesUseCase', () => {
   it('coerces student exercise scope to global', async () => {
     const repository = new FakeExercisesRepository();
     const useCase = new ListExercisesUseCase(repository);
-    const user: AuthUser = { sub: 'student-id', role: 'student' };
+    const identity: RequestIdentity = {
+      authUserId: 'student-auth-id',
+      profileId: 'student-id',
+      role: 'student',
+    };
 
-    await useCase.execute(user, { scope: 'mine', limit: 50, offset: 0 });
+    await useCase.execute(identity, { scope: 'mine', limit: 50, offset: 0 });
 
     expect(repository.listParams).toMatchObject({
-      user,
+      identity,
       scope: 'global',
       limit: 50,
       offset: 0,

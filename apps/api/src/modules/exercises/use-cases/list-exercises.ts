@@ -1,4 +1,4 @@
-import type { AuthUser } from '../../../shared/auth-user.js';
+import type { RequestIdentity } from '../../../shared/request-identity.js';
 import type {
   ExerciseListQuery,
   ExercisesRepository,
@@ -7,8 +7,8 @@ import type {
 export class ListExercisesUseCase {
   constructor(private readonly exercisesRepository: ExercisesRepository) {}
 
-  async execute(user: AuthUser, query: ExerciseListQuery) {
-    const scope = user.role === 'student' ? 'global' : query.scope;
-    return this.exercisesRepository.list({ ...query, user, scope });
+  async execute(identity: RequestIdentity, query: ExerciseListQuery) {
+    const scope = identity.role === 'student' ? 'global' : query.scope;
+    return this.exercisesRepository.list({ ...query, identity, scope });
   }
 }

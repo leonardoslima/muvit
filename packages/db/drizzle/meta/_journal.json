@@ -22,6 +22,20 @@
       "when": 1779197910210,
       "tag": "0002_foamy_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784486870954,
+      "tag": "0003_better_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784492132464,
+      "tag": "0004_calm_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

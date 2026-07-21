@@ -16,7 +16,7 @@ describe('cors', () => {
   it('allows Expo web development origin', async () => {
     const res = await app.inject({
       method: 'OPTIONS',
-      url: '/auth/login',
+      url: '/api/auth/sign-in/email',
       headers: {
         origin: 'http://localhost:8081',
         'access-control-request-method': 'POST',

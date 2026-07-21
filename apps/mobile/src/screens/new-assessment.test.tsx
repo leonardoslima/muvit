@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NewAssessmentScreen } from './new-assessment';
 
 const routerState = vi.hoisted(() => ({ back: vi.fn() }));
-const authState = vi.hoisted(() => ({ userId: 'student-id' }));
+
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
 const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
@@ -13,10 +13,6 @@ vi.mock('expo-router', () => ({
 }));
 
 vi.mock('expo-image-picker', () => pickerState);
-
-vi.mock('../lib/auth-store', () => ({
-  useAuth: (selector: (state: typeof authState) => unknown) => selector(authState),
-}));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
@@ -67,12 +63,9 @@ describe('NewAssessmentScreen', () => {
     await user.press(screen.getByText('Salvar'));
 
     await waitFor(() => {
-      expect(apiState.request).toHaveBeenCalledWith(
-        '/students/student-id/assessments',
-        expect.any(Object),
-      );
+      expect(apiState.request).toHaveBeenCalledWith('/students/me/assessments', expect.any(Object));
       expect(queryState.invalidateQueries).toHaveBeenCalledWith({
-        queryKey: ['assessments', 'student-id'],
+        queryKey: ['assessments', 'me'],
       });
       expect(routerState.back).toHaveBeenCalledOnce();
     });

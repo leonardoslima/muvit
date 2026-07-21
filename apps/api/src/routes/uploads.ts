@@ -29,6 +29,6 @@ export const uploadsRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: presignUploadResponseSchema },
       },
     },
-    async (req) => uploadsModule.presignUpload.execute(req.user.sub, req.body),
+    async (req) => uploadsModule.presignUpload.execute(req.identity.profileId, req.body),
   );
 };

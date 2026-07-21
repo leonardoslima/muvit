@@ -9,18 +9,17 @@
     "./seed": "./src/seed.ts"
   },
   "scripts": {
-    "generate": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs generate",
+    "generate": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs generate",
     "migrate": "node --env-file=.env --import tsx src/migrate.ts",
     "migrate:test": "node --env-file=.env.test --import tsx src/ensure-database.ts && node --env-file=.env.test --import tsx src/migrate.ts",
-    "studio": "node --env-file=.env ../../node_modules/drizzle-kit/bin.cjs studio",
-    "seed": "node --env-file=.env --import tsx src/seed.ts",
+    "studio": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs studio",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@faker-js/faker": "10.5.0",
     "@opentelemetry/api": "^1.9.1",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "0.45.2",
     "postgres": "^3.4.5",
     "zod": "^3.24.1"
   },

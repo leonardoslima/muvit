@@ -33,6 +33,6 @@ export const trainerSummaryRoutes: FastifyPluginAsyncZod = async (app) => {
         response: { 200: summarySchema },
       },
     },
-    async (req) => trainerSummaryModule.getTrainerSummary.execute(req.user.sub),
+    async (req) => trainerSummaryModule.getTrainerSummary.execute(req.identity.profileId),
   );
 };

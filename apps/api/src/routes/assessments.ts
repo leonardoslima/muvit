@@ -17,6 +17,55 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
   app.addHook('preHandler', app.requireAuth);
 
   app.get(
+    '/students/me/assessments',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['assessments'],
+        querystring: listAssessmentsQuerySchema,
+        response: {
+          200: z.object({ items: z.array(assessmentSchema), total: z.number() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return await assessmentsModule.listAssessments.execute(
+          req.identity,
+          req.identity.profileId,
+          req.query,
+        );
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.post(
+    '/students/me/assessments',
+    {
+      preHandler: [app.requireRole('student')],
+      schema: {
+        tags: ['assessments'],
+        body: createAssessmentSchema,
+        response: { 201: assessmentSchema },
+      },
+    },
+    async (req, reply) => {
+      try {
+        const assessment = await assessmentsModule.createAssessment.execute(
+          req.identity,
+          req.identity.profileId,
+          req.body,
+        );
+        return reply.code(201).send(assessment);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
+    },
+  );
+
+  app.get(
     '/students/:studentId/assessments',
     {
       schema: {
@@ -31,7 +80,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       try {
         return await assessmentsModule.listAssessments.execute(
-          req.user,
+          req.identity,
           req.params.studentId,
           req.query,
         );
@@ -54,7 +103,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     async (req, reply) => {
       try {
         const assessment = await assessmentsModule.createAssessment.execute(
-          req.user,
+          req.identity,
           req.params.studentId,
           req.body,
         );
@@ -79,7 +128,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await assessmentsModule.getAssessment.execute(req.user, req.params.id);
+        return await assessmentsModule.getAssessment.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -101,7 +150,11 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        return await assessmentsModule.updateAssessment.execute(req.user, req.params.id, req.body);
+        return await assessmentsModule.updateAssessment.execute(
+          req.identity,
+          req.params.id,
+          req.body,
+        );
       } catch (error) {
         return sendUseCaseError(reply, error);
       }
@@ -118,7 +171,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     },
     async (req, reply) => {
       try {
-        await assessmentsModule.deleteAssessment.execute(req.user, req.params.id);
+        await assessmentsModule.deleteAssessment.execute(req.identity, req.params.id);
       } catch (error) {
         return sendUseCaseError(reply, error);
       }

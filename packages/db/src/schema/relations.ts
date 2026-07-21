@@ -1,16 +1,34 @@
 import { relations } from 'drizzle-orm';
 import { assessments } from './assessments.js';
+import { authAccounts, authSessions, authUsers } from './auth.js';
 import { exercises } from './exercises.js';
 import { students } from './students.js';
 import { trainers } from './trainers.js';
 import { logSets, workoutDays, workoutExercises, workoutLogs, workoutPlans } from './workouts.js';
 
-export const trainersRelations = relations(trainers, ({ many }) => ({
+export const authUsersRelations = relations(authUsers, ({ many, one }) => ({
+  accounts: many(authAccounts),
+  sessions: many(authSessions),
+  trainer: one(trainers),
+  student: one(students),
+}));
+
+export const authAccountsRelations = relations(authAccounts, ({ one }) => ({
+  user: one(authUsers, { fields: [authAccounts.userId], references: [authUsers.id] }),
+}));
+
+export const authSessionsRelations = relations(authSessions, ({ one }) => ({
+  user: one(authUsers, { fields: [authSessions.userId], references: [authUsers.id] }),
+}));
+
+export const trainersRelations = relations(trainers, ({ many, one }) => ({
+  authUser: one(authUsers, { fields: [trainers.authUserId], references: [authUsers.id] }),
   students: many(students),
   exercises: many(exercises),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
+  authUser: one(authUsers, { fields: [students.authUserId], references: [authUsers.id] }),
   trainer: one(trainers, { fields: [students.trainerId], references: [trainers.id] }),
   assessments: many(assessments),
   workoutPlans: many(workoutPlans),
