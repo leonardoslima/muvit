@@ -40,6 +40,7 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 - Use filtros de workspace quando fizer sentido limitar leitura, testes, lint e build.
 - Amplie para o monorepo inteiro somente quando houver motivo tecnico claro.
 - No PowerShell, se `pnpm` falhar por bloqueio de execucao de `pnpm.ps1`, use `pnpm.cmd`.
+- No Codex App, use primeiro o gerenciamento nativo de worktrees do aplicativo; nao execute `git worktree add` manualmente quando a funcionalidade nativa estiver disponivel e nao crie outra worktree quando a tarefa ja estiver em uma worktree gerenciada pelo Codex.
 - Ao criar ou usar worktree, copie arquivos `.env` locais ignorados da raiz original para a worktree antes de executar setup, testes ou builds.
 
 ## Convencoes gerais
