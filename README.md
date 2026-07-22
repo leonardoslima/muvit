@@ -29,6 +29,7 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 cp apps/mobile/.env.example apps/mobile/.env
 cp packages/db/.env.example packages/db/.env
+cp apps/api/.env.test.example apps/api/.env.test
 cp packages/db/.env.test.example packages/db/.env.test
 docker compose up -d postgres postgres_test redis
 pnpm db:migrate
@@ -40,6 +41,19 @@ pnpm dev
 - API docs: http://localhost:3333/docs
 - PostgreSQL de desenvolvimento: `localhost:5432`, banco `muvit`
 - PostgreSQL de teste: `localhost:5433`, banco `muvit_api_test`
+
+### Banco de testes e testes de integração
+
+O ambiente local mantém dois bancos PostgreSQL isolados:
+
+- `muvit` em `localhost:5432` é o banco de desenvolvimento usado pela aplicação normalmente.
+- `muvit_api_test` em `localhost:5433` é usado exclusivamente pelos testes de integração da API.
+
+Ao executar os testes da API, o script aplica as migrations ao banco configurado em `apps/api/.env.test` e os testes de integração limpam suas tabelas antes de cada caso. A limpeza usa `TRUNCATE ... RESTART IDENTITY CASCADE`: remove os dados de teste, reinicia os contadores de IDs e limpa registros relacionados. Ela não remove o banco, as tabelas ou as migrations.
+
+Nunca aponte `DATABASE_URL` de teste para `muvit`: essa limpeza apagaria os dados de desenvolvimento. A aplicação iniciada em modo de desenvolvimento continua usando apenas os arquivos `.env`, não os `.env.test`.
+
+Ainda não há uma suíte E2E. Quando ela for criada, deverá iniciar a API com o ambiente de teste e reutilizar `muvit_api_test`. Testes de integração e E2E não podem executá-lo simultaneamente, pois ambos precisam controlar e limpar o mesmo estado; cada execução E2E deverá preparar seus próprios dados no início.
 
 ### Autenticação e ambiente
 
