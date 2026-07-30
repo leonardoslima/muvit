@@ -1,24 +1,30 @@
 import { cn } from '@/lib/utils';
+import { type VariantProps, cva } from 'class-variance-authority';
 
-interface LogoProps {
+const logoVariants = cva('font-display font-bold tracking-[0.2em]', {
+  variants: {
+    variant: {
+      default: 'text-primary',
+      'on-dark': 'text-mkt-on-dark',
+    },
+    size: {
+      sm: 'text-xl',
+      md: 'text-2xl',
+      lg: 'text-3xl',
+    },
+  },
+  defaultVariants: {
+    variant: 'default',
+    size: 'md',
+  },
+});
+
+interface LogoProps extends VariantProps<typeof logoVariants> {
   className?: string;
-  variant?: 'default' | 'on-dark';
-  size?: 'sm' | 'md' | 'lg';
 }
-
-const SIZE = { sm: 'text-xl', md: 'text-2xl', lg: 'text-3xl' };
 
 export function Logo({ className, variant = 'default', size = 'md' }: LogoProps) {
-  return (
-    <span
-      className={cn(
-        'font-display font-bold tracking-[0.2em]',
-        variant === 'on-dark' ? 'text-mkt-on-dark' : 'text-primary',
-        SIZE[size],
-        className,
-      )}
-    >
-      MUVIT
-    </span>
-  );
+  return <span className={cn(logoVariants({ variant, size, className }))}>MUVIT</span>;
 }
+
+export { logoVariants };

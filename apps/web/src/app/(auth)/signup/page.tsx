@@ -3,15 +3,61 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { type AuthRole, authClient } from '@/lib/auth-client';
+import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { useActionState, useState } from 'react';
-import { type SignupState, signupAction } from './actions';
+import { useRouter } from 'next/navigation';
+import { type FormEvent, useState } from 'react';
+
+type FieldErrors = Record<string, string>;
 
 export default function SignupPage() {
-  const [state, action, pending] = useActionState<SignupState, FormData>(signupAction, null);
-  const [role, setRole] = useState<'trainer' | 'student'>('trainer');
-  const fe = state?.fieldErrors ?? {};
+  const router = useRouter();
+  const [role, setRole] = useState<AuthRole>('trainer');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get('name') ?? '').trim();
+    const email = String(formData.get('email') ?? '').trim();
+    const password = String(formData.get('password') ?? '');
+    const nextFieldErrors: FieldErrors = {};
+
+    if (name.length < 2) nextFieldErrors.name = 'Informe seu nome.';
+    if (!email) nextFieldErrors.email = 'Informe um e-mail.';
+    if (password.length < 8) {
+      nextFieldErrors.password = 'Senha precisa de pelo menos 8 caracteres.';
+    }
+
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) {
+      return;
+    }
+
+    setError(undefined);
+    setPending(true);
+
+    try {
+      const result = await authClient.signUp.email({ name, email, password, role });
+
+      if (result.error || !result.data) {
+        setError(getAuthErrorMessage(result.error, 'signup'));
+        return;
+      }
+
+      router.replace(role === 'trainer' ? '/dashboard' : '/me');
+      router.refresh();
+    } catch (requestError: unknown) {
+      setError(getAuthErrorMessage(requestError, 'signup'));
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -21,31 +67,39 @@ export default function SignupPage() {
       </header>
 
       <div className="grid grid-cols-2 rounded-pill bg-muted p-1 text-sm font-display font-semibold">
-        {(['trainer', 'student'] as const).map((r) => (
+        {(['trainer', 'student'] as const).map((availableRole) => (
           <button
-            key={r}
+            key={availableRole}
             type="button"
-            onClick={() => setRole(r)}
+            onClick={() => setRole(availableRole)}
             className={cn(
               'rounded-pill py-2 transition-colors',
-              role === r ? 'bg-card text-foreground shadow-subtle' : 'text-muted-foreground',
+              role === availableRole
+                ? 'bg-card text-foreground shadow-subtle'
+                : 'text-muted-foreground',
             )}
           >
-            {r === 'trainer' ? 'Sou personal' : 'Sou aluno'}
+            {availableRole === 'trainer' ? 'Sou personal' : 'Sou aluno'}
           </button>
         ))}
       </div>
 
-      <form action={action} className="flex flex-col gap-5">
-        <input type="hidden" name="role" value={role} />
-        <Field label="Nome" name="name" type="text" required autoComplete="name" error={fe.name} />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field
+          label="Nome"
+          name="name"
+          type="text"
+          required
+          autoComplete="name"
+          error={fieldErrors.name}
+        />
         <Field
           label="E-mail"
           name="email"
           type="email"
           required
           autoComplete="email"
-          error={fe.email}
+          error={fieldErrors.email}
         />
         <Field
           label="Senha"
@@ -53,13 +107,11 @@ export default function SignupPage() {
           type="password"
           required
           autoComplete="new-password"
-          error={fe.password}
+          error={fieldErrors.password}
           hint="Mínimo de 8 caracteres."
         />
-        {state?.error && (
-          <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
-            {state.error}
-          </p>
+        {error && (
+          <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">{error}</p>
         )}
         <Button type="submit" disabled={pending} size="lg">
           {pending ? 'Criando conta…' : 'Criar conta'}

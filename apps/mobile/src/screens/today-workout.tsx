@@ -1,36 +1,34 @@
-import type { workoutPlanFullSchema, workoutPlanSummarySchema } from '@muvit/validators';
+import type { workoutPlanFullSchema } from '@muvit/validators';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import type { z } from 'zod';
-import type { ApiClient } from '../lib/api';
-import { useAuth } from '../lib/auth-store';
+import { loadTodayWorkout } from '../application/workouts/today-workout';
+import { authClient } from '../lib/auth-client';
 import { createOfflineCache } from '../lib/offline-cache';
 import { colors, sharedStyles } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
-type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
 
-type TodayWorkout = {
-  plan: WorkoutPlan;
-  day: WorkoutDay;
-};
-
 export function TodayWorkoutScreen() {
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
+  const authUserId = authClient.useSession().data?.user.id;
+
   const query = useQuery({
-    enabled: Boolean(userId),
-    queryKey: ['today-workout', userId],
+    enabled: Boolean(authUserId),
+    queryKey: ['today-workout', authUserId],
     queryFn: async () => {
-      if (!userId) throw new Error('usuario nao autenticado');
+      if (!authUserId) {
+        throw new Error('Sessão não autenticada.');
+      }
+
       const cache = createOfflineCache(AsyncStorage);
-      return cache.get(`today-workout:${userId}`, async () => loadTodayWorkout(api, userId));
+      return cache.get(`today-workout:${authUserId}`, async () => loadTodayWorkout({ api }));
     },
   });
 
@@ -126,27 +124,4 @@ function ExerciseModal({
       </View>
     </Modal>
   );
-}
-
-async function loadTodayWorkout(api: ApiClient, userId: string): Promise<TodayWorkout | null> {
-  const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    `/students/${userId}/workout-plans`,
-  );
-  const active = summaries.items.find((plan: WorkoutPlanSummary) => plan.status === 'active');
-  if (!active) return null;
-
-  const [plan, logs] = await Promise.all([
-    api.request<WorkoutPlan>(`/workout-plans/${active.id}`),
-    api.request<{ items: { workoutDayId: string; completed: boolean }[] }>(
-      `/students/${userId}/workout-logs?limit=30`,
-    ),
-  ]);
-
-  const completedDayIds = new Set(
-    logs.items.filter((log) => log.completed).map((log) => log.workoutDayId),
-  );
-  const day =
-    plan.days.find((candidate: WorkoutDay) => !completedDayIds.has(candidate.id)) ?? plan.days[0];
-
-  return day ? { plan, day } : null;
 }

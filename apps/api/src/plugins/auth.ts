@@ -1,5 +1,7 @@
+import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
+import type { ProfileResolver } from '../modules/auth/profile-resolver.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -8,26 +10,55 @@ declare module 'fastify' {
   }
 }
 
-declare module '@fastify/jwt' {
-  interface FastifyJWT {
-    payload: { sub: string; role: 'trainer' | 'student' };
-    user: { sub: string; role: 'trainer' | 'student' };
-  }
+type AuthPluginOptions = {
+  profileResolver: ProfileResolver;
+};
+
+function isRole(value: unknown): value is 'trainer' | 'student' {
+  return value === 'trainer' || value === 'student';
 }
 
-export default fp(async (app) => {
-  app.decorate('requireAuth', async (req: FastifyRequest, reply: FastifyReply) => {
+export default fp<AuthPluginOptions>(async (app, options) => {
+  app.decorateRequest('identity');
+
+  app.decorate('requireAuth', async (request: FastifyRequest, reply: FastifyReply) => {
+    let session: Awaited<ReturnType<typeof app.auth.api.getSession>>;
+
     try {
-      await req.jwtVerify();
+      session = await app.auth.api.getSession({
+        headers: fromNodeHeaders(request.headers),
+      });
     } catch {
       return reply.code(401).send({ error: 'unauthorized' });
     }
+
+    if (!session || !isRole(session.user.role)) {
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+
+    const profileId = await options.profileResolver.resolveProfile({
+      authUserId: session.user.id,
+      role: session.user.role,
+    });
+
+    if (profileId === null) {
+      request.log.warn({ category: 'auth_profile_missing' });
+      return reply.code(401).send({ error: 'unauthorized' });
+    }
+
+    request.identity = {
+      authUserId: session.user.id,
+      profileId,
+      role: session.user.role,
+    };
   });
 
   app.decorate(
     'requireRole',
-    (role: 'trainer' | 'student') => async (req: FastifyRequest, reply: FastifyReply) => {
-      if (req.user.role !== role) return reply.code(403).send({ error: 'forbidden' });
+    (role: 'trainer' | 'student') => async (request: FastifyRequest, reply: FastifyReply) => {
+      if (request.identity.role !== role) {
+        return reply.code(403).send({ error: 'forbidden' });
+      }
     },
   );
 });

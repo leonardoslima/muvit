@@ -18,6 +18,19 @@ const badgeVariants = cva(
   },
 );
 
+const badgeDotVariants = cva('h-1.5 w-1.5 rounded-full', {
+  variants: {
+    variant: {
+      active: 'bg-primary',
+      inactive: 'bg-inactive',
+      paused: 'bg-warning',
+      info: 'bg-info',
+      destructive: 'bg-destructive',
+    },
+  },
+  defaultVariants: { variant: 'active' },
+});
+
 interface BadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof badgeVariants> {
@@ -25,22 +38,12 @@ interface BadgeProps
 }
 
 function Badge({ className, variant, dot = true, children, ...props }: BadgeProps) {
-  const dotColor =
-    variant === 'inactive'
-      ? 'bg-inactive'
-      : variant === 'paused'
-        ? 'bg-warning'
-        : variant === 'info'
-          ? 'bg-info'
-          : variant === 'destructive'
-            ? 'bg-destructive'
-            : 'bg-primary';
   return (
     <span className={cn(badgeVariants({ variant }), className)} {...props}>
-      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', dotColor)} />}
+      {dot && <span className={badgeDotVariants({ variant })} />}
       {children}
     </span>
   );
 }
 
-export { Badge, badgeVariants };
+export { Badge, badgeDotVariants, badgeVariants };

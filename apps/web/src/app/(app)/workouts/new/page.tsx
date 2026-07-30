@@ -18,7 +18,7 @@ export default async function NewWorkoutPage({
   const client = await configureServerClient();
   const [studentRes, exRes] = await Promise.all([
     getStudentsById({ client, path: { id: studentId } }),
-    getExercises({ client, query: { scope: 'all', limit: 200 } }),
+    getExercises({ client, query: { scope: 'all', limit: 100 } }),
   ]);
   if (studentRes.error || !studentRes.data) redirect('/workouts');
 
@@ -32,7 +32,7 @@ export default async function NewWorkoutPage({
   return (
     <>
       <Link
-        href={`/students/${student.id}`}
+        href="/workouts"
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" /> Voltar

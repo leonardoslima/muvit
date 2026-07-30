@@ -2,18 +2,31 @@ import { db, schema } from '@muvit/db';
 import type { NewExercise } from '@muvit/db/schema';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
 async function signupTrainer(email: string) {
-  const r = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/trainer',
-    payload: { name: 'Trainer', email, password: '12345678' },
+  return signUpWithSession(app, {
+    name: 'Trainer',
+    email,
+    password: '12345678',
+    role: 'trainer',
   });
-  return r.json().accessToken as string;
+}
+
+async function signupStudent(email: string) {
+  const session = await signUpWithSession(app, {
+    name: 'Independente',
+    email,
+    password: '12345678',
+    role: 'student',
+  });
+  const id = session.profileId;
+  if (id === undefined) throw new Error('student profile not provisioned');
+  return { id, cookie: session.cookie };
 }
 
 async function createExercise(
@@ -25,11 +38,11 @@ async function createExercise(
   return exercise.id;
 }
 
-async function createStudent(token: string): Promise<string> {
+async function createStudent(cookie: string): Promise<string> {
   const response = await app.inject({
     method: 'POST',
     url: '/students',
-    headers: { authorization: `Bearer ${token}` },
+    headers: { cookie },
     payload: { name: 'Aluno' },
   });
   return response.json().id as string;
@@ -38,10 +51,10 @@ async function createStudent(token: string): Promise<string> {
 async function createTrainerScenario() {
   const exerciseA = await createExercise('Supino', 'chest');
   const exerciseB = await createExercise('Agacha', 'legs');
-  const trainerToken = await signupTrainer('a@a.com');
-  const studentId = await createStudent(trainerToken);
+  const trainer = await signupTrainer('a@a.com');
+  const studentId = await createStudent(trainer.cookie);
 
-  return { exerciseA, exerciseB, studentId, trainerToken };
+  return { exerciseA, exerciseB, studentId, trainerCookie: trainer.cookie };
 }
 
 beforeEach(async () => {
@@ -59,12 +72,12 @@ afterAll(async () => {
 
 describe('workout plans', () => {
   it('trainer creates a 2-day plan with exercises', async () => {
-    const { exerciseA, exerciseB, studentId, trainerToken } = await createTrainerScenario();
+    const { exerciseA, exerciseB, studentId, trainerCookie } = await createTrainerScenario();
 
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
       payload: {
         studentId,
         name: 'Hipertrofia A/B',
@@ -101,12 +114,12 @@ describe('workout plans', () => {
   });
 
   it('lists plans for a student (trainer view)', async () => {
-    const { studentId, trainerToken } = await createTrainerScenario();
+    const { studentId, trainerCookie } = await createTrainerScenario();
 
     await app.inject({
       method: 'POST',
       url: '/workout-plans',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
       payload: {
         studentId,
         name: 'Plano 1',
@@ -117,7 +130,7 @@ describe('workout plans', () => {
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/workout-plans`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
     });
     expect(r.statusCode).toBe(200);
     expect(r.json().items).toHaveLength(1);
@@ -125,12 +138,24 @@ describe('workout plans', () => {
 
   it('cross-tenant 404: other trainer cannot list plans for our student', async () => {
     const { studentId } = await createTrainerScenario();
-    const otherTrainerToken = await signupTrainer('b@b.com');
+    const otherTrainer = await signupTrainer('b@b.com');
 
     const r = await app.inject({
       method: 'GET',
       url: `/students/${studentId}/workout-plans`,
-      headers: { authorization: `Bearer ${otherTrainerToken}` },
+      headers: { cookie: otherTrainer.cookie },
+    });
+    expect(r.statusCode).toBe(404);
+  });
+
+  it('returns 404 when another student lists workout plans', async () => {
+    const owner = await signupStudent('owner@i.com');
+    const other = await signupStudent('other@i.com');
+
+    const r = await app.inject({
+      method: 'GET',
+      url: `/students/${owner.id}/workout-plans`,
+      headers: { cookie: other.cookie },
     });
     expect(r.statusCode).toBe(404);
   });
@@ -138,17 +163,11 @@ describe('workout plans', () => {
   it('independent student creates own plan (trainerId null)', async () => {
     const exerciseA = await createExercise('Supino', 'chest');
 
-    const sign = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Independente', email: 'i@i.com', password: '12345678' },
-    });
-    const token = sign.json().accessToken;
-    const myId = sign.json().user.id;
+    const { id: myId, cookie } = await signupStudent('i@i.com');
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',
-      headers: { authorization: `Bearer ${token}` },
+      headers: { cookie },
       payload: {
         studentId: myId,
         name: 'Meu Treino',
@@ -166,13 +185,76 @@ describe('workout plans', () => {
     expect(r.json().trainerId).toBeNull();
   });
 
+  it('independent student lists own plans and loads the full plan without sending a student ID', async () => {
+    const exerciseId = await createExercise('Remada', 'back');
+    const { id: profileId, cookie } = await signupStudent('self@i.com');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/workout-plans',
+      headers: { cookie },
+      payload: {
+        studentId: profileId,
+        name: 'Meu Plano',
+        status: 'active',
+        days: [
+          {
+            label: 'Treino A',
+            dayOrder: 0,
+            exercises: [{ exerciseId, exerciseOrder: 0, sets: 3, reps: '10' }],
+          },
+        ],
+      },
+    });
+    const planId = created.json().id as string;
+    const dayId = created.json().days[0].id as string;
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-plans',
+      headers: { cookie },
+    });
+
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().items).toEqual([
+      expect.objectContaining({ id: planId, studentId: profileId, status: 'active' }),
+    ]);
+
+    const full = await app.inject({
+      method: 'GET',
+      url: `/workout-plans/${planId}`,
+      headers: { cookie },
+    });
+
+    expect(full.statusCode).toBe(200);
+    expect(full.json().days).toEqual([
+      expect.objectContaining({
+        id: dayId,
+        exercises: [
+          expect.objectContaining({ exercise: expect.objectContaining({ id: exerciseId }) }),
+        ],
+      }),
+    ]);
+  });
+
+  it('rejects trainer access to self-scoped workout plans', async () => {
+    const trainer = await signupTrainer('self-trainer@a.com');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/students/me/workout-plans',
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
   it('update replaces days idempotently', async () => {
-    const { exerciseA, exerciseB, studentId, trainerToken } = await createTrainerScenario();
+    const { exerciseA, exerciseB, studentId, trainerCookie } = await createTrainerScenario();
 
     const c = await app.inject({
       method: 'POST',
       url: '/workout-plans',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
       payload: {
         studentId,
         name: 'Plano',
@@ -190,7 +272,7 @@ describe('workout plans', () => {
     const u = await app.inject({
       method: 'PATCH',
       url: `/workout-plans/${id}`,
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
       payload: {
         name: 'Plano renomeado',
         days: [
@@ -210,12 +292,12 @@ describe('workout plans', () => {
   });
 
   it('rejects empty days array with 400', async () => {
-    const { studentId, trainerToken } = await createTrainerScenario();
+    const { studentId, trainerCookie } = await createTrainerScenario();
 
     const r = await app.inject({
       method: 'POST',
       url: '/workout-plans',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainerCookie },
       payload: { studentId, name: 'X', status: 'draft', days: [] },
     });
     expect(r.statusCode).toBe(400);

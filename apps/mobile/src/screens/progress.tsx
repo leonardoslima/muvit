@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { z } from 'zod';
-import { useAuth } from '../lib/auth-store';
+
 import { colors, sharedStyles } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
@@ -11,14 +11,12 @@ type Assessment = z.infer<typeof assessmentSchema>;
 
 export function ProgressScreen() {
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
+
   const query = useQuery({
-    enabled: Boolean(userId),
-    queryKey: ['assessments', userId],
+    queryKey: ['assessments', 'me'],
     queryFn: async () => {
-      if (!userId) throw new Error('usuario nao autenticado');
       return api.request<{ items: Assessment[]; total: number }>(
-        `/students/${userId}/assessments?limit=20`,
+        '/students/me/assessments?limit=20',
       );
     },
   });

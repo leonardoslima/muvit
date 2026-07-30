@@ -1,11 +1,23 @@
 import { cn } from '@/lib/utils';
+import { type VariantProps, cva } from 'class-variance-authority';
 import type * as React from 'react';
 
-const SIZE_MAP = {
-  sm: 'h-8 w-8 text-xs',
-  md: 'h-10 w-10 text-sm',
-  lg: 'h-12 w-12 text-base',
-} as const;
+const avatarVariants = cva(
+  'inline-flex shrink-0 items-center justify-center rounded-pill font-display font-semibold text-primary-foreground',
+  {
+    variants: {
+      size: {
+        sm: 'h-8 w-8 text-xs',
+        md: 'h-10 w-10 text-sm',
+        lg: 'h-12 w-12 text-base',
+      },
+    },
+    defaultVariants: {
+      size: 'md',
+    },
+  },
+);
+
 const TONES = ['bg-primary', 'bg-secondary', 'bg-muted text-foreground', 'bg-foreground text-card'];
 
 function getInitials(name: string) {
@@ -23,25 +35,18 @@ function pickTone(seed: string) {
   return TONES[h % TONES.length];
 }
 
-interface AvatarProps extends React.HTMLAttributes<HTMLSpanElement> {
+interface AvatarProps
+  extends React.HTMLAttributes<HTMLSpanElement>,
+    VariantProps<typeof avatarVariants> {
   name: string;
-  size?: keyof typeof SIZE_MAP;
 }
 
 function Avatar({ name, size = 'md', className, ...props }: AvatarProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center justify-center rounded-pill font-display font-semibold text-primary-foreground shrink-0',
-        SIZE_MAP[size],
-        pickTone(name),
-        className,
-      )}
-      {...props}
-    >
+    <span className={cn(avatarVariants({ size }), pickTone(name), className)} {...props}>
       {getInitials(name)}
     </span>
   );
 }
 
-export { Avatar };
+export { Avatar, avatarVariants };

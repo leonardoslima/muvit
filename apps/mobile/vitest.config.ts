@@ -1,8 +1,16 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      'react-native': fileURLToPath(new URL('./test/react-native.mock.ts', import.meta.url).href),
+    },
+  },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    globals: true,
+    include: ['app/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
+    setupFiles: ['./test/setup.ts'],
   },
 });

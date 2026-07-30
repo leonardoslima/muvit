@@ -1,87 +1,238 @@
-import { StudentForm } from '@/components/student-form';
-import { TopBar } from '@/components/top-bar';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
-import { getStudentsById } from '@/lib/api/sdk.gen';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import {
+  getStudentsById,
+  getStudentsByStudentIdAssessments,
+  getStudentsByStudentIdWorkoutPlans,
+} from '@/lib/api/sdk.gen';
+import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { deleteStudentAction, updateStudentAction } from './actions';
+import { ActiveWorkoutCard } from './_active-workout-card';
+import { LatestAssessmentCard } from './_latest-assessment-card';
+import { PersonalInfoCard } from './_personal-info-card';
+import { deleteStudentAction } from './actions';
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
+type Student = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  birthDate: string | null;
+  gender: 'male' | 'female' | 'other' | null;
+  goals: string | null;
+  restrictions: string | null;
+  status: 'active' | 'inactive' | 'paused';
+  isIndependent: boolean;
+  createdAt: string;
+};
+
+type Assessment = {
+  id: string;
+  date: string;
+  weightKg: string | number | null;
+  heightCm?: string | number | null;
+  bodyFatPct: string | number | null;
+  measurements: AssessmentMeasurements | null;
+  notes: string | null;
+};
+
+type AssessmentMeasurements = {
+  chest?: number;
+  waist?: number;
+  hip?: number;
+  armRight?: number;
+  armLeft?: number;
+  thighRight?: number;
+  thighLeft?: number;
+  calfRight?: number;
+  calfLeft?: number;
+};
+
+type WorkoutPlan = {
+  id: string;
+  name: string;
+  startDate: string | null;
+  endDate?: string | null;
+  status: 'active' | 'archived' | 'draft';
+};
+
+function toNum(value: string | number | null): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatMonthYear(date: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(
+    new Date(date),
+  );
+}
+
+function calculateAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  const birthdayPassed =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+
+  return today.getFullYear() - birth.getFullYear() - (birthdayPassed ? 0 : 1);
+}
+
+function formatStudentStatus(status: Student['status']): string {
+  if (status === 'active') return 'Ativo';
+  if (status === 'paused') return 'Pausado';
+  return 'Inativo';
+}
+
+function formatChartMonth(date: string): string {
+  return new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+    .format(new Date(date))
+    .replace('.', '');
+}
+
+export function buildWeightChartPoints(assessments: Assessment[]) {
+  return assessments
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((assessment) => ({
+      date: assessment.date,
+      label: formatChartMonth(assessment.date),
+      weight: toNum(assessment.weightKg),
+    }))
+    .filter(
+      (point): point is { date: string; label: string; weight: number } => point.weight !== null,
+    );
+}
+
 export default async function StudentDetailPage({ params }: Props) {
   const { id } = await params;
   const client = await configureServerClient();
-  const res = await getStudentsById({ client, path: { id } });
+  const [res, assessmentsRes, workoutPlansRes] = await Promise.all([
+    getStudentsById({ client, path: { id } }),
+    getStudentsByStudentIdAssessments({
+      client,
+      path: { studentId: id },
+      query: { limit: 6 },
+    }),
+    getStudentsByStudentIdWorkoutPlans({ client, path: { studentId: id } }),
+  ]);
   if (res.error || !res.data) notFound();
-  const s = res.data as {
-    id: string;
-    name: string;
-    email: string | null;
-    phone: string | null;
-    birthDate: string | null;
-    gender: 'male' | 'female' | 'other' | null;
-    goals: string | null;
-    restrictions: string | null;
-    status: 'active' | 'inactive' | 'paused';
-    isIndependent: boolean;
-    createdAt: string;
-  };
+  const s = res.data as Student;
+  const assessments = ((assessmentsRes.data?.items ?? []) as Assessment[]).sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
+  const assessmentsLoadFailed = Boolean(assessmentsRes.error);
+  const activeWorkoutPlans = ((workoutPlansRes.data?.items ?? []) as WorkoutPlan[]).filter(
+    (plan) => plan.status === 'active',
+  );
+  const workoutPlansLoadFailed = Boolean(workoutPlansRes.error);
+  const latestAssessment = assessments[0];
+  const activeWorkoutPlan = activeWorkoutPlans[0];
+  const age = calculateAge(s.birthDate);
+  const statusLabel = formatStudentStatus(s.status);
+  const weightChartPoints = buildWeightChartPoints(assessments);
 
   return (
     <>
-      <Link
-        href="/students"
-        className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ChevronLeft className="size-4" /> Voltar
-      </Link>
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm font-medium">
+        <Link href="/students" className="text-primary hover:text-primary-hover">
+          Alunos
+        </Link>
+        <ChevronRight className="size-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">{s.name}</span>
+      </nav>
 
       <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4">
-          <Avatar name={s.name} size="lg" />
-          <div className="flex flex-col gap-1.5">
-            <h1 className="font-display text-[28px] font-bold leading-tight">{s.name}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              {s.email && <span>{s.email}</span>}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Avatar name={s.name} className="h-20 w-20 text-[28px]" />
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-display text-[28px] font-bold leading-tight">{s.name}</h1>
               <Badge
                 variant={
                   s.status === 'active' ? 'active' : s.status === 'paused' ? 'paused' : 'inactive'
                 }
               >
-                {s.status === 'active' ? 'Ativo' : s.status === 'paused' ? 'Pausado' : 'Inativo'}
+                {statusLabel}
               </Badge>
-              <span className="text-xs uppercase tracking-[0.08em]">
-                {s.isIndependent ? 'Independente' : 'Personal'}
-              </span>
             </div>
+            <p className="text-sm text-muted-foreground">
+              {age ? `${age} anos` : 'Idade não informada'} · Objetivo: {s.goals ?? 'não informado'}{' '}
+              · Cadastrado desde {formatMonthYear(s.createdAt)}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="secondary">
-            <Link href={`/workouts/new?studentId=${s.id}`}>+ Treino</Link>
+            <Link href={`/workouts/new?studentId=${s.id}`}>
+              <Plus />
+              Novo treino
+            </Link>
           </Button>
           <Button asChild variant="secondary">
-            <Link href={`/students/${s.id}/assessments/new`}>+ Avaliação</Link>
+            <Link href={`/students/${s.id}/assessments/new`}>
+              <Plus />
+              Nova avaliação
+            </Link>
           </Button>
-          <form action={deleteStudentAction}>
-            <input type="hidden" name="id" value={s.id} />
-            <Button type="submit" variant="ghost" size="icon" aria-label="Excluir aluno">
-              <Trash2 />
-            </Button>
-          </form>
+          <ConfirmationDialog
+            trigger={
+              <Button type="button" variant="ghost" size="icon" aria-label="Excluir aluno">
+                <Trash2 />
+              </Button>
+            }
+            title="Excluir aluno?"
+            description={`Você está prestes a excluir ${s.name}. Esta ação não pode ser desfeita.`}
+            confirmLabel="Excluir aluno"
+            pendingLabel="Excluindo..."
+            confirmAction={deleteStudentAction}
+            hiddenFields={{ id: s.id }}
+          />
         </div>
       </header>
 
-      <section className="rounded-[12px] bg-card p-6 shadow-card">
-        <h2 className="mb-4 font-display text-lg font-bold">Dados do aluno</h2>
-        <StudentForm action={updateStudentAction} initial={s} submitLabel="Salvar alterações" />
-      </section>
+      <nav
+        aria-label="Seções do aluno"
+        className="flex overflow-x-auto border-b border-border text-sm font-medium"
+      >
+        <a href="#overview" className="border-b-2 border-primary px-5 py-3 text-primary">
+          Visão geral
+        </a>
+        <a href="#treino-ativo" className="px-5 py-3 text-muted-foreground hover:text-foreground">
+          Treinos
+        </a>
+        <a
+          href={`/students/${s.id}/assessments`}
+          className="px-5 py-3 text-muted-foreground hover:text-foreground"
+        >
+          Avaliações
+        </a>
+      </nav>
+
+      <div id="overview" className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <PersonalInfoCard student={s} />
+        <ActiveWorkoutCard
+          studentId={s.id}
+          activeWorkoutPlan={activeWorkoutPlan}
+          loadFailed={workoutPlansLoadFailed}
+        />
+        <LatestAssessmentCard
+          studentId={s.id}
+          latestAssessment={latestAssessment}
+          weightChartPoints={weightChartPoints}
+          loadFailed={assessmentsLoadFailed}
+        />
+      </div>
     </>
   );
 }

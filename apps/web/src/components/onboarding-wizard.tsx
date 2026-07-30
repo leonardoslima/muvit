@@ -1,7 +1,5 @@
 import Link from 'next/link';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
 
 type OnboardingWizardProps = {
   completeAction: () => Promise<void> | void;
@@ -15,28 +13,6 @@ export function OnboardingWizard({ completeAction }: OnboardingWizardProps) {
           <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             Passo 1
           </span>
-          <h2 className="mt-2 font-display text-xl font-bold">Perfil</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="trainer-name">Nome publico</Label>
-              <Input id="trainer-name" name="trainerName" placeholder="Seu nome profissional" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="trainer-photo">Foto</Label>
-              <Input
-                id="trainer-photo"
-                name="trainerPhoto"
-                type="file"
-                accept="image/jpeg,image/png"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[12px] bg-card p-5 shadow-card">
-          <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Passo 2
-          </span>
           <h2 className="mt-2 font-display text-xl font-bold">Primeiro aluno</h2>
           <div className="mt-4">
             <Button asChild>
@@ -47,7 +23,7 @@ export function OnboardingWizard({ completeAction }: OnboardingWizardProps) {
 
         <section className="rounded-[12px] bg-card p-5 shadow-card">
           <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Passo 3
+            Passo 2
           </span>
           <h2 className="mt-2 font-display text-xl font-bold">Primeiro treino</h2>
           <div className="mt-4">

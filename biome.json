@@ -6,7 +6,15 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": ["**/node_modules", "**/.next", "**/dist", "**/.turbo", "**/drizzle", "**/*.gen.ts"]
+    "ignore": [
+      "**/node_modules",
+      "**/.next",
+      "**/dist",
+      "**/.turbo",
+      "**/drizzle",
+      "**/*.gen.ts",
+      "apps/web/next-env.d.ts"
+    ]
   },
   "formatter": {
     "enabled": true,

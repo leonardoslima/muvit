@@ -31,4 +31,22 @@ describe('resolveApiUrl', () => {
       'http://10.0.0.2:3333',
     );
   });
+
+  it('uses the development API URL when no URL is configured outside production', () => {
+    expect(resolveApiUrl(undefined, '192.168.0.10:8081', 'web', true)).toBe(
+      'http://localhost:3333',
+    );
+  });
+
+  it('fails closed when production has no public API URL', () => {
+    expect(() => resolveApiUrl(undefined, '192.168.0.10:8081', 'web', false)).toThrow(
+      'EXPO_PUBLIC_API_URL',
+    );
+  });
+
+  it('keeps localhost on native when host URI has no host segment', () => {
+    expect(resolveApiUrl('http://localhost:3333', ':8081', 'android')).toBe(
+      'http://localhost:3333',
+    );
+  });
 });

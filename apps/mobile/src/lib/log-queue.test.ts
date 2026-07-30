@@ -48,4 +48,18 @@ describe('createLogQueue', () => {
     expect(sender).toHaveBeenCalledWith(pending);
     expect(storage.removeItem).toHaveBeenCalledWith('muvit_pending_logs');
   });
+
+  it('mantem na fila apenas logs que falharam no envio', async () => {
+    const first = pendingWorkoutLog();
+    const second = { ...pendingWorkoutLog(), workoutDayId: 'day-2' };
+    const storage = memoryStorage({ muvit_pending_logs: JSON.stringify([first, second]) });
+    const queue = createLogQueue(storage);
+    const sender = vi.fn(async (item: PendingWorkoutLog) => {
+      if (item.workoutDayId === 'day-2') throw new Error('offline');
+    });
+
+    await queue.drain(sender);
+
+    expect(storage.setItem).toHaveBeenCalledWith('muvit_pending_logs', JSON.stringify([second]));
+  });
 });

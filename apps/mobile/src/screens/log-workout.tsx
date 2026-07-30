@@ -1,60 +1,47 @@
-import type {
-  finishWorkoutLogSchema,
-  workoutPlanFullSchema,
-  workoutPlanSummarySchema,
-} from '@muvit/validators';
+import type { workoutPlanFullSchema } from '@muvit/validators';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import type { z } from 'zod';
-import { useAuth } from '../lib/auth-store';
+import { loadWorkoutDay } from '../application/workouts/today-workout';
+import {
+  type WorkoutSetState,
+  buildInitialSets,
+  finishWorkoutWithOfflineFallback,
+  groupSetsByExercise,
+} from '../application/workouts/workout-log';
+
 import { todayIsoDate } from '../lib/date';
 import { createLogQueue, sendPendingWorkoutLog } from '../lib/log-queue';
 import { colors, sharedStyles } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
-type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
-type FinishWorkoutLogInput = z.infer<typeof finishWorkoutLogSchema>;
-
-type SetState = {
-  workoutExerciseId: string;
-  setNumber: number;
-  repsDone: string;
-  loadKg: string;
-  completed: boolean;
-};
 
 export function LogWorkoutScreen() {
   const params = useLocalSearchParams<{ dayId: string }>();
   const api = useApiClient();
-  const userId = useAuth((state) => state.userId);
-  const [sets, setSets] = useState<SetState[]>([]);
+
+  const [sets, setSets] = useState<WorkoutSetState[]>([]);
   const [saving, setSaving] = useState(false);
   const query = useQuery({
-    enabled: Boolean(userId && params.dayId),
-    queryKey: ['log-workout', userId, params.dayId],
+    enabled: Boolean(params.dayId),
+    queryKey: ['log-workout', params.dayId],
     queryFn: async () => {
-      if (!userId || !params.dayId) throw new Error('treino nao encontrado');
-      const day = await loadWorkoutDay(api, userId, params.dayId);
+      if (!params.dayId) throw new Error('treino não encontrado');
+      const day = await loadWorkoutDay({ api, dayId: params.dayId });
       setSets((current) => (current.length > 0 ? current : buildInitialSets(day.exercises)));
       return day;
     },
   });
 
-  const groupedSets = useMemo(() => {
-    const groups = new Map<string, SetState[]>();
-    for (const set of sets) {
-      groups.set(set.workoutExerciseId, [...(groups.get(set.workoutExerciseId) ?? []), set]);
-    }
-    return groups;
-  }, [sets]);
+  const groupedSets = useMemo(() => groupSetsByExercise(sets), [sets]);
 
-  function updateSet(next: SetState) {
+  function updateSet(next: WorkoutSetState) {
     setSets((current) =>
       current.map((item) =>
         item.workoutExerciseId === next.workoutExerciseId && item.setNumber === next.setNumber
@@ -67,28 +54,16 @@ export function LogWorkoutScreen() {
   async function finish() {
     if (!params.dayId) return;
     setSaving(true);
-    const finishBody: FinishWorkoutLogInput = {
-      durationMin: 45,
-      completed: true,
-      sets: sets.map((set) => ({
-        workoutExerciseId: set.workoutExerciseId,
-        setNumber: set.setNumber,
-        repsDone: toOptionalNumber(set.repsDone),
-        loadKg: toOptionalNumber(set.loadKg),
-        completed: set.completed,
-      })),
-    };
 
     try {
-      await sendPendingWorkoutLog(api, {
+      await finishWorkoutWithOfflineFallback({
+        api,
+        queue: createLogQueue(AsyncStorage),
+        send: sendPendingWorkoutLog,
         workoutDayId: params.dayId,
         date: todayIsoDate(),
-        finish: finishBody,
+        sets,
       });
-      router.back();
-    } catch {
-      const queue = createLogQueue(AsyncStorage);
-      await queue.enqueue({ workoutDayId: params.dayId, date: todayIsoDate(), finish: finishBody });
       router.back();
     } finally {
       setSaving(false);
@@ -165,35 +140,4 @@ export function LogWorkoutScreen() {
       </Pressable>
     </ScrollView>
   );
-}
-
-async function loadWorkoutDay(api: ReturnType<typeof useApiClient>, userId: string, dayId: string) {
-  const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    `/students/${userId}/workout-plans`,
-  );
-  const active = summaries.items.find((plan) => plan.status === 'active') ?? summaries.items[0];
-  if (!active) throw new Error('sem plano');
-  const plan = await api.request<WorkoutPlan>(`/workout-plans/${active.id}`);
-  const day = plan.days.find((candidate) => candidate.id === dayId);
-  if (!day) throw new Error('dia nao encontrado');
-  return day;
-}
-
-function buildInitialSets(exercises: WorkoutExercise[]): SetState[] {
-  return exercises.flatMap((exercise) =>
-    Array.from({ length: exercise.sets }, (_, index) => ({
-      workoutExerciseId: exercise.id,
-      setNumber: index + 1,
-      repsDone: '',
-      loadKg: exercise.loadKg === null ? '' : String(exercise.loadKg),
-      completed: false,
-    })),
-  );
-}
-
-function toOptionalNumber(value: string): number | undefined {
-  const normalized = value.replace(',', '.').trim();
-  if (!normalized) return undefined;
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : undefined;
 }

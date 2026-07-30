@@ -1,12 +1,16 @@
-import { cookies } from 'next/headers';
-import { client } from './api/client.gen';
+import { headers } from 'next/headers';
+import { createClient, createConfig } from './api/client';
+import type { ClientOptions } from './api/types.gen';
 
 export async function configureServerClient() {
-  const c = await cookies();
-  const access = c.get('muvit_access')?.value;
-  client.setConfig({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333',
-    headers: access ? { authorization: `Bearer ${access}` } : {},
-  });
-  return client;
+  const requestHeaders = await headers();
+  const cookie = requestHeaders.get('cookie');
+
+  return createClient(
+    createConfig<ClientOptions>({
+      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333',
+      credentials: 'include',
+      headers: cookie ? { cookie } : {},
+    }),
+  );
 }

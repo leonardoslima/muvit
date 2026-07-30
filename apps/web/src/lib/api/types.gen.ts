@@ -24,169 +24,80 @@ export type GetHealthResponses = {
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
 
-export type PostAuthSignupTrainerData = {
-    body: {
-        name: string;
-        email: string;
-        password: string;
-    };
-    path?: never;
-    query?: never;
-    url: '/auth/signup/trainer';
-};
-
-export type PostAuthSignupTrainerErrors = {
-    /**
-     * Default Response
-     */
-    409: {
-        error: string;
-    };
-};
-
-export type PostAuthSignupTrainerError = PostAuthSignupTrainerErrors[keyof PostAuthSignupTrainerErrors];
-
-export type PostAuthSignupTrainerResponses = {
-    /**
-     * Default Response
-     */
-    201: {
-        accessToken: string;
-        refreshToken: string;
-        user: {
-            id: string;
-            name: string;
-            email: string;
-            role: 'trainer' | 'student';
-        };
-    };
-};
-
-export type PostAuthSignupTrainerResponse = PostAuthSignupTrainerResponses[keyof PostAuthSignupTrainerResponses];
-
-export type PostAuthSignupStudentData = {
-    body: {
-        name: string;
-        email: string;
-        password: string;
-    };
-    path?: never;
-    query?: never;
-    url: '/auth/signup/student';
-};
-
-export type PostAuthSignupStudentErrors = {
-    /**
-     * Default Response
-     */
-    409: {
-        error: string;
-    };
-};
-
-export type PostAuthSignupStudentError = PostAuthSignupStudentErrors[keyof PostAuthSignupStudentErrors];
-
-export type PostAuthSignupStudentResponses = {
-    /**
-     * Default Response
-     */
-    201: {
-        accessToken: string;
-        refreshToken: string;
-        user: {
-            id: string;
-            name: string;
-            email: string;
-            role: 'trainer' | 'student';
-        };
-    };
-};
-
-export type PostAuthSignupStudentResponse = PostAuthSignupStudentResponses[keyof PostAuthSignupStudentResponses];
-
-export type PostAuthLoginData = {
-    body: {
-        email: string;
-        password: string;
-        role: 'trainer' | 'student';
-    };
-    path?: never;
-    query?: never;
-    url: '/auth/login';
-};
-
-export type PostAuthLoginErrors = {
-    /**
-     * Default Response
-     */
-    401: {
-        error: string;
-    };
-};
-
-export type PostAuthLoginError = PostAuthLoginErrors[keyof PostAuthLoginErrors];
-
-export type PostAuthLoginResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        accessToken: string;
-        refreshToken: string;
-        user: {
-            id: string;
-            name: string;
-            email: string;
-            role: 'trainer' | 'student';
-        };
-    };
-};
-
-export type PostAuthLoginResponse = PostAuthLoginResponses[keyof PostAuthLoginResponses];
-
-export type PostAuthRefreshData = {
-    body: {
-        refreshToken: string;
-    };
-    path?: never;
-    query?: never;
-    url: '/auth/refresh';
-};
-
-export type PostAuthRefreshErrors = {
-    /**
-     * Default Response
-     */
-    401: {
-        error: string;
-    };
-};
-
-export type PostAuthRefreshError = PostAuthRefreshErrors[keyof PostAuthRefreshErrors];
-
-export type PostAuthRefreshResponses = {
-    /**
-     * Default Response
-     */
-    200: {
-        accessToken: string;
-    };
-};
-
-export type PostAuthRefreshResponse = PostAuthRefreshResponses[keyof PostAuthRefreshResponses];
-
-export type GetAuthMeData = {
+export type PostApiAuthSignUpEmailData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/auth/me';
+    url: '/api/auth/sign-up/email';
 };
 
-export type GetAuthMeResponses = {
+export type PostApiAuthSignUpEmailResponses = {
     /**
      * Default Response
      */
     200: unknown;
+};
+
+export type PostApiAuthSignInEmailData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/sign-in/email';
+};
+
+export type PostApiAuthSignInEmailResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type GetApiAuthBy__Data = {
+    body?: never;
+    path: {
+        '*': string;
+    };
+    query?: never;
+    url: '/api/auth/{*}';
+};
+
+export type GetApiAuthBy__Responses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type PostApiAuthBy__Data = {
+    body?: never;
+    path: {
+        '*': string;
+    };
+    query?: never;
+    url: '/api/auth/{*}';
+};
+
+export type PostApiAuthBy__Responses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type PostStudentsMePushTokenData = {
+    body: {
+        token: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/students/me/push-token';
+};
+
+export type PostStudentsMePushTokenResponses = {
+    /**
+     * Default Response
+     */
+    204: unknown;
 };
 
 export type GetStudentsData = {
@@ -219,6 +130,7 @@ export type GetStudentsResponses = {
             restrictions: string | null;
             status: 'active' | 'inactive' | 'paused';
             avatarUrl: string | null;
+            expoPushToken: string | null;
             createdAt: string;
         }>;
         total: number;
@@ -260,6 +172,7 @@ export type PostStudentsResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -325,6 +238,7 @@ export type GetStudentsByIdResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -377,6 +291,7 @@ export type PatchStudentsByIdResponses = {
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
+        expoPushToken: string | null;
         createdAt: string;
     };
 };
@@ -507,6 +422,122 @@ export type PatchExercisesByIdResponses = {
 };
 
 export type PatchExercisesByIdResponse = PatchExercisesByIdResponses[keyof PatchExercisesByIdResponses];
+
+export type PostTrainersOnboardingData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainers/onboarding';
+};
+
+export type PostTrainersOnboardingResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        onboardedAt: string;
+    };
+};
+
+export type PostTrainersOnboardingResponse = PostTrainersOnboardingResponses[keyof PostTrainersOnboardingResponses];
+
+export type GetStudentsMeAssessmentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+        offset?: number;
+    };
+    url: '/students/me/assessments';
+};
+
+export type GetStudentsMeAssessmentsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        items: Array<{
+            id: string;
+            studentId: string;
+            date: string;
+            weightKg: string | number | null;
+            heightCm: string | number | null;
+            bodyFatPct: string | number | null;
+            measurements: {
+                chest?: number;
+                waist?: number;
+                hip?: number;
+                armRight?: number;
+                armLeft?: number;
+                thighRight?: number;
+                thighLeft?: number;
+                calfRight?: number;
+                calfLeft?: number;
+            } | null;
+            photos: Array<string> | null;
+            notes: string | null;
+            createdAt: string | string;
+        }>;
+        total: number;
+    };
+};
+
+export type GetStudentsMeAssessmentsResponse = GetStudentsMeAssessmentsResponses[keyof GetStudentsMeAssessmentsResponses];
+
+export type PostStudentsMeAssessmentsData = {
+    body: {
+        date: string;
+        weightKg?: number;
+        heightCm?: number;
+        bodyFatPct?: number;
+        measurements?: {
+            chest?: number;
+            waist?: number;
+            hip?: number;
+            armRight?: number;
+            armLeft?: number;
+            thighRight?: number;
+            thighLeft?: number;
+            calfRight?: number;
+            calfLeft?: number;
+        };
+        photos?: Array<string>;
+        notes?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/students/me/assessments';
+};
+
+export type PostStudentsMeAssessmentsResponses = {
+    /**
+     * Default Response
+     */
+    201: {
+        id: string;
+        studentId: string;
+        date: string;
+        weightKg: string | number | null;
+        heightCm: string | number | null;
+        bodyFatPct: string | number | null;
+        measurements: {
+            chest?: number;
+            waist?: number;
+            hip?: number;
+            armRight?: number;
+            armLeft?: number;
+            thighRight?: number;
+            thighLeft?: number;
+            calfRight?: number;
+            calfLeft?: number;
+        } | null;
+        photos: Array<string> | null;
+        notes: string | null;
+        createdAt: string | string;
+    };
+};
+
+export type PostStudentsMeAssessmentsResponse = PostStudentsMeAssessmentsResponses[keyof PostStudentsMeAssessmentsResponses];
 
 export type GetStudentsByStudentIdAssessmentsData = {
     body?: never;
@@ -813,6 +844,33 @@ export type PostWorkoutPlansResponses = {
 };
 
 export type PostWorkoutPlansResponse = PostWorkoutPlansResponses[keyof PostWorkoutPlansResponses];
+
+export type GetStudentsMeWorkoutPlansData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/students/me/workout-plans';
+};
+
+export type GetStudentsMeWorkoutPlansResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        items: Array<{
+            id: string;
+            studentId: string;
+            trainerId: string | null;
+            name: string;
+            startDate: string | null;
+            endDate: string | null;
+            status: 'active' | 'archived' | 'draft';
+            createdAt: string | string;
+        }>;
+    };
+};
+
+export type GetStudentsMeWorkoutPlansResponse = GetStudentsMeWorkoutPlansResponses[keyof GetStudentsMeWorkoutPlansResponses];
 
 export type GetStudentsByStudentIdWorkoutPlansData = {
     body?: never;
@@ -1164,6 +1222,38 @@ export type GetWorkoutLogsByIdResponses = {
 
 export type GetWorkoutLogsByIdResponse = GetWorkoutLogsByIdResponses[keyof GetWorkoutLogsByIdResponses];
 
+export type GetStudentsMeWorkoutLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from?: string;
+        to?: string;
+        limit?: number;
+        offset?: number;
+    };
+    url: '/students/me/workout-logs';
+};
+
+export type GetStudentsMeWorkoutLogsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        items: Array<{
+            id: string;
+            studentId: string;
+            workoutDayId: string;
+            date: string;
+            durationMin: number | null;
+            rpe: number | null;
+            completed: boolean;
+            createdAt: string | string;
+        }>;
+    };
+};
+
+export type GetStudentsMeWorkoutLogsResponse = GetStudentsMeWorkoutLogsResponses[keyof GetStudentsMeWorkoutLogsResponses];
+
 export type GetStudentsByStudentIdWorkoutLogsData = {
     body?: never;
     path: {
@@ -1227,3 +1317,28 @@ export type GetTrainerSummaryResponses = {
 };
 
 export type GetTrainerSummaryResponse = GetTrainerSummaryResponses[keyof GetTrainerSummaryResponses];
+
+export type PostUploadsPresignData = {
+    body: {
+        kind: 'assessment-photo' | 'avatar';
+        contentType: 'image/jpeg' | 'image/png';
+    };
+    path?: never;
+    query?: never;
+    url: '/uploads/presign';
+};
+
+export type PostUploadsPresignResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        uploadUrl: string;
+        publicUrl: string;
+        fields: {
+            [key: string]: never;
+        };
+    };
+};
+
+export type PostUploadsPresignResponse = PostUploadsPresignResponses[keyof PostUploadsPresignResponses];

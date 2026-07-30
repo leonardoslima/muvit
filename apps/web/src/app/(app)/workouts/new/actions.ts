@@ -1,30 +1,10 @@
 'use server';
 
+import type { CreateWorkoutInput } from '@/application/workouts/workout-editor-model';
 import { configureServerClient } from '@/lib/api-client';
 import { postWorkoutPlans } from '@/lib/api/sdk.gen';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-
-export type CreateWorkoutInput = {
-  studentId: string;
-  name: string;
-  notes?: string;
-  status: 'draft' | 'active' | 'archived';
-  days: Array<{
-    label: string;
-    dayOrder: number;
-    exercises: Array<{
-      exerciseId: string;
-      exerciseOrder: number;
-      sets: number;
-      reps: string;
-      restSeconds?: number;
-      loadKg?: number;
-      tempo?: string;
-      notes?: string;
-    }>;
-  }>;
-};
 
 export async function createWorkoutPlanAction(input: CreateWorkoutInput) {
   const client = await configureServerClient();

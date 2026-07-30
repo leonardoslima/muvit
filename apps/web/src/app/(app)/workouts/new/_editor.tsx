@@ -1,45 +1,35 @@
 'use client';
 
+import {
+  type ExerciseLite,
+  type WorkoutDayState,
+  addWorkoutDay,
+  addWorkoutExercise,
+  buildCreateWorkoutInput,
+  createWorkoutDay,
+  moveWorkoutExercise,
+  removeWorkoutDay,
+  removeWorkoutExercise,
+  updateWorkoutDayLabel,
+  updateWorkoutExercise,
+  validateWorkoutDraft,
+} from '@/application/workouts/workout-editor-model';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MUSCLE_GROUP_LABEL, type MuscleGroup } from '@/lib/muscle-groups';
-import * as Dialog from '@radix-ui/react-dialog';
+import { MUSCLE_GROUP_LABEL } from '@/lib/muscle-groups';
 import { ChevronDown, ChevronUp, Plus, Search, Trash2, X } from 'lucide-react';
 import { useMemo, useState, useTransition } from 'react';
 import { createWorkoutPlanAction } from './actions';
-
-type ExerciseLite = { id: string; name: string; muscleGroup: MuscleGroup };
-
-type DayState = {
-  id: string;
-  label: string;
-  exercises: Array<{
-    exerciseId: string;
-    exerciseName: string;
-    muscleGroup: MuscleGroup;
-    sets: number;
-    reps: string;
-    restSeconds?: number;
-    loadKg?: number;
-    notes?: string;
-  }>;
-};
-
-const DEFAULT_LABELS = [
-  'Treino A',
-  'Treino B',
-  'Treino C',
-  'Treino D',
-  'Treino E',
-  'Treino F',
-  'Treino G',
-];
-
-function createDay(label: string): DayState {
-  return { id: crypto.randomUUID(), label, exercises: [] };
-}
 
 export function WorkoutEditor({
   studentId,
@@ -48,9 +38,10 @@ export function WorkoutEditor({
   studentId: string;
   exercises: ExerciseLite[];
 }) {
+  const createDay = (label: string) => createWorkoutDay(label, () => crypto.randomUUID());
   const [planName, setPlanName] = useState('');
   const [notes, setNotes] = useState('');
-  const [days, setDays] = useState<DayState[]>([createDay('Treino A')]);
+  const [days, setDays] = useState<WorkoutDayState[]>([createDay('Treino A')]);
   const [activeDay, setActiveDay] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,109 +49,60 @@ export function WorkoutEditor({
 
   function addDay() {
     if (days.length >= 7) return;
-    setDays((d) => [...d, createDay(DEFAULT_LABELS[d.length] ?? `Treino ${d.length + 1}`)]);
+    setDays((current) => addWorkoutDay(current, () => crypto.randomUUID()));
     setActiveDay(days.length);
   }
+
   function removeDay(idx: number) {
-    if (days.length === 1) return;
-    setDays((d) => d.filter((_, i) => i !== idx));
+    setDays((current) => removeWorkoutDay(current, idx));
     setActiveDay(0);
   }
+
   function updateDayLabel(idx: number, label: string) {
-    setDays((d) => d.map((day, i) => (i === idx ? { ...day, label } : day)));
+    setDays((current) => updateWorkoutDayLabel(current, idx, label));
   }
-  function addExercise(ex: ExerciseLite) {
-    setDays((d) =>
-      d.map((day, i) =>
-        i === activeDay
-          ? {
-              ...day,
-              exercises: [
-                ...day.exercises,
-                {
-                  exerciseId: ex.id,
-                  exerciseName: ex.name,
-                  muscleGroup: ex.muscleGroup,
-                  sets: 3,
-                  reps: '10',
-                },
-              ],
-            }
-          : day,
-      ),
-    );
+
+  function addExercise(exercise: ExerciseLite) {
+    setDays((current) => addWorkoutExercise(current, activeDay, exercise));
     setPickerOpen(false);
   }
+
   function removeExercise(dayIdx: number, exIdx: number) {
-    setDays((d) =>
-      d.map((day, i) =>
-        i === dayIdx ? { ...day, exercises: day.exercises.filter((_, j) => j !== exIdx) } : day,
-      ),
-    );
+    setDays((current) => removeWorkoutExercise(current, dayIdx, exIdx));
   }
+
   function moveExercise(dayIdx: number, exIdx: number, dir: -1 | 1) {
-    setDays((d) =>
-      d.map((day, i) => {
-        if (i !== dayIdx) return day;
-        const next = [...day.exercises];
-        const t = exIdx + dir;
-        if (t < 0 || t >= next.length) return day;
-        const tmp = next[exIdx];
-        const target = next[t];
-        if (!tmp || !target) return day;
-        next[exIdx] = target;
-        next[t] = tmp;
-        return { ...day, exercises: next };
-      }),
-    );
+    setDays((current) => moveWorkoutExercise(current, dayIdx, exIdx, dir));
   }
-  function updateEx<K extends keyof DayState['exercises'][number]>(
+
+  function updateEx<K extends keyof WorkoutDayState['exercises'][number]>(
     dayIdx: number,
     exIdx: number,
     key: K,
-    value: DayState['exercises'][number][K],
+    value: WorkoutDayState['exercises'][number][K],
   ) {
-    setDays((d) =>
-      d.map((day, i) =>
-        i === dayIdx
-          ? {
-              ...day,
-              exercises: day.exercises.map((e, j) => (j === exIdx ? { ...e, [key]: value } : e)),
-            }
-          : day,
-      ),
-    );
+    setDays((current) => updateWorkoutExercise(current, dayIdx, exIdx, key, value));
   }
 
   function save(status: 'draft' | 'active') {
     setError(null);
-    if (!planName.trim()) return setError('Informe um nome para o treino.');
-    if (days.some((d) => d.exercises.length === 0)) {
-      return setError('Cada dia precisa ter ao menos 1 exercício.');
-    }
+    const validationError = validateWorkoutDraft(planName, days);
+    if (validationError) return setError(validationError);
+
     startTransition(async () => {
-      const res = await createWorkoutPlanAction({
-        studentId,
-        name: planName.trim(),
-        notes: notes.trim() || undefined,
-        status,
-        days: days.map((day, i) => ({
-          label: day.label,
-          dayOrder: i,
-          exercises: day.exercises.map((ex, j) => ({
-            exerciseId: ex.exerciseId,
-            exerciseOrder: j,
-            sets: ex.sets,
-            reps: ex.reps,
-            restSeconds: ex.restSeconds,
-            loadKg: ex.loadKg,
-            notes: ex.notes,
-          })),
-        })),
-      });
+      const res = await createWorkoutPlanAction(
+        buildCreateWorkoutInput({
+          studentId,
+          name: planName,
+          notes,
+          status,
+          days,
+        }),
+      );
       if (res?.error) setError(res.error);
     });
   }
+
   const activeExercises = days[activeDay]?.exercises ?? [];
   const activeLabel = days[activeDay]?.label ?? '';
 
@@ -235,14 +177,22 @@ export function WorkoutEditor({
                   </span>
                 </button>
                 {days.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeDay(i)}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Remover dia"
-                  >
-                    <X className="size-3.5" />
-                  </button>
+                  <ConfirmationDialog
+                    trigger={
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Remover dia"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    }
+                    title="Remover dia?"
+                    description={`O dia ${d.label} e seus exercícios serão removidos deste treino.`}
+                    confirmLabel="Remover dia"
+                    pendingLabel="Removendo..."
+                    confirmAction={() => removeDay(i)}
+                  />
                 )}
               </li>
             ))}
@@ -315,14 +265,22 @@ export function WorkoutEditor({
                     >
                       <ChevronDown className="size-4" />
                     </button>
-                    <button
-                      type="button"
-                      className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive-bg hover:text-destructive"
-                      onClick={() => removeExercise(activeDay, j)}
-                      aria-label="Remover"
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <ConfirmationDialog
+                      trigger={
+                        <button
+                          type="button"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive-bg hover:text-destructive"
+                          aria-label="Remover"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      }
+                      title="Remover exercício?"
+                      description={`O exercício ${ex.exerciseName} será removido deste treino.`}
+                      confirmLabel="Remover exercício"
+                      pendingLabel="Removendo..."
+                      confirmAction={() => removeExercise(activeDay, j)}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -415,62 +373,62 @@ function PickerDialog({
   }, [q, exercises]);
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Trigger asChild>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus />
           Exercício
         </Button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[80vh] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-[12px] bg-card p-6 shadow-elevated focus-visible:outline-none">
-          <div className="flex items-start justify-between">
-            <Dialog.Title className="font-display text-lg font-bold">
-              Adicionar exercício
-            </Dialog.Title>
-            <Dialog.Close asChild>
+      </DialogTrigger>
+      <DialogContent
+        aria-describedby={undefined}
+        showCloseButton={false}
+        overlayClassName="z-40 bg-foreground/40 backdrop-blur-sm"
+        className="flex max-h-[80vh] max-w-lg flex-col rounded-[12px] bg-card p-6 text-foreground shadow-elevated ring-0 sm:max-w-lg"
+      >
+        <div className="flex items-start justify-between">
+          <DialogTitle className="font-display text-lg font-bold">Adicionar exercício</DialogTitle>
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Fechar"
+            >
+              <X className="size-5" />
+            </button>
+          </DialogClose>
+        </div>
+        <div className="relative mt-4">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar exercício…"
+            className="pl-9"
+          />
+        </div>
+        <ul className="mt-4 flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
+          {filtered.map((ex) => (
+            <li key={ex.id}>
               <button
                 type="button"
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Fechar"
+                onClick={() => onPick(ex)}
+                className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted"
               >
-                <X className="size-5" />
+                <span className="font-display text-sm font-semibold">{ex.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
+                </span>
               </button>
-            </Dialog.Close>
-          </div>
-          <div className="relative mt-4">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar exercício…"
-              className="pl-9"
-            />
-          </div>
-          <ul className="mt-4 flex max-h-[50vh] flex-col gap-1 overflow-y-auto">
-            {filtered.map((ex) => (
-              <li key={ex.id}>
-                <button
-                  type="button"
-                  onClick={() => onPick(ex)}
-                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted"
-                >
-                  <span className="font-display text-sm font-semibold">{ex.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
-                  </span>
-                </button>
-              </li>
-            ))}
-            {filtered.length === 0 && (
-              <li className="px-3 py-8 text-center text-sm text-muted-foreground">
-                Nenhum exercício encontrado.
-              </li>
-            )}
-          </ul>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+            </li>
+          ))}
+          {filtered.length === 0 && (
+            <li className="px-3 py-8 text-center text-sm text-muted-foreground">
+              Nenhum exercício encontrado.
+            </li>
+          )}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }

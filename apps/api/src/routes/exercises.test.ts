@@ -1,18 +1,19 @@
 import { db, schema } from '@muvit/db';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
-async function signupTrainer(email: string): Promise<string> {
-  const response = await app.inject({
-    method: 'POST',
-    url: '/auth/signup/trainer',
-    payload: { name: 'Trainer', email, password: '12345678' },
+async function signupTrainer(email: string) {
+  return signUpWithSession(app, {
+    name: 'Trainer',
+    email,
+    password: '12345678',
+    role: 'trainer',
   });
-  return response.json().accessToken as string;
 }
 
 async function createGlobalExercises() {
@@ -36,40 +37,41 @@ afterAll(async () => {
 describe('exercises', () => {
   it('lists global exercises for any authenticated user', async () => {
     await createGlobalExercises();
-    const trainerToken = await signupTrainer('a@a.com');
+    const trainer = await signupTrainer('a@a.com');
 
     const r = await app.inject({
       method: 'GET',
       url: '/exercises?scope=global',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
     });
     expect(r.statusCode).toBe(200);
     expect(r.json().items.length).toBe(2);
   });
 
   it('trainer creates a custom exercise', async () => {
-    const trainerToken = await signupTrainer('a@a.com');
+    const trainer = await signupTrainer('a@a.com');
 
     const r = await app.inject({
       method: 'POST',
       url: '/exercises',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: { name: 'Crucifixo invertido', muscleGroup: 'shoulders' },
     });
     expect(r.statusCode).toBe(201);
-    expect(r.json().trainerId).toBeDefined();
+    expect(r.json().trainerId).toBe(trainer.profileId);
   });
 
   it('students cannot create exercises', async () => {
-    const s = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Aluno', email: 's@s.com', password: '12345678' },
+    const student = await signUpWithSession(app, {
+      name: 'Aluno',
+      email: 's@s.com',
+      password: '12345678',
+      role: 'student',
     });
     const r = await app.inject({
       method: 'POST',
       url: '/exercises',
-      headers: { authorization: `Bearer ${s.json().accessToken}` },
+      headers: { cookie: student.cookie },
       payload: { name: 'Crucifixo invertido', muscleGroup: 'chest' },
     });
     expect(r.statusCode).toBe(403);
@@ -77,24 +79,25 @@ describe('exercises', () => {
 
   it('coerces scope=mine to global for students (does not leak trainer-owned exercises)', async () => {
     await createGlobalExercises();
-    const trainerToken = await signupTrainer('a@a.com');
+    const trainer = await signupTrainer('a@a.com');
 
     await app.inject({
       method: 'POST',
       url: '/exercises',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
       payload: { name: 'Custom do trainer', muscleGroup: 'chest' },
     });
 
-    const s = await app.inject({
-      method: 'POST',
-      url: '/auth/signup/student',
-      payload: { name: 'Aluno', email: 's@s.com', password: '12345678' },
+    const student = await signUpWithSession(app, {
+      name: 'Aluno',
+      email: 's@s.com',
+      password: '12345678',
+      role: 'student',
     });
     const r = await app.inject({
       method: 'GET',
       url: '/exercises?scope=mine',
-      headers: { authorization: `Bearer ${s.json().accessToken}` },
+      headers: { cookie: student.cookie },
     });
     const items = r.json().items as Array<{ name: string; trainerId: string | null }>;
     expect(items.every((e) => e.trainerId === null)).toBe(true);
@@ -103,12 +106,12 @@ describe('exercises', () => {
 
   it('filters by muscle group', async () => {
     await createGlobalExercises();
-    const trainerToken = await signupTrainer('a@a.com');
+    const trainer = await signupTrainer('a@a.com');
 
     const r = await app.inject({
       method: 'GET',
       url: '/exercises?muscleGroup=chest&scope=global',
-      headers: { authorization: `Bearer ${trainerToken}` },
+      headers: { cookie: trainer.cookie },
     });
     const items = r.json().items as Array<{ muscleGroup: string }>;
     expect(items.length).toBeGreaterThan(0);

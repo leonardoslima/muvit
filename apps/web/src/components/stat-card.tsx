@@ -1,20 +1,27 @@
 import { cn } from '@/lib/utils';
+import { type VariantProps, cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 
-const ACCENT = {
-  primary: 'text-primary bg-success-bg',
-  warning: 'text-[#B87A0A] bg-warning-bg',
-  info: 'text-info bg-info-bg',
-  success: 'text-primary bg-success-bg',
-  destructive: 'text-destructive bg-destructive-bg',
-} as const;
+const statCardIconVariants = cva('grid size-8 place-items-center rounded-md', {
+  variants: {
+    accent: {
+      primary: 'text-primary bg-success-bg',
+      warning: 'text-[#B87A0A] bg-warning-bg',
+      info: 'text-info bg-info-bg',
+      success: 'text-primary bg-success-bg',
+      destructive: 'text-destructive bg-destructive-bg',
+    },
+  },
+  defaultVariants: {
+    accent: 'primary',
+  },
+});
 
-interface StatCardProps {
+interface StatCardProps extends VariantProps<typeof statCardIconVariants> {
   label: string;
   value: number | string;
   hint?: string;
   icon: LucideIcon;
-  accent?: keyof typeof ACCENT;
 }
 
 export function StatCard({ label, value, hint, icon: Icon, accent = 'primary' }: StatCardProps) {
@@ -24,7 +31,7 @@ export function StatCard({ label, value, hint, icon: Icon, accent = 'primary' }:
         <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </span>
-        <span className={cn('grid size-8 place-items-center rounded-md', ACCENT[accent])}>
+        <span className={cn(statCardIconVariants({ accent }))}>
           <Icon className="size-4" />
         </span>
       </div>
@@ -33,3 +40,5 @@ export function StatCard({ label, value, hint, icon: Icon, accent = 'primary' }:
     </div>
   );
 }
+
+export { statCardIconVariants };

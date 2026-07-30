@@ -1,14 +1,11 @@
-import type { AuthResponse } from '@muvit/validators';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { ApiClient } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth-store';
-import { config } from '../../src/lib/config';
+import { authClient } from '../../src/lib/auth-client';
+import { getAuthErrorMessage } from '../../src/lib/auth-errors';
 import { sharedStyles } from '../../src/lib/styles';
 
 export default function SignupScreen() {
-  const setTokens = useAuth((state) => state.setTokens);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,22 +15,22 @@ export default function SignupScreen() {
   async function submit() {
     setSubmitting(true);
     setError(undefined);
+
     try {
-      const client = new ApiClient({
-        baseUrl: config.apiUrl,
-        getAccessToken: () => undefined,
-        getRefreshToken: () => undefined,
-        setAccessToken: async () => undefined,
-        clearAuth: async () => undefined,
+      const result = await authClient.signUp.email({
+        name,
+        email,
+        password,
+        role: 'student',
       });
-      const response = await client.request<AuthResponse>('/auth/signup/student', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password }),
-      });
-      await setTokens(response.accessToken, response.refreshToken, response.user.id);
+      if (result.error) {
+        setError(getAuthErrorMessage(result.error, 'signup'));
+        return;
+      }
+
       router.replace('/(tabs)');
-    } catch {
-      setError('Nao foi possivel criar sua conta.');
+    } catch (caughtError) {
+      setError(getAuthErrorMessage(caughtError, 'signup'));
     } finally {
       setSubmitting(false);
     }
@@ -73,7 +70,7 @@ export default function SignupScreen() {
       </Pressable>
       <Link href="/(auth)/login" asChild>
         <Pressable style={sharedStyles.secondaryButton}>
-          <Text style={sharedStyles.secondaryButtonText}>Ja tenho conta</Text>
+          <Text style={sharedStyles.secondaryButtonText}>Já tenho conta</Text>
         </Pressable>
       </Link>
     </View>

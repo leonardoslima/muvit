@@ -1,15 +1,14 @@
 export type Fetcher = (input: string, init?: RequestInit) => Promise<Response>;
 
-type TokenAccessors = {
-  getAccessToken: () => string | undefined;
-  getRefreshToken: () => string | undefined;
-  setAccessToken: (accessToken: string) => void | Promise<void>;
-  clearAuth: () => void | Promise<void>;
+export type ApiClientOptions = {
+  baseUrl: string;
+  getCookie: () => string;
+  onUnauthorized: () => void | Promise<void>;
+  fetcher?: Fetcher;
 };
 
-export type ApiClientOptions = TokenAccessors & {
-  baseUrl: string;
-  fetcher?: Fetcher;
+export type ApiRequestOptions = {
+  allowAnonymous?: boolean;
 };
 
 export class ApiError extends Error {
@@ -25,66 +24,51 @@ export class ApiError extends Error {
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly fetcher: Fetcher;
-  private readonly tokens: TokenAccessors;
+  private readonly getCookie: () => string;
+  private readonly onUnauthorized: () => void | Promise<void>;
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
     this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
-    this.tokens = options;
+    this.getCookie = options.getCookie;
+    this.onUnauthorized = options.onUnauthorized;
   }
 
-  async request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    return this.requestWithAuth<T>(path, init, true);
-  }
-
-  private async requestWithAuth<T>(
+  async request<T>(
     path: string,
-    init: RequestInit,
-    allowRefresh: boolean,
+    init: RequestInit = {},
+    options: ApiRequestOptions = {},
   ): Promise<T> {
-    const response = await this.fetcher(this.url(path), this.withAuthHeaders(init));
+    const cookie = this.getCookie().trim();
 
-    if (response.status === 401 && allowRefresh) {
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        return this.requestWithAuth<T>(path, init, false);
-      }
+    if (!cookie && !options.allowAnonymous) {
+      await this.notifyUnauthorized();
+      throw new ApiError('unauthorized', 401);
+    }
+
+    const headers = new Headers(init.headers);
+    if (cookie) headers.set('cookie', cookie);
+    if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
+
+    const response = await this.fetcher(this.url(path), {
+      ...init,
+      credentials: 'omit',
+      headers,
+    });
+
+    if (response.status === 401) {
+      await this.notifyUnauthorized();
     }
 
     return parseResponse<T>(response);
   }
 
-  private async refreshAccessToken(): Promise<boolean> {
-    const refreshToken = this.tokens.getRefreshToken();
-    if (!refreshToken) {
-      await this.tokens.clearAuth();
-      return false;
+  private async notifyUnauthorized(): Promise<void> {
+    try {
+      await this.onUnauthorized();
+    } catch {
+      // A falha de limpeza local não deve ocultar o 401 original da API.
     }
-
-    const response = await this.fetcher(this.url('/auth/refresh'), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!response.ok) {
-      await this.tokens.clearAuth();
-      await parseResponse<unknown>(response);
-      return false;
-    }
-
-    const body = await response.json();
-    const accessToken = readStringField(body, 'accessToken');
-    await this.tokens.setAccessToken(accessToken);
-    return true;
-  }
-
-  private withAuthHeaders(init: RequestInit): RequestInit {
-    const headers = new Headers(init.headers);
-    const accessToken = this.tokens.getAccessToken();
-    if (accessToken) headers.set('authorization', `Bearer ${accessToken}`);
-    if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
-    return { ...init, headers };
   }
 
   private url(path: string): string {
@@ -105,12 +89,4 @@ export async function parseResponse<T>(response: Response): Promise<T> {
   }
 
   return body as T;
-}
-
-function readStringField(value: unknown, field: string): string {
-  if (value && typeof value === 'object' && field in value) {
-    const fieldValue = value[field as keyof typeof value];
-    if (typeof fieldValue === 'string') return fieldValue;
-  }
-  throw new Error(`invalid response: missing ${field}`);
 }

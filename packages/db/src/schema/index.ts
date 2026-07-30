@@ -1,4 +1,5 @@
 export * from './enums.js';
+export * from './auth.js';
 export * from './trainers.js';
 export * from './students.js';
 export * from './assessments.js';

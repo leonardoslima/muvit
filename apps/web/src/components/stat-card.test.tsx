@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { Activity } from 'lucide-react';
 import { describe, expect, it } from 'vitest';
-import { StatCard } from './stat-card';
+import { StatCard, statCardIconVariants } from './stat-card';
 
 describe('StatCard', () => {
   it('renderiza label, valor e dica opcional', () => {
@@ -18,5 +18,19 @@ describe('StatCard', () => {
     expect(screen.getByText('Treinos')).toBeInTheDocument();
     expect(screen.getByText('8')).toBeInTheDocument();
     expect(screen.queryByText('+2 no mes')).not.toBeInTheDocument();
+  });
+
+  it('aplica variantes de destaque com CVA', () => {
+    render(<StatCard icon={Activity} label="Alertas" value={3} accent="destructive" />);
+
+    expect(screen.getByText('Alertas').nextElementSibling).toHaveClass(
+      'text-destructive',
+      'bg-destructive-bg',
+    );
+  });
+
+  it('exporta o helper de variantes do icone para composicoes', () => {
+    expect(statCardIconVariants({ accent: 'info' })).toContain('text-info');
+    expect(statCardIconVariants({ accent: 'info' })).toContain('bg-info-bg');
   });
 });
