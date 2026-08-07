@@ -10,7 +10,7 @@ import { makeStudentsModule } from '../modules/students/factory.js';
 import { sendUseCaseError } from '../shared/http-error.js';
 
 export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const studentsModule = makeStudentsModule();
+  const studentsModule = makeStudentsModule(app.log);
 
   app.addHook('preHandler', app.requireAuth);
 

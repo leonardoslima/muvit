@@ -28,6 +28,10 @@ describe('runDailyNotifications', () => {
       .values({ authUserId: authUser.id, name: authUser.name, email: authUser.email })
       .returning();
     if (!trainer) throw new Error('trainer not inserted');
+    await db.insert(schema.trainerNotificationPreferences).values({
+      trainerId: trainer.id,
+      pendingAssessmentChannel: 'email',
+    });
 
     const [student] = await db
       .insert(schema.students)
