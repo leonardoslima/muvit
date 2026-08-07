@@ -54851,6 +54851,1926 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "uJLDm",
+      "x": 21779,
+      "y": -20,
+      "name": "Mobile / Aluno / Hoje / treino-ativo",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "bNcoS",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do treino ativo",
+          "x": 0,
+          "y": 0,
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "jhRqx",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho do treino de hoje",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "HOJE"
+                },
+                "R9VV9": {
+                  "content": "Treino de hoje"
+                },
+                "Duswo": {
+                  "content": "Hipertrofia A · Terça"
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "bFSKX",
+              "name": "Conteúdo do treino ativo",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "FZYF6",
+                  "type": "ref",
+                  "ref": "Q4znq",
+                  "name": "Badge Offline",
+                  "descendants": {
+                    "X5SQO8": {
+                      "fill": "$--muted-foreground"
+                    },
+                    "cChuM": {
+                      "content": "Offline",
+                      "fill": "$--muted-foreground"
+                    }
+                  }
+                },
+                {
+                  "id": "v6YcKk",
+                  "type": "ref",
+                  "ref": "uJOHb",
+                  "name": "Exercício Agachamento livre",
+                  "width": "fill_container",
+                  "descendants": {
+                    "U9xF5L": {
+                      "content": "Agachamento livre"
+                    },
+                    "KKdzY/cChuM": {
+                      "content": "Pronto"
+                    },
+                    "Kk6gi": {
+                      "content": "4 séries • 10 repetições"
+                    },
+                    "hSG7W": {
+                      "content": "Descanso: 90 s"
+                    }
+                  }
+                },
+                {
+                  "id": "AZgmF",
+                  "type": "ref",
+                  "ref": "uJOHb",
+                  "name": "Exercício Supino reto",
+                  "width": "fill_container",
+                  "descendants": {
+                    "U9xF5L": {
+                      "content": "Supino reto"
+                    },
+                    "KKdzY/cChuM": {
+                      "content": "Pronto"
+                    },
+                    "Kk6gi": {
+                      "content": "4 séries • 12 repetições"
+                    },
+                    "hSG7W": {
+                      "content": "Descanso: 75 s"
+                    }
+                  }
+                },
+                {
+                  "id": "b9m0E",
+                  "type": "ref",
+                  "ref": "uJOHb",
+                  "name": "Exercício Remada baixa",
+                  "width": "fill_container",
+                  "descendants": {
+                    "U9xF5L": {
+                      "content": "Remada baixa"
+                    },
+                    "KKdzY/cChuM": {
+                      "content": "Pronto"
+                    },
+                    "Kk6gi": {
+                      "content": "3 séries • 12 repetições"
+                    },
+                    "hSG7W": {
+                      "content": "Descanso: 60 s"
+                    }
+                  }
+                },
+                {
+                  "id": "pqUiS",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Iniciar treino",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Iniciar treino"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "ldLXU",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno em Hoje",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "FFqFC": {
+                      "content": "Hoje"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jNGgW",
+      "x": 22241,
+      "y": -20,
+      "name": "Mobile / Aluno / Hoje / carregando",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "UhHqa",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de Hoje carregando",
+          "x": 0,
+          "y": 0,
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "type": "frame",
+              "id": "JPwAL",
+              "name": "Cabeçalho skeleton de Hoje",
+              "width": "fill_container",
+              "height": 78,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XuMEy",
+                  "name": "Contexto skeleton de Hoje",
+                  "width": 54,
+                  "height": 9,
+                  "fill": "$--muted",
+                  "cornerRadius": 5
+                },
+                {
+                  "type": "frame",
+                  "id": "MCWLH",
+                  "name": "Título skeleton de Hoje",
+                  "width": 184,
+                  "height": 22,
+                  "fill": "$--muted",
+                  "cornerRadius": 8
+                },
+                {
+                  "type": "frame",
+                  "id": "hlSQa",
+                  "name": "Subtítulo skeleton de Hoje",
+                  "width": 132,
+                  "height": 11,
+                  "fill": "$--muted",
+                  "cornerRadius": 6
+                }
+              ]
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "WiUHy",
+              "name": "Exercícios carregando",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "I7meXw",
+                  "name": "Skeleton do exercício 1",
+                  "width": "fill_container",
+                  "height": 118,
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gNNnT",
+                      "name": "Linha principal skeleton 1",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "z2a5U",
+                          "name": "Ícone skeleton 1",
+                          "width": 36,
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": 18
+                        },
+                        {
+                          "type": "frame",
+                          "id": "zmLwz",
+                          "name": "Título skeleton 1",
+                          "width": 150,
+                          "height": 14,
+                          "fill": "$--muted",
+                          "cornerRadius": 7
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jUZT0",
+                      "name": "Resumo skeleton 1",
+                      "width": 196,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Y71II",
+                      "name": "Descanso skeleton 1",
+                      "width": 112,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pA4X6",
+                  "name": "Skeleton do exercício 2",
+                  "width": "fill_container",
+                  "height": 118,
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pfJtT",
+                      "name": "Linha principal skeleton 2",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "WgDik",
+                          "name": "Ícone skeleton 2",
+                          "width": 36,
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": 18
+                        },
+                        {
+                          "type": "frame",
+                          "id": "qw3nx",
+                          "name": "Título skeleton 2",
+                          "width": 150,
+                          "height": 14,
+                          "fill": "$--muted",
+                          "cornerRadius": 7
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SI5kU",
+                      "name": "Resumo skeleton 2",
+                      "width": 196,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "t1rdZ",
+                      "name": "Descanso skeleton 2",
+                      "width": 112,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YF89o",
+                  "name": "Skeleton do exercício 3",
+                  "width": "fill_container",
+                  "height": 118,
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "qi2Na",
+                      "name": "Linha principal skeleton 3",
+                      "width": "fill_container",
+                      "gap": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "HRJXX",
+                          "name": "Ícone skeleton 3",
+                          "width": 36,
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": 18
+                        },
+                        {
+                          "type": "frame",
+                          "id": "SVTrd",
+                          "name": "Título skeleton 3",
+                          "width": 150,
+                          "height": 14,
+                          "fill": "$--muted",
+                          "cornerRadius": 7
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M3oiic",
+                      "name": "Resumo skeleton 3",
+                      "width": 196,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lE9Qn",
+                      "name": "Descanso skeleton 3",
+                      "width": 112,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": 5
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "MG00J",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno em Hoje",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "FFqFC": {
+                      "content": "Hoje"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nMLyN",
+      "x": 22703,
+      "y": -20,
+      "name": "Mobile / Aluno / Hoje / sem-treino",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "rJZ9I",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de Hoje sem treino",
+          "x": 0,
+          "y": 0,
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "SvPZN",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho de Hoje sem treino",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "HOJE"
+                },
+                "R9VV9": {
+                  "content": "Treino de hoje"
+                },
+                "Duswo": {
+                  "content": "Hipertrofia A · Terça"
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "kbJxY",
+              "name": "Estado sem treino ativo",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "Ix5de",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Painel Sem treino ativo",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "calendar-x"
+                    },
+                    "N37M8": {
+                      "content": "Sem treino ativo"
+                    },
+                    "upy9o": {
+                      "content": "Quando seu treinador publicar um treino ativo, ele aparece aqui."
+                    },
+                    "Asvyg": {
+                      "enabled": false
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "m1j10t",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno em Hoje",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "FFqFC": {
+                      "content": "Hoje"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Uniw4",
+      "x": 23165,
+      "y": -20,
+      "name": "Mobile / Aluno / Hoje / erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "X2f5br",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de erro em Hoje",
+          "x": 0,
+          "y": 0,
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "GDv06",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho de erro em Hoje",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "HOJE"
+                },
+                "R9VV9": {
+                  "content": "Treino de hoje"
+                },
+                "Duswo": {
+                  "content": "Hipertrofia A · Terça"
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "zU09S",
+              "name": "Estado de erro do treino",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "dj1vy",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Painel Não foi possível carregar o treino",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "triangle-alert",
+                      "fill": "#000000"
+                    },
+                    "N37M8": {
+                      "content": "Não foi possível carregar o treino"
+                    },
+                    "upy9o": {
+                      "content": "Verifique sua conexão e tente novamente."
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "fJevM",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno em Hoje",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "FFqFC": {
+                      "content": "Hoje"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "TsKjV",
+      "x": 23627,
+      "y": -20,
+      "name": "Mobile / Aluno / Exercício / detalhes",
+      "clip": true,
+      "width": 390,
+      "height": "fit_content(844)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "kImPi",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de Hoje sob o detalhe",
+          "width": "fill_container(390)",
+          "height": 844,
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "E4AQS": {
+              "id": "qLGtI",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho de Hoje sob o detalhe",
+              "width": "fill_container",
+              "opacity": 0.35,
+              "descendants": {
+                "yL4cl": {
+                  "content": "HOJE"
+                },
+                "R9VV9": {
+                  "content": "Treino de hoje"
+                },
+                "Duswo": {
+                  "content": "Hipertrofia A · Terça"
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "eHRSh",
+              "name": "Treino de hoje sob o detalhe",
+              "opacity": 0.35,
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "Alvku",
+                  "type": "ref",
+                  "ref": "uJOHb",
+                  "name": "Agachamento livre sob o detalhe",
+                  "width": "fill_container",
+                  "descendants": {
+                    "U9xF5L": {
+                      "content": "Agachamento livre"
+                    },
+                    "KKdzY/cChuM": {
+                      "content": "Pronto"
+                    },
+                    "Kk6gi": {
+                      "content": "4 séries • 10 repetições"
+                    },
+                    "hSG7W": {
+                      "content": "Descanso: 90 s"
+                    }
+                  }
+                },
+                {
+                  "id": "s90GaK",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Iniciar treino sob o detalhe",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Iniciar treino"
+                    }
+                  }
+                }
+              ]
+            },
+            "thUkW": {
+              "id": "T8H3gj",
+              "type": "ref",
+              "ref": "i4TO4J",
+              "name": "Abas de Hoje sob o detalhe",
+              "width": "fill_container",
+              "height": 56,
+              "opacity": 0.35,
+              "descendants": {
+                "FFqFC": {
+                  "content": "Hoje"
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "frame",
+          "id": "vb3zl",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 230,
+          "name": "Superfície inferior do exercício",
+          "width": 390,
+          "height": 614,
+          "fill": "$--card",
+          "cornerRadius": [
+            28,
+            28,
+            0,
+            0
+          ],
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "#00000024",
+            "offset": {
+              "x": 0,
+              "y": -8
+            },
+            "blur": 28
+          },
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            12,
+            20,
+            24,
+            20
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "Cv8Fd",
+              "name": "Alça da superfície inferior",
+              "width": 44,
+              "height": 4,
+              "fill": "$--muted",
+              "cornerRadius": 2,
+              "alignItems": "center"
+            },
+            {
+              "type": "frame",
+              "id": "zTtGn",
+              "name": "Dados do exercício",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "HRcXD",
+                  "name": "Título Agachamento livre",
+                  "fill": "$--foreground",
+                  "content": "Agachamento livre",
+                  "fontFamily": "$--font-primary",
+                  "fontSize": 26,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "J5Uyyk",
+                  "name": "Grupo muscular do exercício",
+                  "fill": "$--muted-foreground",
+                  "content": "Quadríceps e glúteos",
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "Yin5X",
+                  "name": "Métricas do exercício",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "zy71V",
+                      "name": "Métrica Séries",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": 10,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FDFVs",
+                          "name": "Valor Séries",
+                          "fill": "$--foreground",
+                          "content": "4",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t79rk",
+                          "name": "Rótulo Séries",
+                          "fill": "$--muted-foreground",
+                          "content": "Séries",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ouVKD",
+                      "name": "Métrica Repetições",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": 10,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t5oCSy",
+                          "name": "Valor Repetições",
+                          "fill": "$--foreground",
+                          "content": "10–12",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "j5ppB",
+                          "name": "Rótulo Repetições",
+                          "fill": "$--muted-foreground",
+                          "content": "Repetições",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "jNLmH",
+                      "name": "Métrica Descanso",
+                      "width": "fill_container",
+                      "fill": "$--muted",
+                      "cornerRadius": 10,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": 12,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X9fx2",
+                          "name": "Valor Descanso",
+                          "fill": "$--foreground",
+                          "content": "90 s",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "AzRde",
+                          "name": "Rótulo Descanso",
+                          "fill": "$--muted-foreground",
+                          "content": "Descanso",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Ayaqg",
+                  "name": "Notas do treinador",
+                  "width": "fill_container",
+                  "fill": "$--background",
+                  "cornerRadius": 12,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GnriE",
+                      "name": "Título Notas do treinador",
+                      "fill": "$--foreground",
+                      "content": "Notas do treinador",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "JhoZ7",
+                      "name": "Conteúdo das notas",
+                      "fill": "$--muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Mantenha os joelhos alinhados e desça com controle.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "lSMfx",
+              "type": "ref",
+              "ref": "pNIQu",
+              "name": "Ação Fechar detalhes",
+              "width": "fill_container",
+              "descendants": {
+                "i0bXE": {
+                  "content": "Fechar"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "nerHC",
+      "x": 24089,
+      "y": -20,
+      "name": "Mobile / Aluno / Registro de treino / default",
+      "clip": true,
+      "width": 390,
+      "height": "fit_content(844)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "Pqdfn",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do registro de treino",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "descendants": {
+            "E4AQS": {
+              "id": "k4OtVI",
+              "type": "ref",
+              "ref": "veac4",
+              "name": "Cabeçalho Voltar Hipertrofia A",
+              "width": "fill_container",
+              "descendants": {
+                "MefHR": {
+                  "content": "Hipertrofia A"
+                },
+                "lyqHg": {
+                  "enabled": false
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "y1P7R",
+              "name": "Séries do treino Hipertrofia A",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "diOxE",
+                  "name": "Orientação do registro",
+                  "fill": "$--muted-foreground",
+                  "content": "Registre repetições e carga em cada série.",
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "ajotv",
+                  "name": "Registro Agachamento livre",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "y5IHKm",
+                      "name": "Cabeçalho Agachamento livre",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IySPz",
+                          "name": "Nome Agachamento livre",
+                          "fill": "$--foreground",
+                          "content": "Agachamento livre",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "LOHKW",
+                          "name": "Estado concluído Agachamento livre",
+                          "fill": "$--primary",
+                          "content": "Concluído",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i5e2fm",
+                      "name": "Agachamento livre série 1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "jWi9V",
+                          "name": "Status concluído Agachamento livre 1",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "U6XbLL",
+                          "name": "Número da série Agachamento livre 1",
+                          "fill": "$--foreground",
+                          "content": "Série 1",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "K15y2",
+                          "name": "Campo reps Agachamento livre 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "gjCsI",
+                              "name": "Valor reps Agachamento livre 1",
+                              "fill": "$--foreground",
+                              "content": "10 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "G3LV7",
+                          "name": "Campo kg Agachamento livre 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "VxSvW",
+                              "name": "Valor kg Agachamento livre 1",
+                              "fill": "$--foreground",
+                              "content": "60 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rhRJj",
+                      "name": "Agachamento livre série 2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "XO0pH",
+                          "name": "Status concluído Agachamento livre 2",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "sZ61v",
+                          "name": "Número da série Agachamento livre 2",
+                          "fill": "$--foreground",
+                          "content": "Série 2",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "it07b",
+                          "name": "Campo reps Agachamento livre 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "c66uD",
+                              "name": "Valor reps Agachamento livre 2",
+                              "fill": "$--foreground",
+                              "content": "10 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "LLuAG",
+                          "name": "Campo kg Agachamento livre 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ObiPk",
+                              "name": "Valor kg Agachamento livre 2",
+                              "fill": "$--foreground",
+                              "content": "60 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "V8UOF",
+                  "name": "Registro Supino reto",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "V6vm8b",
+                      "name": "Cabeçalho Supino reto",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "vGecE",
+                          "name": "Nome Supino reto",
+                          "fill": "$--foreground",
+                          "content": "Supino reto",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Z4CNRA",
+                          "name": "Estado concluído Supino reto",
+                          "fill": "$--primary",
+                          "content": "Concluído",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qGgnF",
+                      "name": "Supino reto série 1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "w5sBhr",
+                          "name": "Status concluído Supino reto 1",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "OubP8",
+                          "name": "Número da série Supino reto 1",
+                          "fill": "$--foreground",
+                          "content": "Série 1",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Jy4DB",
+                          "name": "Campo reps Supino reto 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "o62lu4",
+                              "name": "Valor reps Supino reto 1",
+                              "fill": "$--foreground",
+                              "content": "12 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rjfFp",
+                          "name": "Campo kg Supino reto 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "io1Jn",
+                              "name": "Valor kg Supino reto 1",
+                              "fill": "$--foreground",
+                              "content": "40 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "haBLA",
+                      "name": "Supino reto série 2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "P5F1dL",
+                          "name": "Status concluído Supino reto 2",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Wtc1r",
+                          "name": "Número da série Supino reto 2",
+                          "fill": "$--foreground",
+                          "content": "Série 2",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "wq47R",
+                          "name": "Campo reps Supino reto 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "CsIip",
+                              "name": "Valor reps Supino reto 2",
+                              "fill": "$--foreground",
+                              "content": "12 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "c5zGF6",
+                          "name": "Campo kg Supino reto 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "iX2vl",
+                              "name": "Valor kg Supino reto 2",
+                              "fill": "$--foreground",
+                              "content": "40 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y52JW",
+                  "name": "Registro Remada baixa",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PBJUH",
+                      "name": "Cabeçalho Remada baixa",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Evxdu",
+                          "name": "Nome Remada baixa",
+                          "fill": "$--foreground",
+                          "content": "Remada baixa",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "KcLnl",
+                          "name": "Estado concluído Remada baixa",
+                          "fill": "$--primary",
+                          "content": "Concluído",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fyAvH",
+                      "name": "Remada baixa série 1",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "d6TxXL",
+                          "name": "Status concluído Remada baixa 1",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xP0Js",
+                          "name": "Número da série Remada baixa 1",
+                          "fill": "$--foreground",
+                          "content": "Série 1",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "rCMlo",
+                          "name": "Campo reps Remada baixa 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "v9YxRW",
+                              "name": "Valor reps Remada baixa 1",
+                              "fill": "$--foreground",
+                              "content": "12 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Seoyn",
+                          "name": "Campo kg Remada baixa 1",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ld3tc",
+                              "name": "Valor kg Remada baixa 1",
+                              "fill": "$--foreground",
+                              "content": "45 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XHJUy",
+                      "name": "Remada baixa série 2",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ZOvU9",
+                          "name": "Status concluído Remada baixa 2",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "circle-check",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Ziutt",
+                          "name": "Número da série Remada baixa 2",
+                          "fill": "$--foreground",
+                          "content": "Série 2",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "KpGUb",
+                          "name": "Campo reps Remada baixa 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "LIJaE",
+                              "name": "Valor reps Remada baixa 2",
+                              "fill": "$--foreground",
+                              "content": "12 reps",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "bHPrP",
+                          "name": "Campo kg Remada baixa 2",
+                          "width": "fill_container",
+                          "height": 34,
+                          "fill": "$--background",
+                          "cornerRadius": 8,
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            10
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "iOFEd",
+                              "name": "Valor kg Remada baixa 2",
+                              "fill": "$--foreground",
+                              "content": "45 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "type": "frame",
+              "id": "gi2yQ",
+              "name": "Rodapé Finalizar treino",
+              "width": "fill_container",
+              "height": 68,
+              "layout": "vertical",
+              "padding": [
+                8,
+                20,
+                12,
+                20
+              ],
+              "children": [
+                {
+                  "id": "bk6hM",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Finalizar treino",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Finalizar treino"
+                    },
+                    "G6XUt": {
+                      "icon": "check"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "uPybj",
+      "x": 24551,
+      "y": -20,
+      "name": "Mobile / Aluno / Registro de treino / carregando-erro",
+      "clip": true,
+      "width": 390,
+      "height": "fit_content(844)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "cvo1L",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de carregamento e erro do registro",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "descendants": {
+            "E4AQS": {
+              "id": "IquLe",
+              "type": "ref",
+              "ref": "veac4",
+              "name": "Cabeçalho do registro indisponível",
+              "width": "fill_container",
+              "descendants": {
+                "MefHR": {
+                  "content": "Hipertrofia A"
+                },
+                "lyqHg": {
+                  "enabled": false
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "UzYt6",
+              "name": "Feedback de carregamento e erro",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "H7V1V",
+                  "name": "Carregando treino",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": 10,
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "gap": 12,
+                  "padding": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "mnQwv",
+                      "name": "Indicador de carregamento do treino",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "loader-circle",
+                      "library": "lucide",
+                      "fill": "$--primary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ucGOO",
+                      "name": "Mensagem Carregando treino",
+                      "fill": "$--foreground",
+                      "content": "Carregando treino...",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "id": "PmvxT",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Painel Treino indisponível",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "triangle-alert",
+                      "fill": "#000000"
+                    },
+                    "N37M8": {
+                      "content": "Treino indisponível"
+                    },
+                    "upy9o": {
+                      "content": "Não foi possível abrir este treino agora."
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente"
+                    }
+                  }
+                },
+                {
+                  "id": "SVlxQ",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Voltar para Hoje no erro",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Voltar para Hoje"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "width": 390
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jwmjt",
+      "x": 25013,
+      "y": -20,
+      "name": "Mobile / Aluno / Registro de treino / sucesso",
+      "clip": true,
+      "width": 390,
+      "height": "fit_content(844)",
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "Kz6ry",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell de sucesso do registro",
+          "layoutPosition": "absolute",
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "descendants": {
+            "E4AQS": {
+              "id": "P2qYDA",
+              "type": "ref",
+              "ref": "veac4",
+              "name": "Cabeçalho do treino concluído",
+              "width": "fill_container",
+              "descendants": {
+                "MefHR": {
+                  "content": "Treino concluído"
+                },
+                "lyqHg": {
+                  "enabled": false
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "Ay9yp",
+              "name": "Confirmação do treino finalizado",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "children": [
+                {
+                  "id": "K6Woz",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Painel Treino finalizado",
+                  "width": "fill_container",
+                  "descendants": {
+                    "psRyQ": {
+                      "fill": "$--color-success-bg"
+                    },
+                    "nALXn": {
+                      "icon": "circle-check",
+                      "fill": "$--primary"
+                    },
+                    "N37M8": {
+                      "content": "Treino finalizado"
+                    },
+                    "upy9o": {
+                      "content": "Seu registro foi salvo."
+                    },
+                    "cwtka": {
+                      "content": "Voltar para Hoje"
+                    },
+                    "D0z0sE": {
+                      "icon": "arrow-left"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "width": 390
+            }
+          }
+        }
+      ]
     }
   ],
   "variables": {
