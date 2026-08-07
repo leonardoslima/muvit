@@ -115,5 +115,13 @@ describe('buildDemoScenario', () => {
     expect(scenario.assessments).toHaveLength(24);
     expect(scenario.plans).toHaveLength(11);
     expect(scenario.logs).toHaveLength(41);
+    expect(scenario.trainerSubscription).toMatchObject({
+      plan: 'pro',
+      billingInterval: 'annual',
+      status: 'active',
+    });
+    expect(scenario.billingInvoices).toHaveLength(3);
+    expect(scenario.billingInvoices.every((invoice) => invoice.status === 'paid')).toBe(true);
+    expect(scenario.billingInvoices.every((invoice) => invoice.amountCents > 0)).toBe(true);
   });
 });

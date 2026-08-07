@@ -4,6 +4,8 @@ import type {
   NewAssessment,
   NewStudent,
   NewWorkoutPlan,
+  NewBillingInvoice,
+  NewTrainerSubscription,
 } from '../schema/index.js';
 
 export const DEMO_RANDOM_SEED = 20260716;
@@ -76,6 +78,8 @@ export type DemoScenario = {
   assessments: DemoAssessment[];
   plans: DemoPlan[];
   logs: DemoLog[];
+  trainerSubscription: Omit<NewTrainerSubscription, 'trainerId'>;
+  billingInvoices: Omit<NewBillingInvoice, 'trainerId'>[];
 };
 
 const studentStatuses = [
@@ -358,6 +362,8 @@ export const buildDemoScenario = (
   const assessments = buildAssessments(referenceDate);
   const plans = buildPlans(referenceDate);
   const logs = buildLogs(referenceDate, plans);
+  const trainerSubscription = { plan: 'pro' as const, billingInterval: 'annual' as const, status: 'active' as const, startsAt: daysBefore(referenceDate, 30), renewsAt: daysBefore(referenceDate, -335) };
+  const billingInvoices = [0, 1, 2].map((index) => ({ plan: 'pro' as const, billingInterval: 'annual' as const, amountCents: 29900, currency: 'BRL', status: 'paid' as const, issuedAt: daysBefore(referenceDate, 30 + index * 30), paidAt: daysBefore(referenceDate, 29 + index * 30), createdAt: daysBefore(referenceDate, 30 + index * 30) }));
 
   return {
     trainer: identities.trainer,
@@ -365,5 +371,7 @@ export const buildDemoScenario = (
     assessments,
     plans,
     logs,
+    trainerSubscription,
+    billingInvoices,
   };
 };

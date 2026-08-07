@@ -1,6 +1,9 @@
 import { pgEnum } from 'drizzle-orm/pg-core';
 
 export const trainerPlanEnum = pgEnum('trainer_plan', ['free', 'starter', 'pro', 'team']);
+export const billingIntervalEnum = pgEnum('billing_interval', ['monthly', 'annual']);
+export const trainerSubscriptionStatusEnum = pgEnum('trainer_subscription_status', ['active', 'canceled']);
+export const billingInvoiceStatusEnum = pgEnum('billing_invoice_status', ['issued', 'paid', 'void']);
 
 export const studentStatusEnum = pgEnum('student_status', ['active', 'inactive', 'paused']);
 
