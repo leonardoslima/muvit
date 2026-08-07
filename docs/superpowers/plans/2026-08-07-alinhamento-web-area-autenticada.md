@@ -79,12 +79,31 @@ export type StudentReport = z.infer<typeof studentReportSchema>;
 
 `studentReportSchema` deve conter `student`, `period`, `physicalEvolution`, `beforeAfter`, `workoutAdherence`, `trainingFrequency`, `topExercises`, `rpeTrend`, `summary` e flags `hasEnoughData` por seção. Valores monetários usam inteiros em centavos.
 
-- [ ] **Step 4: Escrever testes de schema/seed para defaults e relações**
+- [ ] **Step 4: Escrever testes comportamentais de persistência e seed**
 
 ```ts
-expect(schema.trainerNotificationPreferences.trainerId.notNull).toBe(true);
-expect(schema.trainerSubscriptions.trainerId.notNull).toBe(true);
-expect(schema.billingInvoices.amountCents.notNull).toBe(true);
+await expect(db.insert(schema.billingInvoices).values({
+  trainerId,
+  plan: 'starter',
+  billingInterval: 'monthly',
+  amountCents: 0,
+  currency: 'BRL',
+  status: 'issued',
+  issuedAt: new Date('2026-08-07T12:00:00Z'),
+})).rejects.toThrow();
+await expect(db.insert(schema.trainerSubscriptions).values({
+  trainerId,
+  plan: 'starter',
+  billingInterval: 'monthly',
+  status: 'active',
+  startsAt: new Date('2026-08-07T12:00:00Z'),
+}).then(() => db.insert(schema.trainerSubscriptions).values({
+  trainerId,
+  plan: 'pro',
+  billingInterval: 'annual',
+  status: 'active',
+  startsAt: new Date('2026-08-07T12:00:00Z'),
+}))).rejects.toThrow();
 expect(scenario.billingInvoices.every((invoice) => invoice.amountCents > 0)).toBe(true);
 ```
 
@@ -232,14 +251,15 @@ git commit -m "feat(api): sincroniza perfil do treinador"
 - [ ] **Step 1: Escrever testes de catálogo, troca de plano e limite**
 
 ```ts
-expect(PLAN_CATALOG.free.activeStudentLimit).toBe(3);
-expect(PLAN_CATALOG.team.activeStudentLimit).toBeNull();
 expect(await useCase.execute(identity, { plan: 'pro', billingInterval: 'annual' }))
   .toMatchObject({ subscription: { plan: 'pro', billingInterval: 'annual' } });
 expect(repository.createdInvoice).toMatchObject({ status: 'issued', plan: 'pro' });
+await expect(freePlanPolicy.assertCanActivate(trainerId)).rejects
+  .toMatchObject({ code: 'student_plan_limit_exceeded' });
+await expect(teamPlanPolicy.assertCanActivate(trainerId)).resolves.toBeUndefined();
 ```
 
-Cobrir criação do quarto aluno no plano free, reativação acima do limite e plano team ilimitado.
+No fixture do plano free, o treinador já possui três alunos ativos; no fixture team, possui mais de 50. Cobrir criação do quarto aluno no plano free, reativação acima do limite e plano team ilimitado.
 
 - [ ] **Step 2: Executar testes e confirmar falha**
 
