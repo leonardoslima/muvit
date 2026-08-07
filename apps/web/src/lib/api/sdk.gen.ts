@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteAssessmentsByIdData, DeleteAssessmentsByIdResponses, DeleteExercisesByIdData, DeleteExercisesByIdResponses, DeleteStudentsByIdData, DeleteStudentsByIdResponses, DeleteWorkoutPlansByIdData, DeleteWorkoutPlansByIdResponses, GetApiAuthBy__Data, GetApiAuthBy__Responses, GetAssessmentsByIdData, GetAssessmentsByIdErrors, GetAssessmentsByIdResponses, GetExercisesData, GetExercisesResponses, GetHealthData, GetHealthResponses, GetStudentsByIdData, GetStudentsByIdErrors, GetStudentsByIdResponses, GetStudentsByStudentIdAssessmentsData, GetStudentsByStudentIdAssessmentsResponses, GetStudentsByStudentIdWorkoutLogsData, GetStudentsByStudentIdWorkoutLogsResponses, GetStudentsByStudentIdWorkoutPlansData, GetStudentsByStudentIdWorkoutPlansResponses, GetStudentsData, GetStudentsMeAssessmentsData, GetStudentsMeAssessmentsResponses, GetStudentsMeWorkoutLogsData, GetStudentsMeWorkoutLogsResponses, GetStudentsMeWorkoutPlansData, GetStudentsMeWorkoutPlansResponses, GetStudentsResponses, GetTrainerSummaryData, GetTrainerSummaryResponses, GetWorkoutLogsByIdData, GetWorkoutLogsByIdErrors, GetWorkoutLogsByIdResponses, GetWorkoutPlansByIdData, GetWorkoutPlansByIdErrors, GetWorkoutPlansByIdResponses, PatchAssessmentsByIdData, PatchAssessmentsByIdErrors, PatchAssessmentsByIdResponses, PatchExercisesByIdData, PatchExercisesByIdErrors, PatchExercisesByIdResponses, PatchStudentsByIdData, PatchStudentsByIdErrors, PatchStudentsByIdResponses, PatchWorkoutLogsByIdFinishData, PatchWorkoutLogsByIdFinishErrors, PatchWorkoutLogsByIdFinishResponses, PatchWorkoutPlansByIdData, PatchWorkoutPlansByIdErrors, PatchWorkoutPlansByIdResponses, PostApiAuthBy__Data, PostApiAuthBy__Responses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailResponses, PostExercisesData, PostExercisesResponses, PostStudentsByStudentIdAssessmentsData, PostStudentsByStudentIdAssessmentsResponses, PostStudentsData, PostStudentsMeAssessmentsData, PostStudentsMeAssessmentsResponses, PostStudentsMePushTokenData, PostStudentsMePushTokenResponses, PostStudentsResponses, PostTrainersOnboardingData, PostTrainersOnboardingResponses, PostUploadsPresignData, PostUploadsPresignResponses, PostWorkoutLogsData, PostWorkoutLogsErrors, PostWorkoutLogsResponses, PostWorkoutPlansData, PostWorkoutPlansResponses } from './types.gen';
+import type { DeleteAssessmentsByIdData, DeleteAssessmentsByIdResponses, DeleteExercisesByIdData, DeleteExercisesByIdResponses, DeleteStudentsByIdData, DeleteStudentsByIdResponses, DeleteWorkoutPlansByIdData, DeleteWorkoutPlansByIdResponses, GetApiAuthBy__Data, GetApiAuthBy__Responses, GetAssessmentsByIdData, GetAssessmentsByIdErrors, GetAssessmentsByIdResponses, GetExercisesData, GetExercisesResponses, GetHealthData, GetHealthResponses, GetStudentReportData, GetStudentReportErrors, GetStudentReportResponses, GetStudentsByIdData, GetStudentsByIdErrors, GetStudentsByIdResponses, GetStudentsByStudentIdAssessmentsData, GetStudentsByStudentIdAssessmentsResponses, GetStudentsByStudentIdWorkoutLogsData, GetStudentsByStudentIdWorkoutLogsResponses, GetStudentsByStudentIdWorkoutPlansData, GetStudentsByStudentIdWorkoutPlansResponses, GetStudentsData, GetStudentsMeAssessmentsData, GetStudentsMeAssessmentsResponses, GetStudentsMeWorkoutLogsData, GetStudentsMeWorkoutLogsResponses, GetStudentsMeWorkoutPlansData, GetStudentsMeWorkoutPlansResponses, GetStudentsResponses, GetTrainerInvoiceData, GetTrainerInvoiceErrors, GetTrainerInvoiceResponses, GetTrainerNotificationPreferencesData, GetTrainerNotificationPreferencesResponses, GetTrainerProfileData, GetTrainerProfileErrors, GetTrainerProfileResponses, GetTrainerSubscriptionData, GetTrainerSubscriptionResponses, GetTrainerSummaryData, GetTrainerSummaryResponses, GetWorkoutLogsByIdData, GetWorkoutLogsByIdErrors, GetWorkoutLogsByIdResponses, GetWorkoutPlansByIdData, GetWorkoutPlansByIdErrors, GetWorkoutPlansByIdResponses, PatchAssessmentsByIdData, PatchAssessmentsByIdErrors, PatchAssessmentsByIdResponses, PatchExercisesByIdData, PatchExercisesByIdErrors, PatchExercisesByIdResponses, PatchStudentsByIdData, PatchStudentsByIdErrors, PatchStudentsByIdResponses, PatchWorkoutLogsByIdFinishData, PatchWorkoutLogsByIdFinishErrors, PatchWorkoutLogsByIdFinishResponses, PatchWorkoutPlansByIdData, PatchWorkoutPlansByIdErrors, PatchWorkoutPlansByIdResponses, PostApiAuthBy__Data, PostApiAuthBy__Responses, PostApiAuthSignInEmailData, PostApiAuthSignInEmailResponses, PostApiAuthSignUpEmailData, PostApiAuthSignUpEmailResponses, PostExercisesData, PostExercisesResponses, PostStudentsByStudentIdAssessmentsData, PostStudentsByStudentIdAssessmentsResponses, PostStudentsData, PostStudentsErrors, PostStudentsMeAssessmentsData, PostStudentsMeAssessmentsResponses, PostStudentsMePushTokenData, PostStudentsMePushTokenResponses, PostStudentsResponses, PostTrainersOnboardingData, PostTrainersOnboardingResponses, PostUploadsPresignData, PostUploadsPresignResponses, PostWorkoutLogsData, PostWorkoutLogsErrors, PostWorkoutLogsResponses, PostWorkoutPlansData, PostWorkoutPlansResponses, UpdateTrainerNotificationPreferencesData, UpdateTrainerNotificationPreferencesResponses, UpdateTrainerProfileData, UpdateTrainerProfileErrors, UpdateTrainerProfileResponses, UpdateTrainerSubscriptionData, UpdateTrainerSubscriptionErrors, UpdateTrainerSubscriptionResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -31,6 +31,32 @@ export const getApiAuthBy__ = <ThrowOnError extends boolean = false>(options: Op
 
 export const postApiAuthBy__ = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthBy__Data, ThrowOnError>): RequestResult<PostApiAuthBy__Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostApiAuthBy__Responses, unknown, ThrowOnError>({ url: '/api/auth/{*}', ...options });
 
+export const getTrainerSubscription = <ThrowOnError extends boolean = false>(options?: Options<GetTrainerSubscriptionData, ThrowOnError>): RequestResult<GetTrainerSubscriptionResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetTrainerSubscriptionResponses, unknown, ThrowOnError>({ url: '/trainers/me/subscription', ...options });
+
+export const updateTrainerSubscription = <ThrowOnError extends boolean = false>(options: Options<UpdateTrainerSubscriptionData, ThrowOnError>): RequestResult<UpdateTrainerSubscriptionResponses, UpdateTrainerSubscriptionErrors, ThrowOnError> => (options.client ?? client).patch<UpdateTrainerSubscriptionResponses, UpdateTrainerSubscriptionErrors, ThrowOnError>({
+    url: '/trainers/me/subscription',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getTrainerInvoice = <ThrowOnError extends boolean = false>(options: Options<GetTrainerInvoiceData, ThrowOnError>): RequestResult<GetTrainerInvoiceResponses, GetTrainerInvoiceErrors, ThrowOnError> => (options.client ?? client).get<GetTrainerInvoiceResponses, GetTrainerInvoiceErrors, ThrowOnError>({ url: '/trainers/me/invoices/{id}', ...options });
+
+export const getTrainerNotificationPreferences = <ThrowOnError extends boolean = false>(options?: Options<GetTrainerNotificationPreferencesData, ThrowOnError>): RequestResult<GetTrainerNotificationPreferencesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetTrainerNotificationPreferencesResponses, unknown, ThrowOnError>({ url: '/trainers/me/notification-preferences', ...options });
+
+export const updateTrainerNotificationPreferences = <ThrowOnError extends boolean = false>(options: Options<UpdateTrainerNotificationPreferencesData, ThrowOnError>): RequestResult<UpdateTrainerNotificationPreferencesResponses, unknown, ThrowOnError> => (options.client ?? client).patch<UpdateTrainerNotificationPreferencesResponses, unknown, ThrowOnError>({
+    url: '/trainers/me/notification-preferences',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getStudentReport = <ThrowOnError extends boolean = false>(options: Options<GetStudentReportData, ThrowOnError>): RequestResult<GetStudentReportResponses, GetStudentReportErrors, ThrowOnError> => (options.client ?? client).get<GetStudentReportResponses, GetStudentReportErrors, ThrowOnError>({ url: '/reports/students/{studentId}', ...options });
+
 export const postStudentsMePushToken = <ThrowOnError extends boolean = false>(options: Options<PostStudentsMePushTokenData, ThrowOnError>): RequestResult<PostStudentsMePushTokenResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostStudentsMePushTokenResponses, unknown, ThrowOnError>({
     url: '/students/me/push-token',
     ...options,
@@ -42,7 +68,7 @@ export const postStudentsMePushToken = <ThrowOnError extends boolean = false>(op
 
 export const getStudents = <ThrowOnError extends boolean = false>(options?: Options<GetStudentsData, ThrowOnError>): RequestResult<GetStudentsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetStudentsResponses, unknown, ThrowOnError>({ url: '/students', ...options });
 
-export const postStudents = <ThrowOnError extends boolean = false>(options: Options<PostStudentsData, ThrowOnError>): RequestResult<PostStudentsResponses, unknown, ThrowOnError> => (options.client ?? client).post<PostStudentsResponses, unknown, ThrowOnError>({
+export const postStudents = <ThrowOnError extends boolean = false>(options: Options<PostStudentsData, ThrowOnError>): RequestResult<PostStudentsResponses, PostStudentsErrors, ThrowOnError> => (options.client ?? client).post<PostStudentsResponses, PostStudentsErrors, ThrowOnError>({
     url: '/students',
     ...options,
     headers: {
@@ -79,6 +105,17 @@ export const deleteExercisesById = <ThrowOnError extends boolean = false>(option
 
 export const patchExercisesById = <ThrowOnError extends boolean = false>(options: Options<PatchExercisesByIdData, ThrowOnError>): RequestResult<PatchExercisesByIdResponses, PatchExercisesByIdErrors, ThrowOnError> => (options.client ?? client).patch<PatchExercisesByIdResponses, PatchExercisesByIdErrors, ThrowOnError>({
     url: '/exercises/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+export const getTrainerProfile = <ThrowOnError extends boolean = false>(options?: Options<GetTrainerProfileData, ThrowOnError>): RequestResult<GetTrainerProfileResponses, GetTrainerProfileErrors, ThrowOnError> => (options?.client ?? client).get<GetTrainerProfileResponses, GetTrainerProfileErrors, ThrowOnError>({ url: '/trainers/me', ...options });
+
+export const updateTrainerProfile = <ThrowOnError extends boolean = false>(options: Options<UpdateTrainerProfileData, ThrowOnError>): RequestResult<UpdateTrainerProfileResponses, UpdateTrainerProfileErrors, ThrowOnError> => (options.client ?? client).patch<UpdateTrainerProfileResponses, UpdateTrainerProfileErrors, ThrowOnError>({
+    url: '/trainers/me',
     ...options,
     headers: {
         'Content-Type': 'application/json',

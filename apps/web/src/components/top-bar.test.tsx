@@ -11,6 +11,7 @@ describe('TopBar', () => {
     expect(screen.getByRole('heading', { name: 'Alunos' })).toBeInTheDocument();
     expect(screen.getByText('ativos')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Novo' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Ações da página' })).toBeInTheDocument();
   });
 
   it('omits optional subtitle and actions', () => {

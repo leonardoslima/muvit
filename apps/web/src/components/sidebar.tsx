@@ -3,7 +3,15 @@
 import { Avatar } from '@/components/ui/avatar';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
-import { ClipboardList, Dumbbell, LayoutDashboard, LogOut, Users } from 'lucide-react';
+import {
+  BarChart3,
+  ClipboardList,
+  Dumbbell,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -13,11 +21,19 @@ const LOGOUT_ERROR_MESSAGE = 'Não foi possível sair. Tente novamente.';
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/students', icon: Users, label: 'Alunos' },
-  { href: '/exercises', icon: Dumbbell, label: 'Exercícios' },
   { href: '/workouts', icon: ClipboardList, label: 'Treinos' },
+  { href: '/exercises', icon: Dumbbell, label: 'Exercícios' },
+  { href: '/reports', icon: BarChart3, label: 'Relatórios' },
+  { href: '/settings/profile', icon: Settings, label: 'Configurações', matchPrefix: '/settings' },
 ];
 
-export function Sidebar({ user }: { user: { name: string; email: string } | null }) {
+interface SidebarProps {
+  user: { name: string; email: string } | null;
+  variant?: 'desktop' | 'mobile';
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ user, variant = 'desktop', onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -49,7 +65,12 @@ export function Sidebar({ user }: { user: { name: string; email: string } | null
   }
 
   return (
-    <aside className="flex w-[260px] shrink-0 flex-col justify-between bg-sidebar py-8 text-sidebar-foreground">
+    <aside
+      className={cn(
+        'shrink-0 flex-col justify-between bg-sidebar py-8 text-sidebar-foreground',
+        variant === 'desktop' ? 'hidden w-[260px] lg:flex' : 'flex h-full w-full',
+      )}
+    >
       <div className="flex flex-col gap-8">
         <Link href="/dashboard" className="flex items-center gap-2.5 px-6">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-primary font-display text-base font-bold text-primary-foreground">
@@ -60,14 +81,16 @@ export function Sidebar({ user }: { user: { name: string; email: string } | null
           </span>
         </Link>
 
-        <nav className="flex flex-col gap-0.5">
+        <nav aria-label="Navegação principal" className="flex flex-col gap-0.5">
           {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const activePrefix = item.matchPrefix ?? item.href;
+            const active = pathname === item.href || pathname.startsWith(`${activePrefix}/`);
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex h-11 items-center gap-3 px-6 text-sm font-medium transition-colors',

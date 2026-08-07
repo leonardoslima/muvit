@@ -34,17 +34,34 @@ describe('Sidebar', () => {
     navigationState.replace.mockReset();
   });
 
-  it('renders navigation links and user logout controls', () => {
-    navigationState.pathname = '/students/123';
+  it('renderiza a navegação principal completa e destaca rotas filhas', () => {
+    navigationState.pathname = '/settings/profile';
 
     render(<Sidebar user={{ name: 'Ana Trainer', email: 'ana@muvit.test' }} />);
 
+    expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /muvit/i })).toHaveAttribute('href', '/dashboard');
-    expect(screen.getByRole('link', { name: /alunos/i })).toHaveAttribute('aria-current', 'page');
-    expect(screen.queryByRole('link', { name: /evolução/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /configurações/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Alunos' })).toHaveAttribute('href', '/students');
+    expect(screen.getByRole('link', { name: 'Treinos' })).toHaveAttribute('href', '/workouts');
+    expect(screen.getByRole('link', { name: 'Exercícios' })).toHaveAttribute('href', '/exercises');
+    expect(screen.getByRole('link', { name: 'Relatórios' })).toHaveAttribute('href', '/reports');
+    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute(
+      'href',
+      '/settings/profile',
+    );
+    expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('exibe nome, e-mail, avatar e controle de logout do treinador', () => {
+    render(<Sidebar user={{ name: 'Ana Trainer', email: 'ana@muvit.test' }} />);
+
     expect(screen.getByText('Ana Trainer')).toBeInTheDocument();
     expect(screen.getByText('ana@muvit.test')).toBeInTheDocument();
+    expect(screen.getByText('AT')).toBeInTheDocument();
     const logoutButton = screen.getByRole('button', { name: 'Sair' });
     expect(logoutButton).toBeInTheDocument();
     expect(logoutButton.closest('form')).toBeNull();
