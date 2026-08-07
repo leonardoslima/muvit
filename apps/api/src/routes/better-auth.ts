@@ -1,6 +1,7 @@
 import { fromNodeHeaders } from 'better-auth/node';
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { env } from '../env.js';
+import { forwardSetCookieHeaders } from '../shared/forward-set-cookie-headers.js';
 
 const authRateLimit = { max: 10, timeWindow: '1 minute' };
 
@@ -10,8 +11,7 @@ export async function forwardBetterAuthResponse(reply: FastifyReply, response: R
     if (name !== 'set-cookie') reply.header(name, value);
   }
 
-  const setCookies = response.headers.getSetCookie();
-  if (setCookies.length > 0) reply.header('set-cookie', setCookies);
+  forwardSetCookieHeaders(reply, response.headers);
 
   const body = response.body === null ? null : await response.text();
   return reply.send(body);
