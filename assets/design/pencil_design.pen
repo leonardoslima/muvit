@@ -51249,9 +51249,9 @@
               "gap": 24,
               "padding": [
                 24,
-                24,
+                20,
                 16,
-                24
+                20
               ],
               "children": [
                 {
@@ -51304,9 +51304,9 @@
               "layout": "vertical",
               "padding": [
                 0,
-                24,
+                20,
                 12,
-                24
+                20
               ],
               "alignItems": "center",
               "children": [
@@ -51637,7 +51637,7 @@
               "type": "text",
               "id": "iiUhc",
               "name": "Rótulo do botão primário",
-              "fill": "$--primary-foreground",
+              "fill": "$--foreground",
               "content": "Continuar",
               "fontFamily": "$--font-secondary",
               "fontSize": 14,
@@ -51651,7 +51651,7 @@
               "height": 18,
               "icon": "arrow-right",
               "library": "lucide",
-              "fill": "$--primary-foreground"
+              "fill": "$--foreground"
             }
           ]
         },
@@ -52216,7 +52216,7 @@
                       "type": "text",
                       "id": "cwtka",
                       "name": "Rótulo do botão primário",
-                      "fill": "$--primary-foreground",
+                      "fill": "$--foreground",
                       "content": "Continuar",
                       "fontFamily": "$--font-secondary",
                       "fontSize": 14,
@@ -52230,7 +52230,7 @@
                       "height": 18,
                       "icon": "arrow-right",
                       "library": "lucide",
-                      "fill": "$--primary-foreground"
+                      "fill": "$--foreground"
                     }
                   ]
                 }
