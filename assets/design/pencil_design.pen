@@ -52420,6 +52420,2437 @@
           "fontWeight": "700"
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "OII7y",
+      "x": 19007,
+      "y": -20,
+      "name": "Mobile / Aluno / Login / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "iqyj5",
+          "name": "Barra de status do login",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "eRK21",
+              "name": "Horário do login",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "mPILW",
+              "name": "Indicadores do sistema do login",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "Y9dA1u",
+                  "name": "Sinal celular do login",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "gOPtX",
+                  "name": "Sinal Wi-Fi do login",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "qTzcd",
+                  "name": "Nível da bateria do login",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "JoByr",
+          "name": "Conteúdo principal do login",
+          "width": "fill_container",
+          "height": 782,
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            32,
+            20,
+            24,
+            20
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "t9hBsB",
+              "name": "Marca Muvit do login",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Y6DdB",
+                  "name": "Símbolo Muvit do login",
+                  "width": 42,
+                  "height": 42,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "DKEeR",
+                      "name": "Ícone da marca no login",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "dumbbell",
+                      "library": "lucide",
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Okgqk",
+                  "name": "Assinatura Muvit do login",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ex2Jh",
+                      "name": "Nome Muvit do login",
+                      "fill": "$--foreground",
+                      "content": "Muvit",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "gBEvk",
+                      "name": "Slogan Muvit do login",
+                      "fill": "$--primary",
+                      "content": "SEU TREINO, NO SEU RITMO",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 9,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "a2V3DD",
+              "name": "Introdução do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hwHzE",
+                  "name": "Título do login",
+                  "fill": "$--foreground",
+                  "content": "Entrar",
+                  "fontFamily": "$--font-primary",
+                  "fontSize": 28,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "haamj",
+                  "name": "Subtítulo do login",
+                  "fill": "$--muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Acesse seus treinos e registre sua evolução.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "szhnN",
+              "name": "Formulário do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KH2jc",
+                  "name": "Campo Email do login",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 7,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OsVSi",
+                      "name": "Rótulo Email do login",
+                      "fill": "$--foreground",
+                      "content": "Email",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sIaS5",
+                      "name": "Entrada Email do login",
+                      "width": "fill_container",
+                      "height": 50,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "m094j8",
+                          "name": "Ícone Email do login",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "mail",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ruYO3",
+                          "name": "Placeholder Email do login",
+                          "fill": "$--muted-foreground",
+                          "content": "voce@exemplo.com",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KTvqq",
+                  "name": "Campo Senha do login",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 7,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t0pE0",
+                      "name": "Rótulo Senha do login",
+                      "fill": "$--foreground",
+                      "content": "Senha",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "kzwHG",
+                      "name": "Entrada Senha do login",
+                      "width": "fill_container",
+                      "height": 50,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "XnRgG",
+                          "name": "Ícone Senha do login",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "lock-keyhole",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "uRPda",
+                          "name": "Placeholder Senha do login",
+                          "fill": "$--muted-foreground",
+                          "content": "Sua senha",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WT57Q",
+              "name": "Ações do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "id": "AmcL5",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Entrar",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Entrar"
+                    },
+                    "G6XUt": {
+                      "icon": "log-in"
+                    }
+                  }
+                },
+                {
+                  "id": "bXuvo",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Criar conta independente",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Criar conta independente"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "P9kNT",
+      "x": 19469,
+      "y": -20,
+      "name": "Mobile / Aluno / Login / submitting-error",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "cu4OQ",
+          "name": "Barra de status do login",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "TUWkX",
+              "name": "Horário do login",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "YSvDa",
+              "name": "Indicadores do sistema do login",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "pHT79",
+                  "name": "Sinal celular do login",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "NQKv4",
+                  "name": "Sinal Wi-Fi do login",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "o4zwjv",
+                  "name": "Nível da bateria do login",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "tZuoD",
+          "name": "Conteúdo principal do login",
+          "width": "fill_container",
+          "height": 782,
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            32,
+            20,
+            24,
+            20
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "t64KeO",
+              "name": "Marca Muvit do login",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Xr6dD",
+                  "name": "Símbolo Muvit do login",
+                  "width": 42,
+                  "height": 42,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "WLLeF",
+                      "name": "Ícone da marca no login",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "dumbbell",
+                      "library": "lucide",
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KeOvr",
+                  "name": "Assinatura Muvit do login",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "xB3Ob",
+                      "name": "Nome Muvit do login",
+                      "fill": "$--foreground",
+                      "content": "Muvit",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "VAVEE",
+                      "name": "Slogan Muvit do login",
+                      "fill": "$--primary",
+                      "content": "SEU TREINO, NO SEU RITMO",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 9,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "v4cR2Z",
+              "name": "Introdução do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JtijL",
+                  "name": "Título do login",
+                  "fill": "$--foreground",
+                  "content": "Entrar",
+                  "fontFamily": "$--font-primary",
+                  "fontSize": 28,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "BTQhg",
+                  "name": "Subtítulo do login",
+                  "fill": "$--muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Acesse seus treinos e registre sua evolução.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SKPHJ",
+              "name": "Formulário do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Z66BYg",
+                  "name": "Campo Email do login",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 7,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OaDQO",
+                      "name": "Rótulo Email do login",
+                      "fill": "$--foreground",
+                      "content": "Email",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M9Mpm3",
+                      "name": "Entrada Email do login",
+                      "width": "fill_container",
+                      "height": 50,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "VkHG4",
+                          "name": "Ícone Email do login",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "mail",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "vLdEr",
+                          "name": "Placeholder Email do login",
+                          "fill": "$--muted-foreground",
+                          "content": "voce@exemplo.com",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "R9GVme",
+                  "name": "Campo Senha do login",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 7,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VBWpd",
+                      "name": "Rótulo Senha do login",
+                      "fill": "$--foreground",
+                      "content": "Senha",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "h6zCBG",
+                      "name": "Entrada Senha do login",
+                      "width": "fill_container",
+                      "height": 50,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "pHGxb",
+                          "name": "Ícone Senha do login",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "lock-keyhole",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lfLfq",
+                          "name": "Placeholder Senha do login",
+                          "fill": "$--muted-foreground",
+                          "content": "Sua senha",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ygob6",
+              "name": "Estado e ações do login",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "bmBpX",
+                  "name": "Erro de autenticação do login",
+                  "width": "fill_container",
+                  "fill": "$--color-error-bg",
+                  "cornerRadius": "$--radius-md",
+                  "gap": 10,
+                  "padding": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "mgkMA",
+                      "name": "Ícone de erro do login",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-alert",
+                      "library": "lucide",
+                      "fill": "$--color-error"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Yjgj7",
+                      "name": "Mensagem de erro do login",
+                      "fill": "$--foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Não foi possível entrar. Confira seus dados e tente novamente.",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "qBs92",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Entrando desabilitada",
+                  "width": "fill_container",
+                  "opacity": 0.48,
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Entrando..."
+                    },
+                    "G6XUt": {
+                      "icon": "loader-circle"
+                    }
+                  }
+                },
+                {
+                  "id": "Ago9d",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Criar conta independente no erro",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Criar conta independente"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "J6jZMI",
+      "x": 19931,
+      "y": -20,
+      "name": "Mobile / Aluno / Cadastro / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "M25EVb",
+          "name": "Barra de status do cadastro",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "S75j8",
+              "name": "Horário do cadastro",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "l4b9u",
+              "name": "Indicadores do sistema do cadastro",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "vdu7h",
+                  "name": "Sinal celular do cadastro",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "toE61",
+                  "name": "Sinal Wi-Fi do cadastro",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "j4MLOm",
+                  "name": "Nível da bateria do cadastro",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "r9gk2w",
+          "name": "Conteúdo principal do cadastro",
+          "width": "fill_container",
+          "height": 782,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            24,
+            20
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "q74pF",
+              "name": "Marca Muvit do cadastro",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "GCoqb",
+                  "name": "Símbolo Muvit do cadastro",
+                  "width": 42,
+                  "height": 42,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "R37fz",
+                      "name": "Ícone da marca no cadastro",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "dumbbell",
+                      "library": "lucide",
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "sw59M",
+                  "name": "Assinatura Muvit do cadastro",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "P05ENu",
+                      "name": "Nome Muvit do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Muvit",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "V27FZ",
+                      "name": "Slogan Muvit do cadastro",
+                      "fill": "$--primary",
+                      "content": "SEU TREINO, NO SEU RITMO",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 9,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "W9WBoR",
+              "name": "Introdução do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "SZ6vN",
+                  "name": "Título do cadastro",
+                  "fill": "$--foreground",
+                  "content": "Criar conta",
+                  "fontFamily": "$--font-primary",
+                  "fontSize": 28,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "B6JG0",
+                  "name": "Subtítulo do cadastro",
+                  "fill": "$--muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Comece como aluno independente.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oy6wc",
+              "name": "Formulário do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oMfPQ",
+                  "name": "Campo Nome do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "e7tTu0",
+                      "name": "Rótulo Nome do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Nome",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bkWg6",
+                      "name": "Entrada Nome do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "uZSuY",
+                          "name": "Ícone Nome do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "user-round",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ug4YU",
+                          "name": "Placeholder Nome do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "Seu nome completo",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yyT7J",
+                  "name": "Campo Email do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hBGxY",
+                      "name": "Rótulo Email do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Email",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Y0UqpD",
+                      "name": "Entrada Email do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "iZ66h",
+                          "name": "Ícone Email do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "mail",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "e6iBeZ",
+                          "name": "Placeholder Email do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "voce@exemplo.com",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Kcp1G",
+                  "name": "Campo Senha do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OLLPm",
+                      "name": "Rótulo Senha do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Senha",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FoS6D",
+                      "name": "Entrada Senha do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "uwSBW",
+                          "name": "Ícone Senha do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "lock-keyhole",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "sZJxc",
+                          "name": "Placeholder Senha do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "Crie uma senha",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "lKIZB",
+              "name": "Ações do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "id": "oxzQf",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Criar conta",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Criar conta"
+                    },
+                    "G6XUt": {
+                      "icon": "user-plus"
+                    }
+                  }
+                },
+                {
+                  "id": "ilnPt",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Já tenho conta",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Já tenho conta"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "W7qGN",
+      "x": 20393,
+      "y": -20,
+      "name": "Mobile / Aluno / Cadastro / submitting-error",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ZNDNi",
+          "name": "Barra de status do cadastro",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "Fa8qk",
+              "name": "Horário do cadastro",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "dgZXY",
+              "name": "Indicadores do sistema do cadastro",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "y5mzmX",
+                  "name": "Sinal celular do cadastro",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "ZzDy3",
+                  "name": "Sinal Wi-Fi do cadastro",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "RqGqu",
+                  "name": "Nível da bateria do cadastro",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "N7DlPe",
+          "name": "Conteúdo principal do cadastro",
+          "width": "fill_container",
+          "height": 782,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            24,
+            20
+          ],
+          "justifyContent": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "q8NDg",
+              "name": "Marca Muvit do cadastro",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CDsmt",
+                  "name": "Símbolo Muvit do cadastro",
+                  "width": 42,
+                  "height": 42,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-md",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "T0j0GV",
+                      "name": "Ícone da marca no cadastro",
+                      "width": 22,
+                      "height": 22,
+                      "icon": "dumbbell",
+                      "library": "lucide",
+                      "fill": "$--foreground"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cKXpa",
+                  "name": "Assinatura Muvit do cadastro",
+                  "layout": "vertical",
+                  "gap": 1,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "aHXdx",
+                      "name": "Nome Muvit do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Muvit",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FrT7q",
+                      "name": "Slogan Muvit do cadastro",
+                      "fill": "$--primary",
+                      "content": "SEU TREINO, NO SEU RITMO",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 9,
+                      "fontWeight": "600",
+                      "letterSpacing": 0.7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "cuvnb",
+              "name": "Introdução do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CV758",
+                  "name": "Título do cadastro",
+                  "fill": "$--foreground",
+                  "content": "Criar conta",
+                  "fontFamily": "$--font-primary",
+                  "fontSize": 28,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "ZMWNy",
+                  "name": "Subtítulo do cadastro",
+                  "fill": "$--muted-foreground",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Comece como aluno independente.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sR3c1",
+              "name": "Formulário do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "r6ifCm",
+                  "name": "Campo Nome do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KleH2",
+                      "name": "Rótulo Nome do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Nome",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "LbdQ2",
+                      "name": "Entrada Nome do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "Z611gI",
+                          "name": "Ícone Nome do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "user-round",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "gLg7r",
+                          "name": "Placeholder Nome do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "Seu nome completo",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tJfeD",
+                  "name": "Campo Email do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zEFbu",
+                      "name": "Rótulo Email do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Email",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MKB5h",
+                      "name": "Entrada Email do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "M746t0",
+                          "name": "Ícone Email do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "mail",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VBhmM",
+                          "name": "Placeholder Email do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "voce@exemplo.com",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DogHU",
+                  "name": "Campo Senha do cadastro",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nBG1D",
+                      "name": "Rótulo Senha do cadastro",
+                      "fill": "$--foreground",
+                      "content": "Senha",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "etdhk",
+                      "name": "Entrada Senha do cadastro",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 10,
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "getck",
+                          "name": "Ícone Senha do cadastro",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "lock-keyhole",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        },
+                        {
+                          "type": "text",
+                          "id": "aoZ5Y",
+                          "name": "Placeholder Senha do cadastro",
+                          "fill": "$--muted-foreground",
+                          "content": "Crie uma senha",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "T5WeC",
+              "name": "Estado e ações do cadastro",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "t6aurQ",
+                  "name": "Erro de autenticação do cadastro",
+                  "width": "fill_container",
+                  "fill": "$--color-error-bg",
+                  "cornerRadius": "$--radius-md",
+                  "gap": 10,
+                  "padding": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "E9lb4",
+                      "name": "Ícone de erro do cadastro",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-alert",
+                      "library": "lucide",
+                      "fill": "$--color-error"
+                    },
+                    {
+                      "type": "text",
+                      "id": "dTqNo",
+                      "name": "Mensagem de erro do cadastro",
+                      "fill": "$--foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Não foi possível criar sua conta. Confira seus dados e tente novamente.",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "pumpy",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Criando desabilitada",
+                  "width": "fill_container",
+                  "opacity": 0.48,
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Criando..."
+                    },
+                    "G6XUt": {
+                      "icon": "loader-circle"
+                    }
+                  }
+                },
+                {
+                  "id": "AvTaS",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Já tenho conta no erro",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Já tenho conta"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "q7wg2L",
+      "x": 20855,
+      "y": -20,
+      "name": "Mobile / Aluno / Perfil / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "wB5Mn",
+          "name": "Barra de status do perfil do aluno",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "fuIS4",
+              "name": "Horário do perfil do aluno",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "A95Uk",
+              "name": "Indicadores do sistema do perfil do aluno",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "f4U7u5",
+                  "name": "Sinal celular do perfil do aluno",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "weEKs",
+                  "name": "Sinal Wi-Fi do perfil do aluno",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "gm0QS",
+                  "name": "Nível da bateria do perfil do aluno",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "avK8h",
+          "name": "Conteúdo do perfil do aluno",
+          "width": "fill_container",
+          "height": 714,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            24,
+            20,
+            16,
+            20
+          ],
+          "justifyContent": "space_between",
+          "children": [
+            {
+              "id": "RjZct",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho do perfil do aluno",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "PERFIL"
+                },
+                "R9VV9": {
+                  "content": "Meu perfil"
+                },
+                "Duswo": {
+                  "content": "Seus dados e preferências de conta."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "Q3XbY",
+              "name": "Identidade do aluno",
+              "width": "fill_container",
+              "fill": "$--card",
+              "cornerRadius": "$--radius-md",
+              "stroke": "$--border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "SA1Ym",
+                  "name": "Avatar de Mariana Costa",
+                  "width": 88,
+                  "height": 88,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-pill",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t7p8Xf",
+                      "name": "Iniciais de Mariana Costa",
+                      "fill": "$--foreground",
+                      "content": "MC",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 28,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mWcCl",
+                  "name": "Dados principais de Mariana Costa",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "P9Y7po",
+                      "name": "Nome de Mariana Costa",
+                      "fill": "$--foreground",
+                      "content": "Mariana Costa",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 22,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "QAMLv",
+                      "name": "Email de Mariana Costa",
+                      "fill": "$--muted-foreground",
+                      "content": "mariana@example.com",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "OFikE",
+                  "type": "ref",
+                  "ref": "Q4znq",
+                  "name": "Badge da role Aluno",
+                  "descendants": {
+                    "X5SQO8": {
+                      "fill": "$--color-success"
+                    },
+                    "cChuM": {
+                      "content": "Aluno",
+                      "fill": "$--primary"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "C12k68",
+              "name": "Detalhes da conta do aluno",
+              "width": "fill_container",
+              "fill": "$--card",
+              "cornerRadius": "$--radius-md",
+              "stroke": "$--border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "padding": [
+                4,
+                16
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "NmavC",
+                  "name": "Tipo de conta do aluno",
+                  "width": "fill_container",
+                  "height": 52,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "WHY3p",
+                      "name": "Ícone Tipo de conta do aluno",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "user-round-check",
+                      "library": "lucide",
+                      "fill": "$--primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gT41b",
+                      "name": "Texto Tipo de conta do aluno",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Wt1HK",
+                          "name": "Rótulo Tipo de conta do aluno",
+                          "fill": "$--muted-foreground",
+                          "content": "Tipo de conta",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "BlEE6",
+                          "name": "Valor Tipo de conta do aluno",
+                          "fill": "$--foreground",
+                          "content": "Aluno independente",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "z3WV1",
+                  "name": "Acesso do aluno",
+                  "width": "fill_container",
+                  "height": 52,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "Tu8Qt",
+                      "name": "Ícone Acesso do aluno",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "dumbbell",
+                      "library": "lucide",
+                      "fill": "$--primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M2rx6O",
+                      "name": "Texto Acesso do aluno",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oJsyL",
+                          "name": "Rótulo Acesso do aluno",
+                          "fill": "$--muted-foreground",
+                          "content": "Acesso",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hDCHD",
+                          "name": "Valor Acesso do aluno",
+                          "fill": "$--foreground",
+                          "content": "Treinos e evolução",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "L750K",
+              "type": "ref",
+              "ref": "pNIQu",
+              "name": "Ação Sair do perfil do aluno",
+              "width": "fill_container",
+              "descendants": {
+                "i0bXE": {
+                  "content": "Sair"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f6pmz",
+          "name": "Rodapé de navegação do aluno",
+          "width": "fill_container",
+          "height": 68,
+          "layout": "vertical",
+          "padding": [
+            0,
+            20,
+            12,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "y7RJ4",
+              "type": "ref",
+              "ref": "i4TO4J",
+              "name": "Tab bar do aluno",
+              "width": "fill_container",
+              "descendants": {
+                "h0D6Wo": {
+                  "name": "Aba Hoje",
+                  "fill": "#FFFFFF00"
+                },
+                "cadCQ": {
+                  "name": "Ícone Hoje",
+                  "icon": "calendar-days",
+                  "fill": "$--muted-foreground"
+                },
+                "FFqFC": {
+                  "name": "Rótulo Hoje",
+                  "content": "Hoje",
+                  "fill": "$--muted-foreground",
+                  "fontWeight": "normal"
+                },
+                "N7Fhb": {
+                  "name": "Aba Progresso",
+                  "fill": "#FFFFFF00"
+                },
+                "AV650": {
+                  "name": "Ícone Progresso",
+                  "icon": "chart-no-axes-column-increasing",
+                  "fill": "$--muted-foreground"
+                },
+                "uLS78": {
+                  "name": "Rótulo Progresso",
+                  "content": "Progresso",
+                  "fill": "$--muted-foreground",
+                  "fontWeight": "normal"
+                },
+                "X3oLz0": {
+                  "enabled": false,
+                  "width": 0,
+                  "height": 0
+                },
+                "lAkFa": {
+                  "name": "Aba Perfil ativa",
+                  "fill": "$--color-success-bg"
+                },
+                "W4Ablz": {
+                  "name": "Ícone Perfil ativo",
+                  "icon": "user-round",
+                  "fill": "$--primary"
+                },
+                "L0PkQb": {
+                  "name": "Rótulo Perfil ativo",
+                  "content": "Perfil",
+                  "fill": "$--primary",
+                  "fontWeight": "600"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "LReyn",
+      "x": 21317,
+      "y": -20,
+      "name": "Mobile / Treinador / Perfil / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ErCtQ",
+          "name": "Barra de status do perfil do treinador",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "KNkwp",
+              "name": "Horário do perfil do treinador",
+              "fill": "$--foreground",
+              "content": "9:41",
+              "fontFamily": "$--font-secondary",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "QuNLq",
+              "name": "Indicadores do sistema do perfil do treinador",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ibdht",
+                  "name": "Sinal celular do perfil do treinador",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "px9sQ",
+                  "name": "Sinal Wi-Fi do perfil do treinador",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                },
+                {
+                  "type": "icon",
+                  "id": "k2CfD",
+                  "name": "Nível da bateria do perfil do treinador",
+                  "width": 20,
+                  "height": 20,
+                  "icon": "battery-medium",
+                  "library": "lucide",
+                  "fill": "$--foreground"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wn85s",
+          "name": "Conteúdo do perfil do treinador",
+          "width": "fill_container",
+          "height": 714,
+          "layout": "vertical",
+          "gap": 18,
+          "padding": [
+            24,
+            20,
+            16,
+            20
+          ],
+          "justifyContent": "space_between",
+          "children": [
+            {
+              "id": "f7YNo",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho do perfil do treinador",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "PERFIL"
+                },
+                "R9VV9": {
+                  "content": "Meu perfil"
+                },
+                "Duswo": {
+                  "content": "Sua conta e visão de treinador."
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "AC66L",
+              "name": "Identidade do treinador",
+              "width": "fill_container",
+              "fill": "$--card",
+              "cornerRadius": "$--radius-md",
+              "stroke": "$--border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 22,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "W1ALZb",
+                  "name": "Avatar de João Silva",
+                  "width": 88,
+                  "height": 88,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-pill",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Z62ty",
+                      "name": "Iniciais de João Silva",
+                      "fill": "$--foreground",
+                      "content": "JS",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 28,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GdezH",
+                  "name": "Dados principais de João Silva",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WScJ2",
+                      "name": "Nome de João Silva",
+                      "fill": "$--foreground",
+                      "content": "João Silva",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 22,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "vdhrb",
+                      "name": "Email de João Silva",
+                      "fill": "$--muted-foreground",
+                      "content": "joao@example.com",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "id": "UVnPm",
+                  "type": "ref",
+                  "ref": "Q4znq",
+                  "name": "Badge da role Treinador",
+                  "fill": "$--color-info-bg",
+                  "descendants": {
+                    "X5SQO8": {
+                      "fill": "$--secondary"
+                    },
+                    "cChuM": {
+                      "content": "Treinador",
+                      "fill": "$--secondary"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wI4g3",
+              "name": "Detalhes da conta do treinador",
+              "width": "fill_container",
+              "fill": "$--card",
+              "cornerRadius": "$--radius-md",
+              "stroke": "$--border",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "padding": [
+                4,
+                16
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Ac8P0",
+                  "name": "Tipo de conta do treinador",
+                  "width": "fill_container",
+                  "height": 52,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "ueOyC",
+                      "name": "Ícone Tipo de conta do treinador",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "user-round-check",
+                      "library": "lucide",
+                      "fill": "$--primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "p6K8e",
+                      "name": "Texto Tipo de conta do treinador",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yks0A",
+                          "name": "Rótulo Tipo de conta do treinador",
+                          "fill": "$--muted-foreground",
+                          "content": "Tipo de conta",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "OQeS1",
+                          "name": "Valor Tipo de conta do treinador",
+                          "fill": "$--foreground",
+                          "content": "Treinador",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "H18eL",
+                  "name": "Acesso do treinador",
+                  "width": "fill_container",
+                  "height": 52,
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "eGZdt",
+                      "name": "Ícone Acesso do treinador",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "users-round",
+                      "library": "lucide",
+                      "fill": "$--primary"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "RZTcx",
+                      "name": "Texto Acesso do treinador",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "U7UiI",
+                          "name": "Rótulo Acesso do treinador",
+                          "fill": "$--muted-foreground",
+                          "content": "Acesso",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "qTlhG",
+                          "name": "Valor Acesso do treinador",
+                          "fill": "$--foreground",
+                          "content": "Alunos e treinos",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "xK48P",
+              "type": "ref",
+              "ref": "pNIQu",
+              "name": "Ação Sair do perfil do treinador",
+              "width": "fill_container",
+              "descendants": {
+                "i0bXE": {
+                  "content": "Sair"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "XniX8",
+          "name": "Rodapé de navegação do treinador",
+          "width": "fill_container",
+          "height": 68,
+          "layout": "vertical",
+          "padding": [
+            0,
+            20,
+            12,
+            20
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "id": "aSjck",
+              "type": "ref",
+              "ref": "i4TO4J",
+              "name": "Tab bar do treinador",
+              "width": "fill_container",
+              "descendants": {
+                "h0D6Wo": {
+                  "name": "Aba Início",
+                  "fill": "#FFFFFF00"
+                },
+                "cadCQ": {
+                  "name": "Ícone Início",
+                  "icon": "house",
+                  "fill": "$--muted-foreground"
+                },
+                "FFqFC": {
+                  "name": "Rótulo Início",
+                  "content": "Início",
+                  "fill": "$--muted-foreground",
+                  "fontWeight": "normal"
+                },
+                "N7Fhb": {
+                  "name": "Aba Alunos",
+                  "fill": "#FFFFFF00"
+                },
+                "AV650": {
+                  "name": "Ícone Alunos",
+                  "icon": "users-round",
+                  "fill": "$--muted-foreground"
+                },
+                "uLS78": {
+                  "name": "Rótulo Alunos",
+                  "content": "Alunos",
+                  "fill": "$--muted-foreground",
+                  "fontWeight": "normal"
+                },
+                "X3oLz0": {
+                  "enabled": false,
+                  "width": 0,
+                  "height": 0
+                },
+                "lAkFa": {
+                  "name": "Aba Perfil ativa",
+                  "fill": "$--color-success-bg"
+                },
+                "W4Ablz": {
+                  "name": "Ícone Perfil ativo",
+                  "icon": "user-round",
+                  "fill": "$--primary"
+                },
+                "L0PkQb": {
+                  "name": "Rótulo Perfil ativo",
+                  "content": "Perfil",
+                  "fill": "$--primary",
+                  "fontWeight": "600"
+                }
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
