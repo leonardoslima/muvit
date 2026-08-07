@@ -55363,7 +55363,15 @@
                       "content": "Quando seu treinador publicar um treino ativo, ele aparece aqui."
                     },
                     "Asvyg": {
-                      "enabled": false
+                      "type": "frame",
+                      "id": "BrG8U",
+                      "x": 0,
+                      "y": 0,
+                      "name": "Slot de ação oculto",
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0,
+                      "layout": "vertical"
                     }
                   }
                 }
