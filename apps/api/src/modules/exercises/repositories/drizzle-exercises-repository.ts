@@ -1,5 +1,5 @@
 import { db, schema } from '@muvit/db';
-import { and, eq, ilike, isNull, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import type {
   CreateExerciseInput,
   ExerciseListParams,
@@ -11,22 +11,25 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
   async list(params: ExerciseListParams) {
     const { q, muscleGroup, equipment, scope, limit, offset, identity } = params;
     const conds = [];
+    const visibleExercises =
+      identity.role === 'student'
+        ? isNull(schema.exercises.trainerId)
+        : or(
+            isNull(schema.exercises.trainerId),
+            eq(schema.exercises.trainerId, identity.profileId),
+          );
 
     if (scope === 'global') {
       conds.push(isNull(schema.exercises.trainerId));
     } else if (scope === 'mine') {
       conds.push(eq(schema.exercises.trainerId, identity.profileId));
     } else {
-      const visibleExercises = or(
-        isNull(schema.exercises.trainerId),
-        eq(schema.exercises.trainerId, identity.profileId),
-      );
       if (visibleExercises) conds.push(visibleExercises);
     }
 
     if (q) conds.push(ilike(schema.exercises.name, `%${q}%`));
     if (muscleGroup) conds.push(eq(schema.exercises.muscleGroup, muscleGroup));
-    if (equipment) conds.push(eq(schema.exercises.equipment, equipment));
+    if (equipment) conds.push(eq(sql`trim(${schema.exercises.equipment})`, equipment));
     const where = and(...conds);
 
     const items = await db
@@ -40,8 +43,24 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.exercises)
       .where(where);
+    const normalizedEquipment = sql<string>`trim(${schema.exercises.equipment})`;
+    const equipmentRows = await db
+      .selectDistinct({ equipment: normalizedEquipment })
+      .from(schema.exercises)
+      .where(
+        and(
+          visibleExercises,
+          isNotNull(schema.exercises.equipment),
+          sql`${normalizedEquipment} <> ''`,
+        ),
+      )
+      .orderBy(normalizedEquipment);
 
-    return { items, total: countResult[0]?.count ?? 0 };
+    return {
+      items,
+      total: countResult[0]?.count ?? 0,
+      facets: { equipment: equipmentRows.map((row) => row.equipment) },
+    };
   }
 
   async create(trainerId: string, input: CreateExerciseInput) {

@@ -27,7 +27,7 @@ function apiOk(
   ],
 ) {
   return {
-    data: { items, total: items.length },
+    data: { items, total: items.length, facets: { equipment: ['Barra', 'Corda', 'Halteres'] } },
     error: undefined,
     request: new Request('https://api.test'),
     response: new Response(null, { status: 200 }),
@@ -82,6 +82,7 @@ describe('ExercisesPage', () => {
       '/exercises?q=supino&group=back&equipment=Barra&scope=mine',
     );
     expect(screen.getByLabelText('Equipamento')).toHaveValue('Barra');
+    expect(screen.getByRole('option', { name: 'Corda' })).toBeInTheDocument();
     const equipmentForm = screen.getByLabelText('Equipamento').closest('form');
     expect(equipmentForm).toHaveFormValues({
       q: 'supino',

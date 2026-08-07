@@ -138,4 +138,44 @@ describe('exercises', () => {
       expect.objectContaining({ name: 'Supino com halteres', equipment: 'Halteres' }),
     ]);
   });
+
+  it('lista todos os equipamentos visíveis nas facets sem aplicar filtros nem paginação', async () => {
+    const trainer = await signupTrainer('facets@a.com');
+    const otherTrainer = await signupTrainer('facets-other@a.com');
+    await db.insert(schema.exercises).values(
+      Array.from({ length: 101 }, (_, index) => ({
+        name: `Exercício global ${index.toString().padStart(3, '0')}`,
+        muscleGroup: index === 100 ? ('chest' as const) : ('legs' as const),
+        equipment: `Equipamento ${index.toString().padStart(3, '0')}`,
+      })),
+    );
+    await db.insert(schema.exercises).values([
+      {
+        name: 'Exercício particular',
+        muscleGroup: 'back',
+        equipment: '  Personalizado  ',
+        trainerId: trainer.profileId,
+      },
+      {
+        name: 'Exercício de outro trainer',
+        muscleGroup: 'chest',
+        equipment: 'Oculto',
+        trainerId: otherTrainer.profileId,
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/exercises?q=global%20100&muscleGroup=chest&equipment=Equipamento%20100&scope=global&limit=1',
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items).toHaveLength(1);
+    expect(response.json().facets.equipment).toHaveLength(102);
+    expect(response.json().facets.equipment).toContain('Equipamento 000');
+    expect(response.json().facets.equipment).toContain('Equipamento 100');
+    expect(response.json().facets.equipment).toContain('Personalizado');
+    expect(response.json().facets.equipment).not.toContain('Oculto');
+  });
 });

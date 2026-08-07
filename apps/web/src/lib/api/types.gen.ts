@@ -714,6 +714,9 @@ export type GetExercisesResponses = {
             createdAt: string | string;
         }>;
         total: number;
+        facets: {
+            equipment: Array<string>;
+        };
     };
 };
 

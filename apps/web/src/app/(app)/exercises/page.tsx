@@ -31,10 +31,7 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
     equipment: string | null;
     trainerId: string | null;
   }>;
-  const equipmentOptions = Array.from(
-    new Set(items.flatMap((exercise) => (exercise.equipment ? [exercise.equipment] : []))),
-  ).sort((left, right) => left.localeCompare(right, 'pt-BR'));
-  if (equipment && !equipmentOptions.includes(equipment)) equipmentOptions.unshift(equipment);
+  const equipmentOptions = res.data?.facets.equipment ?? [];
 
   return (
     <>

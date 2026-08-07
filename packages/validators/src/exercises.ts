@@ -16,7 +16,7 @@ export const muscleGroupSchema = z.enum([
 export const createExerciseSchema = z.object({
   name: z.string().min(2).max(200),
   muscleGroup: muscleGroupSchema,
-  equipment: z.string().max(100).optional(),
+  equipment: z.string().trim().min(1).max(100).optional(),
   videoUrl: z.string().url().optional(),
   instructions: z.string().max(2000).optional(),
 });
@@ -43,4 +43,14 @@ export const listExercisesQuerySchema = z.object({
   scope: z.enum(['mine', 'global', 'all']).default('all'),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const exerciseFacetsSchema = z.object({
+  equipment: z.array(z.string()),
+});
+
+export const listExercisesResponseSchema = z.object({
+  items: z.array(exerciseSchema),
+  total: z.number().int(),
+  facets: exerciseFacetsSchema,
 });
