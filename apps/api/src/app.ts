@@ -23,6 +23,7 @@ import { billingRoutes } from './routes/billing.js';
 import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
 import { notificationsRoutes } from './routes/notifications.js';
+import { reportsRoutes } from './routes/reports.js';
 import { studentsRoutes } from './routes/students.js';
 import { trainerSummaryRoutes } from './routes/trainer-summary.js';
 import { trainersRoutes } from './routes/trainers.js';
@@ -94,6 +95,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
   await app.register(betterAuthRoutes);
   await app.register(billingRoutes);
   await app.register(notificationsRoutes);
+  await app.register(reportsRoutes);
   await app.register(studentsRoutes);
   await app.register(exercisesRoutes);
   await app.register(trainersRoutes);
