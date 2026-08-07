@@ -8,6 +8,17 @@
 
 **Tech Stack:** TypeScript estrito, pnpm, Turborepo, Drizzle/PostgreSQL, Zod, Fastify, Better Auth, Next.js 16, React 19, Tailwind CSS 4, Radix UI, Recharts e Vitest/Testing Library.
 
+## Status de execução — 2026-08-07
+
+- [x] Tasks 1–5: contratos, banco e módulos internos da API.
+- [x] Task 6: SDK e shell autenticado responsivo.
+- [x] Task 7: Dashboard, perfil do aluno e exercícios.
+- [x] Task 8: wizard de aluno e avaliações.
+- [ ] Próxima etapa: Task 9 — construtor de treinos.
+- [ ] Tasks 10–12: relatórios web, configurações e verificação final.
+
+Execução pausada após a aprovação formal da Task 8. Retomar pela Task 9.
+
 ## Global Constraints
 
 - Escopo visual limitado aos frames autenticados `dM0L4`, `Wg556`, `WGclk`, `XOIIZ`, `FsBnA`, `grTSd`, `yDgPu`, `GTg6a`, `Z6aKg`, `WHVaZ`, `s268U`, `pdDTg`, `DkxTf`, `mCtHf` e `y0Ydi`.
