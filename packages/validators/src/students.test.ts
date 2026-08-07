@@ -31,4 +31,18 @@ describe('student schemas', () => {
         .success,
     ).toBe(false);
   });
+
+  it('aceita null somente na atualização para limpar frequência e notas internas', () => {
+    expect(updateStudentSchema.parse({ trainingDays: null, internalNotes: null })).toEqual({
+      trainingDays: null,
+      internalNotes: null,
+    });
+    expect(
+      createStudentSchema.safeParse({
+        name: 'Maria Costa',
+        trainingDays: null,
+        internalNotes: null,
+      }).success,
+    ).toBe(false);
+  });
 });

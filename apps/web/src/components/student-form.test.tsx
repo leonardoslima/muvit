@@ -45,6 +45,18 @@ describe('StudentForm', () => {
     expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
   });
 
+  it('mantém os controles de limpeza vazios ao editar campos anulados', () => {
+    render(
+      <StudentForm
+        action={vi.fn()}
+        initial={{ id: 'student-id', trainingDays: null, internalNotes: null }}
+      />,
+    );
+
+    expect(screen.getByLabelText('Dias de treino por semana')).toHaveValue(null);
+    expect(screen.getByLabelText('Notas internas')).toHaveValue('');
+  });
+
   it('associates server validation messages with their fields', async () => {
     const action = vi.fn(async () => ({ fieldErrors: { name: 'Informe o nome.' } }));
     render(<StudentForm action={action} />);

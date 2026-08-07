@@ -274,6 +274,61 @@ describe('students', () => {
     expect(response.json()).not.toHaveProperty('internalNotes');
   });
 
+  it('atualiza e limpa frequência e notas sem alterar objetivos ou restrições', async () => {
+    const trainer = await signupTrainer(app, 'cleanup-fields@example.com');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: {
+        name: 'Aluno editável',
+        goals: 'Hipertrofia',
+        restrictions: 'Dor no ombro',
+      },
+    });
+    const studentId = created.json().id;
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+      payload: { trainingDays: 5, internalNotes: '  Acompanhar sono.  ' },
+    });
+    expect(updated.statusCode).toBe(200);
+
+    const afterUpdate = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(afterUpdate.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: 5,
+      internalNotes: 'Acompanhar sono.',
+    });
+
+    const cleared = await app.inject({
+      method: 'PATCH',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+      payload: { trainingDays: null, internalNotes: null },
+    });
+    expect(cleared.statusCode).toBe(200);
+
+    const afterCleanup = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(afterCleanup.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: null,
+      internalNotes: null,
+    });
+  });
+
   it('lists only my students', async () => {
     const trainer = await signupTrainer(app, 'a@a.com');
     const otherTrainer = await signupTrainer(app, 'b@b.com');

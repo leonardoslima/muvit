@@ -18,7 +18,10 @@ export const createStudentSchema = z.object({
   status: studentStatusSchema.optional(),
 });
 
-export const updateStudentSchema = createStudentSchema.partial();
+export const updateStudentSchema = createStudentSchema.partial().extend({
+  trainingDays: trainingDaysSchema.nullable().optional(),
+  internalNotes: internalNotesSchema.nullable().optional(),
+});
 
 export const studentSchema = z.object({
   id: z.string().uuid(),

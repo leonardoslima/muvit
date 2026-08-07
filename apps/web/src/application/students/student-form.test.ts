@@ -72,4 +72,20 @@ describe('student form builders', () => {
       },
     });
   });
+
+  it('mapeia controles vazios para null somente na edição', () => {
+    expect(
+      buildUpdateStudentBody(
+        formDataFrom({ id: 'student-id', trainingDays: '', internalNotes: '' }),
+      ),
+    ).toMatchObject({
+      ok: true,
+      body: { trainingDays: null, internalNotes: null },
+    });
+
+    expect(buildCreateStudentBody(formDataFrom({ name: 'Maria Costa' }))).toMatchObject({
+      ok: true,
+      body: { trainingDays: undefined, internalNotes: undefined },
+    });
+  });
 });

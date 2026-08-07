@@ -641,9 +641,9 @@ export type PatchStudentsByIdData = {
         birthDate?: string;
         gender?: 'male' | 'female' | 'other';
         goals?: string;
-        trainingDays?: number;
+        trainingDays?: number | null;
         restrictions?: string;
-        internalNotes?: string;
+        internalNotes?: string | null;
         status?: 'active' | 'inactive' | 'paused';
     };
     path: {

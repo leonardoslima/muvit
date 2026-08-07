@@ -12,15 +12,17 @@ type StudentBody = {
   birthDate?: string;
   gender?: StudentGender;
   goals?: string;
-  trainingDays?: number;
+  trainingDays?: number | null;
   restrictions?: string;
-  internalNotes?: string;
+  internalNotes?: string | null;
   status?: StudentStatus;
 };
 
-type CreateStudentBody = StudentBody & {
+type CreateStudentBody = Omit<StudentBody, 'trainingDays' | 'internalNotes'> & {
   name: string;
   status: StudentStatus;
+  trainingDays?: number;
+  internalNotes?: string;
 };
 
 type CreateStudentResult =
@@ -68,9 +70,9 @@ export function buildUpdateStudentBody(formData: FormData): UpdateStudentResult 
       birthDate: readOptionalTrimmed(formData, 'birthDate'),
       gender: readStudentGender(formData),
       goals: readOptionalTrimmed(formData, 'goals'),
-      trainingDays: readTrainingDays(formData),
+      trainingDays: readNullableTrainingDays(formData),
       restrictions: readOptionalTrimmed(formData, 'restrictions'),
-      internalNotes: readOptionalTrimmed(formData, 'internalNotes'),
+      internalNotes: readNullableTrimmed(formData, 'internalNotes'),
       status: readStudentStatus(formData),
     },
   };
@@ -93,4 +95,18 @@ function readTrainingDays(formData: FormData): number | undefined {
   if (!value) return undefined;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 1 && parsed <= 7 ? parsed : undefined;
+}
+
+function readNullableTrainingDays(formData: FormData): number | null | undefined {
+  const value = formData.get('trainingDays');
+  if (typeof value !== 'string') return undefined;
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 7 ? parsed : undefined;
+}
+
+function readNullableTrimmed(formData: FormData, key: string): string | null | undefined {
+  const value = formData.get(key);
+  if (typeof value !== 'string') return undefined;
+  return value.trim() || null;
 }
