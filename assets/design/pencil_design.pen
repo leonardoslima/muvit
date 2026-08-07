@@ -57932,6 +57932,1208 @@
           }
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "LCAG3",
+      "x": 27323,
+      "y": -20,
+      "name": "Mobile / Treinador / Início / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "xj5ta",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do Início do treinador",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "E4AQS": {
+              "id": "qfpUc",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho do Início do treinador",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "INÍCIO"
+                },
+                "R9VV9": {
+                  "content": "Bom dia, João"
+                },
+                "Duswo": {
+                  "content": "Acompanhe seus alunos de onde estiver."
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "seoe6",
+              "name": "Acompanhamento no Início do treinador",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "A1F73b",
+                  "name": "Resumo do treinador",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "u3Jbt",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Resumo Alunos ativos",
+                      "width": "fill_container",
+                      "padding": 14,
+                      "gap": 6,
+                      "descendants": {
+                        "eYYzt": {
+                          "width": 32,
+                          "height": 32,
+                          "fill": "$--color-success-bg"
+                        },
+                        "u8yjU": {
+                          "width": 17,
+                          "height": 17,
+                          "icon": "users-round",
+                          "fill": "$--primary"
+                        },
+                        "JY0pg": {
+                          "content": "Alunos ativos",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "fontSize": 12
+                        },
+                        "gfC5q": {
+                          "content": "24",
+                          "fontSize": 26
+                        },
+                        "Cp4kE": {
+                          "content": "com vínculo ativo",
+                          "fontSize": 11
+                        }
+                      }
+                    },
+                    {
+                      "id": "D9olj",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Resumo Avaliações recentes",
+                      "width": "fill_container",
+                      "padding": 14,
+                      "gap": 6,
+                      "descendants": {
+                        "eYYzt": {
+                          "width": 32,
+                          "height": 32,
+                          "fill": "$--color-info-bg"
+                        },
+                        "u8yjU": {
+                          "width": 17,
+                          "height": 17,
+                          "icon": "clipboard-check",
+                          "fill": "$--secondary"
+                        },
+                        "JY0pg": {
+                          "content": "Avaliações recentes",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "fontSize": 12
+                        },
+                        "gfC5q": {
+                          "content": "6",
+                          "fontSize": 26
+                        },
+                        "Cp4kE": {
+                          "content": "nos últimos 30 dias",
+                          "fontSize": 11
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "F7uAf",
+                  "name": "Cabeçalho Alunos para acompanhar",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MZNEA",
+                      "name": "Título Alunos para acompanhar",
+                      "fill": "$--foreground",
+                      "content": "Alunos para acompanhar",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 17,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "iCN2W",
+                      "name": "Ação Ver todos os alunos",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zu8WH",
+                          "name": "Rótulo Ver todos os alunos",
+                          "fill": "$--primary",
+                          "content": "Ver todos os alunos",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "kty1n",
+                          "name": "Ícone Ver todos os alunos",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "arrow-right",
+                          "library": "lucide",
+                          "fill": "$--primary"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MSeJq",
+                  "name": "Lista de alunos para acompanhar",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "id": "TgD5q",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Aluno Mariana Costa para acompanhar",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "MC"
+                        },
+                        "KSZ65": {
+                          "content": "Mariana Costa"
+                        },
+                        "Psgte": {
+                          "content": "Treino concluído hoje"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "D7pI8",
+                          "name": "Chevron de Mariana Costa",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    },
+                    {
+                      "id": "iq9q0",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Aluno Rafael Costa para acompanhar",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "RC"
+                        },
+                        "KSZ65": {
+                          "content": "Rafael Costa"
+                        },
+                        "Psgte": {
+                          "content": "Ativo há 3 horas"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "EtxGr",
+                          "name": "Chevron de Rafael Costa",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    },
+                    {
+                      "id": "y0fcJD",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Aluno Ana Luiza para acompanhar",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "AL"
+                        },
+                        "KSZ65": {
+                          "content": "Ana Luiza"
+                        },
+                        "Psgte": {
+                          "content": "Avaliação há 2 dias"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "TzarU",
+                          "name": "Chevron de Ana Luiza",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "yLjNE",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Tab bar do treinador no Início",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Início ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Início ativo",
+                      "icon": "house",
+                      "fill": "$--primary"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Início ativo",
+                      "content": "Início",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Alunos",
+                      "fill": "#FFFFFF00"
+                    },
+                    "AV650": {
+                      "name": "Ícone Alunos",
+                      "icon": "users-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Alunos",
+                      "content": "Alunos",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "X3oLz0": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zeMuT",
+      "x": 27323,
+      "y": 896,
+      "name": "Mobile / Treinador / Início / carregando-vazio-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "v7aebH",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados do Início do treinador",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "E4AQS": {
+              "id": "Ak9LH",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho dos estados do Início",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "INÍCIO"
+                },
+                "R9VV9": {
+                  "content": "Estados do resumo"
+                },
+                "Duswo": {
+                  "content": "Referências de carregamento, vazio e erro."
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "M6is7M",
+              "name": "Variantes de estado do Início",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KxSNF",
+                  "name": "Estado Carregando resumo",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 9,
+                  "padding": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OJtZ0",
+                      "name": "Rótulo Carregando resumo",
+                      "fill": "$--foreground",
+                      "content": "Carregando",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "R1ZpO",
+                      "name": "Skeleton da saudação",
+                      "width": 168,
+                      "height": 20,
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-sm"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nWeV0",
+                      "name": "Skeleton do subtítulo",
+                      "width": 236,
+                      "height": 10,
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-sm"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "UcsVT",
+                      "name": "Skeleton dos cartões de resumo",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "UNfe2",
+                          "name": "Skeleton cartão Alunos ativos",
+                          "width": "fill_container",
+                          "height": 56,
+                          "fill": "$--muted",
+                          "cornerRadius": "$--radius-md",
+                          "gap": 8,
+                          "padding": 10,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "FARn4",
+                              "name": "Skeleton ícone Alunos ativos",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "$--color-success-bg",
+                              "cornerRadius": "$--radius-pill"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ZEaKa",
+                              "name": "Skeleton texto Alunos ativos",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 6,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "XijFr",
+                                  "name": "Skeleton rótulo Alunos ativos",
+                                  "width": 72,
+                                  "height": 8,
+                                  "fill": "$--background",
+                                  "cornerRadius": "$--radius-sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "C5AXH7",
+                                  "name": "Skeleton valor Alunos ativos",
+                                  "width": 28,
+                                  "height": 12,
+                                  "fill": "$--background",
+                                  "cornerRadius": "$--radius-sm"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "OwiZy",
+                          "name": "Skeleton cartão Avaliações recentes",
+                          "width": "fill_container",
+                          "height": 56,
+                          "fill": "$--muted",
+                          "cornerRadius": "$--radius-md",
+                          "gap": 8,
+                          "padding": 10,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "ncwrK",
+                              "name": "Skeleton ícone Avaliações recentes",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "$--color-info-bg",
+                              "cornerRadius": "$--radius-pill"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "NSxxf",
+                              "name": "Skeleton texto Avaliações recentes",
+                              "width": "fill_container",
+                              "layout": "vertical",
+                              "gap": 6,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "u0PEML",
+                                  "name": "Skeleton rótulo Avaliações recentes",
+                                  "width": 72,
+                                  "height": 8,
+                                  "fill": "$--background",
+                                  "cornerRadius": "$--radius-sm"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "kuF7u",
+                                  "name": "Skeleton valor Avaliações recentes",
+                                  "width": 28,
+                                  "height": 12,
+                                  "fill": "$--background",
+                                  "cornerRadius": "$--radius-sm"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "DJRI3",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Nenhum aluno no Início",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--muted"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "users-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "N37M8": {
+                      "content": "Vazio",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Nenhum aluno vinculado para acompanhar.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "type": "frame",
+                      "id": "RDxf6",
+                      "name": "Sem ação no vazio do Início",
+                      "opacity": 0,
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  }
+                },
+                {
+                  "id": "vcEFf",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Erro no resumo do Início",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-error-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "triangle-alert",
+                      "fill": "$--color-error"
+                    },
+                    "N37M8": {
+                      "content": "Erro",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Não foi possível carregar seu resumo.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "nLISN": {
+                      "height": 36
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente",
+                      "fontSize": 13
+                    },
+                    "D0z0sE": {
+                      "icon": "refresh-cw",
+                      "width": 16,
+                      "height": 16
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "u6EMUZ",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Tab bar do treinador nos estados do Início",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Início ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Início ativo",
+                      "icon": "house",
+                      "fill": "$--primary"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Início ativo",
+                      "content": "Início",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Alunos",
+                      "fill": "#FFFFFF00"
+                    },
+                    "AV650": {
+                      "name": "Ícone Alunos",
+                      "icon": "users-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Alunos",
+                      "content": "Alunos",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "X3oLz0": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OWI03",
+      "x": 27323,
+      "y": 1812,
+      "name": "Mobile / Treinador / Alunos / lista",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "lDEfe",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell da lista de alunos do treinador",
+          "x": 0,
+          "y": 0,
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "fo2Sh",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho da lista de alunos",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "ALUNOS"
+                },
+                "R9VV9": {
+                  "content": "Alunos"
+                },
+                "Duswo": {
+                  "content": "Acompanhe a atividade recente de cada aluno."
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "rhJk8",
+              "name": "Conteúdo da lista de alunos",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "WfXpr",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Atualizar alunos",
+                  "width": "fill_container",
+                  "height": 40,
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Atualizar"
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "zCIVQ",
+                  "name": "Alunos vinculados",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "id": "UA3ph",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Linha de Mariana Costa",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "MC"
+                        },
+                        "KSZ65": {
+                          "content": "Mariana Costa"
+                        },
+                        "Psgte": {
+                          "content": "Treino concluído hoje"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "drjeA",
+                          "name": "Chevron de Mariana Costa",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    },
+                    {
+                      "id": "OCDee",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Linha de Rafael Costa",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "RC"
+                        },
+                        "KSZ65": {
+                          "content": "Rafael Costa"
+                        },
+                        "Psgte": {
+                          "content": "Ativo há 3 horas"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "bsIx7",
+                          "name": "Chevron de Rafael Costa",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    },
+                    {
+                      "id": "HzZK8",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Linha de Ana Luiza",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "AL"
+                        },
+                        "KSZ65": {
+                          "content": "Ana Luiza"
+                        },
+                        "Psgte": {
+                          "content": "Avaliação há 2 dias"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "uO5Ub",
+                          "name": "Chevron de Ana Luiza",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    },
+                    {
+                      "id": "lDqFR",
+                      "type": "ref",
+                      "ref": "otVHt",
+                      "name": "Linha de Pedro Alves",
+                      "width": "fill_container",
+                      "descendants": {
+                        "twWgM/4ZPXZ": {
+                          "content": "PA"
+                        },
+                        "KSZ65": {
+                          "content": "Pedro Alves"
+                        },
+                        "Psgte": {
+                          "content": "Último treino há 5 dias"
+                        },
+                        "DQb4F": {
+                          "type": "icon",
+                          "id": "OC1Pb",
+                          "name": "Chevron de Pedro Alves",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-right",
+                          "library": "lucide",
+                          "fill": "$--muted-foreground"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "jD3vk",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Tab bar do treinador em Alunos",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Início",
+                      "fill": "#FFFFFF00"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Início",
+                      "icon": "house",
+                      "fill": "$--muted-foreground"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Início",
+                      "content": "Início",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Alunos ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "AV650": {
+                      "name": "Ícone Alunos ativo",
+                      "icon": "users-round",
+                      "fill": "$--primary"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Alunos ativo",
+                      "content": "Alunos",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "X3oLz0": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "BVAl2",
+      "x": 27323,
+      "y": 2728,
+      "name": "Mobile / Treinador / Alunos / carregando-vazio-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "qAM0j",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados de alunos do treinador",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "E4AQS": {
+              "id": "wAOye",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho dos estados de alunos",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "ALUNOS"
+                },
+                "R9VV9": {
+                  "content": "Estados dos alunos"
+                },
+                "Duswo": {
+                  "content": "Referências de carregamento, vazio e erro."
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "X8oBH6",
+              "name": "Variantes de estado dos alunos",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "T7c4Jw",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Carregando alunos",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-info-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "loader-circle",
+                      "fill": "$--secondary"
+                    },
+                    "N37M8": {
+                      "content": "Carregando",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Carregando alunos...",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "type": "frame",
+                      "id": "now8A",
+                      "name": "Sem ação no carregamento de alunos",
+                      "opacity": 0,
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  }
+                },
+                {
+                  "id": "hwVFQ",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Nenhum aluno vinculado",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--muted"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "users-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "N37M8": {
+                      "content": "Vazio",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Nenhum aluno vinculado para acompanhar.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "type": "frame",
+                      "id": "EKd6e",
+                      "name": "Sem ação no vazio de alunos",
+                      "opacity": 0,
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  }
+                },
+                {
+                  "id": "FgFrH",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Erro ao carregar alunos",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-error-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "triangle-alert",
+                      "fill": "$--color-error"
+                    },
+                    "N37M8": {
+                      "content": "Erro",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Não foi possível carregar os alunos.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "nLISN": {
+                      "height": 36
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente",
+                      "fontSize": 13
+                    },
+                    "D0z0sE": {
+                      "icon": "refresh-cw",
+                      "width": 16,
+                      "height": 16
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "ZCsQP",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Tab bar do treinador nos estados de Alunos",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Início",
+                      "fill": "#FFFFFF00"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Início",
+                      "icon": "house",
+                      "fill": "$--muted-foreground"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Início",
+                      "content": "Início",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Alunos ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "AV650": {
+                      "name": "Ícone Alunos ativo",
+                      "icon": "users-round",
+                      "fill": "$--primary"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Alunos ativo",
+                      "content": "Alunos",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "X3oLz0": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ],
   "variables": {
