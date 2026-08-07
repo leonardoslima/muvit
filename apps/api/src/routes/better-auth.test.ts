@@ -158,6 +158,47 @@ describe('Better Auth', () => {
     expect(identities[0]?.role).toBe('trainer');
   });
 
+  it.each([
+    ['/api/auth/change-email', { newEmail: 'bypass-email@example.com' }],
+    ['/api/auth/update-user', { name: 'Nome por bypass' }],
+  ])('bloqueia atualização externa de perfil por %s', async (url, payload) => {
+    const trainer = await signUpWithSession(currentApp(), {
+      name: 'Perfil Coordenado',
+      email: 'perfil-coordenado@example.com',
+      password: 'senha-segura-123',
+      role: 'trainer',
+    });
+
+    const response = await currentApp().inject({
+      method: 'POST',
+      url,
+      headers: { cookie: trainer.cookie },
+      payload,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: 'Atualize seus dados pela rota de perfil.',
+    });
+
+    const [authUser] = await db
+      .select()
+      .from(authUsers)
+      .where(eq(authUsers.id, trainer.authUserId));
+    const [trainerProfile] = await db
+      .select()
+      .from(trainers)
+      .where(eq(trainers.id, trainer.profileId));
+    expect(authUser).toMatchObject({
+      email: 'perfil-coordenado@example.com',
+      name: 'Perfil Coordenado',
+    });
+    expect(trainerProfile).toMatchObject({
+      email: authUser?.email,
+      name: authUser?.name,
+    });
+  });
+
   it('compensa a identidade quando o provisionamento de perfil falha', async () => {
     await app?.close();
     const failingProvisioner: TestProfileProvisioner = {
