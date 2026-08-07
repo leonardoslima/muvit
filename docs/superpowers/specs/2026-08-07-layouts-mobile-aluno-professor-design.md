@@ -9,10 +9,10 @@ O mesmo aplicativo passará a atender treinadores. O Pencil deve consolidar a ex
 ## Fontes de verdade
 
 - Issue MUV-7 e as issues dependentes do projeto Mobile MVP.
-- "assets/design/pencil_design.pen", incluindo o Style Guide e os componentes reutilizáveis existentes.
+- "assets/design/pencil_design.pen", incluindo o Style Guide, as variáveis visuais e os componentes reutilizáveis existentes; ele é a fonte visual primária.
 - "apps/mobile/app/_layout.tsx" e "apps/mobile/app/(tabs)/_layout.tsx", para a navegação e o guard atuais.
 - "apps/mobile/src/screens", para os fluxos funcionais já disponíveis ao aluno.
-- "apps/mobile/src/lib/styles.ts", para os tokens visuais atuais.
+- "apps/mobile/src/lib/styles.ts", para reconciliar a implementação futura com os tokens visuais definidos no Pencil.
 - "AGENTS.md" da raiz e "apps/mobile/AGENTS.md".
 
 ## Objetivo
@@ -135,18 +135,18 @@ Estados unidos pelo hífen pertencem ao mesmo frame de referência e aparecem co
 
 ## Sistema visual mobile
 
-O design usa os tokens atuais do aplicativo, sem introduzir paleta paralela:
+O design usa as variáveis existentes do Pencil, sem introduzir paleta paralela:
 
-- fundo: "#F7F7F2";
-- superfície: "#FFFFFF";
-- texto principal: "#18201B";
-- texto secundário: "#647067";
-- borda: "#DFE4DC";
-- ação primária: "#2F6F4E";
-- destaque: "#D9902F";
-- erro: "#B42318".
+- fundo: "$--background", "#F5F3EF";
+- superfície: "$--card", "#FFFFFF";
+- texto principal: "$--foreground", "#1A1A1A";
+- texto secundário: "$--muted-foreground", "#666666";
+- borda: "$--border", "#D1CCC4";
+- ação primária: "$--primary", "#2ECC71";
+- destaque e aviso: "$--color-warning", "#F39C12";
+- erro: "$--color-error", "#E74C3C".
 
-O texto usa Inter. O título de tela possui escala consistente; títulos de card, corpo, labels e mensagens de estado preservam hierarquia legível sem reduzir o contraste. Conteúdo visível permanece em pt-BR com caracteres UTF-8 literais.
+Títulos de tela e de card usam "$--font-primary", Space Grotesk. Corpo, labels e mensagens de estado usam "$--font-secondary", Inter. A escala de cada função textual permanece consistente e legível sem reduzir o contraste. Conteúdo visível permanece em pt-BR com caracteres UTF-8 literais.
 
 As telas seguem esta estrutura:
 
