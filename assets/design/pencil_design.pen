@@ -56779,6 +56779,1159 @@
           }
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "nBQZW",
+      "x": 25475,
+      "y": -20,
+      "name": "Mobile / Aluno / Progresso / com-avaliações",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "rQi1w",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do progresso com avaliações",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "type": "frame",
+              "id": "kOwAP",
+              "name": "Cabeçalho e ação do progresso",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "id": "kDZLl",
+                  "type": "ref",
+                  "ref": "zdcSm",
+                  "name": "Cabeçalho do progresso",
+                  "width": "fill_container",
+                  "descendants": {
+                    "yL4cl": {
+                      "content": "PROGRESSO"
+                    },
+                    "R9VV9": {
+                      "content": "Progresso"
+                    },
+                    "Duswo": {
+                      "content": "Sua evolução, avaliação por avaliação."
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "vf8y6",
+                  "name": "Nova avaliação action",
+                  "width": 44,
+                  "height": 44,
+                  "fill": "$--primary",
+                  "cornerRadius": "$--radius-pill",
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pDii8",
+                      "name": "Nova avaliação plus",
+                      "fill": "$--primary-foreground",
+                      "content": "+",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 22,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "JWKR8",
+              "name": "Lista de avaliações do aluno",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "bdq9J",
+                  "type": "ref",
+                  "ref": "VySmR",
+                  "name": "Avaliação de 2026-08-07",
+                  "width": "fill_container",
+                  "descendants": {
+                    "lXRZO": {
+                      "content": "Avaliação física"
+                    },
+                    "rU1UF": {
+                      "content": "2026-08-07"
+                    },
+                    "avyDv": {
+                      "content": "Peso · Gordura corporal"
+                    },
+                    "F9uyEL": {
+                      "content": "68,2 kg · 19,4%"
+                    },
+                    "K9xPV": {
+                      "content": "Referência atual"
+                    }
+                  }
+                },
+                {
+                  "id": "dh1Qw",
+                  "type": "ref",
+                  "ref": "VySmR",
+                  "name": "Avaliação de 2026-07-07",
+                  "width": "fill_container",
+                  "descendants": {
+                    "lXRZO": {
+                      "content": "Avaliação física"
+                    },
+                    "rU1UF": {
+                      "content": "2026-07-07"
+                    },
+                    "avyDv": {
+                      "content": "Peso · Gordura corporal"
+                    },
+                    "F9uyEL": {
+                      "content": "69,0 kg · 20,1%"
+                    },
+                    "K9xPV": {
+                      "content": "−0,8 kg · −0,7 p.p."
+                    }
+                  }
+                },
+                {
+                  "id": "arlFd",
+                  "type": "ref",
+                  "ref": "VySmR",
+                  "name": "Avaliação de 2026-06-07",
+                  "width": "fill_container",
+                  "descendants": {
+                    "lXRZO": {
+                      "content": "Avaliação física"
+                    },
+                    "rU1UF": {
+                      "content": "2026-06-07"
+                    },
+                    "avyDv": {
+                      "content": "Peso · Gordura corporal"
+                    },
+                    "F9uyEL": {
+                      "content": "70,1 kg · 21,0%"
+                    },
+                    "K9xPV": {
+                      "content": "Início do acompanhamento"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "jDimg",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno em Progresso",
+                  "width": "fill_container",
+                  "height": 56,
+                  "layout": "horizontal",
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Hoje",
+                      "fill": "#FFFFFF00"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Hoje",
+                      "icon": "calendar-days",
+                      "fill": "$--muted-foreground"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Hoje",
+                      "content": "Hoje",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Progresso ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "AV650": {
+                      "name": "Ícone Progresso ativo",
+                      "icon": "chart-no-axes-column-increasing",
+                      "fill": "$--primary"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Progresso ativo",
+                      "content": "Progresso",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "X3oLz0": {
+                      "enabled": true,
+                      "width": 81.5,
+                      "height": 44,
+                      "opacity": 0
+                    },
+                    "f7AfOM": {
+                      "enabled": true
+                    },
+                    "ovgRe": {
+                      "enabled": true
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "U09sO",
+      "x": 25937,
+      "y": -20,
+      "name": "Mobile / Aluno / Progresso / carregando-vazio-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "yuRdc",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados de progresso",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "DYEu5",
+              "type": "ref",
+              "ref": "zdcSm",
+              "name": "Cabeçalho dos estados de progresso",
+              "width": "fill_container",
+              "descendants": {
+                "yL4cl": {
+                  "content": "PROGRESSO"
+                },
+                "R9VV9": {
+                  "content": "Estados da evolução"
+                },
+                "Duswo": {
+                  "content": "Referências de carregamento, vazio e erro."
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "d1QX8R",
+              "name": "Variantes de estado do progresso",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "gmlkp",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Carregando avaliações",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-info-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "loader-circle",
+                      "fill": "$--secondary"
+                    },
+                    "N37M8": {
+                      "content": "Carregando",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Carregando avaliações...",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "type": "frame",
+                      "id": "BzDso",
+                      "name": "Sem ação no carregamento",
+                      "opacity": 0,
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  }
+                },
+                {
+                  "id": "DA3zV",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Nenhuma avaliação",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--muted"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "clipboard-list",
+                      "fill": "$--muted-foreground"
+                    },
+                    "N37M8": {
+                      "content": "Vazio",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Nenhuma avaliação registrada.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "type": "frame",
+                      "id": "V1loE",
+                      "name": "Sem ação no estado vazio",
+                      "opacity": 0,
+                      "width": "fill_container",
+                      "height": 1
+                    }
+                  }
+                },
+                {
+                  "id": "AzyqY",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado Erro ao carregar avaliações",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-error-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "triangle-alert",
+                      "fill": "$--color-error"
+                    },
+                    "N37M8": {
+                      "content": "Erro",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Não foi possível carregar suas avaliações.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "nLISN": {
+                      "height": 36
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente",
+                      "fontSize": 13
+                    },
+                    "D0z0sE": {
+                      "icon": "refresh-cw",
+                      "width": 16,
+                      "height": 16
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "children": [
+                {
+                  "id": "YM8bv",
+                  "type": "ref",
+                  "ref": "i4TO4J",
+                  "name": "Abas do aluno nos estados de Progresso",
+                  "width": "fill_container",
+                  "height": 56,
+                  "descendants": {
+                    "h0D6Wo": {
+                      "name": "Aba Hoje",
+                      "fill": "#FFFFFF00"
+                    },
+                    "cadCQ": {
+                      "name": "Ícone Hoje",
+                      "icon": "calendar-days",
+                      "fill": "$--muted-foreground"
+                    },
+                    "FFqFC": {
+                      "name": "Rótulo Hoje",
+                      "content": "Hoje",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    },
+                    "N7Fhb": {
+                      "name": "Aba Progresso ativa",
+                      "fill": "$--color-success-bg"
+                    },
+                    "AV650": {
+                      "name": "Ícone Progresso ativo",
+                      "icon": "chart-no-axes-column-increasing",
+                      "fill": "$--primary"
+                    },
+                    "uLS78": {
+                      "name": "Rótulo Progresso ativo",
+                      "content": "Progresso",
+                      "fill": "$--primary",
+                      "fontWeight": "600"
+                    },
+                    "X3oLz0": {
+                      "enabled": true,
+                      "opacity": 0,
+                      "width": 81.5,
+                      "height": 44
+                    },
+                    "lAkFa": {
+                      "name": "Aba Perfil",
+                      "fill": "#FFFFFF00"
+                    },
+                    "W4Ablz": {
+                      "name": "Ícone Perfil",
+                      "icon": "user-round",
+                      "fill": "$--muted-foreground"
+                    },
+                    "L0PkQb": {
+                      "name": "Rótulo Perfil",
+                      "content": "Perfil",
+                      "fill": "$--muted-foreground",
+                      "fontWeight": "normal"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "I2gzs",
+      "x": 26399,
+      "y": -20,
+      "name": "Mobile / Aluno / Nova avaliação / default",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "C4MKE",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell da nova avaliação",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "c9JK22",
+              "type": "ref",
+              "ref": "veac4",
+              "name": "Cabeçalho da nova avaliação",
+              "width": "fill_container",
+              "descendants": {
+                "MefHR": {
+                  "content": "Nova avaliação"
+                },
+                "lyqHg": {
+                  "enabled": false
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "b1lsG",
+              "name": "Formulário da nova avaliação",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "N4hNb4",
+                  "name": "Orientação da nova avaliação",
+                  "fill": "$--muted-foreground",
+                  "content": "Registre suas medidas e observações.",
+                  "fontFamily": "$--font-secondary",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "Z0bZL",
+                  "name": "Campo Data da avaliação",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Nf6u9",
+                      "name": "Rótulo Data da avaliação",
+                      "fill": "$--foreground",
+                      "content": "Data da avaliação",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "V1cjv",
+                      "name": "Entrada Data da avaliação",
+                      "width": "fill_container",
+                      "height": 48,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        14
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "f65Pp",
+                          "name": "Placeholder Data da avaliação",
+                          "fill": "$--muted-foreground",
+                          "content": "AAAA-MM-DD",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YNKOR",
+                  "name": "Linha de medidas da avaliação",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "j8GmM",
+                      "name": "Campo Peso",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "k6tmCU",
+                          "name": "Rótulo Peso",
+                          "fill": "$--foreground",
+                          "content": "Peso (kg)",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gdVLt",
+                          "name": "Entrada Peso",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$--card",
+                          "cornerRadius": "$--radius-md",
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "padding": [
+                            0,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "i9LFJ",
+                              "name": "Placeholder Peso",
+                              "fill": "$--muted-foreground",
+                              "content": "68,2",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AVHWf",
+                      "name": "Campo Gordura corporal",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lsLrC",
+                          "name": "Rótulo Gordura corporal",
+                          "fill": "$--foreground",
+                          "content": "Gordura corporal (%)",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "pFacM",
+                          "name": "Entrada Gordura corporal",
+                          "width": "fill_container",
+                          "height": 48,
+                          "fill": "$--card",
+                          "cornerRadius": "$--radius-md",
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "padding": [
+                            0,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "VscEd",
+                              "name": "Placeholder Gordura corporal",
+                              "fill": "$--muted-foreground",
+                              "content": "19,4",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 14,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OcgXj",
+                  "name": "Campo Notas",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "JDUZj",
+                      "name": "Rótulo Notas",
+                      "fill": "$--foreground",
+                      "content": "Notas",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aF9VA",
+                      "name": "Entrada Notas",
+                      "width": "fill_container",
+                      "height": 100,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "k2vj0c",
+                          "name": "Placeholder Notas",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Observações desta avaliação",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "ibg6s",
+                  "type": "ref",
+                  "ref": "pNIQu",
+                  "name": "Ação Adicionar foto",
+                  "width": "fill_container",
+                  "descendants": {
+                    "i0bXE": {
+                      "content": "Adicionar foto"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "name": "Rodapé para salvar avaliação",
+              "padding": [
+                8,
+                20,
+                12,
+                20
+              ],
+              "children": [
+                {
+                  "id": "JsHXx",
+                  "type": "ref",
+                  "ref": "MajEg",
+                  "name": "Ação Salvar avaliação",
+                  "width": "fill_container",
+                  "descendants": {
+                    "iiUhc": {
+                      "content": "Salvar"
+                    },
+                    "G6XUt": {
+                      "icon": "save"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "CsaiW",
+      "x": 26861,
+      "y": -20,
+      "name": "Mobile / Aluno / Nova avaliação / enviando-erro-sucesso",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "hSTni",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados da nova avaliação",
+          "width": "fill_container",
+          "height": 844,
+          "layout": "vertical",
+          "fill": "$--background",
+          "clip": true,
+          "descendants": {
+            "E4AQS": {
+              "id": "dof4P",
+              "type": "ref",
+              "ref": "veac4",
+              "name": "Cabeçalho dos estados da avaliação",
+              "width": "fill_container",
+              "descendants": {
+                "MefHR": {
+                  "content": "Estados da avaliação"
+                },
+                "lyqHg": {
+                  "enabled": false
+                }
+              }
+            },
+            "FXG90": {
+              "type": "frame",
+              "id": "AeM5D",
+              "name": "Variantes da nova avaliação",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "kQtH9",
+                  "name": "Variante Enviando avaliação",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "BY7QL",
+                      "name": "Rótulo Enviando",
+                      "fill": "$--foreground",
+                      "content": "Enviando",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gRUPU",
+                      "name": "Status Salvando avaliação",
+                      "gap": 6,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "fHKli",
+                          "name": "Ícone Salvando avaliação",
+                          "width": 16,
+                          "height": 16,
+                          "icon": "loader-circle",
+                          "library": "lucide",
+                          "fill": "$--secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "oDoiu",
+                          "name": "Mensagem Salvando avaliação",
+                          "fill": "$--secondary",
+                          "content": "Salvando...",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "npMiz",
+                      "name": "Entradas desabilitadas da avaliação",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "q6DC4",
+                          "name": "Entrada Data desabilitada",
+                          "opacity": 0.65,
+                          "width": "fill_container",
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": "$--radius-sm",
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "padding": [
+                            0,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "RvEGd",
+                              "name": "Valor Data desabilitado",
+                              "fill": "$--muted-foreground",
+                              "content": "AAAA-MM-DD",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "K5XSwN",
+                          "name": "Entrada Peso desabilitada",
+                          "opacity": 0.65,
+                          "width": "fill_container",
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": "$--radius-sm",
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "padding": [
+                            0,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wyNy8",
+                              "name": "Valor Peso desabilitado",
+                              "fill": "$--muted-foreground",
+                              "content": "68,2 kg",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "NLSwX",
+                          "name": "Entrada Gordura desabilitada",
+                          "opacity": 0.65,
+                          "width": "fill_container",
+                          "height": 36,
+                          "fill": "$--muted",
+                          "cornerRadius": "$--radius-sm",
+                          "stroke": "$--border",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "padding": [
+                            0,
+                            8
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "UuQK9",
+                              "name": "Valor Gordura desabilitado",
+                              "fill": "$--muted-foreground",
+                              "content": "19,4%",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MntN3",
+                      "name": "Entrada Notas desabilitada",
+                      "opacity": 0.65,
+                      "width": "fill_container",
+                      "height": 36,
+                      "fill": "$--muted",
+                      "cornerRadius": "$--radius-sm",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        10
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qQGNa",
+                          "name": "Valor Notas desabilitado",
+                          "fill": "$--muted-foreground",
+                          "content": "Notas",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JsCz7",
+                  "name": "Variante Erro na avaliação",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--color-error",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IVk8k",
+                      "name": "Rótulo Erro da avaliação",
+                      "fill": "$--color-error",
+                      "content": "Erro",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "VRsBB",
+                      "name": "Rótulo Gordura inválida",
+                      "fill": "$--foreground",
+                      "content": "Gordura corporal (%)",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 11,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "oMq9t",
+                      "name": "Entrada Gordura inválida",
+                      "width": "fill_container",
+                      "height": 40,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-sm",
+                      "stroke": "$--color-error",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "padding": [
+                        0,
+                        10
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "S5rnk0",
+                          "name": "Valor Gordura inválida",
+                          "fill": "$--foreground",
+                          "content": "120",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "c3X3M",
+                      "name": "Mensagem Gordura inválida",
+                      "fill": "$--color-error",
+                      "content": "Informe um percentual entre 0 e 100.",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "id": "IizZq",
+                      "type": "ref",
+                      "ref": "pNIQu",
+                      "name": "Ação Tentar salvar novamente",
+                      "width": "fill_container",
+                      "height": 36,
+                      "descendants": {
+                        "i0bXE": {
+                          "content": "Tentar salvar"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "PuwvI",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Variante Avaliação salva",
+                  "width": "fill_container",
+                  "padding": 14,
+                  "gap": 6,
+                  "descendants": {
+                    "psRyQ": {
+                      "width": 34,
+                      "height": 34,
+                      "fill": "$--color-success-bg"
+                    },
+                    "nALXn": {
+                      "width": 18,
+                      "height": 18,
+                      "icon": "circle-check",
+                      "fill": "$--color-success"
+                    },
+                    "N37M8": {
+                      "content": "Avaliação salva",
+                      "fontSize": 15
+                    },
+                    "upy9o": {
+                      "content": "Seus dados já aparecem em Progresso.",
+                      "fontSize": 12
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "nLISN": {
+                      "height": 36
+                    },
+                    "cwtka": {
+                      "content": "Voltar para Progresso",
+                      "fontSize": 13
+                    },
+                    "D0z0sE": {
+                      "icon": "arrow-left",
+                      "width": 16,
+                      "height": 16
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "type": "frame",
+              "id": "VH9dd",
+              "name": "Rodapé dos estados da nova avaliação",
+              "width": "fill_container",
+              "height": 68,
+              "fill": "$--background"
+            }
+          }
+        }
+      ]
     }
   ],
   "variables": {
