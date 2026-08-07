@@ -43,6 +43,13 @@
       "when": 1786116073701,
       "tag": "0005_cheerful_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786116499469,
+      "tag": "0006_gifted_nova",
+      "breakpoints": true
     }
   ]
 }

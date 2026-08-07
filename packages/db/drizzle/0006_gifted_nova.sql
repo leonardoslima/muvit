@@ -1,0 +1,9 @@
+CREATE TYPE "public"."notification_channel" AS ENUM('email', 'push', 'both');--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "inactivity_channel" SET DEFAULT 'both'::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "inactivity_channel" SET DATA TYPE "public"."notification_channel" USING "inactivity_channel"::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "workout_plan_expiring_channel" SET DEFAULT 'email'::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "workout_plan_expiring_channel" SET DATA TYPE "public"."notification_channel" USING "workout_plan_expiring_channel"::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "pending_assessment_channel" SET DEFAULT 'push'::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "pending_assessment_channel" SET DATA TYPE "public"."notification_channel" USING "pending_assessment_channel"::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "new_student_registration_channel" SET DEFAULT 'both'::"public"."notification_channel";--> statement-breakpoint
+ALTER TABLE "trainer_notification_preferences" ALTER COLUMN "new_student_registration_channel" SET DATA TYPE "public"."notification_channel" USING "new_student_registration_channel"::"public"."notification_channel";

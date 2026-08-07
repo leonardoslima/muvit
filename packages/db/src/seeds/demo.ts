@@ -2,10 +2,10 @@ import { fakerPT_BR } from '@faker-js/faker';
 import type {
   AssessmentMeasurements,
   NewAssessment,
-  NewStudent,
-  NewWorkoutPlan,
   NewBillingInvoice,
+  NewStudent,
   NewTrainerSubscription,
+  NewWorkoutPlan,
 } from '../schema/index.js';
 
 export const DEMO_RANDOM_SEED = 20260716;
@@ -362,8 +362,23 @@ export const buildDemoScenario = (
   const assessments = buildAssessments(referenceDate);
   const plans = buildPlans(referenceDate);
   const logs = buildLogs(referenceDate, plans);
-  const trainerSubscription = { plan: 'pro' as const, billingInterval: 'annual' as const, status: 'active' as const, startsAt: daysBefore(referenceDate, 30), renewsAt: daysBefore(referenceDate, -335) };
-  const billingInvoices = [0, 1, 2].map((index) => ({ plan: 'pro' as const, billingInterval: 'annual' as const, amountCents: 29900, currency: 'BRL', status: 'paid' as const, issuedAt: daysBefore(referenceDate, 30 + index * 30), paidAt: daysBefore(referenceDate, 29 + index * 30), createdAt: daysBefore(referenceDate, 30 + index * 30) }));
+  const trainerSubscription = {
+    plan: 'pro' as const,
+    billingInterval: 'annual' as const,
+    status: 'active' as const,
+    startsAt: daysBefore(referenceDate, 30),
+    renewsAt: daysBefore(referenceDate, -335),
+  };
+  const billingInvoices = [0, 1, 2].map((index) => ({
+    plan: 'pro' as const,
+    billingInterval: 'annual' as const,
+    amountCents: 29900,
+    currency: 'BRL',
+    status: 'paid' as const,
+    issuedAt: daysBefore(referenceDate, 30 + index * 30),
+    paidAt: daysBefore(referenceDate, 29 + index * 30),
+    createdAt: daysBefore(referenceDate, 30 + index * 30),
+  }));
 
   return {
     trainer: identities.trainer,

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { db, schema } from '../index.js';
 
@@ -25,6 +25,15 @@ afterEach(async () => {
 });
 
 describe('persistência de configurações do treinador', () => {
+  it('rejeita canal de notificação fora dos valores aprovados', async () => {
+    await expect(
+      db.insert(schema.trainerNotificationPreferences).values({
+        trainerId,
+        inactivityChannel: sql`'sms'`,
+      }),
+    ).rejects.toThrow();
+  });
+
   it('rejeita fatura sem valor positivo em centavos', async () => {
     await expect(
       db.insert(schema.billingInvoices).values({
