@@ -39,7 +39,10 @@ describe('MobileAppNavigation', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Abrir menu principal' }));
 
-    expect(screen.getByRole('dialog', { name: 'Menu principal' })).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Menu principal' });
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveClass('overflow-y-auto');
+    expect(document.body).toHaveAttribute('data-scroll-locked', '1');
     expect(screen.getByRole('navigation', { name: 'Navegação principal' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Relatórios' })).toHaveAttribute('href', '/reports');
     expect(screen.getByRole('link', { name: 'Relatórios' })).toHaveAttribute(
@@ -52,6 +55,18 @@ describe('MobileAppNavigation', () => {
     );
     expect(screen.getByText('Ana Trainer')).toBeInTheDocument();
     expect(screen.getByLabelText('Perfil de Ana Trainer')).toHaveTextContent('AT');
+  });
+
+  it('fecha o menu ao selecionar uma rota', async () => {
+    render(<MobileAppNavigation user={{ name: 'Ana Trainer', email: 'ana@muvit.test' }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu principal' }));
+
+    const studentsLink = screen.getByRole('link', { name: 'Alunos' });
+    studentsLink.addEventListener('click', (event) => event.preventDefault());
+    fireEvent.click(studentsLink);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Abrir menu principal' })).toHaveFocus();
   });
 
   it('fecha o menu ao pressionar Escape', async () => {

@@ -38,6 +38,7 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 - Use componentes e tokens existentes antes de adicionar variantes novas.
 - Em Tailwind 4, prefira utilitarios canonicos da escala quando equivalerem exatamente ao valor arbitrario (`w-[140px]` -> `w-35`); mantenha arbitrarios para `calc(...)`, `var(...)`, Radix e medidas realmente fora da escala.
 - Trate `src/components/ui` como a camada de primitives visuais; nao adicione regra de dominio ou comportamento especifico de uma funcionalidade nesses componentes.
+- Cada rota autenticada de primeiro nível deve compor explicitamente `AppContentSurface` em seu layout: use a variante padrão para conteúdo com padding e `fullHeight` somente para superfícies que controlam o próprio espaçamento, sem seletores de descendentes, margens negativas ou detecção por pathname.
 - Quando um comportamento de interface realmente se repetir, crie uma composicao focada em `src/components` que reutilize os primitives existentes e mantenha uma unica responsabilidade visual ou comportamental.
 - Toda acao destrutiva visivel ao usuario deve exigir confirmacao pela composicao compartilhada `ConfirmationDialog`; a tela consumidora fornece gatilho, textos e acao concreta.
 - Garanta estados de loading, erro e vazio em telas com dados remotos.

@@ -44,7 +44,7 @@ export function MobileAppNavigation({ user }: MobileAppNavigationProps) {
           <DialogContent
             showCloseButton
             overlayClassName="bg-black/50"
-            className="top-0 left-0 h-dvh max-w-[320px] translate-x-0 translate-y-0 rounded-none bg-sidebar p-0 ring-0 sm:max-w-[320px] data-[state=open]:slide-in-from-left data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-left data-[state=closed]:zoom-out-100"
+            className="top-0 left-0 h-dvh max-w-[320px] translate-x-0 translate-y-0 overflow-y-auto rounded-none bg-sidebar p-0 ring-0 sm:max-w-[320px] data-[state=open]:slide-in-from-left data-[state=open]:zoom-in-100 data-[state=closed]:slide-out-to-left data-[state=closed]:zoom-out-100"
           >
             <DialogTitle className="sr-only">Menu principal</DialogTitle>
             <DialogDescription className="sr-only">

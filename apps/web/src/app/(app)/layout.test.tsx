@@ -23,6 +23,7 @@ describe('AppLayout', () => {
     const styles = readFileSync(resolve(process.cwd(), 'src/app/globals.css'), 'utf8');
 
     expect(container.querySelector('[data-app-shell]')).toBeInTheDocument();
+    expect(container.querySelector('[data-app-content]')).not.toBeInTheDocument();
     expect(styles).toContain('body:has(> [data-app-shell])');
     expect(styles).toContain('overflow: hidden;');
   });
