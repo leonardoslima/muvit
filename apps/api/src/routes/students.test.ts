@@ -1,4 +1,4 @@
-import { db, schema } from '@muvit/db';
+import { db, queryClient, schema } from '@muvit/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -15,6 +15,35 @@ async function signupTrainer(app: FastifyInstance, email: string) {
     password: '12345678',
     role: 'trainer',
   });
+}
+
+async function installConcurrentStudentInsertDelay() {
+  await queryClient.unsafe(`
+    CREATE OR REPLACE FUNCTION delay_concurrent_student_insert_for_test()
+    RETURNS trigger AS $$
+    BEGIN
+      IF NEW.name LIKE 'Concorrente %' THEN
+        PERFORM pg_sleep(0.25);
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_concurrent_student_insert_for_test ON students',
+  );
+  await queryClient.unsafe(`
+    CREATE TRIGGER delay_concurrent_student_insert_for_test
+    BEFORE INSERT ON students
+    FOR EACH ROW EXECUTE FUNCTION delay_concurrent_student_insert_for_test()
+  `);
+}
+
+async function removeConcurrentStudentInsertDelay() {
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_concurrent_student_insert_for_test ON students',
+  );
+  await queryClient.unsafe('DROP FUNCTION IF EXISTS delay_concurrent_student_insert_for_test()');
 }
 
 beforeEach(async () => {
@@ -138,6 +167,40 @@ describe('students', () => {
     });
 
     expect(response.statusCode).toBe(201);
+  });
+
+  it('persiste somente uma de duas ativações concorrentes quando resta uma vaga', async () => {
+    const trainer = await signupTrainer(app, 'limit-concurrent@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+    await installConcurrentStudentInsertDelay();
+
+    try {
+      const responses = await Promise.all(
+        ['Concorrente A', 'Concorrente B'].map((name) =>
+          app.inject({
+            method: 'POST',
+            url: '/students',
+            headers: { cookie: trainer.cookie },
+            payload: { name },
+          }),
+        ),
+      );
+
+      expect(responses.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+      const activeStudents = await db.query.students.findMany({
+        where: eq(schema.students.trainerId, trainer.profileId),
+      });
+      expect(activeStudents.filter((student) => student.status === 'active')).toHaveLength(3);
+    } finally {
+      await removeConcurrentStudentInsertDelay();
+    }
   });
 
   it('creates a student bound to current trainer', async () => {

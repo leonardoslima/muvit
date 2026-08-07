@@ -1,5 +1,6 @@
 import { db, schema } from '@muvit/db';
 import { and, eq, ilike, ne, sql } from 'drizzle-orm';
+import { getTrainerPlanDatabase } from '../../trainer-plan/repositories/drizzle-trainer-plan-mutation-lock.js';
 import type {
   CreateStudentInput,
   ListStudentsQuery,
@@ -35,7 +36,7 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async createForTrainer(trainerId: string, input: CreateStudentInput) {
-    const [student] = await db
+    const [student] = await getTrainerPlanDatabase()
       .insert(schema.students)
       .values({ ...input, trainerId, isIndependent: false })
       .returning();
@@ -44,7 +45,7 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async updateForTrainer(id: string, trainerId: string, input: UpdateStudentInput) {
-    const [student] = await db
+    const [student] = await getTrainerPlanDatabase()
       .update(schema.students)
       .set(input)
       .where(and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)))
@@ -53,7 +54,7 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async findStatusForTrainer(id: string, trainerId: string) {
-    const student = await db.query.students.findFirst({
+    const student = await getTrainerPlanDatabase().query.students.findFirst({
       columns: { status: true },
       where: and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)),
     });
@@ -61,7 +62,8 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async getStudentPlanUsage(trainerId: string, excludingStudentId?: string) {
-    const trainer = await db.query.trainers.findFirst({
+    const database = getTrainerPlanDatabase();
+    const trainer = await database.query.trainers.findFirst({
       columns: { plan: true },
       where: eq(schema.trainers.id, trainerId),
     });
@@ -74,7 +76,7 @@ export class DrizzleStudentsRepository implements StudentsRepository {
     if (excludingStudentId !== undefined) {
       conditions.push(ne(schema.students.id, excludingStudentId));
     }
-    const result = await db
+    const result = await database
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.students)
       .where(and(...conditions));

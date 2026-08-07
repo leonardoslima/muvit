@@ -1,6 +1,7 @@
 import type { UpdateTrainerSubscriptionInput } from '@muvit/validators';
 import { describe, expect, it } from 'vitest';
 import type { RequestIdentity } from '../../../shared/request-identity.js';
+import type { TrainerPlanMutationLock } from '../../trainer-plan/trainer-plan-mutation-lock.js';
 import { PLAN_CATALOG } from '../plan-catalog.js';
 import type {
   BillingRepository,
@@ -12,6 +13,10 @@ const trainerIdentity: RequestIdentity = {
   authUserId: 'auth-trainer-id',
   profileId: 'trainer-id',
   role: 'trainer',
+};
+
+const immediateTrainerPlanMutationLock: TrainerPlanMutationLock = {
+  withTrainerPlanMutationLock: async (_trainerId, operation) => operation(),
 };
 
 class FakeBillingRepository implements BillingRepository {
@@ -77,6 +82,7 @@ describe('UpdateSubscriptionUseCase', () => {
     const repository = new FakeBillingRepository();
     const useCase = new UpdateSubscriptionUseCase(
       repository,
+      immediateTrainerPlanMutationLock,
       () => new Date('2026-08-07T12:00:00.000Z'),
     );
 
@@ -99,7 +105,7 @@ describe('UpdateSubscriptionUseCase', () => {
   it('bloqueia downgrade abaixo da quantidade atual de alunos ativos', async () => {
     const repository = new FakeBillingRepository();
     repository.activeStudentCount = 16;
-    const useCase = new UpdateSubscriptionUseCase(repository);
+    const useCase = new UpdateSubscriptionUseCase(repository, immediateTrainerPlanMutationLock);
 
     await expect(
       useCase.execute(trainerIdentity, { plan: 'starter', billingInterval: 'monthly' }),

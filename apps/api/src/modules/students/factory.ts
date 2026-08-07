@@ -1,3 +1,4 @@
+import { DrizzleTrainerPlanMutationLock } from '../trainer-plan/repositories/drizzle-trainer-plan-mutation-lock.js';
 import { DrizzleStudentsRepository } from './repositories/drizzle-students-repository.js';
 import { AssertStudentPlanLimitUseCase } from './use-cases/assert-student-plan-limit.js';
 import { CreateStudentUseCase } from './use-cases/create-student.js';
@@ -12,13 +13,14 @@ export function makeStudentsModule() {
   const repository = new DrizzleStudentsRepository();
   const ensureStudentAccess = new EnsureStudentAccessUseCase(repository);
   const studentPlanLimit = new AssertStudentPlanLimitUseCase(repository);
+  const trainerPlanMutationLock = new DrizzleTrainerPlanMutationLock();
 
   return {
     ensureStudentAccess,
     listStudents: new ListStudentsUseCase(repository),
-    createStudent: new CreateStudentUseCase(repository, studentPlanLimit),
+    createStudent: new CreateStudentUseCase(repository, studentPlanLimit, trainerPlanMutationLock),
     getStudent: new GetStudentUseCase(ensureStudentAccess),
-    updateStudent: new UpdateStudentUseCase(repository, studentPlanLimit),
+    updateStudent: new UpdateStudentUseCase(repository, studentPlanLimit, trainerPlanMutationLock),
     deleteStudent: new DeleteStudentUseCase(repository),
     registerStudentPushToken: new RegisterStudentPushTokenUseCase(repository),
   };

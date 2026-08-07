@@ -5,6 +5,7 @@ import type {
   UpdateTrainerSubscriptionInput,
 } from '@muvit/validators';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import { getTrainerPlanDatabase } from '../../trainer-plan/repositories/drizzle-trainer-plan-mutation-lock.js';
 import type {
   BillingOverviewData,
   BillingRepository,
@@ -84,7 +85,7 @@ export class DrizzleBillingRepository implements BillingRepository {
   }
 
   async countActiveStudents(trainerId: string): Promise<number> {
-    const result = await db
+    const result = await getTrainerPlanDatabase()
       .select({ count: sql<number>`count(*)::int` })
       .from(schema.students)
       .where(and(eq(schema.students.trainerId, trainerId), eq(schema.students.status, 'active')));
@@ -97,7 +98,7 @@ export class DrizzleBillingRepository implements BillingRepository {
     amountCents: number,
     now: Date,
   ): Promise<ChangeSubscriptionResult> {
-    return db.transaction(async (transaction) => {
+    return getTrainerPlanDatabase().transaction(async (transaction) => {
       const renewsAt = input.plan === 'free' ? null : renewalDate(now, input.billingInterval);
       const [subscription] = await transaction
         .insert(schema.trainerSubscriptions)

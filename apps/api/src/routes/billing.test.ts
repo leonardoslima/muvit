@@ -1,4 +1,4 @@
-import { db, schema } from '@muvit/db';
+import { db, queryClient, schema } from '@muvit/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -15,6 +15,44 @@ async function signupTrainer(email: string) {
     password: '12345678',
     role: 'trainer',
   });
+}
+
+async function installPlanRaceDelays() {
+  await queryClient.unsafe(`
+    CREATE OR REPLACE FUNCTION delay_plan_race_for_test()
+    RETURNS trigger AS $$
+    BEGIN
+      PERFORM pg_sleep(0.25);
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await queryClient.unsafe('DROP TRIGGER IF EXISTS delay_plan_race_student_for_test ON students');
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_plan_race_subscription_for_test ON trainer_subscriptions',
+  );
+  await queryClient.unsafe(`
+    CREATE TRIGGER delay_plan_race_student_for_test
+    BEFORE INSERT ON students
+    FOR EACH ROW
+    WHEN (NEW.name = 'Concorrente downgrade')
+    EXECUTE FUNCTION delay_plan_race_for_test()
+  `);
+  await queryClient.unsafe(`
+    CREATE TRIGGER delay_plan_race_subscription_for_test
+    BEFORE INSERT OR UPDATE ON trainer_subscriptions
+    FOR EACH ROW
+    WHEN (NEW.plan = 'starter')
+    EXECUTE FUNCTION delay_plan_race_for_test()
+  `);
+}
+
+async function removePlanRaceDelays() {
+  await queryClient.unsafe('DROP TRIGGER IF EXISTS delay_plan_race_student_for_test ON students');
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_plan_race_subscription_for_test ON trainer_subscriptions',
+  );
+  await queryClient.unsafe('DROP FUNCTION IF EXISTS delay_plan_race_for_test()');
 }
 
 beforeEach(async () => {
@@ -108,6 +146,56 @@ describe('billing', () => {
     expect(response.statusCode).toBe(409);
     expect(response.json()).toEqual({ error: 'O plano selecionado aceita até 15 alunos ativos.' });
     expect(await db.query.billingInvoices.findMany()).toHaveLength(0);
+  });
+
+  it('serializa downgrade concorrente com ativação sem produzir plano acima do limite', async () => {
+    const trainer = await signupTrainer('billing-race@example.com');
+    await db
+      .update(schema.trainers)
+      .set({ plan: 'pro' })
+      .where(eq(schema.trainers.id, trainer.profileId));
+    await db.insert(schema.students).values(
+      Array.from({ length: 15 }, (_, index) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name: `Aluno existente ${index + 1}`,
+        status: 'active' as const,
+      })),
+    );
+    await installPlanRaceDelays();
+
+    try {
+      const [downgrade, activation] = await Promise.all([
+        app.inject({
+          method: 'PATCH',
+          url: '/trainers/me/subscription',
+          headers: { cookie: trainer.cookie },
+          payload: { plan: 'starter', billingInterval: 'monthly' },
+        }),
+        app.inject({
+          method: 'POST',
+          url: '/students',
+          headers: { cookie: trainer.cookie },
+          payload: { name: 'Concorrente downgrade' },
+        }),
+      ]);
+
+      expect([downgrade.statusCode, activation.statusCode]).toContain(409);
+      expect([200, 201]).toContain(
+        [downgrade.statusCode, activation.statusCode].find((status) => status !== 409),
+      );
+
+      const [persistedTrainer, activeStudents] = await Promise.all([
+        db.query.trainers.findFirst({ where: eq(schema.trainers.id, trainer.profileId) }),
+        db.query.students.findMany({ where: eq(schema.students.trainerId, trainer.profileId) }),
+      ]);
+      const activeStudentCount = activeStudents.filter(
+        (student) => student.status === 'active',
+      ).length;
+      expect(persistedTrainer?.plan === 'starter' && activeStudentCount > 15).toBe(false);
+    } finally {
+      await removePlanRaceDelays();
+    }
   });
 
   it('retorna somente a fatura pertencente ao treinador autenticado', async () => {
