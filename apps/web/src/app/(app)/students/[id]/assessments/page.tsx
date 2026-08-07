@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, ClipboardList, Plus } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EvolutionChart } from './_chart';
+import { MetricEvolutionChart } from './_chart';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -119,6 +119,9 @@ export default async function AssessmentsListPage({ params }: Props) {
             Não foi possível carregar as avaliações.
           </h2>
           <p className="text-sm text-muted-foreground">Tente novamente em alguns instantes.</p>
+          <Button asChild variant="secondary">
+            <Link href={`/students/${id}/assessments`}>Tentar novamente</Link>
+          </Button>
         </Card>
       ) : items.length === 0 ? (
         <Card className="items-center py-14 text-center">
@@ -174,10 +177,26 @@ export default async function AssessmentsListPage({ params }: Props) {
           </Card>
 
           <div className="flex min-w-0 flex-col gap-5">
-            <Card>
-              <h2 className="font-display text-base font-semibold">Evolução</h2>
-              <EvolutionChart points={series} />
-            </Card>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card>
+                <MetricEvolutionChart
+                  title="Peso ao longo do tempo"
+                  metricLabel="Peso"
+                  unit="kg"
+                  color="var(--primary)"
+                  points={series.map((point) => ({ date: point.date, value: point.weight }))}
+                />
+              </Card>
+              <Card>
+                <MetricEvolutionChart
+                  title="Gordura corporal ao longo do tempo"
+                  metricLabel="Gordura corporal"
+                  unit="%"
+                  color="var(--secondary)"
+                  points={series.map((point) => ({ date: point.date, value: point.bodyFat }))}
+                />
+              </Card>
+            </div>
             <Comparison assessments={items.slice(0, 3).reverse()} />
             {latest && <LatestDetails assessment={latest} />}
           </div>

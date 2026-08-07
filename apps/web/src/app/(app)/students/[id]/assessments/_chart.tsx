@@ -10,84 +10,148 @@ import {
   YAxis,
 } from 'recharts';
 
-interface Point {
-  date: string;
-  weight: number | null;
-  bodyFat: number | null;
+export type MetricPoint = { date: string; value: number | null };
+
+type MetricEvolutionChartProps = {
+  title: string;
+  metricLabel: string;
+  unit: string;
+  color: string;
+  points: MetricPoint[];
+};
+
+function dateFrom(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
 }
 
-function formatChartDate(date: string): string {
+function formatShortDate(value: string): string {
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(
-    new Date(date),
+    dateFrom(value),
   );
 }
 
-export function EvolutionChart({ points }: { points: Point[] }) {
-  const weights = points.map((p) => p.weight).filter((v): v is number => v !== null);
-  const fats = points.map((p) => p.bodyFat).filter((v): v is number => v !== null);
-  if (weights.length < 2 && fats.length < 2) {
-    return <p className="text-sm text-muted-foreground">Sem dados suficientes para o gráfico.</p>;
+function formatFullDate(value: string): string {
+  return new Intl.DateTimeFormat('pt-BR').format(dateFrom(value));
+}
+
+function formatValue(value: number, unit: string): string {
+  return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}${unit ? ` ${unit}` : ''}`;
+}
+
+function formatDelta(value: number, unit: string): string {
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  return `${sign}${formatValue(Math.abs(value), unit)}`;
+}
+
+function trendLabel(delta: number): string {
+  if (delta < 0) return 'Tendência de redução';
+  if (delta > 0) return 'Tendência de aumento';
+  return 'Sem alteração no período';
+}
+
+export function MetricEvolutionChart({
+  title,
+  metricLabel,
+  unit,
+  color,
+  points,
+}: MetricEvolutionChartProps) {
+  const recorded = points
+    .map((point, index) => ({ ...point, chartId: `${point.date}-${index}` }))
+    .filter(
+      (point): point is MetricPoint & { value: number; chartId: string } => point.value !== null,
+    );
+
+  const first = recorded.at(0);
+  if (!first) {
+    return (
+      <section className="flex flex-col gap-3">
+        <h2 className="font-display text-base font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">
+          Sem dados de {metricLabel.toLocaleLowerCase('pt-BR')} registrados.
+        </p>
+      </section>
+    );
   }
 
-  const data = points.map((point, index) => ({
-    ...point,
-    chartId: `${point.date}-${index}`,
-    label: formatChartDate(point.date),
-  }));
+  const latest = recorded.at(-1) ?? first;
+  const periodDelta = latest.value - first.value;
+  const chartData = recorded.map((point) => ({ ...point, label: formatShortDate(point.date) }));
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex gap-6 text-xs">
-        <Legend color="var(--primary)" label="Peso (kg)" />
-        <Legend color="var(--secondary)" label="% Gordura" />
+    <section className="flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-base font-semibold">{title}</h2>
+          <p className="mt-1 text-sm font-medium">Atual: {formatValue(latest.value, unit)}</p>
+        </div>
+        <div className="text-right text-xs">
+          <p className={periodDelta <= 0 ? 'text-success' : 'text-warning'}>
+            Variação: {formatDelta(periodDelta, unit)}
+          </p>
+          <p className="mt-1 text-muted-foreground">{trendLabel(periodDelta)}</p>
+        </div>
       </div>
-      <div
-        className="h-[220px] w-full"
-        role="img"
-        aria-label="Evolução de peso e percentual de gordura"
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 20, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
-            <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
-            <YAxis tickLine={false} axisLine={false} fontSize={12} width={34} />
-            <Tooltip />
-            {weights.length >= 2 && (
-              <Line
-                type="monotone"
-                dataKey="weight"
-                name="Peso (kg)"
-                stroke="var(--primary)"
-                strokeWidth={2.5}
-                dot={{ r: 3.5, fill: 'var(--primary)', strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-                connectNulls
-              />
-            )}
-            {fats.length >= 2 && (
-              <Line
-                type="monotone"
-                dataKey="bodyFat"
-                name="% Gordura"
-                stroke="var(--secondary)"
-                strokeWidth={2.5}
-                dot={{ r: 3.5, fill: 'var(--secondary)', strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-                connectNulls
-              />
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 text-muted-foreground">
-      <span className="h-2 w-4 rounded-pill" style={{ backgroundColor: color }} />
-      {label}
-    </span>
+      {recorded.length >= 2 ? (
+        <div
+          className="h-44 w-full"
+          role="img"
+          aria-label={`Gráfico de evolução de ${metricLabel}`}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                fontSize={12}
+                width={36}
+                domain={['auto', 'auto']}
+              />
+              <Tooltip formatter={(value) => formatValue(Number(value), unit)} />
+              <Line
+                type="monotone"
+                dataKey="value"
+                name={metricLabel}
+                stroke={color}
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: color, strokeWidth: 0 }}
+                activeDot={{ r: 5 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Apenas uma observação; ainda não há tendência gráfica.
+        </p>
+      )}
+
+      <table aria-label={`Dados de evolução de ${metricLabel}`} className="sr-only">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>{metricLabel}</th>
+            <th>Variação desde a medição anterior</th>
+          </tr>
+        </thead>
+        <tbody>
+          {recorded.map((point, index) => {
+            const previous = recorded[index - 1];
+            return (
+              <tr key={point.chartId}>
+                <td>{formatFullDate(point.date)}</td>
+                <td>{formatValue(point.value, unit)}</td>
+                <td>
+                  {previous ? formatDelta(point.value - previous.value, unit) : 'Primeira medição'}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </section>
   );
 }

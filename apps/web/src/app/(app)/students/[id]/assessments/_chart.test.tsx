@@ -1,50 +1,72 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { EvolutionChart } from './_chart';
+import { MetricEvolutionChart } from './_chart';
 
-describe('EvolutionChart', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+describe('MetricEvolutionChart', () => {
+  afterEach(() => vi.restoreAllMocks());
 
-  it('renderiza pontos com datas repetidas sem warning de key duplicada', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+  it('expõe resumo, tendência e todos os pontos em tabela acessível', () => {
     render(
-      <EvolutionChart
+      <MetricEvolutionChart
+        title="Peso ao longo do tempo"
+        metricLabel="Peso"
+        unit="kg"
+        color="var(--primary)"
         points={[
-          { date: '2026-06-24', weight: 68.4, bodyFat: 24.5 },
-          { date: '2026-06-24', weight: 68.1, bodyFat: 24.2 },
-          { date: '2026-06-25', weight: 67.9, bodyFat: 24.1 },
+          { date: '2026-04-24', value: 70 },
+          { date: '2026-05-24', value: null },
+          { date: '2026-06-24', value: 68.4 },
         ]}
       />,
     );
 
-    const hasDuplicateKeyWarning = consoleError.mock.calls.some((args) =>
-      args.join(' ').includes('Encountered two children with the same key'),
+    expect(screen.getByRole('heading', { name: 'Peso ao longo do tempo' })).toBeInTheDocument();
+    expect(screen.getByText('Atual: 68,4 kg')).toBeInTheDocument();
+    expect(screen.getByText('Variação: −1,6 kg')).toBeInTheDocument();
+    expect(screen.getByText('Tendência de redução')).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Dados de evolução de Peso' });
+    expect(within(table).getAllByRole('row')).toHaveLength(3);
+    expect(within(table).getByText('24/04/2026')).toBeInTheDocument();
+    expect(within(table).getByText('24/06/2026')).toBeInTheDocument();
+    expect(within(table).getByText('−1,6 kg')).toBeInTheDocument();
+  });
+
+  it('mantém um estado honesto quando a métrica não foi registrada', () => {
+    render(
+      <MetricEvolutionChart
+        title="Gordura corporal ao longo do tempo"
+        metricLabel="Gordura corporal"
+        unit="%"
+        color="var(--secondary)"
+        points={[{ date: '2026-06-24', value: null }]}
+      />,
     );
 
-    expect(hasDuplicateKeyWarning).toBe(false);
+    expect(screen.getByText('Sem dados de gordura corporal registrados.')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it('explica quando não há duas observações da mesma métrica', () => {
-    render(<EvolutionChart points={[{ date: '2026-06-24', weight: 68.4, bodyFat: null }]} />);
-
-    expect(screen.getByText('Sem dados suficientes para o gráfico.')).toBeInTheDocument();
-  });
-
-  it('expõe uma descrição acessível quando há série comparável', () => {
+  it('renderiza datas repetidas sem warning de key duplicada', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(
-      <EvolutionChart
+      <MetricEvolutionChart
+        title="Peso ao longo do tempo"
+        metricLabel="Peso"
+        unit="kg"
+        color="var(--primary)"
         points={[
-          { date: '2026-05-24', weight: 70, bodyFat: 20 },
-          { date: '2026-06-24', weight: 68.4, bodyFat: 18 },
+          { date: '2026-06-24', value: 68.4 },
+          { date: '2026-06-24', value: 68.1 },
+          { date: '2026-06-25', value: 67.9 },
         ]}
       />,
     );
 
     expect(
-      screen.getByRole('img', { name: 'Evolução de peso e percentual de gordura' }),
-    ).toBeInTheDocument();
+      consoleError.mock.calls.some((args) =>
+        args.join(' ').includes('Encountered two children with the same key'),
+      ),
+    ).toBe(false);
   });
 });

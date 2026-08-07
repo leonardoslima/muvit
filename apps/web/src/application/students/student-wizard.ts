@@ -7,13 +7,18 @@ export type StudentWizardDraft = {
   birthDate: string;
   gender: StudentGender | '';
   goals: string;
+  trainingDays: string;
   restrictions: string;
+  internalNotes: string;
 };
 
 export type StudentWizardErrors = Partial<Record<keyof StudentWizardDraft, string>>;
 
 type BasicStep = Pick<StudentWizardDraft, 'name' | 'email' | 'phone'>;
-type GoalsStep = Pick<StudentWizardDraft, 'goals' | 'restrictions'>;
+type GoalsStep = Pick<
+  StudentWizardDraft,
+  'goals' | 'trainingDays' | 'restrictions' | 'internalNotes'
+>;
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,11 +32,21 @@ export function validateBasicStep(step: BasicStep): StudentWizardErrors {
 
 export function validateGoalsStep(step: GoalsStep): StudentWizardErrors {
   if (!step.goals.trim()) return { goals: 'Informe o objetivo principal.' };
+  if (!step.trainingDays.trim()) {
+    return { trainingDays: 'Informe os dias de treino por semana.' };
+  }
   return {};
 }
 
 export function buildCreateStudentPayload(draft: StudentWizardDraft) {
   const optional = (value: string): string | undefined => value.trim() || undefined;
+  const goals = `${draft.goals.trim()}; ${draft.trainingDays.trim()} dias por semana`;
+  const restrictions = [
+    draft.restrictions.trim(),
+    draft.internalNotes.trim() ? `Notas internas: ${draft.internalNotes.trim()}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
   return {
     name: draft.name.trim(),
@@ -39,8 +54,8 @@ export function buildCreateStudentPayload(draft: StudentWizardDraft) {
     phone: optional(draft.phone),
     birthDate: optional(draft.birthDate),
     gender: draft.gender || undefined,
-    goals: optional(draft.goals),
-    restrictions: optional(draft.restrictions),
+    goals,
+    restrictions: optional(restrictions),
     status: 'active' as const,
   };
 }

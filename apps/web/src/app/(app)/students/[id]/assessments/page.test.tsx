@@ -64,6 +64,10 @@ describe('AssessmentsListPage', () => {
     render(await AssessmentsListPage({ params: Promise.resolve({ id: 'student-1' }) }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar as avaliações.');
+    expect(screen.getByRole('link', { name: 'Tentar novamente' })).toHaveAttribute(
+      'href',
+      '/students/student-1/assessments',
+    );
     expect(screen.queryByText('Nenhuma avaliação registrada ainda.')).not.toBeInTheDocument();
   });
 
@@ -113,13 +117,45 @@ describe('AssessmentsListPage', () => {
     );
 
     expect(screen.getByRole('table', { name: 'Comparação de avaliações' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Peso ao longo do tempo' })).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: 'Evolução de peso e percentual de gordura' }),
+      screen.getByRole('heading', { name: 'Gordura corporal ao longo do tempo' }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Gráfico de evolução de Peso' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: 'Gráfico de evolução de Gordura corporal' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Atual: 60 kg')).toBeInTheDocument();
+    expect(screen.getByText('Variação: −2,5 kg')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Foto de progresso de 15/05/2026' })).toHaveAttribute(
       'src',
       'https://cdn.test/front.jpg',
     );
-    expect(container.querySelector('[data-responsive-layout="assessment-history"]')).toBeTruthy();
+    expect(container.querySelector('[data-responsive-layout="assessment-history"]')).toHaveClass(
+      'flex',
+      'flex-col',
+    );
+    expect(container.querySelector('[class~="xl:grid-cols-[260px_minmax(0,1fr)]"]')).toBeTruthy();
+    expect(container.querySelector('[class~="lg:grid-cols-2"]')).toBeTruthy();
+  });
+
+  it('não desenha série de gordura quando apenas o peso foi medido', async () => {
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({
+        items: [
+          { ...assessment, id: 'assessment-2', date: '2026-05-15', weightKg: 60, bodyFatPct: null },
+          { ...assessment, bodyFatPct: null },
+        ],
+        total: 2,
+      }),
+    );
+
+    render(await AssessmentsListPage({ params: Promise.resolve({ id: 'student-1' }) }));
+
+    expect(screen.getByRole('img', { name: 'Gráfico de evolução de Peso' })).toBeInTheDocument();
+    expect(screen.getByText('Sem dados de gordura corporal registrados.')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', { name: 'Gráfico de evolução de Gordura corporal' }),
+    ).not.toBeInTheDocument();
   });
 });
