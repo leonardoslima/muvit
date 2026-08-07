@@ -51551,7 +51551,7 @@
               "id": "X3oLz0",
               "x": 171,
               "y": 6,
-              "name": "Aba Evolução",
+              "name": "Aba auxiliar desabilitada",
               "enabled": false,
               "width": 0,
               "height": 0,
@@ -51560,29 +51560,7 @@
               "layout": "vertical",
               "gap": 2,
               "justifyContent": "center",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon",
-                  "id": "f7AfOM",
-                  "name": "Ícone Evolução",
-                  "width": 18,
-                  "height": 18,
-                  "icon": "chart-no-axes-column-increasing",
-                  "library": "lucide",
-                  "fill": "$--muted-foreground"
-                },
-                {
-                  "type": "text",
-                  "id": "ovgRe",
-                  "name": "Rótulo Evolução",
-                  "fill": "$--muted-foreground",
-                  "content": "Evolução",
-                  "fontFamily": "$--font-secondary",
-                  "fontSize": 10,
-                  "fontWeight": "normal"
-                }
-              ]
+              "alignItems": "center"
             },
             {
               "type": "frame",
@@ -52277,7 +52255,15 @@
               "content": "Estamos preparando seus dados. Isso leva só alguns segundos."
             },
             "Asvyg": {
-              "enabled": false
+              "type": "frame",
+              "id": "M4EgiP",
+              "x": 0,
+              "y": 0,
+              "name": "Slot de ação desabilitado",
+              "enabled": false,
+              "width": 0,
+              "height": 0,
+              "layout": "vertical"
             }
           }
         },
@@ -56985,12 +56971,6 @@
                       "width": 0,
                       "height": 0,
                       "opacity": 0
-                    },
-                    "f7AfOM": {
-                      "enabled": true
-                    },
-                    "ovgRe": {
-                      "enabled": true
                     },
                     "lAkFa": {
                       "name": "Aba Perfil",
