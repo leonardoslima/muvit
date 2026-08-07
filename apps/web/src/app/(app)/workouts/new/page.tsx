@@ -1,3 +1,4 @@
+import { AppContentSurface } from '@/components/app-content-surface';
 import { TopBar } from '@/components/top-bar';
 import { configureServerClient } from '@/lib/api-client';
 import { getExercises, getStudentsById } from '@/lib/api/sdk.gen';
@@ -30,7 +31,7 @@ export default async function NewWorkoutPage({
   }>;
 
   return (
-    <>
+    <AppContentSurface>
       <Link
         href="/workouts"
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -39,6 +40,6 @@ export default async function NewWorkoutPage({
       </Link>
       <TopBar title="Novo treino" subtitle={`Para ${student.name}`} />
       <WorkoutEditor studentId={student.id} exercises={exercises} />
-    </>
+    </AppContentSurface>
   );
 }

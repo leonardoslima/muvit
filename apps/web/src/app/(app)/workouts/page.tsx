@@ -1,3 +1,4 @@
+import { AppContentSurface } from '@/components/app-content-surface';
 import { TopBar } from '@/components/top-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,7 @@ export default async function WorkoutsPage() {
   }>;
 
   return (
-    <>
+    <AppContentSurface>
       <TopBar
         title="Treinos"
         subtitle="Selecione um aluno para criar ou editar treinos."
@@ -53,6 +54,6 @@ export default async function WorkoutsPage() {
           ))
         )}
       </section>
-    </>
+    </AppContentSurface>
   );
 }

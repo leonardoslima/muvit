@@ -1,6 +1,7 @@
 import { getExercises } from '@/lib/api/sdk.gen';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import WorkoutsLayout from '../layout';
 import NewWorkoutPage from './page';
 
 vi.mock('@/components/top-bar', () => ({ TopBar: () => <div>Novo treino</div> }));
@@ -34,7 +35,15 @@ describe('NewWorkoutPage', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('carrega exercicios com o limite aceito pela API para preencher o seletor', async () => {
-    render(await NewWorkoutPage({ searchParams: Promise.resolve({ studentId: 'student-1' }) }));
+    render(
+      <WorkoutsLayout>
+        {await NewWorkoutPage({ searchParams: Promise.resolve({ studentId: 'student-1' }) })}
+      </WorkoutsLayout>,
+    );
+
+    const legacySurface = screen.getByText('Novo treino').closest('[data-app-content="padded"]');
+    expect(legacySurface).toHaveClass('gap-7', 'px-4', 'py-6', 'lg:px-10', 'lg:py-8');
+    expect(legacySurface?.parentElement).toHaveAttribute('data-app-content', 'full-height');
 
     expect(getExercises).toHaveBeenCalledWith(
       expect.objectContaining({
