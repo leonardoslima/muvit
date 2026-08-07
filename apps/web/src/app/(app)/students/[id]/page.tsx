@@ -28,7 +28,9 @@ type Student = {
   birthDate: string | null;
   gender: 'male' | 'female' | 'other' | null;
   goals: string | null;
+  trainingDays: number | null;
   restrictions: string | null;
+  internalNotes?: string | null;
   status: 'active' | 'inactive' | 'paused';
   isIndependent: boolean;
   createdAt: string;

@@ -71,6 +71,7 @@ function mockStudents(total = 1) {
           birthDate: null,
           gender: 'female',
           goals: null,
+          trainingDays: null,
           restrictions: null,
           status: 'active',
           avatarUrl: null,

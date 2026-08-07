@@ -12,7 +12,9 @@ type StudentBody = {
   birthDate?: string;
   gender?: StudentGender;
   goals?: string;
+  trainingDays?: number;
   restrictions?: string;
+  internalNotes?: string;
   status?: StudentStatus;
 };
 
@@ -44,7 +46,9 @@ export function buildCreateStudentBody(formData: FormData): CreateStudentResult 
       birthDate: readOptionalTrimmed(formData, 'birthDate'),
       gender: readStudentGender(formData),
       goals: readOptionalTrimmed(formData, 'goals'),
+      trainingDays: readTrainingDays(formData),
       restrictions: readOptionalTrimmed(formData, 'restrictions'),
+      internalNotes: readOptionalTrimmed(formData, 'internalNotes'),
       status: readStudentStatus(formData) ?? 'active',
     },
   };
@@ -64,7 +68,9 @@ export function buildUpdateStudentBody(formData: FormData): UpdateStudentResult 
       birthDate: readOptionalTrimmed(formData, 'birthDate'),
       gender: readStudentGender(formData),
       goals: readOptionalTrimmed(formData, 'goals'),
+      trainingDays: readTrainingDays(formData),
       restrictions: readOptionalTrimmed(formData, 'restrictions'),
+      internalNotes: readOptionalTrimmed(formData, 'internalNotes'),
       status: readStudentStatus(formData),
     },
   };
@@ -80,4 +86,11 @@ function readStudentStatus(formData: FormData): StudentStatus | undefined {
   return value && studentStatuses.has(value as StudentStatus)
     ? (value as StudentStatus)
     : undefined;
+}
+
+function readTrainingDays(formData: FormData): number | undefined {
+  const value = readOptionalTrimmed(formData, 'trainingDays');
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 7 ? parsed : undefined;
 }

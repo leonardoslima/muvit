@@ -16,7 +16,9 @@ describe('StudentForm', () => {
           birthDate: '2000-01-01',
           gender: 'female',
           goals: 'Hipertrofia',
+          trainingDays: 4,
           restrictions: 'Joelho',
+          internalNotes: 'Prefere horários matinais.',
           status: 'paused',
         }}
       />,
@@ -29,7 +31,9 @@ describe('StudentForm', () => {
     expect(screen.getByLabelText('Sexo')).toHaveValue('female');
     expect(screen.getByLabelText('Status')).toHaveValue('paused');
     expect(screen.getByLabelText('Objetivos')).toHaveValue('Hipertrofia');
+    expect(screen.getByLabelText('Dias de treino por semana')).toHaveValue(4);
     expect(screen.getByLabelText(/Restri/i)).toHaveValue('Joelho');
+    expect(screen.getByLabelText('Notas internas')).toHaveValue('Prefere horários matinais.');
     expect(screen.getByRole('button', { name: 'Atualizar aluno' })).toBeEnabled();
   });
 

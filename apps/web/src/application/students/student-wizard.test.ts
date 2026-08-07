@@ -44,8 +44,12 @@ describe('student wizard', () => {
       name: 'Maria Costa',
       email: 'maria@example.com',
       phone: '+55 11 99999-9999',
-      goals: 'Hipertrofia; nível intermediário; 4 dias por semana',
-      restrictions: 'Dor leve no ombro direito.\n\nNotas internas: Prefere treinar pela manhã.',
+      birthDate: undefined,
+      gender: undefined,
+      goals: 'Hipertrofia; nível intermediário',
+      trainingDays: 4,
+      restrictions: 'Dor leve no ombro direito.',
+      internalNotes: 'Prefere treinar pela manhã.',
       status: 'active',
     });
   });

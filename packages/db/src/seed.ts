@@ -100,10 +100,18 @@ export async function seedDemoData(
       )
       .returning();
     if (!trainer) throw new Error('missing provisioned demo trainer profile');
-    await transaction.delete(schema.billingInvoices).where(eq(schema.billingInvoices.trainerId, trainer.id));
-    await transaction.delete(schema.trainerSubscriptions).where(eq(schema.trainerSubscriptions.trainerId, trainer.id));
-    await transaction.insert(schema.trainerSubscriptions).values({ ...scenario.trainerSubscription, trainerId: trainer.id });
-    await transaction.insert(schema.billingInvoices).values(scenario.billingInvoices.map((invoice) => ({ ...invoice, trainerId: trainer.id })));
+    await transaction
+      .delete(schema.billingInvoices)
+      .where(eq(schema.billingInvoices.trainerId, trainer.id));
+    await transaction
+      .delete(schema.trainerSubscriptions)
+      .where(eq(schema.trainerSubscriptions.trainerId, trainer.id));
+    await transaction
+      .insert(schema.trainerSubscriptions)
+      .values({ ...scenario.trainerSubscription, trainerId: trainer.id });
+    await transaction
+      .insert(schema.billingInvoices)
+      .values(scenario.billingInvoices.map((invoice) => ({ ...invoice, trainerId: trainer.id })));
 
     const [independentStudent] = await transaction
       .update(schema.students)
@@ -117,7 +125,9 @@ export async function seedDemoData(
         birthDate: scenarioIndependentStudent.birthDate,
         gender: scenarioIndependentStudent.gender,
         goals: scenarioIndependentStudent.goals,
+        trainingDays: scenarioIndependentStudent.trainingDays,
         restrictions: scenarioIndependentStudent.restrictions,
+        internalNotes: scenarioIndependentStudent.internalNotes,
         status: scenarioIndependentStudent.status,
         avatarUrl: scenarioIndependentStudent.avatarUrl,
         expoPushToken: scenarioIndependentStudent.expoPushToken,

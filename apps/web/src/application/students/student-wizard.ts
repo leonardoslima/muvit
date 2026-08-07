@@ -40,13 +40,6 @@ export function validateGoalsStep(step: GoalsStep): StudentWizardErrors {
 
 export function buildCreateStudentPayload(draft: StudentWizardDraft) {
   const optional = (value: string): string | undefined => value.trim() || undefined;
-  const goals = `${draft.goals.trim()}; ${draft.trainingDays.trim()} dias por semana`;
-  const restrictions = [
-    draft.restrictions.trim(),
-    draft.internalNotes.trim() ? `Notas internas: ${draft.internalNotes.trim()}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n');
 
   return {
     name: draft.name.trim(),
@@ -54,8 +47,10 @@ export function buildCreateStudentPayload(draft: StudentWizardDraft) {
     phone: optional(draft.phone),
     birthDate: optional(draft.birthDate),
     gender: draft.gender || undefined,
-    goals,
-    restrictions: optional(restrictions),
+    goals: optional(draft.goals),
+    trainingDays: Number(draft.trainingDays),
+    restrictions: optional(draft.restrictions),
+    internalNotes: optional(draft.internalNotes),
     status: 'active' as const,
   };
 }

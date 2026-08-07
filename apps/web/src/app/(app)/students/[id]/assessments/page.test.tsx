@@ -29,6 +29,7 @@ const student = {
   birthDate: null,
   gender: 'female' as const,
   goals: null,
+  trainingDays: null,
   restrictions: null,
   status: 'active' as const,
   avatarUrl: null,

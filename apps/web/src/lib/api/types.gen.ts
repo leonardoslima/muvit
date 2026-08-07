@@ -496,11 +496,13 @@ export type GetStudentsResponses = {
             birthDate: string | null;
             gender: 'male' | 'female' | 'other';
             goals: string | null;
+            trainingDays: number | null;
             restrictions: string | null;
             status: 'active' | 'inactive' | 'paused';
             avatarUrl: string | null;
             expoPushToken: string | null;
             createdAt: string;
+            internalNotes?: string | null;
         }>;
         total: number;
     };
@@ -516,7 +518,9 @@ export type PostStudentsData = {
         birthDate?: string;
         gender?: 'male' | 'female' | 'other';
         goals?: string;
+        trainingDays?: number;
         restrictions?: string;
+        internalNotes?: string;
         status?: 'active' | 'inactive' | 'paused';
     };
     path?: never;
@@ -549,11 +553,13 @@ export type PostStudentsResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 
@@ -615,11 +621,13 @@ export type GetStudentsByIdResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 
@@ -633,7 +641,9 @@ export type PatchStudentsByIdData = {
         birthDate?: string;
         gender?: 'male' | 'female' | 'other';
         goals?: string;
+        trainingDays?: number;
         restrictions?: string;
+        internalNotes?: string;
         status?: 'active' | 'inactive' | 'paused';
     };
     path: {
@@ -674,11 +684,13 @@ export type PatchStudentsByIdResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 

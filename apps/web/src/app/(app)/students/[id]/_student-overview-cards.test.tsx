@@ -9,7 +9,9 @@ const student = {
   phone: '+55 11 90000-0000',
   gender: 'female' as const,
   goals: 'Ganhar massa muscular.',
+  trainingDays: 4,
   restrictions: 'Evitar impacto alto no joelho direito.',
+  internalNotes: 'Prefere treinar pela manhã.',
   isIndependent: false,
 };
 
@@ -47,6 +49,11 @@ describe('cards da visao geral do estudante', () => {
     expect(screen.getByRole('heading', { name: /Informa.*es pessoais/ })).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     expect(screen.getByText('Evitar impacto alto no joelho direito.')).toBeInTheDocument();
+    expect(screen.getByText('4 dias por semana')).toBeInTheDocument();
+    expect(screen.getByText('Prefere treinar pela manhã.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Prefere treinar pela manhã.').closest('[data-internal-notes]'),
+    ).not.toBeNull();
   });
 
   it('renderiza o treino ativo e suas acoes', () => {

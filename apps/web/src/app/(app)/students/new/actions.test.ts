@@ -20,12 +20,23 @@ describe('createStudentAction', () => {
     const formData = new FormData();
     formData.set('name', 'Maria Costa');
     formData.set('goals', 'Hipertrofia');
+    formData.set('trainingDays', '4');
+    formData.set('internalNotes', '  Prefere treinar pela manhã.  ');
 
     await expect(createStudentAction(null, formData)).resolves.toEqual({
       studentId: 'student-42',
     });
 
     expect(mocks.postStudents).toHaveBeenCalledTimes(1);
+    expect(mocks.postStudents).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          goals: 'Hipertrofia',
+          trainingDays: 4,
+          internalNotes: 'Prefere treinar pela manhã.',
+        }),
+      }),
+    );
     expect(mocks.revalidatePath).toHaveBeenCalledWith('/students');
   });
 

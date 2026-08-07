@@ -217,6 +217,63 @@ describe('students', () => {
     expect(res.json().trainerId).toBe(trainer.profileId);
   });
 
+  it('persiste e retorna frequência e notas internas sem achatar os campos', async () => {
+    const trainer = await signupTrainer(app, 'roundtrip@example.com');
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: {
+        name: 'Aluno com contexto',
+        goals: 'Hipertrofia',
+        restrictions: 'Dor no ombro',
+        trainingDays: 4,
+        internalNotes: '  Prefere treinar pela manhã.  ',
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: 4,
+      internalNotes: 'Prefere treinar pela manhã.',
+    });
+
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/students/${created.json().id}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(fetched.json()).toMatchObject({
+      trainingDays: 4,
+      internalNotes: 'Prefere treinar pela manhã.',
+    });
+  });
+
+  it('não expõe notas internas quando o próprio aluno consulta seu perfil', async () => {
+    const student = await signUpWithSession(app, {
+      name: 'Aluno privado',
+      email: 'private-student@example.com',
+      password: '12345678',
+      role: 'student',
+    });
+    await queryClient.unsafe(
+      `UPDATE students SET internal_notes = 'Somente treinador' WHERE id = $1`,
+      [student.profileId],
+    );
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/students/${student.profileId}`,
+      headers: { cookie: student.cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).not.toHaveProperty('internalNotes');
+  });
+
   it('lists only my students', async () => {
     const trainer = await signupTrainer(app, 'a@a.com');
     const otherTrainer = await signupTrainer(app, 'b@b.com');

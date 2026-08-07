@@ -14,7 +14,9 @@ export type StudentFormValues = {
   birthDate?: string | null;
   gender?: 'male' | 'female' | 'other' | null;
   goals?: string | null;
+  trainingDays?: number | null;
   restrictions?: string | null;
+  internalNotes?: string | null;
   status?: 'active' | 'inactive' | 'paused';
 };
 
@@ -81,10 +83,21 @@ export function StudentForm({ action, initial, submitLabel = 'Salvar' }: Props) 
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <TextArea label="Objetivos" name="goals" defaultValue={initial?.goals ?? ''} />
+        <Field
+          label="Dias de treino por semana"
+          name="trainingDays"
+          type="number"
+          defaultValue={initial?.trainingDays?.toString() ?? ''}
+        />
         <TextArea
           label="Restrições"
           name="restrictions"
           defaultValue={initial?.restrictions ?? ''}
+        />
+        <TextArea
+          label="Notas internas"
+          name="internalNotes"
+          defaultValue={initial?.internalNotes ?? ''}
         />
       </div>
 

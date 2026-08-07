@@ -7,7 +7,9 @@ export type PersonalInfoStudent = {
   phone: string | null;
   gender: 'male' | 'female' | 'other' | null;
   goals: string | null;
+  trainingDays: number | null;
   restrictions: string | null;
+  internalNotes?: string | null;
   isIndependent: boolean;
 };
 
@@ -63,6 +65,14 @@ export function PersonalInfoCard({ student }: { student: PersonalInfoStudent }) 
           <InfoRow label="Gênero" value={formatStudentGender(student.gender)} />
         </div>
         <InfoRow label="Objetivos" value={student.goals ?? 'Nenhum objetivo registrado.'} />
+        <InfoRow
+          label="Frequência de treino"
+          value={
+            student.trainingDays === null
+              ? 'Não informada'
+              : `${student.trainingDays} dias por semana`
+          }
+        />
         <div className="flex flex-col gap-1.5">
           <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {'Restrições físicas'}
@@ -73,6 +83,12 @@ export function PersonalInfoCard({ student }: { student: PersonalInfoStudent }) 
               {student.restrictions ?? 'Nenhuma restrição registrada.'}
             </p>
           </div>
+        </div>
+        <div data-internal-notes>
+          <InfoRow
+            label="Notas internas"
+            value={student.internalNotes ?? 'Nenhuma nota interna registrada.'}
+          />
         </div>
       </CardContent>
     </Card>

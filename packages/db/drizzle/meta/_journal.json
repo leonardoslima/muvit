@@ -50,6 +50,13 @@
       "when": 1786116499469,
       "tag": "0006_gifted_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786135432278,
+      "tag": "0007_dizzy_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

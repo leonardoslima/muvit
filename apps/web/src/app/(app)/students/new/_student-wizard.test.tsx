@@ -33,6 +33,17 @@ describe('StudentWizard', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Informe o nome.');
   });
 
+  it('foca o e-mail quando o nome é válido e o e-mail é o primeiro erro real', () => {
+    render(<StudentWizard action={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Nome completo'), { target: { value: 'Maria Costa' } });
+    fireEvent.change(screen.getByLabelText('E-mail'), { target: { value: 'email inválido' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(screen.getByLabelText('E-mail')).toHaveFocus();
+    expect(screen.getByLabelText('E-mail')).toHaveAttribute('aria-invalid', 'true');
+  });
+
   it('move o foco para a frequência quando ela é o campo inválido', () => {
     render(<StudentWizard action={vi.fn()} />);
     reachGoalsStep();

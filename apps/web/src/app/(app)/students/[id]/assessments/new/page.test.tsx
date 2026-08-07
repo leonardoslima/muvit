@@ -34,6 +34,7 @@ describe('NewAssessmentPage', () => {
         birthDate: null,
         gender: 'female',
         goals: null,
+        trainingDays: null,
         restrictions: null,
         status: 'active',
         avatarUrl: null,

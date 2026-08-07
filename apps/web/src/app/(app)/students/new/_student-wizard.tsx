@@ -78,14 +78,16 @@ export function StudentWizard({ action }: StudentWizardProps) {
   const [pending, startTransition] = useTransition();
   const submittingRef = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const firstGoalRef = useRef<HTMLButtonElement>(null);
   const firstTrainingDayRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (step === 1 && errors.name) nameRef.current?.focus();
+    if (step === 1 && !errors.name && errors.email) emailRef.current?.focus();
     if (step === 2 && errors.goals) firstGoalRef.current?.focus();
     if (step === 2 && !errors.goals && errors.trainingDays) firstTrainingDayRef.current?.focus();
-  }, [errors.goals, errors.name, errors.trainingDays, step]);
+  }, [errors.email, errors.goals, errors.name, errors.trainingDays, step]);
 
   const update = (field: keyof StudentWizardDraft, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -96,7 +98,8 @@ export function StudentWizard({ action }: StudentWizardProps) {
     const nextErrors = validateBasicStep(draft);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
-      nameRef.current?.focus();
+      if (nextErrors.name) nameRef.current?.focus();
+      else if (nextErrors.email) emailRef.current?.focus();
       return;
     }
     setStep(2);
@@ -114,7 +117,7 @@ export function StudentWizard({ action }: StudentWizardProps) {
 
     const formData = new FormData();
     for (const [key, value] of Object.entries(buildCreateStudentPayload(draft))) {
-      if (value !== undefined) formData.set(key, value);
+      if (value !== undefined) formData.set(key, String(value));
     }
 
     submittingRef.current = true;
@@ -184,6 +187,7 @@ export function StudentWizard({ action }: StudentWizardProps) {
                 className="sm:col-span-2"
               />
               <WizardField
+                ref={emailRef}
                 label="E-mail"
                 name="email"
                 type="email"
