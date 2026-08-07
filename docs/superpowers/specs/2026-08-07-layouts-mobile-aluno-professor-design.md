@@ -183,6 +183,42 @@ MUV-8 implementa as referências de aluno sem remover os comportamentos atuais. 
 
 Após criar os frames, o PR de design deve listar os nomes canônicos e os IDs devolvidos pelo Pencil para cada tela top-level. Assim, cada ticket dependente poderá apontar para uma referência estável sem depender de coordenadas no canvas.
 
+### Referências Pencil materializadas
+
+| Frame | Node ID |
+| --- | --- |
+| Mobile / Aluno / Cadastro / default | J6jZMI |
+| Mobile / Aluno / Cadastro / submitting-error | W7qGN |
+| Mobile / Aluno / Exercício / detalhes | TsKjV |
+| Mobile / Aluno / Hoje / carregando | jNGgW |
+| Mobile / Aluno / Hoje / erro | Uniw4 |
+| Mobile / Aluno / Hoje / sem-treino | nMLyN |
+| Mobile / Aluno / Hoje / treino-ativo | uJLDm |
+| Mobile / Aluno / Login / default | OII7y |
+| Mobile / Aluno / Login / submitting-error | P9kNT |
+| Mobile / Aluno / Nova avaliação / default | I2gzs |
+| Mobile / Aluno / Nova avaliação / enviando-erro-sucesso | CsaiW |
+| Mobile / Aluno / Perfil / default | q7wg2L |
+| Mobile / Aluno / Progresso / carregando-vazio-erro | U09sO |
+| Mobile / Aluno / Progresso / com-avaliações | nBQZW |
+| Mobile / Aluno / Registro de treino / carregando-erro | uPybj |
+| Mobile / Aluno / Registro de treino / default | nerHC |
+| Mobile / Aluno / Registro de treino / sucesso | jwmjt |
+| Mobile / Components — Muvit | t8V5h |
+| Mobile / Treinador / Aluno / carregando-erro | kf7yB |
+| Mobile / Treinador / Aluno / detalhe | SQrNm |
+| Mobile / Treinador / Alunos / carregando-vazio-erro | BVAl2 |
+| Mobile / Treinador / Alunos / lista | OWI03 |
+| Mobile / Treinador / Avaliação / detalhe | hogSh |
+| Mobile / Treinador / Avaliações / lista | xK7me |
+| Mobile / Treinador / Avaliações / vazio-erro | jjO3j |
+| Mobile / Treinador / Início / carregando-vazio-erro | zeMuT |
+| Mobile / Treinador / Início / default | LCAG3 |
+| Mobile / Treinador / Perfil / default | LReyn |
+| Mobile / Treinador / Treino / detalhe | bAwMI |
+| Mobile / Treinador / Treinos / lista | R3zGB |
+| Mobile / Treinador / Treinos / vazio-erro | r2cUN |
+
 ## Alternativas descartadas
 
 - Uma quarta aba de acompanhamento para treinador foi descartada porque avaliações e treinos pertencem ao contexto de um aluno e duplicariam a navegação.
