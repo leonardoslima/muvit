@@ -35573,49 +35573,6 @@
       ]
     },
     {
-      "type": "frame",
-      "id": "N2QFI",
-      "x": 0,
-      "y": 0,
-      "name": "header",
-      "width": "fill_container(0)",
-      "layout": "vertical",
-      "gap": 8,
-      "children": [
-        {
-          "type": "text",
-          "id": "Lx4I4",
-          "fill": "$--primary",
-          "content": "MUVIT",
-          "fontFamily": "$--font-primary",
-          "fontSize": 32,
-          "fontWeight": "700",
-          "letterSpacing": 3
-        },
-        {
-          "type": "text",
-          "id": "PdVXG",
-          "fill": "$--foreground",
-          "content": "Marketing Style Guide — Landing Page Extension",
-          "fontFamily": "$--font-primary",
-          "fontSize": 28,
-          "fontWeight": "700"
-        },
-        {
-          "type": "text",
-          "id": "CNz7e",
-          "fill": "$--muted-foreground",
-          "textGrowth": "fixed-width",
-          "width": "fill_container",
-          "content": "Same DNA as the dashboard, dialed up. Bold, expressive, aspirational — built for desktop 1440 and mobile 375.",
-          "lineHeight": 1.6,
-          "fontFamily": "$--font-secondary",
-          "fontSize": 15,
-          "fontWeight": "normal"
-        }
-      ]
-    },
-    {
       "type": "rectangle",
       "id": "X4pU3m",
       "x": 0,
