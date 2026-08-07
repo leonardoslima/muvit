@@ -1,5 +1,5 @@
 import { db, schema } from '@muvit/db';
-import { and, eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike, ne, sql } from 'drizzle-orm';
 import type {
   CreateStudentInput,
   ListStudentsQuery,
@@ -50,6 +50,36 @@ export class DrizzleStudentsRepository implements StudentsRepository {
       .where(and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)))
       .returning();
     return student ?? null;
+  }
+
+  async findStatusForTrainer(id: string, trainerId: string) {
+    const student = await db.query.students.findFirst({
+      columns: { status: true },
+      where: and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)),
+    });
+    return student?.status ?? null;
+  }
+
+  async getStudentPlanUsage(trainerId: string, excludingStudentId?: string) {
+    const trainer = await db.query.trainers.findFirst({
+      columns: { plan: true },
+      where: eq(schema.trainers.id, trainerId),
+    });
+    if (trainer === undefined) throw new Error('Treinador não encontrado');
+
+    const conditions = [
+      eq(schema.students.trainerId, trainerId),
+      eq(schema.students.status, 'active'),
+    ];
+    if (excludingStudentId !== undefined) {
+      conditions.push(ne(schema.students.id, excludingStudentId));
+    }
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.students)
+      .where(and(...conditions));
+
+    return { plan: trainer.plan, activeStudentCount: result[0]?.count ?? 0 };
   }
 
   async deleteForTrainer(id: string, trainerId: string) {

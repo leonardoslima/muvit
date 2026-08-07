@@ -31,6 +31,115 @@ afterAll(async () => {
 });
 
 describe('students', () => {
+  it('bloqueia o quarto aluno ativo no plano free', async () => {
+    const trainer = await signupTrainer(app, 'limit-free@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois', 'Três'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Quarto aluno' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({ error: 'Seu plano aceita até 3 alunos ativos.' });
+  });
+
+  it('bloqueia reativação acima do limite sem alterar o aluno', async () => {
+    const trainer = await signupTrainer(app, 'limit-reactivate@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois', 'Três'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+    const [pausedStudent] = await db
+      .insert(schema.students)
+      .values({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name: 'Aluno pausado',
+        status: 'paused',
+      })
+      .returning();
+    if (pausedStudent === undefined) throw new Error('fixture de aluno pausado não foi criada');
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/students/${pausedStudent.id}`,
+      headers: { cookie: trainer.cookie },
+      payload: { status: 'active' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    const persistedStudent = await db.query.students.findFirst({
+      where: eq(schema.students.id, pausedStudent.id),
+    });
+    expect(persistedStudent?.status).toBe('paused');
+  });
+
+  it('permite editar aluno já ativo quando o plano está no limite', async () => {
+    const trainer = await signupTrainer(app, 'limit-edit@example.com');
+    const createdStudents = await db
+      .insert(schema.students)
+      .values(
+        ['Um', 'Dois', 'Três'].map((name) => ({
+          trainerId: trainer.profileId,
+          isIndependent: false,
+          name,
+          status: 'active' as const,
+        })),
+      )
+      .returning();
+    const student = createdStudents[0];
+    if (student === undefined) throw new Error('fixture de aluno ativo não foi criada');
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/students/${student.id}`,
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Nome atualizado' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().name).toBe('Nome atualizado');
+  });
+
+  it('mantém o plano team sem limite de alunos ativos', async () => {
+    const trainer = await signupTrainer(app, 'limit-team@example.com');
+    await db
+      .update(schema.trainers)
+      .set({ plan: 'team' })
+      .where(eq(schema.trainers.id, trainer.profileId));
+    await db.insert(schema.students).values(
+      Array.from({ length: 51 }, (_, index) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name: `Aluno ${index + 1}`,
+        status: 'active' as const,
+      })),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Aluno 52' },
+    });
+
+    expect(response.statusCode).toBe(201);
+  });
+
   it('creates a student bound to current trainer', async () => {
     const trainer = await signupTrainer(app, 'a@a.com');
 

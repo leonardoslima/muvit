@@ -19,6 +19,7 @@ import { createDrizzleProfileResolver } from './modules/auth/repositories/drizzl
 import authPlugin from './plugins/auth.js';
 import { assessmentsRoutes } from './routes/assessments.js';
 import { betterAuthRoutes } from './routes/better-auth.js';
+import { billingRoutes } from './routes/billing.js';
 import { exercisesRoutes } from './routes/exercises.js';
 import { healthRoutes } from './routes/health.js';
 import { studentsRoutes } from './routes/students.js';
@@ -90,6 +91,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
 
   await app.register(healthRoutes);
   await app.register(betterAuthRoutes);
+  await app.register(billingRoutes);
   await app.register(studentsRoutes);
   await app.register(exercisesRoutes);
   await app.register(trainersRoutes);
