@@ -12,14 +12,38 @@ type NotificationServices = {
   sendPush: (message: PushMessage) => Promise<void> | void;
 };
 
-type NotificationLogger = {
-  warn(fields: {
-    category: 'notification_delivery_failed';
-    event: 'new_student_registration';
-    channel: 'email' | 'push';
-    trainerId: string;
-    studentId: string;
-  }): void;
+export type NotificationLogFields =
+  | {
+      category: 'notification_delivery_failed';
+      event:
+        | 'new_student_registration'
+        | 'inactivity'
+        | 'workout_plan_expiring'
+        | 'pending_assessment';
+      channel: 'email' | 'push';
+      trainerId: string;
+      studentId: string;
+    }
+  | {
+      category: 'notification_preparation_failed';
+      event:
+        | 'daily_notifications'
+        | 'preferences'
+        | 'new_student_registration'
+        | 'inactivity'
+        | 'workout_plan_expiring'
+        | 'pending_assessment';
+      trainerId?: string;
+      studentId?: string;
+    }
+  | {
+      category: 'new_student_notification_failed';
+      trainerId: string;
+      studentId: string;
+    };
+
+export type NotificationLogger = {
+  warn(fields: NotificationLogFields): void;
 };
 
 export class NotifyNewStudentUseCase {
@@ -48,7 +72,7 @@ export class NotifyNewStudentUseCase {
     }
   }
 
-  async execute(trainerId: string, student: NewStudent): Promise<void> {
+  private async prepareAndDeliver(trainerId: string, student: NewStudent): Promise<void> {
     const preferences = await findEffectiveNotificationPreferences(this.repository, trainerId);
     const event = preferences.newStudentRegistration;
     if (!event.enabled) return;
@@ -78,6 +102,19 @@ export class NotifyNewStudentUseCase {
       );
     }
     await Promise.all(deliveries);
+  }
+
+  async execute(trainerId: string, student: NewStudent): Promise<void> {
+    try {
+      await this.prepareAndDeliver(trainerId, student);
+    } catch {
+      this.logger.warn({
+        category: 'notification_preparation_failed',
+        event: 'new_student_registration',
+        trainerId,
+        studentId: student.id,
+      });
+    }
   }
 
   private includesChannel(channel: NotificationChannel, target: 'email' | 'push'): boolean {

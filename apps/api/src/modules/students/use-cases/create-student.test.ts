@@ -1,5 +1,5 @@
 import type { Student } from '@muvit/db/schema';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type {
   CreateStudentInput,
   CreateStudentRepository,
@@ -49,11 +49,43 @@ describe('CreateStudentUseCase', () => {
         operation: () => Promise<Result>,
       ): Promise<Result> => operation(),
     };
-    const sut = new CreateStudentUseCase(repository, planLimit, lock, notifier);
+    const sut = new CreateStudentUseCase(repository, planLimit, lock, notifier, {
+      warn: vi.fn(),
+    });
 
     const student = await sut.execute('trainer-1', { name: 'Aluno Um' });
 
     expect(student.id).toBe('student-1');
     expect(notifications).toEqual(['student-1']);
+  });
+
+  it('retorna o aluno persistido e registra somente categoria e IDs quando o notifier rejeita', async () => {
+    const repository = new FakeCreateStudentRepository();
+    const warn = vi.fn();
+    const notifier: NewStudentNotifier = {
+      execute: async () => {
+        throw new Error('Aluno Um trainer@example.com conteúdo sensível');
+      },
+    };
+    const planLimit: StudentPlanLimitPolicy = { assertCanActivate: async () => undefined };
+    const lock = {
+      withTrainerPlanMutationLock: async <Result>(
+        _trainerId: string,
+        operation: () => Promise<Result>,
+      ): Promise<Result> => operation(),
+    };
+    const sut = new CreateStudentUseCase(repository, planLimit, lock, notifier, { warn });
+
+    await expect(sut.execute('trainer-1', { name: 'Aluno Um' })).resolves.toMatchObject({
+      id: 'student-1',
+    });
+    expect(warn).toHaveBeenCalledWith({
+      category: 'new_student_notification_failed',
+      trainerId: 'trainer-1',
+      studentId: 'student-1',
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('Aluno Um');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('trainer@example.com');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('conteúdo sensível');
   });
 });

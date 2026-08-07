@@ -7,8 +7,8 @@ type MailMessage = {
   html: string;
 };
 
-export function assessmentReminderTemplate(studentName: string): string {
-  return `<p>O aluno ${studentName} esta com avaliacao fisica pendente ha mais de 60 dias.</p>`;
+export function assessmentReminderTemplate(studentName: string, staleAfterDays = 60): string {
+  return `<p>O aluno ${studentName} esta com avaliacao fisica pendente ha mais de ${staleAfterDays} dias.</p>`;
 }
 
 export function welcomeTrainerTemplate(name: string): string {

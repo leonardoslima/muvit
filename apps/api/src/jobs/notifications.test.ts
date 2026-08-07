@@ -40,6 +40,7 @@ describe('runDailyNotifications', () => {
         email: 'student@example.com',
         trainerId: trainer.id,
         expoPushToken: 'ExponentPushToken[inactive]',
+        createdAt: new Date('2026-05-01T12:00:00.000Z'),
       })
       .returning();
     if (!student) throw new Error('student not inserted');

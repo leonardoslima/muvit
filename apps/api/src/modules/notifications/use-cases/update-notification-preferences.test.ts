@@ -3,6 +3,10 @@ import type {
   UpdateNotificationPreferencesInput,
 } from '@muvit/validators';
 import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  mergeNotificationPreferences,
+} from '../notification-preferences.js';
 import type { NotificationPreferencesRepository } from '../repositories/notifications-repository.js';
 import { GetNotificationPreferencesUseCase } from './get-notification-preferences.js';
 import { UpdateNotificationPreferencesUseCase } from './update-notification-preferences.js';
@@ -14,10 +18,12 @@ class InMemoryPreferencesRepository implements NotificationPreferencesRepository
     return this.preferences.get(trainerId) ?? null;
   }
 
-  async savePreferences(
+  async updatePreferences(
     trainerId: string,
-    preferences: NotificationPreferences,
+    input: UpdateNotificationPreferencesInput,
   ): Promise<NotificationPreferences> {
+    const current = this.preferences.get(trainerId) ?? DEFAULT_NOTIFICATION_PREFERENCES;
+    const preferences = mergeNotificationPreferences(current, input);
     this.preferences.set(trainerId, preferences);
     return preferences;
   }

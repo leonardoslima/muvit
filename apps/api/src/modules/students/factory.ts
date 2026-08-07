@@ -27,6 +27,7 @@ export function makeStudentsModule(logger?: StudentsLogger) {
       studentPlanLimit,
       trainerPlanMutationLock,
       notifications.notifyNewStudent,
+      notifications.logger,
     ),
     getStudent: new GetStudentUseCase(ensureStudentAccess),
     updateStudent: new UpdateStudentUseCase(repository, studentPlanLimit, trainerPlanMutationLock),

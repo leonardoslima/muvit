@@ -17,9 +17,10 @@ export function makeNotificationsModule(logger: NotificationsLogger = fallbackLo
   const services = { sendPush, sendEmail };
 
   return {
+    logger,
     getPreferences: new GetNotificationPreferencesUseCase(repository),
     updatePreferences: new UpdateNotificationPreferencesUseCase(repository),
-    runDailyNotifications: new RunDailyNotificationsUseCase(repository, services),
+    runDailyNotifications: new RunDailyNotificationsUseCase(repository, services, logger),
     notifyNewStudent: new NotifyNewStudentUseCase(repository, services, logger),
   };
 }

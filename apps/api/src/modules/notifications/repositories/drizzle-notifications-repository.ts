@@ -1,6 +1,13 @@
 import { db, schema } from '@muvit/db';
-import type { NotificationPreferences } from '@muvit/validators';
-import { and, asc, desc, eq, gte, isNotNull } from 'drizzle-orm';
+import type {
+  NotificationPreferences,
+  UpdateNotificationPreferencesInput,
+} from '@muvit/validators';
+import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  mergeNotificationPreferences,
+} from '../notification-preferences.js';
 import type { NotificationsRepository } from './notifications-repository.js';
 
 function toNotificationPreferences(
@@ -53,18 +60,31 @@ export class DrizzleNotificationsRepository implements NotificationsRepository {
     return row === undefined ? null : toNotificationPreferences(row);
   }
 
-  async savePreferences(trainerId: string, preferences: NotificationPreferences) {
-    const values = toPersistenceValues(preferences);
-    const [row] = await db
-      .insert(schema.trainerNotificationPreferences)
-      .values({ trainerId, ...values })
-      .onConflictDoUpdate({
-        target: schema.trainerNotificationPreferences.trainerId,
-        set: values,
-      })
-      .returning();
-    if (row === undefined) throw new Error('Preferências de notificação não foram persistidas');
-    return toNotificationPreferences(row);
+  async updatePreferences(trainerId: string, input: UpdateNotificationPreferencesInput) {
+    return db.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${trainerId}, 1))`,
+      );
+      const currentRow = await transaction.query.trainerNotificationPreferences.findFirst({
+        where: eq(schema.trainerNotificationPreferences.trainerId, trainerId),
+      });
+      const current =
+        currentRow === undefined
+          ? DEFAULT_NOTIFICATION_PREFERENCES
+          : toNotificationPreferences(currentRow);
+      const preferences = mergeNotificationPreferences(current, input);
+      const values = toPersistenceValues(preferences);
+      const [row] = await transaction
+        .insert(schema.trainerNotificationPreferences)
+        .values({ trainerId, ...values })
+        .onConflictDoUpdate({
+          target: schema.trainerNotificationPreferences.trainerId,
+          set: values,
+        })
+        .returning();
+      if (row === undefined) throw new Error('Preferências de notificação não foram persistidas');
+      return toNotificationPreferences(row);
+    });
   }
 
   async listActiveStudents() {
@@ -93,12 +113,17 @@ export class DrizzleNotificationsRepository implements NotificationsRepository {
     return lastAssessment?.date ?? null;
   }
 
-  async findActiveWorkoutPlanEndDate(studentId: string) {
+  async findActiveWorkoutPlanEndDate(
+    studentId: string,
+    startsOnOrAfter: string,
+    endsOnOrBefore: string,
+  ) {
     const workoutPlan = await db.query.workoutPlans.findFirst({
       where: and(
         eq(schema.workoutPlans.studentId, studentId),
         eq(schema.workoutPlans.status, 'active'),
-        isNotNull(schema.workoutPlans.endDate),
+        gte(schema.workoutPlans.endDate, startsOnOrAfter),
+        lte(schema.workoutPlans.endDate, endsOnOrBefore),
       ),
       orderBy: asc(schema.workoutPlans.endDate),
       columns: { endDate: true },

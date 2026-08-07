@@ -1,12 +1,6 @@
 import type { NotificationPreferences } from '@muvit/validators';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '../notification-preferences.js';
 import type { NotificationPreferencesRepository } from '../repositories/notifications-repository.js';
-
-export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
-  inactivity: { enabled: true, afterDays: 7, channel: 'both' },
-  workoutPlanExpiring: { enabled: true, daysBefore: 7, channel: 'email' },
-  pendingAssessment: { enabled: true, staleAfterDays: 60, channel: 'push' },
-  newStudentRegistration: { enabled: true, channel: 'both' },
-};
 
 export async function findEffectiveNotificationPreferences(
   repository: Pick<NotificationPreferencesRepository, 'findPreferences'>,

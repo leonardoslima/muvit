@@ -48,4 +48,34 @@ describe('NotifyNewStudentUseCase', () => {
     expect(JSON.stringify(warn.mock.calls)).not.toContain('trainer@example.com');
     expect(JSON.stringify(warn.mock.calls)).not.toContain('Aluno Um');
   });
+
+  it('contém falha de preparação e registra somente categoria e IDs', async () => {
+    const repository = new FakeNewStudentNotificationRepository();
+    repository.findPreferences = async () => {
+      throw new Error('trainer@example.com Aluno Um conteúdo sensível');
+    };
+    const warn = vi.fn();
+    const sut = new NotifyNewStudentUseCase(
+      repository,
+      { sendEmail: vi.fn(), sendPush: vi.fn() },
+      { warn },
+    );
+
+    await expect(
+      sut.execute('trainer-1', {
+        id: 'student-1',
+        name: 'Aluno Um',
+        expoPushToken: null,
+      }),
+    ).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledWith({
+      category: 'notification_preparation_failed',
+      event: 'new_student_registration',
+      trainerId: 'trainer-1',
+      studentId: 'student-1',
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('trainer@example.com');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('Aluno Um');
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('conteúdo sensível');
+  });
 });

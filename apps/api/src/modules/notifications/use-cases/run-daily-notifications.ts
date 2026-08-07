@@ -6,6 +6,7 @@ import type {
   DailyNotificationsRepository,
 } from '../repositories/notifications-repository.js';
 import { findEffectiveNotificationPreferences } from './get-notification-preferences.js';
+import type { NotificationLogger } from './notify-new-student.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -20,6 +21,7 @@ type Delivery = {
 };
 
 type NotificationChannel = NotificationPreferences['inactivity']['channel'];
+type DailyNotificationEvent = 'inactivity' | 'workout_plan_expiring' | 'pending_assessment';
 
 function dateDaysFrom(date: Date, days: number): string {
   return new Date(date.getTime() + days * ONE_DAY_MS).toISOString().slice(0, 10);
@@ -29,18 +31,64 @@ export class RunDailyNotificationsUseCase {
   constructor(
     private readonly notificationsRepository: DailyNotificationsRepository,
     private readonly services: DailyNotificationsServices,
+    private readonly logger: NotificationLogger,
   ) {}
 
+  private async deliverChannel(
+    event: DailyNotificationEvent,
+    channel: 'email' | 'push',
+    student: ActiveStudentForNotification,
+    operation: () => Promise<void> | void,
+  ): Promise<void> {
+    const trainerId = student.trainer?.id;
+    if (trainerId === undefined) return;
+    try {
+      await operation();
+    } catch {
+      this.logger.warn({
+        category: 'notification_delivery_failed',
+        event,
+        channel,
+        trainerId,
+        studentId: student.id,
+      });
+    }
+  }
+
   private async deliver(
+    event: DailyNotificationEvent,
     channel: NotificationChannel,
     student: ActiveStudentForNotification,
     delivery: Delivery,
   ): Promise<void> {
+    const deliveries: Promise<void>[] = [];
     if ((channel === 'email' || channel === 'both') && student.trainer?.email) {
-      await this.services.sendEmail(delivery.email);
+      deliveries.push(
+        this.deliverChannel(event, 'email', student, () => this.services.sendEmail(delivery.email)),
+      );
     }
     if ((channel === 'push' || channel === 'both') && student.expoPushToken) {
-      await this.services.sendPush(delivery.push);
+      deliveries.push(
+        this.deliverChannel(event, 'push', student, () => this.services.sendPush(delivery.push)),
+      );
+    }
+    await Promise.all(deliveries);
+  }
+
+  private async prepareEvent(
+    event: DailyNotificationEvent,
+    student: ActiveStudentForNotification,
+    operation: () => Promise<void>,
+  ): Promise<void> {
+    try {
+      await operation();
+    } catch {
+      this.logger.warn({
+        category: 'notification_preparation_failed',
+        event,
+        trainerId: student.trainer?.id,
+        studentId: student.id,
+      });
     }
   }
 
@@ -52,14 +100,17 @@ export class RunDailyNotificationsUseCase {
     const trainerEmail = student.trainer?.email ?? '';
     const pushToken = student.expoPushToken ?? '';
 
-    if (preferences.inactivity.enabled) {
+    await this.prepareEvent('inactivity', student, async () => {
+      if (!preferences.inactivity.enabled) return;
       const inactiveSince = dateDaysFrom(now, -preferences.inactivity.afterDays);
+      const studentCreatedOn = student.createdAt.toISOString().slice(0, 10);
+      if (studentCreatedOn > inactiveSince) return;
       const hasRecentLog = await this.notificationsRepository.hasRecentWorkoutLog(
         student.id,
         inactiveSince,
       );
       if (!hasRecentLog) {
-        await this.deliver(preferences.inactivity.channel, student, {
+        await this.deliver('inactivity', preferences.inactivity.channel, student, {
           email: {
             to: trainerEmail,
             subject: 'Aluno inativo',
@@ -72,31 +123,40 @@ export class RunDailyNotificationsUseCase {
           },
         });
       }
-    }
+    });
 
-    if (preferences.workoutPlanExpiring.enabled) {
-      const workoutPlanEndDate = await this.notificationsRepository.findActiveWorkoutPlanEndDate(
-        student.id,
-      );
+    await this.prepareEvent('workout_plan_expiring', student, async () => {
+      if (!preferences.workoutPlanExpiring.enabled) return;
       const today = dateDaysFrom(now, 0);
       const warningDate = dateDaysFrom(now, preferences.workoutPlanExpiring.daysBefore);
-      if (workoutPlanEndDate && workoutPlanEndDate >= today && workoutPlanEndDate <= warningDate) {
-        await this.deliver(preferences.workoutPlanExpiring.channel, student, {
-          email: {
-            to: trainerEmail,
-            subject: 'Treino próximo do vencimento',
-            html: `<p>O treino do aluno ${student.name} vence em breve.</p>`,
+      const workoutPlanEndDate = await this.notificationsRepository.findActiveWorkoutPlanEndDate(
+        student.id,
+        today,
+        warningDate,
+      );
+      if (workoutPlanEndDate) {
+        await this.deliver(
+          'workout_plan_expiring',
+          preferences.workoutPlanExpiring.channel,
+          student,
+          {
+            email: {
+              to: trainerEmail,
+              subject: 'Treino próximo do vencimento',
+              html: `<p>O treino do aluno ${student.name} vence em breve.</p>`,
+            },
+            push: {
+              token: pushToken,
+              title: 'Seu treino vence em breve',
+              body: 'Converse com seu treinador para atualizar o planejamento.',
+            },
           },
-          push: {
-            token: pushToken,
-            title: 'Seu treino vence em breve',
-            body: 'Converse com seu treinador para atualizar o planejamento.',
-          },
-        });
+        );
       }
-    }
+    });
 
-    if (preferences.pendingAssessment.enabled) {
+    await this.prepareEvent('pending_assessment', student, async () => {
+      if (!preferences.pendingAssessment.enabled) return;
       const lastAssessmentDate = await this.notificationsRepository.findLastAssessmentDate(
         student.id,
       );
@@ -105,11 +165,14 @@ export class RunDailyNotificationsUseCase {
         -preferences.pendingAssessment.staleAfterDays,
       );
       if (!lastAssessmentDate || lastAssessmentDate < staleAssessmentBefore) {
-        await this.deliver(preferences.pendingAssessment.channel, student, {
+        await this.deliver('pending_assessment', preferences.pendingAssessment.channel, student, {
           email: {
             to: trainerEmail,
             subject: 'Aluno com avaliacao vencida',
-            html: assessmentReminderTemplate(student.name),
+            html: assessmentReminderTemplate(
+              student.name,
+              preferences.pendingAssessment.staleAfterDays,
+            ),
           },
           push: {
             token: pushToken,
@@ -118,21 +181,40 @@ export class RunDailyNotificationsUseCase {
           },
         });
       }
-    }
+    });
   }
 
   async execute(now = new Date()): Promise<void> {
-    const students = await this.notificationsRepository.listActiveStudents();
+    let students: ActiveStudentForNotification[];
+    try {
+      students = await this.notificationsRepository.listActiveStudents();
+    } catch {
+      this.logger.warn({
+        category: 'notification_preparation_failed',
+        event: 'daily_notifications',
+      });
+      return;
+    }
     const preferencesByTrainer = new Map<string, NotificationPreferences>();
 
     for (const student of students) {
       if (student.trainer === null) continue;
       let preferences = preferencesByTrainer.get(student.trainer.id);
       if (preferences === undefined) {
-        preferences = await findEffectiveNotificationPreferences(
-          this.notificationsRepository,
-          student.trainer.id,
-        );
+        try {
+          preferences = await findEffectiveNotificationPreferences(
+            this.notificationsRepository,
+            student.trainer.id,
+          );
+        } catch {
+          this.logger.warn({
+            category: 'notification_preparation_failed',
+            event: 'preferences',
+            trainerId: student.trainer.id,
+            studentId: student.id,
+          });
+          continue;
+        }
         preferencesByTrainer.set(student.trainer.id, preferences);
       }
       await this.processStudent(student, preferences, now);

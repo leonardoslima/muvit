@@ -13,12 +13,21 @@ export interface NewStudentNotifier {
   ): Promise<void>;
 }
 
+export interface NewStudentNotificationLogger {
+  warn(fields: {
+    category: 'new_student_notification_failed';
+    trainerId: string;
+    studentId: string;
+  }): void;
+}
+
 export class CreateStudentUseCase {
   constructor(
     private readonly studentsRepository: CreateStudentRepository,
     private readonly studentPlanLimit: StudentPlanLimitPolicy,
     private readonly trainerPlanMutationLock: TrainerPlanMutationLock,
     private readonly newStudentNotifier: NewStudentNotifier,
+    private readonly notificationLogger: NewStudentNotificationLogger,
   ) {}
 
   async execute(trainerId: string, input: CreateStudentInput) {
@@ -30,7 +39,15 @@ export class CreateStudentUseCase {
             return this.studentsRepository.createForTrainer(trainerId, input);
           });
 
-    await this.newStudentNotifier.execute(trainerId, student);
+    try {
+      await this.newStudentNotifier.execute(trainerId, student);
+    } catch {
+      this.notificationLogger.warn({
+        category: 'new_student_notification_failed',
+        trainerId,
+        studentId: student.id,
+      });
+    }
     return student;
   }
 }
