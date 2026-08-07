@@ -59134,6 +59134,1680 @@
           }
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "SQrNm",
+      "x": 27785,
+      "y": -20,
+      "name": "Mobile / Treinador / Aluno / detalhe",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "Eroyz",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do detalhe consultivo da aluna",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "qLFeD",
+              "name": "Área de conteúdo do detalhe da aluna",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "fnFl5",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno do detalhe do aluno",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Mariana Costa"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "V9QJGr",
+                  "name": "Perfil consultivo da aluna",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": 14,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "AOnVu",
+                      "name": "Avatar de Mariana Costa",
+                      "width": 58,
+                      "height": 58,
+                      "fill": "$--primary",
+                      "cornerRadius": "$--radius-pill",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "o589y",
+                          "name": "Iniciais de Mariana Costa",
+                          "fill": "#FFFFFF",
+                          "content": "MC",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FBxor",
+                      "name": "Dados principais da aluna",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "l7GXMn",
+                          "name": "Nome da aluna",
+                          "fill": "$--foreground",
+                          "content": "Mariana Costa",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 18,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "HJJv1",
+                          "name": "E-mail da aluna",
+                          "fill": "$--muted-foreground",
+                          "content": "mariana.costa@email.com",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "kUDGM",
+                          "name": "Objetivo da aluna",
+                          "fill": "$--foreground",
+                          "content": "Objetivo: Hipertrofia",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l6Eht",
+                  "name": "Resumos de acompanhamento da aluna",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "PNSos",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Resumo da última avaliação",
+                      "width": "fill_container",
+                      "descendants": {
+                        "QaAxc": {
+                          "gap": 6
+                        },
+                        "eYYzt": {
+                          "width": 30,
+                          "height": 30
+                        },
+                        "u8yjU": {
+                          "width": 16,
+                          "height": 16
+                        },
+                        "JY0pg": {
+                          "content": "Última avaliação",
+                          "fontSize": 10
+                        },
+                        "gfC5q": {
+                          "content": "7 ago",
+                          "fontSize": 21
+                        },
+                        "Cp4kE": {
+                          "content": "68,2 kg • 19,4%",
+                          "fontSize": 10
+                        }
+                      }
+                    },
+                    {
+                      "id": "zYKjW",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Resumo do treino ativo",
+                      "width": "fill_container",
+                      "descendants": {
+                        "QaAxc": {
+                          "gap": 6
+                        },
+                        "eYYzt": {
+                          "width": 30,
+                          "height": 30
+                        },
+                        "u8yjU": {
+                          "width": 16,
+                          "height": 16,
+                          "icon": "dumbbell"
+                        },
+                        "JY0pg": {
+                          "content": "Treino ativo",
+                          "fontSize": 10
+                        },
+                        "gfC5q": {
+                          "content": "Hipertrofia A",
+                          "fontSize": 20
+                        },
+                        "Cp4kE": {
+                          "content": "Treinos A e B",
+                          "fontSize": 10
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uSnFR",
+                  "name": "Continuidade do acompanhamento da aluna",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "rNakk",
+                      "type": "ref",
+                      "ref": "VySmR",
+                      "name": "Avaliações navigation card",
+                      "width": "fill_container",
+                      "descendants": {
+                        "lXRZO": {
+                          "content": "Avaliações"
+                        },
+                        "rU1UF": {
+                          "content": "3 registros"
+                        },
+                        "avyDv": {
+                          "content": "Última avaliação"
+                        },
+                        "F9uyEL": {
+                          "content": "7 ago"
+                        },
+                        "K9xPV": {
+                          "content": "Consultar histórico completo"
+                        }
+                      }
+                    },
+                    {
+                      "id": "XJGi0",
+                      "type": "ref",
+                      "ref": "uJOHb",
+                      "name": "Treinos navigation card",
+                      "width": "fill_container",
+                      "descendants": {
+                        "U9xF5L": {
+                          "content": "Treinos"
+                        },
+                        "KKdzY/cChuM": {
+                          "content": "Ativo"
+                        },
+                        "Kk6gi": {
+                          "content": "Hipertrofia A ativo"
+                        },
+                        "hSG7W": {
+                          "content": "Consultar planos da aluna"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "kf7yB",
+      "x": 28247,
+      "y": -20,
+      "name": "Mobile / Treinador / Aluno / carregando-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "GypBG",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados do aluno",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "bJa7K",
+              "name": "Área de carregamento e erro do aluno",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "padding": [
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "jl2qg",
+                  "name": "Skeleton do aluno",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": "$--radius-pill",
+                      "id": "l73YRw",
+                      "name": "Skeleton do cabeçalho",
+                      "fill": "$--muted",
+                      "width": 210,
+                      "height": 24
+                    },
+                    {
+                      "type": "frame",
+                      "id": "dk7S0",
+                      "name": "Skeleton do perfil",
+                      "width": "fill_container",
+                      "height": 92,
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "gap": 14,
+                      "padding": 14,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "pWRM0",
+                          "name": "Skeleton do avatar",
+                          "fill": "$--muted",
+                          "width": 56,
+                          "height": 56
+                        },
+                        {
+                          "type": "frame",
+                          "id": "VbWJu",
+                          "name": "Skeleton dos dados",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": "$--radius-pill",
+                              "id": "kHZNY",
+                              "name": "Skeleton do nome",
+                              "fill": "$--muted",
+                              "width": 148,
+                              "height": 14
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": "$--radius-pill",
+                              "id": "C6WLE",
+                              "name": "Skeleton do e-mail",
+                              "fill": "$--muted",
+                              "width": 196,
+                              "height": 12
+                            },
+                            {
+                              "type": "rectangle",
+                              "cornerRadius": "$--radius-pill",
+                              "id": "daxH3",
+                              "name": "Skeleton do objetivo",
+                              "fill": "$--muted",
+                              "width": 126,
+                              "height": 12
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": "$--radius-md",
+                      "id": "NuZn6",
+                      "name": "Skeleton do primeiro resumo",
+                      "fill": "$--muted",
+                      "width": "fill_container",
+                      "height": 78
+                    },
+                    {
+                      "type": "rectangle",
+                      "cornerRadius": "$--radius-md",
+                      "id": "MhtkX",
+                      "name": "Skeleton do segundo resumo",
+                      "fill": "$--muted",
+                      "width": "fill_container",
+                      "height": 78
+                    }
+                  ]
+                },
+                {
+                  "id": "e2l4fK",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Erro ao carregar o aluno",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "wifi-off"
+                    },
+                    "N37M8": {
+                      "content": "Não foi possível carregar o aluno."
+                    },
+                    "upy9o": {
+                      "content": "Verifique sua conexão e tente novamente."
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente"
+                    },
+                    "D0z0sE": {
+                      "icon": "rotate-cw"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "xK7me",
+      "x": 28709,
+      "y": -20,
+      "name": "Mobile / Treinador / Avaliações / lista",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "O116X",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell da lista de avaliações",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "o1330O",
+              "name": "Área de conteúdo da lista de avaliações",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "E40zX",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno da lista de avaliações",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Mariana Costa"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "Z3uAq",
+                  "name": "Introdução da lista de avaliações",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qbCcL",
+                      "name": "Título da lista de avaliações",
+                      "fill": "$--foreground",
+                      "content": "Avaliações",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Jjg48",
+                      "name": "Descrição da lista de avaliações",
+                      "fill": "$--muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Histórico de Mariana Costa em ordem cronológica.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DOoI0",
+                  "name": "Registros cronológicos de avaliações",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "W8hb5",
+                      "type": "ref",
+                      "ref": "VySmR",
+                      "name": "Avaliação de 7 de agosto",
+                      "width": "fill_container",
+                      "descendants": {
+                        "lXRZO": {
+                          "content": "Avaliação de 7 de agosto"
+                        },
+                        "rU1UF": {
+                          "content": "7 ago 2026"
+                        },
+                        "avyDv": {
+                          "content": "Gordura corporal"
+                        },
+                        "F9uyEL": {
+                          "content": "19,4%"
+                        },
+                        "K9xPV": {
+                          "content": "68,2 kg • evolução consistente"
+                        }
+                      }
+                    },
+                    {
+                      "id": "whHOy",
+                      "type": "ref",
+                      "ref": "VySmR",
+                      "name": "Avaliação de 10 de julho",
+                      "width": "fill_container",
+                      "descendants": {
+                        "lXRZO": {
+                          "content": "Avaliação de 10 de julho"
+                        },
+                        "rU1UF": {
+                          "content": "10 jul 2026"
+                        },
+                        "avyDv": {
+                          "content": "Gordura corporal"
+                        },
+                        "F9uyEL": {
+                          "content": "20,1%"
+                        },
+                        "K9xPV": {
+                          "content": "68,8 kg • redução de 0,7 p.p."
+                        }
+                      }
+                    },
+                    {
+                      "id": "n0MaFM",
+                      "type": "ref",
+                      "ref": "VySmR",
+                      "name": "Avaliação de 12 de junho",
+                      "width": "fill_container",
+                      "descendants": {
+                        "lXRZO": {
+                          "content": "Avaliação de 12 de junho"
+                        },
+                        "rU1UF": {
+                          "content": "12 jun 2026"
+                        },
+                        "avyDv": {
+                          "content": "Gordura corporal"
+                        },
+                        "F9uyEL": {
+                          "content": "20,8%"
+                        },
+                        "K9xPV": {
+                          "content": "69,4 kg • início do acompanhamento"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jjO3j",
+      "x": 29171,
+      "y": -20,
+      "name": "Mobile / Treinador / Avaliações / vazio-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "a6eS9I",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados de avaliações",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "GbzXB",
+              "name": "Área dos estados de avaliações",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "e0SVhR",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno dos estados de avaliações",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Avaliações"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "SRVp8",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado vazio de avaliações",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "clipboard-list"
+                    },
+                    "N37M8": {
+                      "content": "Nenhuma avaliação registrada."
+                    },
+                    "upy9o": {
+                      "content": "As avaliações da aluna aparecerão aqui quando estiverem disponíveis."
+                    },
+                    "Asvyg": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    }
+                  }
+                },
+                {
+                  "id": "xzlfI",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Erro ao carregar avaliações",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "wifi-off"
+                    },
+                    "N37M8": {
+                      "content": "Não foi possível carregar as avaliações."
+                    },
+                    "upy9o": {
+                      "content": "Verifique sua conexão e tente novamente."
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente"
+                    },
+                    "D0z0sE": {
+                      "icon": "rotate-cw"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "hogSh",
+      "x": 29633,
+      "y": -20,
+      "name": "Mobile / Treinador / Avaliação / detalhe",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "z2Rdd7",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do detalhe da avaliação",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "olY3r",
+              "name": "Área de conteúdo do detalhe da avaliação",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "w9jCU4",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno do detalhe da avaliação",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Avaliação"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "btirx",
+                  "name": "Identificação da avaliação",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 5,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "I1Yiy",
+                      "name": "Título da avaliação detalhada",
+                      "fill": "$--foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Avaliação de 7 de agosto",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 25,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "NeKmQ",
+                      "name": "Data completa da avaliação",
+                      "fill": "$--muted-foreground",
+                      "content": "7 de agosto de 2026 • Mariana Costa",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "c9V6k5",
+                  "name": "Métricas da avaliação",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "qyKlq",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Peso registrado",
+                      "width": "fill_container",
+                      "descendants": {
+                        "QaAxc": {
+                          "gap": 6
+                        },
+                        "eYYzt": {
+                          "width": 30,
+                          "height": 30
+                        },
+                        "u8yjU": {
+                          "width": 16,
+                          "height": 16,
+                          "icon": "scale"
+                        },
+                        "JY0pg": {
+                          "content": "Peso",
+                          "fontSize": 11
+                        },
+                        "gfC5q": {
+                          "content": "68,2 kg",
+                          "fontSize": 22
+                        },
+                        "Cp4kE": {
+                          "content": "Medida atual",
+                          "fontSize": 10
+                        }
+                      }
+                    },
+                    {
+                      "id": "BxBl2",
+                      "type": "ref",
+                      "ref": "gwIib",
+                      "name": "Gordura corporal registrada",
+                      "width": "fill_container",
+                      "descendants": {
+                        "QaAxc": {
+                          "gap": 6
+                        },
+                        "eYYzt": {
+                          "width": 30,
+                          "height": 30
+                        },
+                        "u8yjU": {
+                          "width": 16,
+                          "height": 16,
+                          "icon": "percent"
+                        },
+                        "JY0pg": {
+                          "content": "Gordura corporal",
+                          "fontSize": 10
+                        },
+                        "gfC5q": {
+                          "content": "19,4%",
+                          "fontSize": 22
+                        },
+                        "Cp4kE": {
+                          "content": "Composição corporal",
+                          "fontSize": 10
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MeodT",
+                  "name": "Notas da avaliação",
+                  "width": "fill_container",
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "O6xva",
+                      "name": "Cabeçalho das notas",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "MunaR",
+                          "name": "Ícone das notas",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "notebook-text",
+                          "library": "lucide",
+                          "fill": "$--secondary"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ihbK8",
+                          "name": "Rótulo das notas",
+                          "fill": "$--foreground",
+                          "content": "Notas do acompanhamento",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "Q0FYkd",
+                      "name": "Conteúdo das notas",
+                      "fill": "$--muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Boa evolução de força e consistência nos treinos.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oR5qm",
+                  "name": "Área da foto da avaliação",
+                  "width": "fill_container",
+                  "height": 128,
+                  "fill": "$--card",
+                  "cornerRadius": "$--radius-md",
+                  "stroke": "$--border",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "gap": 14,
+                  "padding": 16,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gHnpt",
+                      "name": "Prévia da foto de evolução",
+                      "width": 94,
+                      "height": 94,
+                      "fill": "$--color-info-bg",
+                      "cornerRadius": "$--radius-sm",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "BvSri",
+                          "name": "Ícone da foto de evolução",
+                          "width": 28,
+                          "height": 28,
+                          "icon": "image",
+                          "library": "lucide",
+                          "fill": "$--secondary"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SFQIc",
+                      "name": "Dados da foto de evolução",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 5,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "s20kP",
+                          "name": "Título da foto de evolução",
+                          "fill": "$--foreground",
+                          "content": "Foto de evolução",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 15,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "oejf5",
+                          "name": "Descrição da foto de evolução",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Vista frontal • registrada nesta avaliação",
+                          "lineHeight": 1.4,
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "R3zGB",
+      "x": 30095,
+      "y": -20,
+      "name": "Mobile / Treinador / Treinos / lista",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "yvHAp",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell da lista de treinos",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "ZFLLe",
+              "name": "Área de conteúdo da lista de treinos",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 18,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "mKAja",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno da lista de treinos",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Mariana Costa"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "D2Gr7B",
+                  "name": "Introdução da lista de treinos",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ypfuW",
+                      "name": "Título da lista de treinos",
+                      "fill": "$--foreground",
+                      "content": "Treinos",
+                      "fontFamily": "$--font-primary",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ojBvp",
+                      "name": "Descrição da lista de treinos",
+                      "fill": "$--muted-foreground",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Planos de Mariana Costa para consulta e acompanhamento.",
+                      "lineHeight": 1.4,
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DxowX",
+                  "name": "Planos de treino da aluna",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "Dljl1",
+                      "type": "ref",
+                      "ref": "uJOHb",
+                      "name": "Plano Hipertrofia A ativo",
+                      "width": "fill_container",
+                      "descendants": {
+                        "U9xF5L": {
+                          "content": "Hipertrofia A"
+                        },
+                        "KKdzY/cChuM": {
+                          "content": "Ativo"
+                        },
+                        "Kk6gi": {
+                          "content": "Treino A e Treino B • 3 exercícios"
+                        },
+                        "hSG7W": {
+                          "content": "Objetivo: Hipertrofia"
+                        }
+                      }
+                    },
+                    {
+                      "id": "tSWhv",
+                      "type": "ref",
+                      "ref": "uJOHb",
+                      "name": "Plano Condicionamento arquivado",
+                      "width": "fill_container",
+                      "descendants": {
+                        "jHWco": {
+                          "fill": "$--muted"
+                        },
+                        "nGXGY": {
+                          "fill": "$--muted-foreground"
+                        },
+                        "U9xF5L": {
+                          "content": "Condicionamento"
+                        },
+                        "KKdzY": {
+                          "fill": "$--muted"
+                        },
+                        "KKdzY/X5SQO8": {
+                          "fill": "$--muted-foreground"
+                        },
+                        "KKdzY/cChuM": {
+                          "content": "Arquivado",
+                          "fill": "$--muted-foreground"
+                        },
+                        "Kk6gi": {
+                          "content": "Circuito funcional • 6 exercícios"
+                        },
+                        "hSG7W": {
+                          "content": "Plano anterior"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "r2cUN",
+      "x": 30557,
+      "y": -20,
+      "name": "Mobile / Treinador / Treinos / vazio-erro",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "mI5s9",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell dos estados de treinos",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "hs0ZE",
+              "name": "Área dos estados de treinos",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "NaoXJ",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno dos estados de treinos",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Treinos"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "id": "w3NxJ",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Estado vazio de treinos",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "dumbbell"
+                    },
+                    "N37M8": {
+                      "content": "Nenhum treino disponível para este aluno."
+                    },
+                    "upy9o": {
+                      "content": "Os planos atribuídos aparecerão aqui quando estiverem disponíveis."
+                    },
+                    "Asvyg": {
+                      "enabled": false,
+                      "width": 0,
+                      "height": 0
+                    }
+                  }
+                },
+                {
+                  "id": "xh5yr",
+                  "type": "ref",
+                  "ref": "CszKI",
+                  "name": "Erro ao carregar treinos",
+                  "width": "fill_container",
+                  "descendants": {
+                    "nALXn": {
+                      "icon": "wifi-off"
+                    },
+                    "N37M8": {
+                      "content": "Não foi possível carregar os treinos."
+                    },
+                    "upy9o": {
+                      "content": "Verifique sua conexão e tente novamente."
+                    },
+                    "Asvyg": {
+                      "width": "fill_container"
+                    },
+                    "cwtka": {
+                      "content": "Tentar novamente"
+                    },
+                    "D0z0sE": {
+                      "icon": "rotate-cw"
+                    }
+                  }
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "bAwMI",
+      "x": 31019,
+      "y": -20,
+      "name": "Mobile / Treinador / Treino / detalhe",
+      "clip": true,
+      "width": 390,
+      "fill": "$--background",
+      "layout": "vertical",
+      "children": [
+        {
+          "id": "RPlGx",
+          "type": "ref",
+          "ref": "cZgLc",
+          "name": "Shell do detalhe do treino",
+          "width": "fill_container",
+          "height": 844,
+          "x": 0,
+          "y": 0,
+          "descendants": {
+            "v7vLT": {
+              "type": "frame",
+              "id": "Gcwy8",
+              "name": "Área de conteúdo do detalhe do treino",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": [
+                20,
+                20,
+                24,
+                20
+              ],
+              "children": [
+                {
+                  "id": "u1F0vM",
+                  "type": "ref",
+                  "ref": "veac4",
+                  "name": "Cabeçalho de retorno do detalhe do treino",
+                  "width": "fill_container",
+                  "descendants": {
+                    "MefHR": {
+                      "content": "Hipertrofia A"
+                    },
+                    "lyqHg": {
+                      "enabled": false
+                    }
+                  }
+                },
+                {
+                  "type": "frame",
+                  "id": "O2FYYX",
+                  "name": "Identificação do plano Hipertrofia A",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "O1VlHM",
+                      "name": "Cabeçalho do plano Hipertrofia A",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "z6pzaU",
+                          "name": "Título do plano Hipertrofia A",
+                          "fill": "$--foreground",
+                          "content": "Hipertrofia A",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 25,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "id": "A1fuc5",
+                          "type": "ref",
+                          "ref": "Q4znq",
+                          "name": "Status ativo do plano",
+                          "descendants": {
+                            "cChuM": {
+                              "content": "Ativo"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "F8xr1",
+                      "name": "Descrição do plano Hipertrofia A",
+                      "fill": "$--muted-foreground",
+                      "content": "Plano atual de Mariana Costa • consulta do treinador",
+                      "fontFamily": "$--font-secondary",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hxL9u",
+                  "name": "Seção Treino A",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "kCJJA",
+                      "name": "Cabeçalho Treino A",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D3CKl",
+                          "name": "Título Treino A",
+                          "fill": "$--foreground",
+                          "content": "Treino A",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 17,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Rt8dd",
+                          "name": "Resumo Treino A",
+                          "fill": "$--secondary",
+                          "content": "2 exercícios",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "C6ERzm",
+                      "name": "Exercício Agachamento livre",
+                      "width": "fill_container",
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "d5qbaY",
+                          "name": "Nome do exercício Agachamento livre",
+                          "fill": "$--foreground",
+                          "content": "Agachamento livre",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "piLZD",
+                          "name": "Séries repetições e carga de Agachamento livre",
+                          "fill": "$--foreground",
+                          "content": "4 séries • 8 repetições • 60 kg",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "mIzT3",
+                          "name": "Descanso de Agachamento livre",
+                          "fill": "$--muted-foreground",
+                          "content": "Descanso: 90 s",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "aObmz",
+                          "name": "Notas de Agachamento livre",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Notas: Controle a descida e mantenha a postura.",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ClNCt",
+                      "name": "Exercício Supino reto",
+                      "width": "fill_container",
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cckPZ",
+                          "name": "Nome do exercício Supino reto",
+                          "fill": "$--foreground",
+                          "content": "Supino reto",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "BnQtC",
+                          "name": "Séries repetições e carga de Supino reto",
+                          "fill": "$--foreground",
+                          "content": "4 séries • 10 repetições • 32 kg",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "uxemW",
+                          "name": "Descanso de Supino reto",
+                          "fill": "$--muted-foreground",
+                          "content": "Descanso: 75 s",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "N9zey",
+                          "name": "Notas de Supino reto",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Notas: Escápulas apoiadas e movimento controlado.",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kXwsT",
+                  "name": "Seção Treino B",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "GQJOC",
+                      "name": "Cabeçalho Treino B",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "eJrNh",
+                          "name": "Título Treino B",
+                          "fill": "$--foreground",
+                          "content": "Treino B",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 17,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dRI7y",
+                          "name": "Resumo Treino B",
+                          "fill": "$--secondary",
+                          "content": "1 exercício",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Z2eJv",
+                      "name": "Exercício Remada baixa",
+                      "width": "fill_container",
+                      "fill": "$--card",
+                      "cornerRadius": "$--radius-md",
+                      "stroke": "$--border",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 5,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "LFZmI",
+                          "name": "Nome do exercício Remada baixa",
+                          "fill": "$--foreground",
+                          "content": "Remada baixa",
+                          "fontFamily": "$--font-primary",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Ua2E1",
+                          "name": "Séries repetições e carga de Remada baixa",
+                          "fill": "$--foreground",
+                          "content": "3 séries • 12 repetições • 35 kg",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jnYfQ",
+                          "name": "Descanso de Remada baixa",
+                          "fill": "$--muted-foreground",
+                          "content": "Descanso: 60 s",
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "UEjOQ",
+                          "name": "Notas de Remada baixa",
+                          "fill": "$--muted-foreground",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Notas: Mantenha o tronco estável e aproxime as escápulas.",
+                          "lineHeight": 1.35,
+                          "fontFamily": "$--font-secondary",
+                          "fontSize": 11,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "GoWNA": {
+              "enabled": false,
+              "height": 0
+            }
+          }
+        }
+      ]
     }
   ],
   "variables": {
