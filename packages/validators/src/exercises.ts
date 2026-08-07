@@ -39,6 +39,7 @@ export const exerciseSchema = z.object({
 export const listExercisesQuerySchema = z.object({
   q: z.string().optional(),
   muscleGroup: muscleGroupSchema.optional(),
+  equipment: z.string().trim().min(1).max(100).optional(),
   scope: z.enum(['mine', 'global', 'all']).default('all'),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),

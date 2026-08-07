@@ -72,20 +72,15 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
   }
 
   async listForStudent(studentId: string) {
-    return db
-      .select({
-        id: schema.workoutPlans.id,
-        studentId: schema.workoutPlans.studentId,
-        trainerId: schema.workoutPlans.trainerId,
-        name: schema.workoutPlans.name,
-        startDate: schema.workoutPlans.startDate,
-        endDate: schema.workoutPlans.endDate,
-        status: schema.workoutPlans.status,
-        createdAt: schema.workoutPlans.createdAt,
-      })
-      .from(schema.workoutPlans)
-      .where(eq(schema.workoutPlans.studentId, studentId))
-      .orderBy(desc(schema.workoutPlans.createdAt));
+    return db.query.workoutPlans.findMany({
+      where: eq(schema.workoutPlans.studentId, studentId),
+      orderBy: [desc(schema.workoutPlans.createdAt)],
+      with: {
+        days: {
+          orderBy: [asc(schema.workoutDays.dayOrder)],
+        },
+      },
+    });
   }
 
   async findFullById(id: string) {

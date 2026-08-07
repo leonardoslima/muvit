@@ -9,7 +9,7 @@ import type {
 
 export class DrizzleExercisesRepository implements ExercisesRepository {
   async list(params: ExerciseListParams) {
-    const { q, muscleGroup, scope, limit, offset, identity } = params;
+    const { q, muscleGroup, equipment, scope, limit, offset, identity } = params;
     const conds = [];
 
     if (scope === 'global') {
@@ -26,6 +26,7 @@ export class DrizzleExercisesRepository implements ExercisesRepository {
 
     if (q) conds.push(ilike(schema.exercises.name, `%${q}%`));
     if (muscleGroup) conds.push(eq(schema.exercises.muscleGroup, muscleGroup));
+    if (equipment) conds.push(eq(schema.exercises.equipment, equipment));
     const where = and(...conds);
 
     const items = await db

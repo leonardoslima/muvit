@@ -84,6 +84,14 @@ export const workoutPlanSummarySchema = z.object({
   endDate: z.string().date().nullable(),
   status: workoutPlanStatusSchema,
   createdAt: dateOrIso,
+  days: z.array(
+    z.object({
+      id: z.string().uuid(),
+      planId: z.string().uuid(),
+      label: z.string(),
+      dayOrder: z.number().int(),
+    }),
+  ),
 });
 
 export const logSetInputSchema = z.object({

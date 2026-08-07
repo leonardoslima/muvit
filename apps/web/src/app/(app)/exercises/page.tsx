@@ -13,15 +13,16 @@ import { deleteExerciseAction } from './actions';
 interface SP {
   q?: string;
   group?: MuscleGroup;
+  equipment?: string;
   scope?: 'mine' | 'global' | 'all';
 }
 
 export default async function ExercisesPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const { q, group, scope = 'all' } = await searchParams;
+  const { q, group, equipment, scope = 'all' } = await searchParams;
   const client = await configureServerClient();
   const res = await getExercises({
     client,
-    query: { q, muscleGroup: group, scope, limit: 100 },
+    query: { q, muscleGroup: group, equipment, scope, limit: 100 },
   });
   const items = (res.data?.items ?? []) as Array<{
     id: string;
@@ -30,6 +31,10 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
     equipment: string | null;
     trainerId: string | null;
   }>;
+  const equipmentOptions = Array.from(
+    new Set(items.flatMap((exercise) => (exercise.equipment ? [exercise.equipment] : []))),
+  ).sort((left, right) => left.localeCompare(right, 'pt-BR'));
+  if (equipment && !equipmentOptions.includes(equipment)) equipmentOptions.unshift(equipment);
 
   return (
     <>
@@ -49,6 +54,7 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
                 className="h-11 w-full rounded-md border border-input bg-card pl-10 pr-4 text-sm"
               />
               {group && <input type="hidden" name="group" value={group} />}
+              {equipment && <input type="hidden" name="equipment" value={equipment} />}
               <input type="hidden" name="scope" value={scope} />
             </form>
             <CreateExerciseDialog />
@@ -61,7 +67,14 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
           <span className="mr-2 font-display text-xs font-semibold text-foreground">
             Grupo muscular:
           </span>
-          <GroupChip current={group} value={undefined} label="Todos" scope={scope} q={q} />
+          <GroupChip
+            current={group}
+            value={undefined}
+            label="Todos"
+            scope={scope}
+            q={q}
+            equipment={equipment}
+          />
           {MUSCLE_GROUPS.map((muscleGroup) => (
             <GroupChip
               key={muscleGroup}
@@ -70,15 +83,60 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
               label={MUSCLE_GROUP_LABEL[muscleGroup]}
               scope={scope}
               q={q}
+              equipment={equipment}
             />
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-2 font-display text-xs font-semibold text-foreground">Origem:</span>
-          <ScopeChip current={scope} value="all" label="Todos" group={group} q={q} />
-          <ScopeChip current={scope} value="global" label="Globais" group={group} q={q} />
-          <ScopeChip current={scope} value="mine" label="Meus" group={group} q={q} />
+          <ScopeChip
+            current={scope}
+            value="all"
+            label="Todos"
+            group={group}
+            q={q}
+            equipment={equipment}
+          />
+          <ScopeChip
+            current={scope}
+            value="global"
+            label="Globais"
+            group={group}
+            q={q}
+            equipment={equipment}
+          />
+          <ScopeChip
+            current={scope}
+            value="mine"
+            label="Meus"
+            group={group}
+            q={q}
+            equipment={equipment}
+          />
         </div>
+        <form action="/exercises" className="flex flex-wrap items-end gap-2">
+          {q && <input type="hidden" name="q" value={q} />}
+          {group && <input type="hidden" name="group" value={group} />}
+          <input type="hidden" name="scope" value={scope} />
+          <label className="flex flex-col gap-1 font-display text-xs font-semibold text-foreground">
+            Equipamento
+            <select
+              name="equipment"
+              defaultValue={equipment ?? ''}
+              className="h-9 min-w-48 rounded-md border border-input bg-card px-3 font-sans font-normal"
+            >
+              <option value="">Todos</option>
+              {equipmentOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Button type="submit" variant="secondary" size="sm">
+            Aplicar
+          </Button>
+        </form>
       </div>
 
       <section
@@ -94,7 +152,7 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
           </p>
         ) : items.length === 0 ? (
           <p className="col-span-full rounded-[12px] bg-card p-10 text-center text-sm text-muted-foreground shadow-card">
-            {q || group || scope !== 'all'
+            {q || group || equipment || scope !== 'all'
               ? 'Nenhum exercício corresponde aos filtros.'
               : 'Sua biblioteca de exercícios está vazia.'}
           </p>
@@ -160,19 +218,26 @@ function ScopeChip({
   label,
   group,
   q,
+  equipment,
 }: {
   current: string;
   value: string;
   label: string;
   group?: MuscleGroup;
   q?: string;
+  equipment?: string;
 }) {
   const active = current === value;
   return (
     <Link
       href={{
         pathname: '/exercises',
-        query: { ...(q ? { q } : {}), ...(group ? { group } : {}), scope: value },
+        query: {
+          ...(q ? { q } : {}),
+          ...(group ? { group } : {}),
+          ...(equipment ? { equipment } : {}),
+          scope: value,
+        },
       }}
       className={`rounded-pill px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.05em] transition-colors ${
         active
@@ -191,19 +256,26 @@ function GroupChip({
   label,
   scope,
   q,
+  equipment,
 }: {
   current?: string;
   value?: MuscleGroup;
   label: string;
   scope: string;
   q?: string;
+  equipment?: string;
 }) {
   const active = current === value || (!current && !value);
   return (
     <Link
       href={{
         pathname: '/exercises',
-        query: { ...(q ? { q } : {}), ...(value ? { group: value } : {}), scope },
+        query: {
+          ...(q ? { q } : {}),
+          ...(value ? { group: value } : {}),
+          ...(equipment ? { equipment } : {}),
+          scope,
+        },
       }}
       className={`rounded-pill px-3 py-1 text-xs transition-colors ${
         active

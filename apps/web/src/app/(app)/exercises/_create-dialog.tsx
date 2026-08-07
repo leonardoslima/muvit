@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { MUSCLE_GROUPS, MUSCLE_GROUP_LABEL } from '@/lib/muscle-groups';
 import { Plus, X } from 'lucide-react';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { type CreateExerciseState, createExerciseAction } from './actions';
 
 export function CreateExerciseDialog() {
   const [open, setOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState<CreateExerciseState, FormData>(
     createExerciseAction,
     null,
@@ -32,6 +33,19 @@ export function CreateExerciseDialog() {
   }, [submitted, pending, state]);
 
   const fe = state?.fieldErrors ?? {};
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form || Object.keys(fe).length === 0) return;
+
+    const firstInvalidField = Array.from(form.elements).find(
+      (element) =>
+        (element instanceof HTMLInputElement ||
+          element instanceof HTMLSelectElement ||
+          element instanceof HTMLTextAreaElement) &&
+        Boolean(fe[element.name]),
+    );
+    if (firstInvalidField instanceof HTMLElement) firstInvalidField.focus();
+  }, [fe]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -67,6 +81,7 @@ export function CreateExerciseDialog() {
         </div>
 
         <form
+          ref={formRef}
           action={(fd) => {
             setSubmitted(true);
             formAction(fd);
@@ -127,9 +142,16 @@ export function CreateExerciseDialog() {
                 <Input
                   id="equipment"
                   name="equipment"
+                  aria-invalid={!!fe.equipment}
+                  aria-describedby={fe.equipment ? 'equipment-error' : undefined}
                   placeholder="Halteres"
                   className="bg-background"
                 />
+                {fe.equipment && (
+                  <p id="equipment-error" className="text-xs text-destructive">
+                    {fe.equipment}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -137,10 +159,17 @@ export function CreateExerciseDialog() {
               <textarea
                 id="instructions"
                 name="instructions"
+                aria-invalid={!!fe.instructions}
+                aria-describedby={fe.instructions ? 'instructions-error' : undefined}
                 rows={3}
                 placeholder="Adicione orientações ou observações importantes..."
                 className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
+              {fe.instructions && (
+                <p id="instructions-error" className="text-xs text-destructive">
+                  {fe.instructions}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="videoUrl">URL do vídeo (opcional)</Label>
@@ -148,12 +177,27 @@ export function CreateExerciseDialog() {
                 id="videoUrl"
                 name="videoUrl"
                 type="url"
+                aria-invalid={!!fe.videoUrl}
+                aria-describedby={fe.videoUrl ? 'video-url-error' : undefined}
                 placeholder="https://..."
                 className="bg-background"
               />
+              {fe.videoUrl && (
+                <p id="video-url-error" className="text-xs text-destructive">
+                  {fe.videoUrl}
+                </p>
+              )}
             </div>
+            {Object.keys(fe).length > 0 && (
+              <p role="alert" className="sr-only">
+                {Object.values(fe).join(' ')}
+              </p>
+            )}
             {state?.error && (
-              <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
+              <p
+                role="alert"
+                className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive"
+              >
                 {state.error}
               </p>
             )}

@@ -51,4 +51,21 @@ describe('createExerciseAction', () => {
       },
     });
   });
+
+  it('valida limites, grupo e URL pelo schema compartilhado antes de configurar o cliente', async () => {
+    const formData = new FormData();
+    formData.set('name', 'A'.repeat(201));
+    formData.set('muscleGroup', 'grupo-inexistente');
+    formData.set('videoUrl', 'endereco-invalido');
+
+    const result = await createExerciseAction(null, formData);
+
+    expect(result?.fieldErrors).toMatchObject({
+      name: expect.any(String),
+      muscleGroup: expect.any(String),
+      videoUrl: expect.any(String),
+    });
+    expect(mocks.configureServerClient).not.toHaveBeenCalled();
+    expect(mocks.postExercises).not.toHaveBeenCalled();
+  });
 });

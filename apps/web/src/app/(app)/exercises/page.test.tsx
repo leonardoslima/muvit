@@ -53,23 +53,42 @@ describe('ExercisesPage', () => {
   it('consulta pela busca da URL e preserva os filtros nos links', async () => {
     render(
       await ExercisesPage({
-        searchParams: Promise.resolve({ q: 'supino', group: 'chest', scope: 'mine' }),
+        searchParams: Promise.resolve({
+          q: 'supino',
+          group: 'chest',
+          equipment: 'Barra',
+          scope: 'mine',
+        }),
       }),
     );
 
     expect(getExercises).toHaveBeenCalledWith({
       client: {},
-      query: { q: 'supino', muscleGroup: 'chest', scope: 'mine', limit: 100 },
+      query: {
+        q: 'supino',
+        muscleGroup: 'chest',
+        equipment: 'Barra',
+        scope: 'mine',
+        limit: 100,
+      },
     });
     expect(screen.getByRole('searchbox', { name: 'Buscar exercícios' })).toHaveValue('supino');
     expect(screen.getByRole('link', { name: 'Globais' })).toHaveAttribute(
       'href',
-      '/exercises?q=supino&group=chest&scope=global',
+      '/exercises?q=supino&group=chest&equipment=Barra&scope=global',
     );
     expect(screen.getByRole('link', { name: 'Costas' })).toHaveAttribute(
       'href',
-      '/exercises?q=supino&group=back&scope=mine',
+      '/exercises?q=supino&group=back&equipment=Barra&scope=mine',
     );
+    expect(screen.getByLabelText('Equipamento')).toHaveValue('Barra');
+    const equipmentForm = screen.getByLabelText('Equipamento').closest('form');
+    expect(equipmentForm).toHaveFormValues({
+      q: 'supino',
+      group: 'chest',
+      equipment: 'Barra',
+      scope: 'mine',
+    });
   });
 
   it('renderiza o placeholder visual e os metadados do card', async () => {
@@ -136,6 +155,8 @@ describe('ExercisesPage', () => {
     fireEvent.submit(form);
 
     expect(await within(dialog).findByText('Informe um nome.')).toHaveAttribute('id', 'name-error');
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Informe um nome.');
+    expect(within(dialog).getByLabelText('Nome do exercício')).toHaveFocus();
     expect(within(dialog).getByLabelText('Nome do exercício')).toHaveAttribute(
       'aria-describedby',
       'name-error',

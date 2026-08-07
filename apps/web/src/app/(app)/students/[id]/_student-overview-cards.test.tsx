@@ -19,6 +19,10 @@ const workoutPlan = {
   startDate: '2026-06-01',
   endDate: null,
   status: 'active' as const,
+  days: [
+    { id: 'day-1', planId: 'workout-1', label: 'Mobilidade', dayOrder: 0 },
+    { id: 'day-2', planId: 'workout-1', label: 'Força', dayOrder: 1 },
+  ],
 };
 
 const assessment = {
@@ -55,11 +59,25 @@ describe('cards da visao geral do estudante', () => {
     );
 
     expect(screen.getByRole('heading', { name: /Treino ativo/ })).toBeInTheDocument();
-    expect(screen.getByText(/Treino A/)).toBeInTheDocument();
+    expect(screen.getByText('Mobilidade')).toBeInTheDocument();
+    expect(screen.getByText('Força')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Ver treino completo/i })).toHaveAttribute(
       'href',
       '/workouts/workout-1',
     );
+  });
+
+  it('mostra estado honesto quando o plano ativo não possui dias retornados', () => {
+    render(
+      <ActiveWorkoutCard
+        studentId="student-1"
+        activeWorkoutPlan={{ ...workoutPlan, days: [] }}
+        loadFailed={false}
+      />,
+    );
+
+    expect(screen.getByText('Nenhum dia de treino configurado neste plano.')).toBeInTheDocument();
+    expect(screen.queryByText('Mobilidade')).not.toBeInTheDocument();
   });
 
   it('renderiza a ultima avaliacao com medidas, grafico e acoes', () => {

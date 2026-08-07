@@ -62,6 +62,7 @@ type WorkoutPlan = {
   startDate: string | null;
   endDate?: string | null;
   status: 'active' | 'archived' | 'draft';
+  days: Array<{ id: string; planId: string; label: string; dayOrder: number }>;
 };
 
 function toNum(value: string | number | null): number | null {
@@ -205,35 +206,25 @@ export default async function StudentDetailPage({ params }: Props) {
         aria-label="Seções do aluno"
         className="overflow-x-auto border-b border-border text-sm font-medium"
       >
-        <div role="tablist" className="flex min-w-max">
+        <div className="flex min-w-max">
           <a
-            href="#overview"
-            role="tab"
-            aria-selected="true"
+            href={`/students/${s.id}`}
+            aria-current="page"
             className="border-b-2 border-primary px-5 py-3 text-primary"
           >
             Visão geral
           </a>
-          <a
-            href="#treino-ativo"
-            role="tab"
-            aria-selected="false"
-            className="px-5 py-3 text-muted-foreground hover:text-foreground"
-          >
+          <a href="#treino-ativo" className="px-5 py-3 text-muted-foreground hover:text-foreground">
             Treinos
           </a>
           <a
-            href={`/students/${s.id}/assessments`}
-            role="tab"
-            aria-selected="false"
+            href="#ultima-avaliacao"
             className="px-5 py-3 text-muted-foreground hover:text-foreground"
           >
             Avaliações
           </a>
           <a
             href={`/students/${s.id}/assessments`}
-            role="tab"
-            aria-selected="false"
             className="px-5 py-3 text-muted-foreground hover:text-foreground"
           >
             Histórico

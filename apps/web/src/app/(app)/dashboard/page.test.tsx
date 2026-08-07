@@ -43,9 +43,16 @@ function apiError() {
 function mockSummary() {
   vi.mocked(getTrainerSummary).mockResolvedValue(
     apiOk({
-      students: { total: 1, active: 1, paused: 0, inactive: 0, newThisWeek: 1 },
-      workouts: { activePlans: 1 },
-      assessments: { last30d: 1 },
+      students: {
+        total: 1,
+        active: 1,
+        paused: 0,
+        inactive: 0,
+        newThisWeek: 1,
+        inactive7d: 2,
+      },
+      workouts: { activePlans: 1, expiringThisWeek: 3 },
+      assessments: { last30d: 1, pending: 4 },
     }),
   );
 }
@@ -105,6 +112,14 @@ function mockStudentDetails() {
           endDate: null,
           status: 'active',
           createdAt: '2026-06-20T00:00:00.000Z',
+          days: [
+            {
+              id: 'day-1',
+              planId: 'plan-1',
+              label: 'Treino A',
+              dayOrder: 1,
+            },
+          ],
         },
       ],
     }),
@@ -167,7 +182,7 @@ describe('DashboardPage', () => {
     render(await DashboardPage());
 
     const metrics = screen.getAllByRole('article', {
-      name: /^(Alunos ativos|Pausados|Planos ativos|Avaliações 30d)$/,
+      name: /^(Alunos ativos|Vencendo esta semana|Avaliações pendentes|Inativos \(7\+ dias\))$/,
     });
     const studentsHeading = screen.getByRole('heading', { name: 'Lista de alunos' });
     const lastMetric = metrics.at(-1);
@@ -179,6 +194,9 @@ describe('DashboardPage', () => {
       lastMetric.compareDocumentPosition(studentsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Próximos passos' })).not.toBeInTheDocument();
+    expect(screen.getByRole('article', { name: 'Vencendo esta semana' })).toHaveTextContent('3');
+    expect(screen.getByRole('article', { name: 'Avaliações pendentes' })).toHaveTextContent('4');
+    expect(screen.getByRole('article', { name: 'Inativos (7+ dias)' })).toHaveTextContent('2');
   });
 
   it('oferece caminho real para ver mais alunos quando existe outra pagina', async () => {

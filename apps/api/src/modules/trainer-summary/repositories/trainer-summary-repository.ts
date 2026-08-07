@@ -5,12 +5,15 @@ export type TrainerSummary = {
     paused: number;
     inactive: number;
     newThisWeek: number;
+    inactive7d: number;
   };
   workouts: {
     activePlans: number;
+    expiringThisWeek: number;
   };
   assessments: {
     last30d: number;
+    pending: number;
   };
 };
 

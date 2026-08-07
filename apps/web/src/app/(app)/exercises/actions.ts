@@ -2,7 +2,7 @@
 
 import { configureServerClient } from '@/lib/api-client';
 import { deleteExercisesById, postExercises } from '@/lib/api/sdk.gen';
-import type { MuscleGroup } from '@/lib/muscle-groups';
+import { createExerciseSchema } from '@muvit/validators';
 import { revalidatePath } from 'next/cache';
 
 export type CreateExerciseState = { error?: string; fieldErrors?: Record<string, string> } | null;
@@ -12,26 +12,31 @@ export async function createExerciseAction(
   formData: FormData,
 ): Promise<CreateExerciseState> {
   const name = String(formData.get('name') ?? '').trim();
-  const muscleGroup = String(formData.get('muscleGroup') ?? '') as MuscleGroup;
+  const muscleGroup = String(formData.get('muscleGroup') ?? '');
   const equipment = String(formData.get('equipment') ?? '').trim();
   const instructions = String(formData.get('instructions') ?? '').trim();
   const videoUrl = String(formData.get('videoUrl') ?? '').trim();
 
-  const fieldErrors: Record<string, string> = {};
-  if (name.length < 2) fieldErrors.name = 'Informe um nome.';
-  if (!muscleGroup) fieldErrors.muscleGroup = 'Selecione um grupo muscular.';
-  if (Object.keys(fieldErrors).length) return { fieldErrors };
+  const parsed = createExerciseSchema.safeParse({
+    name,
+    muscleGroup,
+    equipment: equipment || undefined,
+    instructions: instructions || undefined,
+    videoUrl: videoUrl || undefined,
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const [field, messages] of Object.entries(parsed.error.flatten().fieldErrors)) {
+      const message = messages?.[0];
+      if (message) fieldErrors[field] = message;
+    }
+    return { fieldErrors };
+  }
 
   const client = await configureServerClient();
   const res = await postExercises({
     client,
-    body: {
-      name,
-      muscleGroup,
-      equipment: equipment || undefined,
-      instructions: instructions || undefined,
-      videoUrl: videoUrl || undefined,
-    },
+    body: parsed.data,
   });
   if (res.error || !res.data) return { error: 'Não foi possível criar.' };
   revalidatePath('/exercises');

@@ -690,6 +690,7 @@ export type GetExercisesData = {
     query?: {
         q?: string;
         muscleGroup?: 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'legs' | 'glutes' | 'core' | 'cardio' | 'full_body';
+        equipment?: string;
         scope?: 'mine' | 'global' | 'all';
         limit?: number;
         offset?: number;
@@ -1367,6 +1368,12 @@ export type GetStudentsMeWorkoutPlansResponses = {
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
             createdAt: string | string;
+            days: Array<{
+                id: string;
+                planId: string;
+                label: string;
+                dayOrder: number;
+            }>;
         }>;
     };
 };
@@ -1396,6 +1403,12 @@ export type GetStudentsByStudentIdWorkoutPlansResponses = {
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
             createdAt: string | string;
+            days: Array<{
+                id: string;
+                planId: string;
+                label: string;
+                dayOrder: number;
+            }>;
         }>;
     };
 };
@@ -1807,12 +1820,15 @@ export type GetTrainerSummaryResponses = {
             paused: number;
             inactive: number;
             newThisWeek: number;
+            inactive7d: number;
         };
         workouts: {
             activePlans: number;
+            expiringThisWeek: number;
         };
         assessments: {
             last30d: number;
+            pending: number;
         };
     };
 };

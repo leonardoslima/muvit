@@ -134,6 +134,48 @@ describe('workout plans', () => {
     });
     expect(r.statusCode).toBe(200);
     expect(r.json().items).toHaveLength(1);
+    expect(r.json().items[0].days).toEqual([expect.objectContaining({ label: 'A', dayOrder: 0 })]);
+  });
+
+  it('lista somente os dias reais dos planos pertencentes ao aluno solicitado', async () => {
+    const { studentId, trainerCookie } = await createTrainerScenario();
+    const secondStudentResponse = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainerCookie },
+      payload: { name: 'Segundo aluno' },
+    });
+    const secondStudentId = secondStudentResponse.json().id as string;
+    for (const plan of [
+      { studentId, name: 'Plano do primeiro', label: 'Dia do primeiro' },
+      { studentId: secondStudentId, name: 'Plano do segundo', label: 'Dia do segundo' },
+    ]) {
+      await app.inject({
+        method: 'POST',
+        url: '/workout-plans',
+        headers: { cookie: trainerCookie },
+        payload: {
+          studentId: plan.studentId,
+          name: plan.name,
+          status: 'active',
+          days: [{ label: plan.label, dayOrder: 0, exercises: [] }],
+        },
+      });
+    }
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}/workout-plans`,
+      headers: { cookie: trainerCookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items).toEqual([
+      expect.objectContaining({
+        name: 'Plano do primeiro',
+        days: [expect.objectContaining({ label: 'Dia do primeiro' })],
+      }),
+    ]);
   });
 
   it('cross-tenant 404: other trainer cannot list plans for our student', async () => {

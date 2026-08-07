@@ -102,7 +102,7 @@ export function LatestAssessmentCard({
   const measurementRows = buildMeasurementRows(latestAssessment?.measurements ?? null);
 
   return (
-    <Card className="gap-0 overflow-hidden p-0">
+    <Card id="ultima-avaliacao" className="gap-0 overflow-hidden p-0">
       <CardHeader className="flex-row items-center justify-between border-b border-border px-5 py-4">
         <CardTitle>{'Última avaliação'}</CardTitle>
         {latestAssessment && (

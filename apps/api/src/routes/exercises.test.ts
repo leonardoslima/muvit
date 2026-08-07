@@ -117,4 +117,25 @@ describe('exercises', () => {
     expect(items.length).toBeGreaterThan(0);
     expect(items.every((e) => e.muscleGroup === 'chest')).toBe(true);
   });
+
+  it('filtra equipamentos sem misturar exercícios de outro equipamento', async () => {
+    await createGlobalExercises();
+    await db.insert(schema.exercises).values({
+      name: 'Supino com halteres',
+      muscleGroup: 'chest',
+      equipment: 'Halteres',
+    });
+    const trainer = await signupTrainer('equipment@a.com');
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/exercises?equipment=Halteres&scope=global',
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items).toEqual([
+      expect.objectContaining({ name: 'Supino com halteres', equipment: 'Halteres' }),
+    ]);
+  });
 });
