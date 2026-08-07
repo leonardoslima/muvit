@@ -34,7 +34,11 @@ export function AssessmentForm({ studentId }: { studentId: string }) {
       : null;
 
   return (
-    <form action={formAction} className="flex flex-col gap-6">
+    <form
+      action={formAction}
+      className="flex flex-col gap-6"
+      data-responsive-layout="assessment-form"
+    >
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <FormCard title="Métricas principais">
           <MetricField
@@ -129,7 +133,7 @@ export function AssessmentForm({ studentId }: { studentId: string }) {
       </Card>
 
       {state?.error && (
-        <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
           {state.error}
         </p>
       )}

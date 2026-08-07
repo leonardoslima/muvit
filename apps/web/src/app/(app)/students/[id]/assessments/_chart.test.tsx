@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EvolutionChart } from './_chart';
 
@@ -25,5 +25,26 @@ describe('EvolutionChart', () => {
     );
 
     expect(hasDuplicateKeyWarning).toBe(false);
+  });
+
+  it('explica quando não há duas observações da mesma métrica', () => {
+    render(<EvolutionChart points={[{ date: '2026-06-24', weight: 68.4, bodyFat: null }]} />);
+
+    expect(screen.getByText('Sem dados suficientes para o gráfico.')).toBeInTheDocument();
+  });
+
+  it('expõe uma descrição acessível quando há série comparável', () => {
+    render(
+      <EvolutionChart
+        points={[
+          { date: '2026-05-24', weight: 70, bodyFat: 20 },
+          { date: '2026-06-24', weight: 68.4, bodyFat: 18 },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('img', { name: 'Evolução de peso e percentual de gordura' }),
+    ).toBeInTheDocument();
   });
 });
