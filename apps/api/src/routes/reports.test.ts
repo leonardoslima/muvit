@@ -137,4 +137,17 @@ describe('GET /reports/students/:studentId', () => {
 
     expect(response.statusCode).toBe(403);
   });
+
+  it('documenta todos os status públicos no OpenAPI', async () => {
+    await app.ready();
+    const operation = app.swagger().paths?.['/reports/students/{studentId}']?.get;
+
+    expect(Object.keys(operation?.responses ?? {}).sort()).toEqual([
+      '200',
+      '400',
+      '401',
+      '403',
+      '404',
+    ]);
+  });
 });

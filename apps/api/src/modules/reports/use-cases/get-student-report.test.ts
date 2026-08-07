@@ -73,6 +73,26 @@ describe('buildReportSummary', () => {
   it('explicita quando nenhuma seção tem dados suficientes', () => {
     expect(buildReportSummary(report())).toBe('Ainda não há dados suficientes.');
   });
+
+  it('não afirma evolução quando existem apenas dados de treino', () => {
+    const value = report({
+      topExercises: {
+        hasEnoughData: true,
+        items: [
+          {
+            exerciseId: '40000000-0000-4000-8000-000000000001',
+            name: 'Supino',
+            maxLoadKg: 60,
+            totalSets: 1,
+            totalVolumeKg: 600,
+            progression: [{ date: '2026-08-01', loadKg: 60 }],
+          },
+        ],
+      },
+    });
+
+    expect(buildReportSummary(value)).toBe('O relatório de João apresenta dados do período.');
+  });
 });
 
 describe('GetStudentReportUseCase', () => {
@@ -189,6 +209,7 @@ describe('GetStudentReportUseCase', () => {
           exerciseId: '40000000-0000-4000-8000-000000000002',
           name: 'Remada',
           loadKg: null,
+          repsDone: 10,
           completed: true,
         },
         {
@@ -196,6 +217,7 @@ describe('GetStudentReportUseCase', () => {
           exerciseId: '40000000-0000-4000-8000-000000000001',
           name: 'Supino',
           loadKg: 60,
+          repsDone: 10,
           completed: true,
         },
         {
@@ -203,6 +225,7 @@ describe('GetStudentReportUseCase', () => {
           exerciseId: '40000000-0000-4000-8000-000000000001',
           name: 'Supino',
           loadKg: 65,
+          repsDone: null,
           completed: true,
         },
       ],
@@ -229,6 +252,7 @@ describe('GetStudentReportUseCase', () => {
         name: 'Supino',
         maxLoadKg: 65,
         totalSets: 2,
+        totalVolumeKg: 600,
         progression: [
           { date: '2026-08-01', loadKg: 60 },
           { date: '2026-08-03', loadKg: 65 },
@@ -239,6 +263,7 @@ describe('GetStudentReportUseCase', () => {
         name: 'Remada',
         maxLoadKg: null,
         totalSets: 1,
+        totalVolumeKg: 0,
         progression: [],
       },
     ]);
@@ -264,5 +289,92 @@ describe('GetStudentReportUseCase', () => {
     }).execute(identity, student.id, { range: '30d' });
 
     expect(result.workoutAdherence.planned).toBe(15);
+  });
+
+  it('calcula plano aberto no histórico completo desde o início até hoje', async () => {
+    const result = await makeUseCase({
+      plans: [{ startDate: '2026-07-01', endDate: null, workoutDays: 3 }],
+    }).execute(identity, student.id, { range: 'all' });
+
+    expect(result.workoutAdherence.planned).toBe(18);
+  });
+
+  it('usa a maior meta semanal quando planos se sobrepõem', async () => {
+    const result = await makeUseCase({
+      plans: [
+        { startDate: '2026-07-01', endDate: '2026-08-07', workoutDays: 3 },
+        { startDate: '2026-07-15', endDate: '2026-08-07', workoutDays: 5 },
+      ],
+    }).execute(identity, student.id, { range: 'all' });
+
+    expect(result.workoutAdherence.planned).toBe(26);
+  });
+
+  it('limita a aderência a cem por cento quando há treinos extras', async () => {
+    const result = await makeUseCase({
+      plans: [{ startDate: '2026-08-01', endDate: '2026-08-07', workoutDays: 1 }],
+      logs: Array.from({ length: 2 }, () => ({
+        date: '2026-08-02',
+        completed: true,
+        rpe: null,
+      })),
+    }).execute(identity, student.id, {
+      range: 'custom',
+      from: '2026-08-01',
+      to: '2026-08-07',
+    });
+
+    expect(result.workoutAdherence).toMatchObject({ planned: 1, completed: 2, percentage: 100 });
+  });
+
+  it('não declara evolução física sem uma métrica comparável', async () => {
+    const result = await makeUseCase({
+      assessments: [
+        {
+          date: '2026-07-01',
+          weightKg: 80,
+          bodyFatPct: null,
+          measurements: null,
+          photos: null,
+        },
+        {
+          date: '2026-08-01',
+          weightKg: null,
+          bodyFatPct: 18,
+          measurements: null,
+          photos: null,
+        },
+      ],
+    }).execute(identity, student.id, { range: '90d' });
+
+    expect(result.physicalEvolution.hasEnoughData).toBe(false);
+    expect(result.summary).toBe('Ainda não há dados suficientes.');
+  });
+
+  it('não trata a mesma foto repetida como antes e depois', async () => {
+    const result = await makeUseCase({
+      assessments: [
+        {
+          date: '2026-07-01',
+          weightKg: null,
+          bodyFatPct: null,
+          measurements: null,
+          photos: ['https://example.com/same.jpg'],
+        },
+        {
+          date: '2026-08-01',
+          weightKg: null,
+          bodyFatPct: null,
+          measurements: null,
+          photos: ['https://example.com/same.jpg'],
+        },
+      ],
+    }).execute(identity, student.id, { range: '90d' });
+
+    expect(result.beforeAfter).toEqual({
+      hasEnoughData: false,
+      before: { date: '2026-07-01', photoUrl: 'https://example.com/same.jpg' },
+      after: null,
+    });
   });
 });

@@ -8,6 +8,7 @@ import { sendUseCaseError } from '../shared/http-error.js';
 export const reportsRoutes: FastifyPluginAsyncZod = async (app) => {
   const studentsModule = makeStudentsModule();
   const reportsModule = makeReportsModule(studentsModule.ensureStudentAccess);
+  const errorResponseSchema = z.object({ error: z.string() });
 
   app.addHook('preHandler', app.requireAuth);
 
@@ -20,7 +21,13 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['reports'],
         params: z.object({ studentId: z.string().uuid() }),
         querystring: reportQuerySchema,
-        response: { 200: studentReportSchema },
+        response: {
+          200: studentReportSchema,
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
       },
     },
     async (request, reply) => {

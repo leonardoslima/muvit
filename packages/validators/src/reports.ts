@@ -17,7 +17,10 @@ export const reportQuerySchema = z
         context.addIssue({ code: z.ZodIssueCode.custom, message: 'Informe a data final.' });
       }
       if (query.from && query.to && query.from > query.to) {
-        context.addIssue({ code: z.ZodIssueCode.custom, message: 'A data inicial deve anteceder a final.' });
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'A data inicial deve anteceder a final.',
+        });
       }
       return;
     }
@@ -78,6 +81,7 @@ export const studentReportSchema = z.object({
         name: z.string(),
         maxLoadKg: z.number().nullable(),
         totalSets: z.number().int().min(0),
+        totalVolumeKg: z.number().min(0),
         progression: z.array(z.object({ date: z.string().date(), loadKg: z.number() })),
       }),
     ),

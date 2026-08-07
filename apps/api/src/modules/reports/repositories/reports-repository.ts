@@ -19,6 +19,7 @@ export type ReportExerciseSet = {
   exerciseId: string;
   name: string;
   loadKg: number | null;
+  repsDone: number | null;
   completed: boolean;
 };
 

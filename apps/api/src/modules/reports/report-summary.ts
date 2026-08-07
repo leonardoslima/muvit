@@ -18,5 +18,5 @@ export function buildReportSummary(report: StudentReport): string {
     return `${report.student.name} concluiu ${adherence.completed} de ${adherence.planned} treinos no período.`;
   }
 
-  return `O relatório de ${report.student.name} apresenta evolução no período.`;
+  return `O relatório de ${report.student.name} apresenta dados do período.`;
 }

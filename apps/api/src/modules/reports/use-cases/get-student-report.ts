@@ -24,27 +24,58 @@ function measurement(row: ReportAssessment, ...keys: string[]): number | null {
   return null;
 }
 
-function daysBetweenInclusive(from: string, to: string): number {
-  const fromTime = Date.parse(`${from}T00:00:00Z`);
-  const toTime = Date.parse(`${to}T00:00:00Z`);
-  return Math.floor((toTime - fromTime) / 86_400_000) + 1;
+function formatDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
-function plannedSessions(plans: ReportPlan[], period: ResolvedReportPeriod): number {
-  return plans.reduce((total, plan) => {
-    const from = [period.from, plan.startDate]
-      .filter((date): date is string => date !== null)
-      .sort()
-      .at(-1);
-    const to = [period.to, plan.endDate]
+function utcDay(date: string): number {
+  return Date.parse(`${date}T00:00:00Z`) / 86_400_000;
+}
+
+function plannedSessions(plans: ReportPlan[], period: ResolvedReportPeriod, today: string): number {
+  const intervals = plans.flatMap((plan) => {
+    const to = [period.to, plan.endDate, today]
       .filter((date): date is string => date !== null)
       .sort()
       .at(0);
+    if (to === undefined) return [];
+    const from =
+      [period.from, plan.startDate]
+        .filter((date): date is string => date !== null)
+        .sort()
+        .at(-1) ?? to;
+    if (from > to) return [];
+    return [{ from, to, workoutDays: plan.workoutDays }];
+  });
+  const anchor =
+    period.from ??
+    intervals
+      .map((interval) => interval.from)
+      .sort()
+      .at(0);
+  if (anchor === undefined) return 0;
 
-    if (from === undefined || to === undefined) return total + plan.workoutDays;
-    if (from > to) return total;
-    return total + Math.ceil(daysBetweenInclusive(from, to) / 7) * plan.workoutDays;
-  }, 0);
+  const anchorDay = utcDay(anchor);
+  const goalsByWeek = new Map<number, number>();
+  for (const interval of intervals) {
+    const firstWeek = Math.floor((utcDay(interval.from) - anchorDay) / 7);
+    const lastWeek = Math.floor((utcDay(interval.to) - anchorDay) / 7);
+    for (let week = firstWeek; week <= lastWeek; week += 1) {
+      goalsByWeek.set(week, Math.max(goalsByWeek.get(week) ?? 0, interval.workoutDays));
+    }
+  }
+  return [...goalsByWeek.values()].reduce((total, goal) => total + goal, 0);
+}
+
+function metricChange(
+  assessments: ReportAssessment[],
+  select: (assessment: ReportAssessment) => number | null,
+): number | null {
+  const values = assessments.map(select).filter((value): value is number => value !== null);
+  const first = values.at(0);
+  const last = values.at(-1);
+  if (values.length < 2 || first === undefined || last === undefined) return null;
+  return difference(last, first);
 }
 
 function buildFrequency(logs: ReportWorkoutLog[]): StudentReport['trainingFrequency'] {
@@ -90,11 +121,16 @@ function buildTopExercises(sets: ReportExerciseSet[]): StudentReport['topExercis
         .sort((left, right) => left.date.localeCompare(right.date))
         .map((row) => ({ date: row.date, loadKg: row.loadKg }));
       const loads = progression.map((point) => point.loadKg);
+      const totalVolumeKg = group.rows.reduce((volume, row) => {
+        if (row.loadKg === null || row.repsDone === null) return volume;
+        return volume + row.loadKg * row.repsDone;
+      }, 0);
       return {
         exerciseId,
         name: group.name,
         maxLoadKg: loads.length > 0 ? Math.max(...loads) : null,
         totalSets: group.rows.length,
+        totalVolumeKg: Number(totalVolumeKg.toFixed(2)),
         progression,
       };
     })
@@ -115,7 +151,8 @@ export class GetStudentReportUseCase {
     query: ReportQuery,
   ): Promise<StudentReport> {
     const student = await this.ensureStudentAccess.execute(identity, studentId);
-    const period = resolveReportPeriod(query, this.now());
+    const now = this.now();
+    const period = resolveReportPeriod(query, now);
     const [assessmentRows, logs, sets, plans] = await Promise.all([
       this.reportsRepository.listAssessments(studentId, period),
       this.reportsRepository.listWorkoutLogs(studentId, period),
@@ -125,14 +162,28 @@ export class GetStudentReportUseCase {
     const assessments = [...assessmentRows].sort((left, right) =>
       left.date.localeCompare(right.date),
     );
-    const first = assessments.at(0) ?? null;
-    const last = assessments.at(-1) ?? null;
     const photos = assessments.flatMap((assessment) =>
       (assessment.photos ?? []).map((photoUrl) => ({ date: assessment.date, photoUrl })),
     );
-    const hasPhysicalEvolution = assessments.length >= 2;
+    const before = photos.at(0) ?? null;
+    const after = before
+      ? ([...photos]
+          .reverse()
+          .find((photo) => photo.date !== before.date && photo.photoUrl !== before.photoUrl) ??
+        null)
+      : null;
+    const changes = {
+      weightKg: metricChange(assessments, (assessment) => assessment.weightKg),
+      bodyFatPct: metricChange(assessments, (assessment) => assessment.bodyFatPct),
+      waistCm: metricChange(assessments, (assessment) => measurement(assessment, 'waist')),
+      armCm:
+        metricChange(assessments, (assessment) => measurement(assessment, 'armRight')) ??
+        metricChange(assessments, (assessment) => measurement(assessment, 'armLeft')),
+    };
+    const hasPhysicalEvolution = Object.values(changes).some((change) => change !== null);
     const completed = logs.filter((log) => log.completed).length;
-    const planned = plannedSessions(plans, period);
+    const today = formatDate(now);
+    const planned = plannedSessions(plans, period, today);
 
     const report: StudentReport = {
       student: { id: student.id, name: student.name, avatarUrl: student.avatarUrl },
@@ -145,38 +196,18 @@ export class GetStudentReportUseCase {
           bodyFatPct: assessment.bodyFatPct,
           measurements: assessment.measurements,
         })),
-        changes: {
-          weightKg:
-            hasPhysicalEvolution && first && last
-              ? difference(last.weightKg, first.weightKg)
-              : null,
-          bodyFatPct:
-            hasPhysicalEvolution && first && last
-              ? difference(last.bodyFatPct, first.bodyFatPct)
-              : null,
-          waistCm:
-            hasPhysicalEvolution && first && last
-              ? difference(measurement(last, 'waist'), measurement(first, 'waist'))
-              : null,
-          armCm:
-            hasPhysicalEvolution && first && last
-              ? difference(
-                  measurement(last, 'armRight', 'armLeft'),
-                  measurement(first, 'armRight', 'armLeft'),
-                )
-              : null,
-        },
+        changes,
       },
       beforeAfter: {
-        hasEnoughData: photos.length >= 2,
-        before: photos.at(0) ?? null,
-        after: photos.length >= 2 ? (photos.at(-1) ?? null) : null,
+        hasEnoughData: after !== null,
+        before,
+        after,
       },
       workoutAdherence: {
         hasEnoughData: planned > 0,
         completed,
         planned,
-        percentage: planned > 0 ? Math.round((completed / planned) * 100) : null,
+        percentage: planned > 0 ? Math.min(100, Math.round((completed / planned) * 100)) : null,
       },
       trainingFrequency: buildFrequency(logs),
       topExercises: buildTopExercises(sets),

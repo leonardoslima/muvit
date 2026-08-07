@@ -76,6 +76,7 @@ export class DrizzleReportsRepository implements ReportsRepository {
         exerciseId: schema.exercises.id,
         name: schema.exercises.name,
         loadKg: schema.logSets.loadKg,
+        repsDone: schema.logSets.repsDone,
         completed: schema.logSets.completed,
       })
       .from(schema.logSets)
@@ -84,9 +85,18 @@ export class DrizzleReportsRepository implements ReportsRepository {
         schema.workoutExercises,
         eq(schema.workoutExercises.id, schema.logSets.workoutExerciseId),
       )
+      .innerJoin(
+        schema.workoutDays,
+        eq(schema.workoutDays.id, schema.workoutExercises.workoutDayId),
+      )
+      .innerJoin(schema.workoutPlans, eq(schema.workoutPlans.id, schema.workoutDays.planId))
       .innerJoin(schema.exercises, eq(schema.exercises.id, schema.workoutExercises.exerciseId))
       .where(
-        dateConditions(schema.workoutLogs.studentId, schema.workoutLogs.date, studentId, period),
+        and(
+          dateConditions(schema.workoutLogs.studentId, schema.workoutLogs.date, studentId, period),
+          eq(schema.workoutPlans.studentId, studentId),
+          eq(schema.workoutLogs.workoutDayId, schema.workoutExercises.workoutDayId),
+        ),
       )
       .orderBy(
         asc(schema.workoutLogs.date),
@@ -125,12 +135,24 @@ export class DrizzleReportsRepository implements ReportsRepository {
       .select({
         startDate: schema.workoutPlans.startDate,
         endDate: schema.workoutPlans.endDate,
+        createdAt: schema.workoutPlans.createdAt,
         workoutDays: count(schema.workoutDays.id).mapWith(Number),
       })
       .from(schema.workoutPlans)
       .leftJoin(schema.workoutDays, eq(schema.workoutDays.planId, schema.workoutPlans.id))
       .where(and(...conditions))
-      .groupBy(schema.workoutPlans.id, schema.workoutPlans.startDate, schema.workoutPlans.endDate)
-      .orderBy(asc(schema.workoutPlans.startDate), asc(schema.workoutPlans.id));
+      .groupBy(
+        schema.workoutPlans.id,
+        schema.workoutPlans.startDate,
+        schema.workoutPlans.endDate,
+        schema.workoutPlans.createdAt,
+      )
+      .orderBy(asc(schema.workoutPlans.startDate), asc(schema.workoutPlans.id))
+      .then((rows) =>
+        rows.map(({ createdAt, ...row }) => ({
+          ...row,
+          startDate: row.startDate ?? createdAt.toISOString().slice(0, 10),
+        })),
+      );
   }
 }

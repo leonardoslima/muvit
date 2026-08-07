@@ -4,10 +4,12 @@ import { reportQuerySchema, studentReportSchema } from './reports.js';
 describe('contratos de relatórios', () => {
   it('exige período ordenado para alcance personalizado', () => {
     expect(
-      reportQuerySchema.safeParse({ range: 'custom', from: '2026-08-10', to: '2026-08-01' }).success,
+      reportQuerySchema.safeParse({ range: 'custom', from: '2026-08-10', to: '2026-08-01' })
+        .success,
     ).toBe(false);
     expect(
-      reportQuerySchema.safeParse({ range: 'custom', from: '2026-08-01', to: '2026-08-10' }).success,
+      reportQuerySchema.safeParse({ range: 'custom', from: '2026-08-01', to: '2026-08-10' })
+        .success,
     ).toBe(true);
   });
 
@@ -28,10 +30,25 @@ describe('contratos de relatórios', () => {
         beforeAfter: { hasEnoughData: false, before: null, after: null },
         workoutAdherence: { hasEnoughData: false, completed: 0, planned: 0, percentage: null },
         trainingFrequency: { hasEnoughData: false, days: [] },
-        topExercises: { hasEnoughData: false, items: [] },
+        topExercises: {
+          hasEnoughData: true,
+          items: [
+            {
+              exerciseId: '20000000-0000-4000-8000-000000000001',
+              name: 'Supino',
+              maxLoadKg: 60,
+              totalSets: 2,
+              totalVolumeKg: 1200,
+              progression: [{ date: '2026-08-01', loadKg: 60 }],
+            },
+          ],
+        },
         rpeTrend: { hasEnoughData: false, points: [] },
         summary: 'Ainda não há dados suficientes.',
       }),
-    ).toMatchObject({ summary: 'Ainda não há dados suficientes.' });
+    ).toMatchObject({
+      summary: 'Ainda não há dados suficientes.',
+      topExercises: { items: [{ totalVolumeKg: 1200 }] },
+    });
   });
 });
