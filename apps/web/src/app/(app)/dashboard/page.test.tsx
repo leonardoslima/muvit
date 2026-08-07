@@ -163,6 +163,24 @@ describe('DashboardPage', () => {
     expect(within(section).getByRole('button', { name: 'Próxima' })).toBeDisabled();
   });
 
+  it('mantém as quatro métricas antes da Lista de alunos', async () => {
+    render(await DashboardPage());
+
+    const metrics = screen.getAllByRole('article', {
+      name: /^(Alunos ativos|Pausados|Planos ativos|Avaliações 30d)$/,
+    });
+    const studentsHeading = screen.getByRole('heading', { name: 'Lista de alunos' });
+    const lastMetric = metrics.at(-1);
+
+    expect(metrics).toHaveLength(4);
+    expect(lastMetric).toBeDefined();
+    if (!lastMetric) throw new Error('A quarta métrica não foi renderizada.');
+    expect(
+      lastMetric.compareDocumentPosition(studentsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Próximos passos' })).not.toBeInTheDocument();
+  });
+
   it('oferece caminho real para ver mais alunos quando existe outra pagina', async () => {
     mockStudents(6);
 
@@ -184,16 +202,5 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('region', { name: 'Lista de alunos' })).toHaveTextContent(
       'Não foi possível carregar a lista de alunos.',
     );
-  });
-
-  it('mantem os proximos passos antes da lista de estudantes', async () => {
-    render(await DashboardPage());
-
-    const nextStepsHeading = screen.getByRole('heading', { name: 'Próximos passos' });
-    const studentsSection = screen.getByRole('region', { name: 'Lista de alunos' });
-
-    expect(
-      nextStepsHeading.compareDocumentPosition(studentsSection) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 });

@@ -15,6 +15,7 @@ export async function createExerciseAction(
   const muscleGroup = String(formData.get('muscleGroup') ?? '') as MuscleGroup;
   const equipment = String(formData.get('equipment') ?? '').trim();
   const instructions = String(formData.get('instructions') ?? '').trim();
+  const videoUrl = String(formData.get('videoUrl') ?? '').trim();
 
   const fieldErrors: Record<string, string> = {};
   if (name.length < 2) fieldErrors.name = 'Informe um nome.';
@@ -29,6 +30,7 @@ export async function createExerciseAction(
       muscleGroup,
       equipment: equipment || undefined,
       instructions: instructions || undefined,
+      videoUrl: videoUrl || undefined,
     },
   });
   if (res.error || !res.data) return { error: 'Não foi possível criar.' };

@@ -143,6 +143,20 @@ describe('StudentDetailPage', () => {
     );
 
     expect(screen.getByRole('navigation', { name: 'Seções do aluno' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Visão geral' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'Treinos' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: 'Avaliações' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(screen.getByRole('tab', { name: 'Histórico' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(screen.getByTestId('student-overview')).toHaveClass('xl:grid-cols-3');
     expect(screen.getByRole('heading', { name: 'Informações pessoais' })).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     expect(screen.getByText('Evitar impacto alto no joelho direito.')).toBeInTheDocument();
@@ -157,6 +171,7 @@ describe('StudentDetailPage', () => {
     expect(screen.getByText('68 cm')).toBeInTheDocument();
     expect(screen.getByText('Evolução de peso')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Evolução de peso' })).toBeInTheDocument();
+    expect(screen.getByText('Peso mais recente: 72,5 kg.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver histórico' })).toHaveAttribute(
       'href',
       '/students/student-1/assessments',

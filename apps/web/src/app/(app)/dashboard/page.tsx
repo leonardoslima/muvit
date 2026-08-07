@@ -6,16 +6,7 @@ import { configureServerClient } from '@/lib/api-client';
 import { getTrainerSummary } from '@/lib/api/sdk.gen';
 import { requireUser } from '@/lib/auth-server';
 import { loadDashboardStudentList } from '@/lib/dashboard-student-list';
-import {
-  AlertTriangle,
-  BarChart3,
-  Bell,
-  ClipboardList,
-  Plus,
-  Search,
-  Sparkles,
-  Users,
-} from 'lucide-react';
+import { AlertTriangle, BarChart3, Bell, ClipboardList, Plus, Search, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -95,48 +86,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <section className="rounded-[12px] bg-card p-6 shadow-card">
-        <div className="flex items-center justify-between pb-4">
-          <h2 className="font-display text-lg font-bold">Próximos passos</h2>
-          <Link
-            href="/students"
-            className="font-display text-[13px] font-semibold text-primary hover:underline"
-          >
-            Ver alunos →
-          </Link>
-        </div>
-        <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <NextStepCard icon={Users} title="Cadastrar aluno" href="/students/new" />
-          <NextStepCard icon={ClipboardList} title="Montar treino" href="/workouts" />
-          <NextStepCard icon={Sparkles} title="Adicionar exercício custom" href="/exercises" />
-        </ul>
-      </section>
-
       <StudentListTable state={studentListState} />
     </>
-  );
-}
-
-function NextStepCard({
-  icon: Icon,
-  title,
-  href,
-}: {
-  icon: typeof Users;
-  title: string;
-  href: string;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="flex items-center gap-3 rounded-md border border-border p-4 transition-colors hover:bg-card-hover"
-      >
-        <span className="grid size-9 place-items-center rounded-md bg-success-bg text-primary">
-          <Icon className="size-4" />
-        </span>
-        <span className="font-display text-sm font-semibold">{title}</span>
-      </Link>
-    </li>
   );
 }

@@ -75,6 +75,7 @@ describe('cards da visao geral do estudante', () => {
     expect(screen.getByRole('heading', { name: /ltima avalia/ })).toBeInTheDocument();
     expect(screen.getByText('68 cm')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Evolu.*o de peso/ })).toBeInTheDocument();
+    expect(screen.getByText('Peso mais recente: 72,5 kg.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Ver hist.rico/ })).toHaveAttribute(
       'href',
       '/students/student-1/assessments',

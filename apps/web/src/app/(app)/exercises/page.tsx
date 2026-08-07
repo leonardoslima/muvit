@@ -5,22 +5,23 @@ import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getExercises } from '@/lib/api/sdk.gen';
 import { MUSCLE_GROUPS, MUSCLE_GROUP_LABEL, type MuscleGroup } from '@/lib/muscle-groups';
-import { Trash2 } from 'lucide-react';
+import { Dumbbell, Search, Star, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { CreateExerciseDialog } from './_create-dialog';
 import { deleteExerciseAction } from './actions';
 
 interface SP {
+  q?: string;
   group?: MuscleGroup;
   scope?: 'mine' | 'global' | 'all';
 }
 
 export default async function ExercisesPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const { group, scope = 'all' } = await searchParams;
+  const { q, group, scope = 'all' } = await searchParams;
   const client = await configureServerClient();
   const res = await getExercises({
     client,
-    query: { muscleGroup: group, scope, limit: 100 },
+    query: { q, muscleGroup: group, scope, limit: 100 },
   });
   const items = (res.data?.items ?? []) as Array<{
     id: string;
@@ -34,78 +35,117 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
     <>
       <TopBar
         title="Biblioteca de exercícios"
-        subtitle="Use os globais ou crie os seus."
-        actions={<CreateExerciseDialog />}
+        subtitle={`${res.data?.total ?? items.length} exercícios disponíveis`}
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            <form action="/exercises" className="relative w-full sm:w-70">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                name="q"
+                defaultValue={q}
+                aria-label="Buscar exercícios"
+                placeholder="Buscar exercícios..."
+                className="h-11 w-full rounded-md border border-input bg-card pl-10 pr-4 text-sm"
+              />
+              {group && <input type="hidden" name="group" value={group} />}
+              <input type="hidden" name="scope" value={scope} />
+            </form>
+            <CreateExerciseDialog />
+          </div>
+        }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <ScopeChip current={scope} value="all" label="Todos" />
-        <ScopeChip current={scope} value="global" label="Globais" />
-        <ScopeChip current={scope} value="mine" label="Meus" />
-        <span className="mx-2 h-5 w-px bg-border" />
-        <GroupChip current={group} value={undefined} label="Todos os grupos" scope={scope} />
-        {MUSCLE_GROUPS.map((g) => (
-          <GroupChip
-            key={g}
-            current={group}
-            value={g}
-            label={MUSCLE_GROUP_LABEL[g]}
-            scope={scope}
-          />
-        ))}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 font-display text-xs font-semibold text-foreground">
+            Grupo muscular:
+          </span>
+          <GroupChip current={group} value={undefined} label="Todos" scope={scope} q={q} />
+          {MUSCLE_GROUPS.map((muscleGroup) => (
+            <GroupChip
+              key={muscleGroup}
+              current={group}
+              value={muscleGroup}
+              label={MUSCLE_GROUP_LABEL[muscleGroup]}
+              scope={scope}
+              q={q}
+            />
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 font-display text-xs font-semibold text-foreground">Origem:</span>
+          <ScopeChip current={scope} value="all" label="Todos" group={group} q={q} />
+          <ScopeChip current={scope} value="global" label="Globais" group={group} q={q} />
+          <ScopeChip current={scope} value="mine" label="Meus" group={group} q={q} />
+        </div>
       </div>
 
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {items.length === 0 ? (
+      <section
+        aria-label="Exercícios"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        {res.error ? (
+          <p
+            role="alert"
+            className="col-span-full rounded-[12px] border border-destructive/20 bg-destructive-bg p-10 text-center text-sm text-destructive"
+          >
+            Não foi possível carregar os exercícios.
+          </p>
+        ) : items.length === 0 ? (
           <p className="col-span-full rounded-[12px] bg-card p-10 text-center text-sm text-muted-foreground shadow-card">
-            Nenhum exercício para este filtro.
+            {q || group || scope !== 'all'
+              ? 'Nenhum exercício corresponde aos filtros.'
+              : 'Sua biblioteca de exercícios está vazia.'}
           </p>
         ) : (
           items.map((ex) => (
             <article
               key={ex.id}
-              className="flex flex-col gap-3 rounded-[12px] bg-card p-5 shadow-card transition-shadow hover:shadow-elevated"
+              aria-label={ex.name}
+              className="overflow-hidden rounded-[12px] bg-card shadow-card transition-shadow hover:shadow-elevated"
             >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-display text-base font-bold leading-tight">{ex.name}</h3>
-                {ex.trainerId === null ? (
+              <div
+                role="img"
+                aria-label={`Ilustração de ${ex.name}`}
+                className="grid h-36 place-items-center bg-muted text-muted-foreground"
+              >
+                <Dumbbell className="size-8" />
+              </div>
+              <div className="flex flex-col gap-3 p-4">
+                <h3 className="min-h-10 font-display text-sm font-bold leading-snug">{ex.name}</h3>
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                   <Badge variant="info" dot={false}>
-                    Global
+                    {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
                   </Badge>
-                ) : (
-                  <Badge variant="active" dot={false}>
-                    Meu
-                  </Badge>
-                )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="rounded-pill bg-muted px-2.5 py-1 font-display font-semibold uppercase tracking-[0.05em] text-foreground">
-                  {MUSCLE_GROUP_LABEL[ex.muscleGroup]}
-                </span>
-                {ex.equipment && <span>· {ex.equipment}</span>}
-              </div>
-              {ex.trainerId && (
-                <div className="flex items-center justify-end pt-2">
-                  <ConfirmationDialog
-                    trigger={
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Excluir ${ex.name}`}
-                      >
-                        <Trash2 />
-                      </Button>
-                    }
-                    title="Excluir exercício?"
-                    description={`Você está prestes a excluir ${ex.name}. Esta ação não pode ser desfeita.`}
-                    confirmLabel="Excluir exercício"
-                    pendingLabel="Excluindo..."
-                    confirmAction={deleteExerciseAction}
-                    hiddenFields={{ id: ex.id }}
-                  />
+                  {ex.equipment && (
+                    <span className="rounded bg-muted px-2 py-1">{ex.equipment}</span>
+                  )}
                 </div>
-              )}
+                <div className="flex min-h-8 items-center justify-between border-t border-border pt-3">
+                  <Star className="size-3.5 text-warning" aria-hidden="true" />
+                  {ex.trainerId && (
+                    <ConfirmationDialog
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Excluir ${ex.name}`}
+                        >
+                          <Trash2 />
+                        </Button>
+                      }
+                      title="Excluir exercício?"
+                      description={`Você está prestes a excluir ${ex.name}. Esta ação não pode ser desfeita.`}
+                      confirmLabel="Excluir exercício"
+                      pendingLabel="Excluindo..."
+                      confirmAction={deleteExerciseAction}
+                      hiddenFields={{ id: ex.id }}
+                    />
+                  )}
+                </div>
+              </div>
             </article>
           ))
         )}
@@ -114,11 +154,26 @@ export default async function ExercisesPage({ searchParams }: { searchParams: Pr
   );
 }
 
-function ScopeChip({ current, value, label }: { current: string; value: string; label: string }) {
+function ScopeChip({
+  current,
+  value,
+  label,
+  group,
+  q,
+}: {
+  current: string;
+  value: string;
+  label: string;
+  group?: MuscleGroup;
+  q?: string;
+}) {
   const active = current === value;
   return (
     <Link
-      href={{ pathname: '/exercises', query: { scope: value } }}
+      href={{
+        pathname: '/exercises',
+        query: { ...(q ? { q } : {}), ...(group ? { group } : {}), scope: value },
+      }}
       className={`rounded-pill px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.05em] transition-colors ${
         active
           ? 'bg-foreground text-background'
@@ -135,22 +190,24 @@ function GroupChip({
   value,
   label,
   scope,
+  q,
 }: {
   current?: string;
   value?: MuscleGroup;
   label: string;
   scope: string;
+  q?: string;
 }) {
   const active = current === value || (!current && !value);
   return (
     <Link
       href={{
         pathname: '/exercises',
-        query: { ...(value ? { group: value } : {}), scope },
+        query: { ...(q ? { q } : {}), ...(value ? { group: value } : {}), scope },
       }}
       className={`rounded-pill px-3 py-1 text-xs transition-colors ${
         active
-          ? 'bg-success-bg text-[#1B7A3D]'
+          ? 'bg-success-bg text-success'
           : 'bg-card text-muted-foreground border border-border hover:text-foreground'
       }`}
     >

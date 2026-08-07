@@ -23,13 +23,6 @@ export function CreateExerciseDialog() {
     null,
   );
 
-  useEffect(() => {
-    if (state === null && !pending && open) {
-      // success returns null state — but we also start with null, so guard with form ref reset
-    }
-  }, [state, pending, open]);
-
-  // Close on success: state becomes null and not pending — but we use a side flag
   const [submitted, setSubmitted] = useState(false);
   useEffect(() => {
     if (submitted && !pending && !state?.error && !state?.fieldErrors) {
@@ -51,13 +44,15 @@ export function CreateExerciseDialog() {
       <DialogContent
         showCloseButton={false}
         overlayClassName="z-40 bg-foreground/40 backdrop-blur-sm"
-        className="block max-w-md rounded-[12px] bg-card p-6 text-foreground shadow-elevated ring-0 sm:max-w-md"
+        className="block max-w-140 overflow-hidden rounded-lg bg-card p-0 text-foreground shadow-elevated ring-0 sm:max-w-140"
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 border-b border-border p-6">
           <div className="flex flex-col gap-1">
-            <DialogTitle className="font-display text-lg font-bold">Novo exercício</DialogTitle>
+            <DialogTitle className="font-display text-xl font-bold">
+              Novo exercício personalizado
+            </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Crie um exercício custom para sua biblioteca.
+              Adicione um exercício personalizado à sua biblioteca.
             </DialogDescription>
           </div>
           <DialogClose asChild>
@@ -76,56 +71,94 @@ export function CreateExerciseDialog() {
             setSubmitted(true);
             formAction(fd);
           }}
-          className="mt-6 flex flex-col gap-4"
+          className="flex flex-col"
         >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name" data-error={!!fe.name}>
-              Nome
-            </Label>
-            <Input id="name" name="name" required aria-invalid={!!fe.name} />
-            {fe.name && <p className="text-xs text-destructive">{fe.name}</p>}
+          <div className="flex flex-col gap-5 p-6">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="name" data-error={!!fe.name}>
+                Nome do exercício
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                required
+                aria-invalid={!!fe.name}
+                aria-describedby={fe.name ? 'name-error' : undefined}
+                placeholder="Ex.: Agachamento búlgaro"
+                className="bg-background"
+              />
+              {fe.name && (
+                <p id="name-error" className="text-xs text-destructive">
+                  {fe.name}
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="muscleGroup" data-error={!!fe.muscleGroup}>
+                  Grupo muscular
+                </Label>
+                <select
+                  id="muscleGroup"
+                  name="muscleGroup"
+                  required
+                  aria-invalid={!!fe.muscleGroup}
+                  aria-describedby={fe.muscleGroup ? 'muscle-group-error' : undefined}
+                  className="h-11 rounded-md border border-input bg-background px-3 text-sm"
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {MUSCLE_GROUPS.map((g) => (
+                    <option key={g} value={g}>
+                      {MUSCLE_GROUP_LABEL[g]}
+                    </option>
+                  ))}
+                </select>
+                {fe.muscleGroup && (
+                  <p id="muscle-group-error" className="text-xs text-destructive">
+                    {fe.muscleGroup}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="equipment">Equipamento (opcional)</Label>
+                <Input
+                  id="equipment"
+                  name="equipment"
+                  placeholder="Halteres"
+                  className="bg-background"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="instructions">Instruções (opcional)</Label>
+              <textarea
+                id="instructions"
+                name="instructions"
+                rows={3}
+                placeholder="Adicione orientações ou observações importantes..."
+                className="resize-none rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="videoUrl">URL do vídeo (opcional)</Label>
+              <Input
+                id="videoUrl"
+                name="videoUrl"
+                type="url"
+                placeholder="https://..."
+                className="bg-background"
+              />
+            </div>
+            {state?.error && (
+              <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
+                {state.error}
+              </p>
+            )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="muscleGroup" data-error={!!fe.muscleGroup}>
-              Grupo muscular
-            </Label>
-            <select
-              id="muscleGroup"
-              name="muscleGroup"
-              required
-              className="h-11 rounded-md border border-input bg-card px-3 text-sm"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Selecione
-              </option>
-              {MUSCLE_GROUPS.map((g) => (
-                <option key={g} value={g}>
-                  {MUSCLE_GROUP_LABEL[g]}
-                </option>
-              ))}
-            </select>
-            {fe.muscleGroup && <p className="text-xs text-destructive">{fe.muscleGroup}</p>}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="equipment">Equipamento (opcional)</Label>
-            <Input id="equipment" name="equipment" placeholder="Halter, barra, máquina…" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="instructions">Instruções (opcional)</Label>
-            <textarea
-              id="instructions"
-              name="instructions"
-              rows={3}
-              className="rounded-md border border-input bg-card px-3 py-2 text-sm resize-none"
-            />
-          </div>
-          {state?.error && (
-            <p className="rounded-md bg-destructive-bg px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </p>
-          )}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-3 border-t border-border p-6">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
                 Cancelar

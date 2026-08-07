@@ -7,6 +7,7 @@ describe('StatCard', () => {
   it('renderiza label, valor e dica opcional', () => {
     render(<StatCard icon={Activity} label="Alunos ativos" value={12} hint="+2 no mes" />);
 
+    expect(screen.getByRole('article', { name: 'Alunos ativos' })).toBeInTheDocument();
     expect(screen.getByText('Alunos ativos')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
     expect(screen.getByText('+2 no mes')).toBeInTheDocument();
