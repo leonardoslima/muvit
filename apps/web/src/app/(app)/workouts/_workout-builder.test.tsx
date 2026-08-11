@@ -8,20 +8,40 @@ vi.mock('./actions', () => ({
 }));
 
 const students = [
-  { id: 'student-1', name: 'Ana Lima', email: 'ana@muvit.test', avatarUrl: null },
-  { id: 'student-2', name: 'Bruno Luz', email: 'bruno@muvit.test', avatarUrl: null },
+  {
+    id: '00000000-0000-4000-8000-000000000001',
+    name: 'Ana Lima',
+    email: 'ana@muvit.test',
+    avatarUrl: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000002',
+    name: 'Bruno Luz',
+    email: 'bruno@muvit.test',
+    avatarUrl: null,
+  },
 ];
 
 const exercises = [
-  { id: 'exercise-1', name: 'Supino reto', muscleGroup: 'chest' as const, equipment: 'Barra' },
-  { id: 'exercise-2', name: 'Remada baixa', muscleGroup: 'back' as const, equipment: 'Cabo' },
+  {
+    id: '00000000-0000-4000-8000-000000000101',
+    name: 'Supino reto',
+    muscleGroup: 'chest' as const,
+    equipment: 'Barra',
+  },
+  {
+    id: '00000000-0000-4000-8000-000000000102',
+    name: 'Remada baixa',
+    muscleGroup: 'back' as const,
+    equipment: 'Cabo',
+  },
 ];
 
 const defaultProps = {
   students,
   exercises,
   equipmentFacets: ['Barra', 'Cabo'],
-  initialStudentId: 'student-1',
+  initialStudentId: '00000000-0000-4000-8000-000000000001',
   studentsError: false,
   exercisesError: false,
 };
@@ -126,6 +146,74 @@ describe('WorkoutBuilder', () => {
         .map((button) => button.getAttribute('aria-label')),
     ).toEqual(['Reordenar Remada baixa', 'Reordenar Supino reto']);
     expect(screen.getByDisplayValue('Controlar a descida')).toBeInTheDocument();
+    expect(screen.getByLabelText('Séries de Supino reto')).toHaveAttribute('min', '1');
+    expect(screen.getByLabelText('Séries de Supino reto')).toHaveAttribute('max', '20');
+    expect(screen.getByLabelText('Séries de Supino reto')).toHaveAttribute('step', '1');
+    expect(screen.getByLabelText('Descanso de Supino reto')).toHaveAttribute('max', '600');
+    expect(screen.getByLabelText('Descanso de Supino reto')).toHaveAttribute('step', '1');
+    expect(screen.getByLabelText('Carga de Supino reto')).toHaveAttribute('max', '1000');
+    expect(screen.getByLabelText('Repetições de Supino reto')).toHaveAttribute('maxlength', '20');
+    expect(screen.getByLabelText('Tempo de Supino reto')).toHaveAttribute('maxlength', '10');
+  });
+
+  it('mantém ocorrências duplicadas independentes e preserva o foco ao reordenar várias vezes', () => {
+    renderBuilder();
+    addExercise('Supino reto');
+    addExercise('Supino reto');
+
+    const noteButtons = screen.getAllByRole('button', { name: 'Editar notas de Supino reto' });
+    fireEvent.click(requiredElement(noteButtons, 0));
+    fireEvent.click(requiredElement(noteButtons, 1));
+    const noteInputs = screen.getAllByLabelText('Notas de Supino reto');
+    const firstNoteInput = requiredElement(noteInputs, 0);
+    const secondNoteInput = requiredElement(noteInputs, 1);
+    fireEvent.change(firstNoteInput, { target: { value: 'Primeira ocorrência' } });
+    fireEvent.change(secondNoteInput, { target: { value: 'Segunda ocorrência' } });
+
+    expect(firstNoteInput).not.toHaveAttribute('id', secondNoteInput.getAttribute('id'));
+    expect(firstNoteInput).toHaveValue('Primeira ocorrência');
+    expect(secondNoteInput).toHaveValue('Segunda ocorrência');
+
+    const secondHandle = requiredElement(
+      screen.getAllByRole('button', { name: 'Reordenar Supino reto' }),
+      1,
+    );
+    secondHandle.focus();
+    fireEvent.keyDown(secondHandle, { key: 'ArrowUp' });
+    expect(secondHandle).toHaveFocus();
+    expect(screen.getAllByRole('button', { name: 'Reordenar Supino reto' })[0]).toBe(secondHandle);
+    fireEvent.keyDown(secondHandle, { key: 'ArrowDown' });
+    expect(secondHandle).toHaveFocus();
+    expect(screen.getAllByRole('button', { name: 'Reordenar Supino reto' })[1]).toBe(secondHandle);
+  });
+
+  it('navega nas tabs por teclado e preserva a relação com o painel durante a renomeação', () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar dia' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Adicionar dia' }));
+
+    const firstTab = screen.getByRole('tab', { name: 'Treino A' });
+    firstTab.focus();
+    fireEvent.keyDown(firstTab, { key: 'ArrowRight' });
+    const secondTab = screen.getByRole('tab', { name: 'Treino B' });
+    expect(secondTab).toHaveFocus();
+    expect(secondTab).toHaveAttribute('aria-selected', 'true');
+    const tabId = secondTab.id;
+    const panelId = secondTab.getAttribute('aria-controls');
+
+    fireEvent.keyDown(secondTab, { key: 'End' });
+    expect(screen.getByRole('tab', { name: 'Treino C' })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Treino C' }), { key: 'Home' });
+    expect(firstTab).toHaveFocus();
+    fireEvent.keyDown(firstTab, { key: 'ArrowLeft' });
+    expect(screen.getByRole('tab', { name: 'Treino C' })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Renomear Treino B' }));
+    const stableTab = screen.getByRole('tab', { name: 'Treino B' });
+    expect(stableTab).toHaveAttribute('id', tabId);
+    expect(stableTab).toHaveAttribute('aria-controls', panelId);
+    fireEvent.change(screen.getByDisplayValue('Treino B'), { target: { value: 'Inferior' } });
+    expect(screen.getByRole('tab', { name: 'Inferior' })).toHaveAttribute('id', tabId);
   });
 
   it('confirma remoções de exercício e dia e permite renomear o dia ativo', async () => {
@@ -154,7 +242,9 @@ describe('WorkoutBuilder', () => {
 
   it('descarta o rascunho após confirmação sem trocar o aluno selecionado', async () => {
     renderBuilder();
-    fireEvent.change(screen.getByLabelText('Aluno'), { target: { value: 'student-2' } });
+    fireEvent.change(screen.getByLabelText('Aluno'), {
+      target: { value: '00000000-0000-4000-8000-000000000002' },
+    });
     fireEvent.change(screen.getByLabelText('Nome do plano'), { target: { value: 'Hipertrofia' } });
     addExercise('Supino reto');
 
@@ -163,12 +253,15 @@ describe('WorkoutBuilder', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Descartar' }));
 
     await waitFor(() => expect(screen.getByLabelText('Nome do plano')).toHaveValue(''));
-    expect(screen.getByLabelText('Aluno')).toHaveValue('student-2');
+    expect(screen.getByLabelText('Aluno')).toHaveValue('00000000-0000-4000-8000-000000000002');
     expect(screen.getByText('Nenhum exercício ainda')).toBeInTheDocument();
   });
 
   it('salva o payload integral e mantém o rascunho quando a action retorna erro', async () => {
-    vi.mocked(createWorkoutPlanAction).mockResolvedValue({ error: 'Não foi possível salvar.' });
+    vi.mocked(createWorkoutPlanAction).mockResolvedValue({
+      success: false,
+      error: 'Não foi possível salvar.',
+    });
     renderBuilder();
 
     fireEvent.change(screen.getByLabelText('Nome do plano'), {
@@ -191,7 +284,7 @@ describe('WorkoutBuilder', () => {
 
     await waitFor(() => {
       expect(createWorkoutPlanAction).toHaveBeenCalledWith({
-        studentId: 'student-1',
+        studentId: '00000000-0000-4000-8000-000000000001',
         name: 'Hipertrofia',
         startDate: '2026-08-10',
         endDate: '2026-09-10',
@@ -203,7 +296,7 @@ describe('WorkoutBuilder', () => {
             dayOrder: 0,
             exercises: [
               {
-                exerciseId: 'exercise-1',
+                exerciseId: '00000000-0000-4000-8000-000000000101',
                 exerciseOrder: 0,
                 sets: 4,
                 reps: '8-12',
@@ -226,8 +319,66 @@ describe('WorkoutBuilder', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Salvar treino' }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Informe um nome para o treino.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Informe um nome');
     expect(createWorkoutPlanAction).not.toHaveBeenCalled();
+  });
+
+  it('associa erros do contrato aos campos e à linha antes de chamar a action', () => {
+    renderBuilder();
+    fireEvent.change(screen.getByLabelText('Nome do plano'), { target: { value: 'Plano' } });
+    addExercise('Supino reto');
+    fireEvent.change(screen.getByLabelText('Séries de Supino reto'), {
+      target: { value: '1.5' },
+    });
+    fireEvent.change(screen.getByLabelText('Repetições de Supino reto'), {
+      target: { value: '' },
+    });
+    fireEvent.change(screen.getByLabelText('Descanso de Supino reto'), {
+      target: { value: '601' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(screen.getByLabelText('Séries de Supino reto')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Repetições de Supino reto')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.getByLabelText('Descanso de Supino reto')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    const setsInput = screen.getByLabelText('Séries de Supino reto');
+    const setsErrorId = setsInput.getAttribute('aria-describedby');
+    expect(setsErrorId).not.toBeNull();
+    expect(document.getElementById(setsErrorId ?? '')).toHaveTextContent(
+      'Use um número inteiro de séries entre 1 e 20.',
+    );
+    expect(createWorkoutPlanAction).not.toHaveBeenCalled();
+  });
+
+  it('transforma rejeição da action em alerta recuperável e permite tentar novamente', async () => {
+    vi.mocked(createWorkoutPlanAction)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ success: false, error: 'Serviço ainda indisponível.' });
+    renderBuilder();
+    fireEvent.change(screen.getByLabelText('Nome do plano'), { target: { value: 'Plano' } });
+    addExercise('Supino reto');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar treino' }));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível salvar o treino.'),
+    );
+    expect(screen.getByLabelText('Nome do plano')).toHaveValue('Plano');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Salvar treino' })).toBeEnabled(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar treino' }));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Serviço ainda indisponível.'),
+    );
+    expect(createWorkoutPlanAction).toHaveBeenCalledTimes(2);
   });
 
   it('orienta quando não há aluno e expõe falhas ou ausência da biblioteca', () => {
@@ -253,3 +404,9 @@ describe('WorkoutBuilder', () => {
     expect(screen.getByText('A biblioteca de exercícios está vazia.')).toBeInTheDocument();
   });
 });
+
+function requiredElement<T>(elements: T[], index: number): T {
+  const element = elements[index];
+  if (element === undefined) throw new Error(`Elemento ${index} não encontrado no teste.`);
+  return element;
+}

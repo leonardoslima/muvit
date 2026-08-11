@@ -6,11 +6,24 @@ import { postWorkoutPlans } from '@/lib/api/sdk.gen';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function createWorkoutPlanAction(input: CreateWorkoutInput) {
-  const client = await configureServerClient();
-  const response = await postWorkoutPlans({ client, body: input });
+export type CreateWorkoutPlanActionResult = {
+  success: false;
+  error: string;
+};
+
+export async function createWorkoutPlanAction(
+  input: CreateWorkoutInput,
+): Promise<CreateWorkoutPlanActionResult> {
+  let response: Awaited<ReturnType<typeof postWorkoutPlans>>;
+  try {
+    const client = await configureServerClient();
+    response = await postWorkoutPlans({ client, body: input });
+  } catch {
+    return { success: false, error: 'Não foi possível salvar o treino.' };
+  }
+
   if (response.error || !response.data) {
-    return { error: 'Não foi possível salvar o treino.' };
+    return { success: false, error: 'Não foi possível salvar o treino.' };
   }
   revalidatePath(`/students/${input.studentId}`);
   revalidatePath('/workouts');

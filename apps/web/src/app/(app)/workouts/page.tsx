@@ -1,6 +1,5 @@
 import { configureServerClient } from '@/lib/api-client';
 import { getExercises, getStudents } from '@/lib/api/sdk.gen';
-import type { MuscleGroup } from '@/lib/muscle-groups';
 import { WorkoutBuilder } from './_workout-builder';
 
 export default async function WorkoutsPage({
@@ -23,7 +22,7 @@ export default async function WorkoutsPage({
   const exercises = (exercisesResponse.data?.items ?? []).map((exercise) => ({
     id: exercise.id,
     name: exercise.name,
-    muscleGroup: exercise.muscleGroup as MuscleGroup,
+    muscleGroup: exercise.muscleGroup,
     equipment: exercise.equipment,
   }));
   const initialStudentId = students.some((student) => student.id === studentId)

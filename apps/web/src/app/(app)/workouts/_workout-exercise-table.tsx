@@ -1,4 +1,7 @@
-import type { WorkoutExerciseDraft } from '@/application/workouts/workout-editor-model';
+import type {
+  WorkoutDraftValidationError,
+  WorkoutExerciseDraft,
+} from '@/application/workouts/workout-editor-model';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +12,9 @@ import { type RefObject, useState } from 'react';
 
 interface WorkoutExerciseTableProps {
   dayLabel: string;
+  dayId: string;
   exercises: WorkoutExerciseDraft[];
+  validationErrors: WorkoutDraftValidationError[];
   disabled: boolean;
   triggerRef: RefObject<HTMLButtonElement | null>;
   onAddExercise: () => void;
@@ -24,7 +29,9 @@ interface WorkoutExerciseTableProps {
 
 export function WorkoutExerciseTable({
   dayLabel,
+  dayId,
   exercises,
+  validationErrors,
   disabled,
   triggerRef,
   onAddExercise,
@@ -34,11 +41,11 @@ export function WorkoutExerciseTable({
 }: WorkoutExerciseTableProps) {
   const [notesOpen, setNotesOpen] = useState<Set<string>>(() => new Set());
 
-  function toggleNotes(exerciseId: string) {
+  function toggleNotes(instanceId: string) {
     setNotesOpen((current) => {
       const next = new Set(current);
-      if (next.has(exerciseId)) next.delete(exerciseId);
-      else next.add(exerciseId);
+      if (next.has(instanceId)) next.delete(instanceId);
+      else next.add(instanceId);
       return next;
     });
   }
@@ -68,12 +75,14 @@ export function WorkoutExerciseTable({
         <tbody>
           {exercises.map((exercise, index) => (
             <ExerciseRows
-              key={`${exercise.exerciseId}-${index}`}
+              key={exercise.id}
+              dayId={dayId}
               exercise={exercise}
               index={index}
               disabled={disabled}
-              notesOpen={notesOpen.has(exercise.exerciseId)}
-              onToggleNotes={() => toggleNotes(exercise.exerciseId)}
+              notesOpen={notesOpen.has(exercise.id)}
+              validationErrors={validationErrors}
+              onToggleNotes={() => toggleNotes(exercise.id)}
               onMoveExercise={onMoveExercise}
               onRemoveExercise={onRemoveExercise}
               onUpdateExercise={onUpdateExercise}
@@ -104,18 +113,22 @@ export function WorkoutExerciseTable({
 
 function ExerciseRows({
   exercise,
+  dayId,
   index,
   disabled,
   notesOpen,
+  validationErrors,
   onToggleNotes,
   onMoveExercise,
   onRemoveExercise,
   onUpdateExercise,
 }: {
   exercise: WorkoutExerciseDraft;
+  dayId: string;
   index: number;
   disabled: boolean;
   notesOpen: boolean;
+  validationErrors: WorkoutDraftValidationError[];
   onToggleNotes: () => void;
   onMoveExercise: (exerciseIndex: number, direction: -1 | 1) => void;
   onRemoveExercise: (exerciseIndex: number) => void;
@@ -125,6 +138,17 @@ function ExerciseRows({
     value: WorkoutExerciseDraft[K],
   ) => void;
 }) {
+  const path = (field: keyof WorkoutExerciseDraft) =>
+    `days.${dayId}.exercises.${exercise.id}.${field}`;
+  const fieldError = (field: keyof WorkoutExerciseDraft) =>
+    validationErrors.find((item) => item.path === path(field))?.message;
+  const setsError = fieldError('sets');
+  const repsError = fieldError('reps');
+  const loadError = fieldError('loadKg');
+  const restError = fieldError('restSeconds');
+  const tempoError = fieldError('tempo');
+  const notesError = fieldError('notes');
+
   return (
     <>
       <tr className="align-middle">
@@ -154,42 +178,61 @@ function ExerciseRows({
           label={`Séries de ${exercise.exerciseName}`}
           value={exercise.sets}
           min={1}
+          max={20}
+          step={1}
           disabled={disabled}
+          error={setsError}
+          inputId={`exercise-${exercise.id}-sets`}
           onChange={(value) => onUpdateExercise(index, 'sets', value ?? 1)}
         />
         <td className="border-b border-border px-2 py-3">
           <Input
             aria-label={`Repetições de ${exercise.exerciseName}`}
             value={exercise.reps}
+            maxLength={20}
+            aria-invalid={Boolean(repsError)}
+            aria-describedby={repsError ? `exercise-${exercise.id}-reps-error` : undefined}
             disabled={disabled}
             className="h-9 px-2"
             onChange={(event) => onUpdateExercise(index, 'reps', event.target.value)}
           />
+          <FieldError id={`exercise-${exercise.id}-reps-error`} message={repsError} />
         </td>
         <NumberCell
           label={`Carga de ${exercise.exerciseName}`}
           value={exercise.loadKg}
           min={0}
-          step={0.5}
+          max={1000}
+          step="any"
           disabled={disabled}
+          error={loadError}
+          inputId={`exercise-${exercise.id}-load`}
           onChange={(value) => onUpdateExercise(index, 'loadKg', value)}
         />
         <NumberCell
           label={`Descanso de ${exercise.exerciseName}`}
           value={exercise.restSeconds}
           min={0}
+          max={600}
+          step={1}
           disabled={disabled}
+          error={restError}
+          inputId={`exercise-${exercise.id}-rest`}
           onChange={(value) => onUpdateExercise(index, 'restSeconds', value)}
         />
         <td className="border-b border-border px-2 py-3">
           <Input
             aria-label={`Tempo de ${exercise.exerciseName}`}
             value={exercise.tempo ?? ''}
+            maxLength={10}
+            aria-invalid={Boolean(tempoError)}
+            aria-describedby={tempoError ? `exercise-${exercise.id}-tempo-error` : undefined}
             disabled={disabled}
             className="h-9 px-2"
             placeholder="3-1-1"
             onChange={(event) => onUpdateExercise(index, 'tempo', event.target.value || undefined)}
           />
+          <FieldError id={`exercise-${exercise.id}-tempo-error`} message={tempoError} />
         </td>
         <td className="border-b border-border px-2 py-3">
           <div className="flex items-center justify-end">
@@ -227,12 +270,15 @@ function ExerciseRows({
       {notesOpen && (
         <tr>
           <td colSpan={8} className="border-b border-border bg-muted/30 px-4 py-3">
-            <Label htmlFor={`exercise-notes-${exercise.exerciseId}`}>
+            <Label htmlFor={`exercise-notes-${exercise.id}`}>
               Notas de {exercise.exerciseName}
             </Label>
             <textarea
-              id={`exercise-notes-${exercise.exerciseId}`}
+              id={`exercise-notes-${exercise.id}`}
               value={exercise.notes ?? ''}
+              maxLength={500}
+              aria-invalid={Boolean(notesError)}
+              aria-describedby={notesError ? `exercise-${exercise.id}-notes-error` : undefined}
               disabled={disabled}
               rows={2}
               className="mt-1.5 w-full resize-none rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
@@ -240,6 +286,7 @@ function ExerciseRows({
                 onUpdateExercise(index, 'notes', event.target.value || undefined)
               }
             />
+            <FieldError id={`exercise-${exercise.id}-notes-error`} message={notesError} />
           </td>
         </tr>
       )}
@@ -251,15 +298,21 @@ function NumberCell({
   label,
   value,
   min,
+  max,
   step,
   disabled,
+  error,
+  inputId,
   onChange,
 }: {
   label: string;
   value?: number;
   min: number;
-  step?: number;
+  max: number;
+  step: number | 'any';
   disabled: boolean;
+  error?: string;
+  inputId: string;
   onChange: (value: number | undefined) => void;
 }) {
   return (
@@ -269,13 +322,26 @@ function NumberCell({
         aria-label={label}
         value={value ?? ''}
         min={min}
+        max={max}
         step={step}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${inputId}-error` : undefined}
         disabled={disabled}
         className="h-9 px-2"
         onChange={(event) =>
           onChange(event.target.value === '' ? undefined : Number(event.target.value))
         }
       />
+      <FieldError id={`${inputId}-error`} message={error} />
     </td>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="mt-1 text-xs text-destructive">
+      {message}
+    </p>
   );
 }

@@ -3,10 +3,10 @@
 import {
   type ExerciseLite,
   type WorkoutDraft,
+  type WorkoutDraftValidationError,
   type WorkoutExerciseDraft,
   addWorkoutDay,
   addWorkoutExercise,
-  buildCreateWorkoutInput,
   createWorkoutDraft,
   discardWorkoutDraft,
   moveWorkoutExercise,
@@ -51,6 +51,7 @@ export function WorkoutBuilder({
   const [activeDay, setActiveDay] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<WorkoutDraftValidationError[]>([]);
   const [pending, startTransition] = useTransition();
   const drawerTriggerRef = useRef<HTMLButtonElement>(null);
   const active = draft.days[activeDay] ?? draft.days[0];
@@ -75,7 +76,7 @@ export function WorkoutBuilder({
   function addExercise(exercise: ExerciseLite): void {
     setDraft((current) => ({
       ...current,
-      days: addWorkoutExercise(current.days, activeDay, exercise),
+      days: addWorkoutExercise(current.days, activeDay, exercise, createId),
     }));
     setDrawerOpen(false);
   }
@@ -93,14 +94,20 @@ export function WorkoutBuilder({
 
   function save(): void {
     setError(null);
-    const validationError = validateWorkoutDraft(draft);
-    if (validationError) {
-      setError(validationError);
+    const validation = validateWorkoutDraft(draft);
+    if (!validation.success) {
+      setValidationErrors(validation.errors);
+      setError(validation.errors[0]?.message ?? 'Revise os campos do treino.');
       return;
     }
+    setValidationErrors([]);
     startTransition(async () => {
-      const result = await createWorkoutPlanAction(buildCreateWorkoutInput(draft));
-      if (result?.error) setError(result.error);
+      try {
+        const result = await createWorkoutPlanAction(validation.input);
+        if (!result.success) setError(result.error);
+      } catch {
+        setError('Não foi possível salvar o treino. Tente novamente.');
+      }
     });
   }
 
@@ -114,12 +121,14 @@ export function WorkoutBuilder({
         students={students}
         studentsError={studentsError}
         error={error}
+        validationErrors={validationErrors}
         pending={pending}
         onChange={changeDraft}
         onDiscard={() => {
           setDraft((current) => discardWorkoutDraft(current, createId));
           setActiveDay(0);
           setError(null);
+          setValidationErrors([]);
         }}
         onSave={save}
       />
@@ -128,6 +137,7 @@ export function WorkoutBuilder({
           days={draft.days}
           activeDay={activeDay}
           disabled={pending}
+          validationErrors={validationErrors}
           onAddDay={addDay}
           onSelectDay={setActiveDay}
           onRenameDay={(index, label) =>
@@ -160,7 +170,9 @@ export function WorkoutBuilder({
             ) : (
               <WorkoutExerciseTable
                 dayLabel={active.label}
+                dayId={active.id}
                 exercises={active.exercises}
+                validationErrors={validationErrors}
                 disabled={pending}
                 triggerRef={drawerTriggerRef}
                 onAddExercise={() => setDrawerOpen(true)}

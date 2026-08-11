@@ -1,4 +1,8 @@
-import type { WorkoutDraft, WorkoutStatus } from '@/application/workouts/workout-editor-model';
+import type {
+  WorkoutDraft,
+  WorkoutDraftValidationError,
+  WorkoutStatus,
+} from '@/application/workouts/workout-editor-model';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -19,6 +23,7 @@ interface WorkoutDetailsPanelProps {
   students: WorkoutStudent[];
   studentsError: boolean;
   error: string | null;
+  validationErrors: WorkoutDraftValidationError[];
   pending: boolean;
   onChange: <K extends keyof WorkoutDraft>(key: K, value: WorkoutDraft[K]) => void;
   onDiscard: () => void;
@@ -30,6 +35,7 @@ export function WorkoutDetailsPanel({
   students,
   studentsError,
   error,
+  validationErrors,
   pending,
   onChange,
   onDiscard,
@@ -37,6 +43,12 @@ export function WorkoutDetailsPanel({
 }: WorkoutDetailsPanelProps) {
   const savingDisabled = pending || studentsError || students.length === 0;
   const selectedStudent = students.find((student) => student.id === draft.studentId);
+  const fieldError = (path: string) => validationErrors.find((item) => item.path === path)?.message;
+  const studentError = fieldError('studentId');
+  const nameError = fieldError('name');
+  const startDateError = fieldError('startDate');
+  const endDateError = fieldError('endDate');
+  const notesError = fieldError('notes');
 
   return (
     <aside className="flex min-h-0 w-full shrink-0 flex-col border-b border-border bg-card lg:w-90 lg:border-r lg:border-b-0">
@@ -84,6 +96,8 @@ export function WorkoutDetailsPanel({
           <select
             id="workout-student"
             value={draft.studentId}
+            aria-invalid={Boolean(studentError)}
+            aria-describedby={studentError ? 'workout-student-error' : undefined}
             disabled={studentsError || students.length === 0 || pending}
             className="h-11 w-full rounded-md border border-input bg-card px-3 text-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-60"
             onChange={(event) => onChange('studentId', event.target.value)}
@@ -95,16 +109,21 @@ export function WorkoutDetailsPanel({
               </option>
             ))}
           </select>
+          <FieldError id="workout-student-error" message={studentError} />
         </Field>
 
         <Field label="Nome do plano" htmlFor="workout-name">
           <Input
             id="workout-name"
             value={draft.name}
+            maxLength={200}
+            aria-invalid={Boolean(nameError)}
+            aria-describedby={nameError ? 'workout-name-error' : undefined}
             disabled={pending}
             placeholder="Ex.: Hipertrofia 4x por semana"
             onChange={(event) => onChange('name', event.target.value)}
           />
+          <FieldError id="workout-name-error" message={nameError} />
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
@@ -113,18 +132,24 @@ export function WorkoutDetailsPanel({
               id="workout-start-date"
               type="date"
               value={draft.startDate}
+              aria-invalid={Boolean(startDateError)}
+              aria-describedby={startDateError ? 'workout-start-date-error' : undefined}
               disabled={pending}
               onChange={(event) => onChange('startDate', event.target.value)}
             />
+            <FieldError id="workout-start-date-error" message={startDateError} />
           </Field>
           <Field label="Data final" htmlFor="workout-end-date">
             <Input
               id="workout-end-date"
               type="date"
               value={draft.endDate}
+              aria-invalid={Boolean(endDateError)}
+              aria-describedby={endDateError ? 'workout-end-date-error' : undefined}
               disabled={pending}
               onChange={(event) => onChange('endDate', event.target.value)}
             />
+            <FieldError id="workout-end-date-error" message={endDateError} />
           </Field>
         </div>
 
@@ -146,11 +171,15 @@ export function WorkoutDetailsPanel({
           <textarea
             id="workout-notes"
             value={draft.notes}
+            maxLength={2000}
+            aria-invalid={Boolean(notesError)}
+            aria-describedby={notesError ? 'workout-notes-error' : undefined}
             disabled={pending}
             rows={4}
             className="w-full resize-none rounded-md border border-input bg-card px-4 py-3 text-sm outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 disabled:opacity-60"
             onChange={(event) => onChange('notes', event.target.value)}
           />
+          <FieldError id="workout-notes-error" message={notesError} />
         </Field>
 
         {error && (
@@ -181,6 +210,15 @@ export function WorkoutDetailsPanel({
         </Button>
       </div>
     </aside>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} className="text-xs text-destructive">
+      {message}
+    </p>
   );
 }
 

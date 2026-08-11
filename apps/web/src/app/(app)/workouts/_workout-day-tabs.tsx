@@ -1,14 +1,18 @@
-import type { WorkoutDayDraft } from '@/application/workouts/workout-editor-model';
+import type {
+  WorkoutDayDraft,
+  WorkoutDraftValidationError,
+} from '@/application/workouts/workout-editor-model';
 import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 interface WorkoutDayTabsProps {
   days: WorkoutDayDraft[];
   activeDay: number;
   disabled: boolean;
+  validationErrors: WorkoutDraftValidationError[];
   onAddDay: () => void;
   onSelectDay: (index: number) => void;
   onRenameDay: (index: number, label: string) => void;
@@ -19,12 +23,26 @@ export function WorkoutDayTabs({
   days,
   activeDay,
   disabled,
+  validationErrors,
   onAddDay,
   onSelectDay,
   onRenameDay,
   onRemoveDay,
 }: WorkoutDayTabsProps) {
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  function handleTabKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, index: number): void {
+    let targetIndex: number | null = null;
+    if (event.key === 'ArrowRight') targetIndex = (index + 1) % days.length;
+    if (event.key === 'ArrowLeft') targetIndex = (index - 1 + days.length) % days.length;
+    if (event.key === 'Home') targetIndex = 0;
+    if (event.key === 'End') targetIndex = days.length - 1;
+    if (targetIndex === null) return;
+    event.preventDefault();
+    onSelectDay(targetIndex);
+    tabRefs.current[targetIndex]?.focus();
+  }
 
   return (
     <div className="flex min-w-0 items-end border-b border-border bg-card px-4 pt-3 sm:px-6">
@@ -42,10 +60,32 @@ export function WorkoutDayTabs({
                 : 'border-transparent text-muted-foreground'
             }`}
           >
-            {editingDay === index ? (
+            <button
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
+              type="button"
+              role="tab"
+              id={`workout-day-tab-${day.id}`}
+              aria-controls={`workout-day-panel-${day.id}`}
+              aria-selected={index === activeDay}
+              aria-label={day.label}
+              aria-invalid={validationErrors.some((item) => item.path === `days.${day.id}.label`)}
+              tabIndex={index === activeDay ? 0 : -1}
+              className={`px-2 py-1 font-display text-sm font-semibold ${
+                editingDay === index ? 'sr-only' : ''
+              }`}
+              onClick={() => onSelectDay(index)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+            >
+              {day.label}
+            </button>
+            {editingDay === index && (
               <Input
                 value={day.label}
                 aria-label={`Nome de ${day.label}`}
+                maxLength={50}
+                aria-invalid={validationErrors.some((item) => item.path === `days.${day.id}.label`)}
                 className="h-8 w-32 px-2"
                 autoFocus
                 onChange={(event) => onRenameDay(index, event.target.value)}
@@ -54,23 +94,10 @@ export function WorkoutDayTabs({
                   if (event.key === 'Enter' || event.key === 'Escape') {
                     event.preventDefault();
                     setEditingDay(null);
+                    tabRefs.current[index]?.focus();
                   }
                 }}
               />
-            ) : (
-              <button
-                type="button"
-                role="tab"
-                id={`workout-day-tab-${day.id}`}
-                aria-controls={`workout-day-panel-${day.id}`}
-                aria-selected={index === activeDay}
-                aria-label={day.label}
-                tabIndex={index === activeDay ? 0 : -1}
-                className="px-2 py-1 font-display text-sm font-semibold"
-                onClick={() => onSelectDay(index)}
-              >
-                {day.label}
-              </button>
             )}
             <Button
               type="button"
