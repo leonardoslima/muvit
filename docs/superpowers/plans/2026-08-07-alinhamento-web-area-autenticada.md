@@ -14,10 +14,11 @@
 - [x] Task 6: SDK e shell autenticado responsivo.
 - [x] Task 7: Dashboard, perfil do aluno e exercícios.
 - [x] Task 8: wizard de aluno e avaliações.
-- [ ] Próxima etapa: Task 9 — construtor de treinos.
-- [ ] Tasks 10–12: relatórios web, configurações e verificação final.
+- [x] Task 9: construtor canônico de treinos.
+- [ ] Próxima etapa: Task 10 — tela de Relatórios e versão imprimível.
+- [ ] Tasks 11–12: configurações e verificação final.
 
-Execução pausada após a aprovação formal da Task 8. Retomar pela Task 9.
+Execução pausada após a aprovação formal da Task 9. Retomar pela Task 10.
 
 ## Global Constraints
 
