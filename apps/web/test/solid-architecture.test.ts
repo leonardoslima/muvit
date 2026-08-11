@@ -143,7 +143,7 @@ describe('web SOLID architecture rules', () => {
       join(srcRoot, 'app', '(app)', 'students', '[id]', 'actions.ts'),
       join(srcRoot, 'app', '(app)', 'students', '[id]', 'assessments', 'actions.ts'),
       join(srcRoot, 'app', '(app)', 'onboarding', 'actions.ts'),
-      join(srcRoot, 'app', '(app)', 'workouts', 'new', 'actions.ts'),
+      join(srcRoot, 'app', '(app)', 'workouts', 'actions.ts'),
     ];
 
     const violations = actionFiles.flatMap((path) => {

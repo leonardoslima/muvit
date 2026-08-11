@@ -1,29 +1,48 @@
 import type { MuscleGroup } from '@/lib/muscle-groups';
 
-export type ExerciseLite = { id: string; name: string; muscleGroup: MuscleGroup };
+export type ExerciseLite = {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+  equipment: string | null;
+};
 
-export type WorkoutExerciseState = {
+export type WorkoutExerciseDraft = {
   exerciseId: string;
   exerciseName: string;
   muscleGroup: MuscleGroup;
+  equipment: string | null;
   sets: number;
   reps: string;
   restSeconds?: number;
   loadKg?: number;
+  tempo?: string;
   notes?: string;
 };
 
-export type WorkoutDayState = {
+export type WorkoutDayDraft = {
   id: string;
   label: string;
-  exercises: WorkoutExerciseState[];
+  exercises: WorkoutExerciseDraft[];
 };
 
 export type WorkoutStatus = 'draft' | 'active' | 'archived';
 
+export type WorkoutDraft = {
+  studentId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  status: WorkoutStatus;
+  notes: string;
+  days: WorkoutDayDraft[];
+};
+
 export type CreateWorkoutInput = {
   studentId: string;
   name: string;
+  startDate?: string;
+  endDate?: string;
   notes?: string;
   status: WorkoutStatus;
   days: Array<{
@@ -52,11 +71,27 @@ const defaultLabels = [
   'Treino G',
 ];
 
-export function createWorkoutDay(label: string, createId: () => string): WorkoutDayState {
+export function createWorkoutDay(label: string, createId: () => string): WorkoutDayDraft {
   return { id: createId(), label, exercises: [] };
 }
 
-export function addWorkoutDay(days: WorkoutDayState[], createId: () => string): WorkoutDayState[] {
+export function createWorkoutDraft(studentId: string, createId: () => string): WorkoutDraft {
+  return {
+    studentId,
+    name: '',
+    startDate: '',
+    endDate: '',
+    status: 'draft',
+    notes: '',
+    days: [createWorkoutDay('Treino A', createId)],
+  };
+}
+
+export function discardWorkoutDraft(draft: WorkoutDraft, createId: () => string): WorkoutDraft {
+  return createWorkoutDraft(draft.studentId, createId);
+}
+
+export function addWorkoutDay(days: WorkoutDayDraft[], createId: () => string): WorkoutDayDraft[] {
   if (days.length >= 7) return days;
   return [
     ...days,
@@ -64,24 +99,24 @@ export function addWorkoutDay(days: WorkoutDayState[], createId: () => string): 
   ];
 }
 
-export function removeWorkoutDay(days: WorkoutDayState[], index: number): WorkoutDayState[] {
+export function removeWorkoutDay(days: WorkoutDayDraft[], index: number): WorkoutDayDraft[] {
   if (days.length === 1) return days;
   return days.filter((_, dayIndex) => dayIndex !== index);
 }
 
 export function updateWorkoutDayLabel(
-  days: WorkoutDayState[],
+  days: WorkoutDayDraft[],
   index: number,
   label: string,
-): WorkoutDayState[] {
+): WorkoutDayDraft[] {
   return days.map((day, dayIndex) => (dayIndex === index ? { ...day, label } : day));
 }
 
 export function addWorkoutExercise(
-  days: WorkoutDayState[],
+  days: WorkoutDayDraft[],
   activeDay: number,
   exercise: ExerciseLite,
-): WorkoutDayState[] {
+): WorkoutDayDraft[] {
   return days.map((day, dayIndex) =>
     dayIndex === activeDay
       ? {
@@ -92,6 +127,7 @@ export function addWorkoutExercise(
               exerciseId: exercise.id,
               exerciseName: exercise.name,
               muscleGroup: exercise.muscleGroup,
+              equipment: exercise.equipment,
               sets: 3,
               reps: '10',
             },
@@ -102,10 +138,10 @@ export function addWorkoutExercise(
 }
 
 export function removeWorkoutExercise(
-  days: WorkoutDayState[],
+  days: WorkoutDayDraft[],
   dayIndex: number,
   exerciseIndex: number,
-): WorkoutDayState[] {
+): WorkoutDayDraft[] {
   return days.map((day, currentDayIndex) =>
     currentDayIndex === dayIndex
       ? {
@@ -119,11 +155,11 @@ export function removeWorkoutExercise(
 }
 
 export function moveWorkoutExercise(
-  days: WorkoutDayState[],
+  days: WorkoutDayDraft[],
   dayIndex: number,
   exerciseIndex: number,
   direction: -1 | 1,
-): WorkoutDayState[] {
+): WorkoutDayDraft[] {
   return days.map((day, currentDayIndex) => {
     if (currentDayIndex !== dayIndex) return day;
     const next = [...day.exercises];
@@ -138,13 +174,13 @@ export function moveWorkoutExercise(
   });
 }
 
-export function updateWorkoutExercise<K extends keyof WorkoutExerciseState>(
-  days: WorkoutDayState[],
+export function updateWorkoutExercise<K extends keyof WorkoutExerciseDraft>(
+  days: WorkoutDayDraft[],
   dayIndex: number,
   exerciseIndex: number,
   key: K,
-  value: WorkoutExerciseState[K],
-): WorkoutDayState[] {
+  value: WorkoutExerciseDraft[K],
+): WorkoutDayDraft[] {
   return days.map((day, currentDayIndex) =>
     currentDayIndex === dayIndex
       ? {
@@ -157,10 +193,13 @@ export function updateWorkoutExercise<K extends keyof WorkoutExerciseState>(
   );
 }
 
-export function validateWorkoutDraft(name: string, days: WorkoutDayState[]): string | null {
-  if (!name.trim()) return 'Informe um nome para o treino.';
-  if (days.some((day) => day.exercises.length === 0)) {
-    return 'Cada dia precisa ter ao menos 1 exercicio.';
+export function validateWorkoutDraft(draft: WorkoutDraft): string | null {
+  if (!draft.name.trim()) return 'Informe um nome para o treino.';
+  if (draft.days.some((day) => day.exercises.length === 0)) {
+    return 'Cada dia precisa ter ao menos 1 exercício.';
+  }
+  if (draft.startDate && draft.endDate && draft.endDate < draft.startDate) {
+    return 'A data final não pode ser anterior à data inicial.';
   }
   return null;
 }
@@ -168,19 +207,17 @@ export function validateWorkoutDraft(name: string, days: WorkoutDayState[]): str
 export function buildCreateWorkoutInput({
   studentId,
   name,
+  startDate,
+  endDate,
   notes,
   status,
   days,
-}: {
-  studentId: string;
-  name: string;
-  notes: string;
-  status: WorkoutStatus;
-  days: WorkoutDayState[];
-}): CreateWorkoutInput {
+}: WorkoutDraft): CreateWorkoutInput {
   return {
     studentId,
     name: name.trim(),
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
     notes: notes.trim() || undefined,
     status,
     days: days.map((day, dayIndex) => ({
@@ -193,6 +230,7 @@ export function buildCreateWorkoutInput({
         reps: exercise.reps,
         restSeconds: exercise.restSeconds,
         loadKg: exercise.loadKg,
+        tempo: exercise.tempo,
         notes: exercise.notes,
       })),
     })),

@@ -8,10 +8,11 @@ import { redirect } from 'next/navigation';
 
 export async function createWorkoutPlanAction(input: CreateWorkoutInput) {
   const client = await configureServerClient();
-  const res = await postWorkoutPlans({ client, body: input });
-  if (res.error || !res.data) {
+  const response = await postWorkoutPlans({ client, body: input });
+  if (response.error || !response.data) {
     return { error: 'Não foi possível salvar o treino.' };
   }
   revalidatePath(`/students/${input.studentId}`);
-  redirect(`/workouts/${res.data.id}`);
+  revalidatePath('/workouts');
+  redirect(`/workouts/${response.data.id}`);
 }

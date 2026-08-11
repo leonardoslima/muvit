@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type WorkoutDraft,
   addWorkoutDay,
   addWorkoutExercise,
   buildCreateWorkoutInput,
-  createWorkoutDay,
+  createWorkoutDraft,
+  discardWorkoutDraft,
   moveWorkoutExercise,
   removeWorkoutDay,
   removeWorkoutExercise,
@@ -12,107 +14,161 @@ import {
   validateWorkoutDraft,
 } from './workout-editor-model';
 
-const exercise = { id: 'exercise-id', name: 'Supino', muscleGroup: 'chest' as const };
+const exercise = {
+  id: 'exercise-id',
+  name: 'Supino',
+  muscleGroup: 'chest' as const,
+  equipment: 'Barra',
+};
+
+function populatedDraft(): WorkoutDraft {
+  const draft = createWorkoutDraft('student-id', () => 'day-a');
+  return {
+    ...draft,
+    name: ' Hipertrofia ',
+    startDate: '2026-08-10',
+    endDate: '2026-09-10',
+    status: 'active',
+    notes: ' Progressão semanal ',
+    days: updateWorkoutExercise(
+      updateWorkoutExercise(
+        updateWorkoutExercise(
+          updateWorkoutExercise(addWorkoutExercise(draft.days, 0, exercise), 0, 0, 'loadKg', 42),
+          0,
+          0,
+          'restSeconds',
+          90,
+        ),
+        0,
+        0,
+        'tempo',
+        '3-1-1',
+      ),
+      0,
+      0,
+      'notes',
+      'Controlar a descida',
+    ),
+  };
+}
 
 describe('workout editor model', () => {
-  it('adds the next default day label', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
+  it('cria o rascunho inicial com um dia e os metadados canônicos', () => {
+    expect(createWorkoutDraft('student-id', () => 'day-a')).toEqual({
+      studentId: 'student-id',
+      name: '',
+      startDate: '',
+      endDate: '',
+      status: 'draft',
+      notes: '',
+      days: [{ id: 'day-a', label: 'Treino A', exercises: [] }],
+    });
+  });
 
-    expect(addWorkoutDay([day], () => 'day-b')).toEqual([
-      day,
-      { id: 'day-b', label: 'Treino B', exercises: [] },
+  it('adiciona dias com rótulos sequenciais até o limite de sete', () => {
+    let days = createWorkoutDraft('student-id', () => 'day-a').days;
+    const ids = ['day-b', 'day-c', 'day-d', 'day-e', 'day-f', 'day-g', 'day-extra'];
+    let nextId = 0;
+
+    for (const _ of ids) {
+      days = addWorkoutDay(days, () => ids[nextId++] ?? 'day-fallback');
+    }
+
+    expect(days.map((day) => day.label)).toEqual([
+      'Treino A',
+      'Treino B',
+      'Treino C',
+      'Treino D',
+      'Treino E',
+      'Treino F',
+      'Treino G',
     ]);
+    expect(days).toHaveLength(7);
   });
 
-  it('adds days until the seven-day limit', () => {
-    const ids = Array.from({ length: 8 }, (_, index) => `day-${index}`);
-    let index = 0;
-    const nextId = () => ids[index++] ?? 'extra';
-    const days = Array.from({ length: 7 }, (_, dayIndex) =>
-      createWorkoutDay(`Treino ${dayIndex + 1}`, nextId),
+  it('renomeia e remove dias sem alterar o original nem eliminar o último dia', () => {
+    const original = addWorkoutDay(
+      createWorkoutDraft('student-id', () => 'day-a').days,
+      () => 'day-b',
     );
+    const renamed = updateWorkoutDayLabel(original, 1, 'Inferior');
 
-    expect(addWorkoutDay(days, nextId)).toHaveLength(7);
+    expect(renamed[1]?.label).toBe('Inferior');
+    expect(original[1]?.label).toBe('Treino B');
+    const onlyDay = original.slice(0, 1);
+    expect(removeWorkoutDay(renamed, 1)).toEqual(onlyDay);
+    expect(removeWorkoutDay(onlyDay, 0)).toEqual(onlyDay);
   });
 
-  it('does not remove the last remaining day', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
-
-    expect(removeWorkoutDay([day], 0)).toEqual([day]);
-  });
-
-  it('removes a day and updates labels immutably', () => {
-    const dayA = createWorkoutDay('Treino A', () => 'day-a');
-    const dayB = createWorkoutDay('Treino B', () => 'day-b');
-
-    expect(removeWorkoutDay([dayA, dayB], 0)).toEqual([dayB]);
-    expect(updateWorkoutDayLabel([dayA], 0, 'Inferior')).toEqual([{ ...dayA, label: 'Inferior' }]);
-  });
-
-  it('adds and moves exercises inside a day', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
-    const withFirst = addWorkoutExercise([day], 0, exercise);
-    const withSecond = addWorkoutExercise(withFirst, 0, {
-      id: 'second-id',
+  it('reordena exercícios nas duas direções usadas pela alça de teclado', () => {
+    const day = createWorkoutDraft('student-id', () => 'day-a').days;
+    const withExercises = addWorkoutExercise(addWorkoutExercise(day, 0, exercise), 0, {
+      id: 'exercise-2',
       name: 'Remada',
       muscleGroup: 'back',
+      equipment: 'Halteres',
     });
 
-    const moved = moveWorkoutExercise(withSecond, 0, 1, -1);
+    const movedUp = moveWorkoutExercise(withExercises, 0, 1, -1);
+    const movedDown = moveWorkoutExercise(movedUp, 0, 0, 1);
 
-    expect(moved[0]?.exercises.map((item) => item.exerciseName)).toEqual(['Remada', 'Supino']);
+    expect(movedUp[0]?.exercises.map((item) => item.exerciseName)).toEqual(['Remada', 'Supino']);
+    expect(movedDown[0]?.exercises.map((item) => item.exerciseName)).toEqual(['Supino', 'Remada']);
+    expect(moveWorkoutExercise(withExercises, 0, 0, -1)).toEqual(withExercises);
+    expect(moveWorkoutExercise(withExercises, 0, 1, 1)).toEqual(withExercises);
   });
 
-  it('ignores exercise moves outside the day bounds', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
-    const days = addWorkoutExercise([day], 0, exercise);
+  it('atualiza notas e remove exercícios somente do dia informado', () => {
+    const draft = createWorkoutDraft('student-id', () => 'day-a');
+    const withExercise = addWorkoutExercise(draft.days, 0, exercise);
+    const updated = updateWorkoutExercise(withExercise, 0, 0, 'notes', 'Aumentar a carga');
 
-    expect(moveWorkoutExercise(days, 0, 0, -1)).toEqual(days);
-    expect(moveWorkoutExercise(days, 0, 0, 1)).toEqual(days);
-  });
-
-  it('removes and updates exercises inside a day', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
-    const withExercise = addWorkoutExercise([day], 0, exercise);
-    const updated = updateWorkoutExercise(withExercise, 0, 0, 'notes', 'Aumentar carga');
-
-    expect(updated[0]?.exercises[0]?.notes).toBe('Aumentar carga');
+    expect(updated[0]?.exercises[0]?.notes).toBe('Aumentar a carga');
     expect(removeWorkoutExercise(updated, 0, 0)[0]?.exercises).toEqual([]);
   });
 
-  it('validates required plan data', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
+  it('rejeita nome vazio, dia vazio e intervalo de datas invertido', () => {
+    const initial = createWorkoutDraft('student-id', () => 'day-a');
 
-    expect(validateWorkoutDraft('', [day])).toEqual('Informe um nome para o treino.');
-    expect(validateWorkoutDraft('Plano', [day])).toEqual(
-      'Cada dia precisa ter ao menos 1 exercicio.',
+    expect(validateWorkoutDraft(initial)).toBe('Informe um nome para o treino.');
+    expect(validateWorkoutDraft({ ...initial, name: 'Plano' })).toBe(
+      'Cada dia precisa ter ao menos 1 exercício.',
     );
-    expect(validateWorkoutDraft('Plano', addWorkoutExercise([day], 0, exercise))).toBeNull();
+    expect(
+      validateWorkoutDraft({
+        ...populatedDraft(),
+        startDate: '2026-09-11',
+        endDate: '2026-09-10',
+      }),
+    ).toBe('A data final não pode ser anterior à data inicial.');
+    expect(validateWorkoutDraft(populatedDraft())).toBeNull();
   });
 
-  it('builds create workout payload', () => {
-    const day = createWorkoutDay('Treino A', () => 'day-a');
-    const days = updateWorkoutExercise(
-      updateWorkoutExercise(addWorkoutExercise([day], 0, exercise), 0, 0, 'loadKg', 42),
-      0,
-      0,
-      'restSeconds',
-      90,
+  it('descarta alterações preservando apenas o aluno selecionado', () => {
+    const discarded = discardWorkoutDraft(
+      { ...populatedDraft(), studentId: 'student-current' },
+      () => 'day-reset',
     );
 
-    expect(
-      buildCreateWorkoutInput({
-        studentId: 'student-id',
-        name: ' Hipertrofia ',
-        notes: ' Progressao semanal ',
-        status: 'active',
-        days,
-      }),
-    ).toEqual({
+    expect(discarded).toEqual({
+      studentId: 'student-current',
+      name: '',
+      startDate: '',
+      endDate: '',
+      status: 'draft',
+      notes: '',
+      days: [{ id: 'day-reset', label: 'Treino A', exercises: [] }],
+    });
+  });
+
+  it('monta o payload integral com datas, tempo, notas e ordens', () => {
+    expect(buildCreateWorkoutInput(populatedDraft())).toEqual({
       studentId: 'student-id',
       name: 'Hipertrofia',
-      notes: 'Progressao semanal',
+      startDate: '2026-08-10',
+      endDate: '2026-09-10',
       status: 'active',
+      notes: 'Progressão semanal',
       days: [
         {
           label: 'Treino A',
@@ -125,7 +181,8 @@ describe('workout editor model', () => {
               reps: '10',
               restSeconds: 90,
               loadKg: 42,
-              notes: undefined,
+              tempo: '3-1-1',
+              notes: 'Controlar a descida',
             },
           ],
         },
