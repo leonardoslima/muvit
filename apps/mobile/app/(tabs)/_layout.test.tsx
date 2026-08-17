@@ -1,3 +1,4 @@
+import type { PlatformPressable } from '@react-navigation/elements';
 import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
@@ -21,36 +22,107 @@ type TabScreen = {
   };
 };
 
-type TabBarButtonProps = {
-  children: ReactNode;
-  style?: unknown;
-  [key: string]: unknown;
+type TabBarButtonProps = React.ComponentProps<typeof PlatformPressable>;
+
+type ScreenOptions = {
+  tabBarActiveBackgroundColor?: string;
+  tabBarAllowFontScaling?: boolean;
+  tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+  tabBarItemStyle?: unknown;
+  tabBarStyle?: unknown;
+};
+
+type RenderedButtonCase = {
+  expectedBackground: string;
+  label: string | undefined;
+  labelTestID: string;
+  name: string;
+  onLongPress: () => void;
+  onPress: () => void;
+  selected: boolean;
+  testID: string;
 };
 
 const tabsState = vi.hoisted(() => ({
-  screenOptions: null as Record<string, unknown> | null,
+  buttonCases: [] as RenderedButtonCase[],
+  screenOptions: null as ScreenOptions | null,
   screens: [] as TabScreen[],
+}));
+
+const platformPressableState = vi.hoisted(() => ({
+  calls: 0,
 }));
 
 vi.mock('expo-router', () => {
   const Tabs = Object.assign(
-    ({
-      children,
-      screenOptions,
-    }: { children: ReactNode; screenOptions: Record<string, unknown> }) => {
+    ({ children, screenOptions }: { children: ReactNode; screenOptions: ScreenOptions }) => {
       tabsState.screenOptions = screenOptions;
       return React.createElement('View', null, children);
     },
     {
       Screen: ({ name, options }: TabScreen) => {
         tabsState.screens.push({ name, options });
-        return null;
+
+        const tabBarButton = tabsState.screenOptions?.tabBarButton;
+        if (!tabBarButton) {
+          return null;
+        }
+
+        const buttons = [true, false].map((selected) => {
+          const testID = `tab-${name}-${selected ? 'active' : 'inactive'}`;
+          const labelTestID = `${testID}-label`;
+          const onPress = vi.fn();
+          const onLongPress = vi.fn();
+          const element = tabBarButton({
+            'aria-label': options.tabBarLabel,
+            'aria-selected': selected,
+            android_ripple: { borderless: true },
+            children: React.createElement('Text', { testID: labelTestID }, options.tabBarLabel),
+            href: `/${name}`,
+            onLongPress,
+            onPress,
+            role: 'tab',
+            style: {
+              backgroundColor: selected ? colors.primarySoft : 'transparent',
+              borderRadius: 0,
+            },
+            testID,
+          });
+
+          tabsState.buttonCases.push({
+            expectedBackground: selected ? colors.primarySoft : 'transparent',
+            label: options.tabBarLabel,
+            labelTestID,
+            name,
+            onLongPress,
+            onPress,
+            selected,
+            testID,
+          });
+
+          return { element, testID };
+        });
+
+        return React.createElement(
+          React.Fragment,
+          null,
+          buttons.map(({ element, testID }) =>
+            React.createElement(React.Fragment, { key: testID }, element),
+          ),
+        );
       },
     },
   );
 
   return { Tabs };
 });
+
+vi.mock('@react-navigation/elements', () => ({
+  PlatformPressable: React.forwardRef<unknown, TabBarButtonProps>(({ children, ...props }, ref) => {
+    platformPressableState.calls += 1;
+    return React.createElement('PlatformPressable', { ...props, ref }, children);
+  }),
+}));
 
 vi.mock('@expo/vector-icons', () => ({
   Ionicons: (props: { name: string; color: string; size: number }) =>
@@ -59,8 +131,10 @@ vi.mock('@expo/vector-icons', () => ({
 
 describe('TabsLayout', () => {
   beforeEach(() => {
+    tabsState.buttonCases.length = 0;
     tabsState.screenOptions = null;
     tabsState.screens.length = 0;
+    platformPressableState.calls = 0;
   });
 
   it('aplica fundo ativo e recorte em pill a todas as abas', () => {
@@ -81,70 +155,36 @@ describe('TabsLayout', () => {
     });
     expect(screenOptions.tabBarAllowFontScaling).not.toBe(false);
 
-    const tabBarButton = screenOptions.tabBarButton as
-      | ((props: TabBarButtonProps) => React.ReactElement<TabBarButtonProps>)
-      | undefined;
-    if (!tabBarButton) {
-      throw new Error('Botão customizado das abas não foi capturado');
-    }
-
-    for (const { name, options } of tabsState.screens) {
-      const onPress = vi.fn();
-      const onLongPress = vi.fn();
-      const activeButton = tabBarButton({
-        'aria-label': options.tabBarLabel,
-        'aria-selected': true,
-        android_ripple: { borderless: true },
-        children: React.createElement('Text', null, options.tabBarLabel),
-        href: `/${name}`,
-        onLongPress,
-        onPress,
-        role: 'tab',
-        style: { backgroundColor: colors.primarySoft, borderRadius: 0 },
-        testID: `tab-${name}`,
-      });
-      const activeStyle = StyleSheet.flatten(activeButton.props.style) as
-        | Record<string, unknown>
-        | undefined;
-
-      expect(activeStyle).toMatchObject({
-        backgroundColor: colors.primarySoft,
-        borderRadius: radii.pill,
-      });
-      expect(activeStyle).not.toHaveProperty('overflow');
-      expect(activeButton.props.children).toBeTruthy();
-      expect(activeButton.props.href).toBe(`/${name}`);
-      expect(activeButton.props.onPress).toBe(onPress);
-      expect(activeButton.props.onLongPress).toBe(onLongPress);
-      expect(activeButton.props.role).toBe('tab');
-      expect(activeButton.props['aria-label']).toBe(options.tabBarLabel);
-      expect(activeButton.props['aria-selected']).toBe(true);
-      expect(activeButton.props.android_ripple).toEqual({ borderless: true });
-
-      const inactiveButton = tabBarButton({
-        'aria-label': options.tabBarLabel,
-        'aria-selected': false,
-        children: React.createElement('Text', null, options.tabBarLabel),
-        testID: `tab-${name}-inactive`,
-        style: { backgroundColor: 'transparent', borderRadius: 0 },
-      });
-      const inactiveStyle = StyleSheet.flatten(inactiveButton.props.style) as
-        | Record<string, unknown>
-        | undefined;
-
-      expect(inactiveStyle).toMatchObject({
-        backgroundColor: 'transparent',
-        borderRadius: radii.pill,
-      });
-      expect(inactiveStyle).not.toHaveProperty('overflow');
-    }
-
     expect(tabsState.screens.map(({ name }) => name)).toEqual(['index', 'progress', 'profile']);
     expect(tabsState.screens.map(({ options }) => options.tabBarActiveBackgroundColor)).toEqual([
       undefined,
       undefined,
       undefined,
     ]);
+    expect(typeof screenOptions.tabBarButton).toBe('function');
+    expect(platformPressableState.calls).toBe(tabsState.buttonCases.length);
+    expect(tabsState.buttonCases).toHaveLength(6);
+
+    for (const buttonCase of tabsState.buttonCases) {
+      const host = tabsRender.getByTestId(buttonCase.testID);
+      const style = StyleSheet.flatten(host.props.style);
+
+      expect(host.type).toBe('PlatformPressable');
+      expect(style).toMatchObject({
+        backgroundColor: buttonCase.expectedBackground,
+        borderRadius: radii.pill,
+      });
+      expect(style).not.toHaveProperty('overflow');
+      expect(host.props.testID).toBe(buttonCase.testID);
+      expect(host.props.onPress).toBe(buttonCase.onPress);
+      expect(host.props.onLongPress).toBe(buttonCase.onLongPress);
+      expect(host.props.role).toBe('tab');
+      expect(host.props['aria-label']).toBe(buttonCase.label);
+      expect(host.props['aria-selected']).toBe(buttonCase.selected);
+      expect(host.props.href).toBe(`/${buttonCase.name}`);
+      expect(host.props.android_ripple).toEqual({ borderless: true });
+      expect(tabsRender.getByTestId(buttonCase.labelTestID).props.children).toBe(buttonCase.label);
+    }
     tabsRender.unmount();
   });
 
