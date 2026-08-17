@@ -51,9 +51,12 @@ export function toOptionalNumber(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function buildFinishWorkoutLogInput(sets: WorkoutSetState[]): FinishWorkoutLogInput {
+export function buildFinishWorkoutLogInput(
+  sets: WorkoutSetState[],
+  durationMin: number,
+): FinishWorkoutLogInput {
   return {
-    durationMin: 45,
+    durationMin,
     completed: true,
     sets: sets.map((set) => ({
       workoutExerciseId: set.workoutExerciseId,
@@ -71,6 +74,7 @@ export async function finishWorkoutWithOfflineFallback<TApi>({
   send,
   workoutDayId,
   date,
+  durationMin,
   sets,
 }: {
   api: TApi;
@@ -78,12 +82,13 @@ export async function finishWorkoutWithOfflineFallback<TApi>({
   send: SendPendingWorkoutLog<TApi>;
   workoutDayId: string;
   date: string;
+  durationMin: number;
   sets: WorkoutSetState[];
 }): Promise<{ queued: boolean }> {
   const item: PendingWorkoutLog = {
     workoutDayId,
     date,
-    finish: buildFinishWorkoutLogInput(sets),
+    finish: buildFinishWorkoutLogInput(sets, durationMin),
   };
 
   try {

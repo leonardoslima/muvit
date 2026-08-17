@@ -65,6 +65,7 @@ describe('workout log service', () => {
         send,
         workoutDayId: 'day-id',
         date: '2026-06-11',
+        durationMin: 18,
         sets,
       }),
     ).resolves.toEqual({ queued: true });
@@ -72,7 +73,7 @@ describe('workout log service', () => {
     expect(queue.enqueue).toHaveBeenCalledWith({
       workoutDayId: 'day-id',
       date: '2026-06-11',
-      finish: buildFinishWorkoutLogInput(sets),
+      finish: buildFinishWorkoutLogInput(sets, 18),
     });
   });
 
@@ -97,6 +98,7 @@ describe('workout log service', () => {
         send,
         workoutDayId: 'day-id',
         date: '2026-06-11',
+        durationMin: 18,
         sets,
       }),
     ).resolves.toEqual({ queued: false });
@@ -104,8 +106,25 @@ describe('workout log service', () => {
     expect(send).toHaveBeenCalledWith(api, {
       workoutDayId: 'day-id',
       date: '2026-06-11',
-      finish: buildFinishWorkoutLogInput(sets),
+      finish: buildFinishWorkoutLogInput(sets, 18),
     });
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('usa a duração real informada ao montar o log', () => {
+    const sets = [
+      {
+        workoutExerciseId: 'workout-exercise-id',
+        setNumber: 1,
+        repsDone: '10',
+        loadKg: '40',
+        completed: true,
+      },
+    ];
+
+    expect(buildFinishWorkoutLogInput(sets, 18)).toMatchObject({
+      durationMin: 18,
+      completed: true,
+    });
   });
 });

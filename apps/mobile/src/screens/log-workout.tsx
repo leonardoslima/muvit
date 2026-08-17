@@ -62,6 +62,7 @@ export function LogWorkoutScreen() {
         send: sendPendingWorkoutLog,
         workoutDayId: params.dayId,
         date: todayIsoDate(),
+        durationMin: 45,
         sets,
       });
       router.back();

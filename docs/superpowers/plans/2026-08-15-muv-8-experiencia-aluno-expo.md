@@ -187,7 +187,7 @@ git commit -m "feat(mobile): cria sistema visual do aluno"
 - Produces: `GuidedSession`, `createGuidedSession`, `updateCurrentSet`, `completeCurrentSet`, `extendRest`, `skipRest`, `continueAfterExercise`, `markSessionFinished`, `getCurrentSet` e `buildSessionSummary`.
 - Produces: `buildFinishWorkoutLogInput(sets, durationMin)` sem duração fixa.
 
-- [ ] **Step 1: Escrever testes falhando para o percurso completo**
+- [x] **Step 1: Escrever testes falhando para o percurso completo**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -243,13 +243,13 @@ Atualizar `workout-log.test.ts` para esperar `durationMin` calculado:
 expect(buildFinishWorkoutLogInput(sets, 18)).toMatchObject({ durationMin: 18, completed: true });
 ```
 
-- [ ] **Step 2: Rodar os testes e confirmar falhas de símbolo ausente e duração fixa**
+- [x] **Step 2: Rodar os testes e confirmar falhas de símbolo ausente e duração fixa**
 
 Run: `corepack pnpm --dir apps/mobile test src/application/workouts/guided-session.test.ts src/application/workouts/workout-log.test.ts`
 
 Expected: FAIL por módulo ausente e pela assinatura antiga de `buildFinishWorkoutLogInput`.
 
-- [ ] **Step 3: Implementar estado, transições e resumo**
+- [x] **Step 3: Implementar estado, transições e resumo**
 
 Usar estes tipos sem dependência de plataforma:
 
@@ -280,7 +280,7 @@ export type GuidedSessionSummary = {
 
 Alterar `buildFinishWorkoutLogInput` e `finishWorkoutWithOfflineFallback` para receber `durationMin` explicitamente, mantendo o mesmo schema e a mesma fila.
 
-- [ ] **Step 4: Rodar testes do núcleo e cobertura core**
+- [x] **Step 4: Rodar testes do núcleo e cobertura core**
 
 Run: `corepack pnpm --dir apps/mobile test src/application/workouts/guided-session.test.ts src/application/workouts/workout-log.test.ts`
 
@@ -290,7 +290,7 @@ Run: `corepack pnpm --dir apps/mobile test:coverage:core`
 
 Expected: PASS com o piso global de 85% preservado.
 
-- [ ] **Step 5: Commitar o núcleo guiado**
+- [x] **Step 5: Commitar o núcleo guiado**
 
 ```powershell
 git add apps/mobile/src/application/workouts/guided-session.ts apps/mobile/src/application/workouts/guided-session.test.ts apps/mobile/src/application/workouts/workout-log.ts apps/mobile/src/application/workouts/workout-log.test.ts
