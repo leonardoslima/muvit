@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, ApiTransportError } from '../../lib/api';
+import { ApiClient, ApiError, ApiTransportError } from '../../lib/api';
 import type { GuidedSession, GuidedSessionPhase } from './guided-session';
 import {
   InvalidTodayWorkoutPayloadError,
@@ -276,6 +276,28 @@ describe('loadTodayWorkout', () => {
 });
 
 describe('fallback offline do treino de hoje', () => {
+  it('rejeita plano de outro summary sem ler nem escrever cache válido', async () => {
+    const otherPlanId = '66666666-6666-4666-8666-666666666666';
+    const api = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
+        .mockResolvedValueOnce({
+          ...cachedPlan,
+          id: otherPlanId,
+          days: [{ ...cachedDay, planId: otherPlanId }],
+        })
+        .mockResolvedValueOnce({ items: [] }),
+    };
+    const storage = createCacheStorage();
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBeInstanceOf(InvalidTodayWorkoutPayloadError);
+    expect(storage.getItem).not.toHaveBeenCalled();
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['summaries', [{ records: [] }]],
     ['plano', [{ items: [cachedPlanSummary] }, { id: cachedPlan.id, days: [] }, { items: [] }]],
@@ -324,6 +346,29 @@ describe('fallback offline do treino de hoje', () => {
     ).resolves.toEqual({ data: cachedTodayWorkout, stale: true });
     expect(storage.getItem).toHaveBeenCalledWith('today-workout:auth-user-id');
     expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('integra o cliente real ao cache stale quando o fetch nativo falha', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('Network request failed'));
+    const api = new ApiClient({
+      baseUrl: 'https://api.muvit.test',
+      getCookie: () => 'muvit.session_token=session-value',
+      onUnauthorized: vi.fn(),
+    });
+    const storage = createCacheStorage();
+
+    try {
+      await expect(
+        loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+      ).resolves.toEqual({ data: cachedTodayWorkout, stale: true });
+      expect(fetchSpy).toHaveBeenCalledOnce();
+      expect(storage.getItem).toHaveBeenCalledWith('today-workout:auth-user-id');
+      expect(storage.setItem).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('propaga erro inesperado sem consultar cache', async () => {
@@ -456,6 +501,24 @@ describe('selectNextWorkoutDay', () => {
 });
 
 describe('loadWorkoutDay', () => {
+  it('rejects a valid plan whose id differs from the selected summary', async () => {
+    const otherPlanId = '66666666-6666-4666-8666-666666666666';
+    const api = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
+        .mockResolvedValueOnce({
+          ...cachedPlan,
+          id: otherPlanId,
+          days: [{ ...cachedDay, planId: otherPlanId }],
+        }),
+    };
+
+    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).rejects.toBeInstanceOf(
+      InvalidTodayWorkoutPayloadError,
+    );
+  });
+
   it('rejects an online day whose exercise belongs to another day', async () => {
     const api = {
       request: vi

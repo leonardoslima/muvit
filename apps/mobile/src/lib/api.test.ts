@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiClient, ApiError, type Fetcher, parseResponse } from './api';
+import { ApiClient, ApiError, ApiTransportError, type Fetcher, parseResponse } from './api';
 
 function createClient({
   fetcher,
@@ -20,16 +20,21 @@ function createClient({
 
 describe('ApiClient', () => {
   it('classifica rejeicao do fetch nativo como erro de transporte tipado', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockRejectedValueOnce(new TypeError('Network request failed'));
+    const transportCause = new TypeError('Network request failed');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(transportCause);
     const client = createClient({});
 
-    await expect(client.request('/students/me')).rejects.toMatchObject({
-      name: 'ApiTransportError',
-    });
+    try {
+      const rejection = await client.request('/students/me').catch((error: unknown) => error);
 
-    fetchSpy.mockRestore();
+      expect(rejection).toBeInstanceOf(ApiTransportError);
+      if (!(rejection instanceof ApiTransportError)) {
+        throw new Error('A rejeição não preservou a classe ApiTransportError.');
+      }
+      expect(rejection.cause).toBe(transportCause);
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('encaminha o cookie nativo sem Authorization e omite credenciais do runtime', async () => {

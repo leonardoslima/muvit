@@ -103,7 +103,10 @@ export async function loadWorkoutDay({
   const selected = selectWorkoutLogPlan(summaries.items);
   if (!selected) throw new Error('sem plano');
 
-  const plan = parseOnlineWorkoutPlan(await api.request<unknown>(`/workout-plans/${selected.id}`));
+  const plan = parseOnlineWorkoutPlan(
+    await api.request<unknown>(`/workout-plans/${selected.id}`),
+    selected.id,
+  );
   const day = plan.days.find((candidate) => candidate.id === dayId);
   if (!day) throw new Error('dia não encontrado');
   if (!isExecutableWorkoutDay(day)) throw new Error('dia não executável');
@@ -126,7 +129,7 @@ export async function loadTodayWorkout({
     api.request<unknown>(`/workout-plans/${active.id}`),
     api.request<unknown>('/students/me/workout-logs?limit=30'),
   ]);
-  const plan = parseOnlineWorkoutPlan(planPayload);
+  const plan = parseOnlineWorkoutPlan(planPayload, active.id);
   const logs = parseOnlinePayload(workoutLogSummariesResponseSchema, logsPayload);
 
   const day = selectNextWorkoutDay(plan.days, logs.items);
@@ -237,9 +240,9 @@ function parseWorkoutPlan(value: unknown): WorkoutPlan | undefined {
   return parsed.data;
 }
 
-function parseOnlineWorkoutPlan(value: unknown): WorkoutPlan {
+function parseOnlineWorkoutPlan(value: unknown, expectedPlanId: string): WorkoutPlan {
   const plan = parseWorkoutPlan(value);
-  if (!plan) throw new InvalidTodayWorkoutPayloadError();
+  if (!plan || plan.id !== expectedPlanId) throw new InvalidTodayWorkoutPayloadError();
   return plan;
 }
 
