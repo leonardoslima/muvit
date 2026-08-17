@@ -1,10 +1,13 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from './login';
 import SignupScreen from './signup';
 
-const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+}));
 const authState = vi.hoisted(() => ({
   signInEmail: vi.fn(),
   signOut: vi.fn(),
@@ -13,7 +16,15 @@ const authState = vi.hoisted(() => ({
 
 vi.mock('expo-router', () => ({
   router: routerState,
-  Link: ({ children }: { children: ReactNode }) => children,
+  Link: ({ children, href }: { children: ReactNode; href: string }) => {
+    if (!React.isValidElement(children)) {
+      return children;
+    }
+
+    return React.cloneElement(children as React.ReactElement<{ onPress?: () => void }>, {
+      onPress: () => routerState.push(href),
+    });
+  },
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
@@ -42,7 +53,34 @@ describe('telas de autenticação mobile', () => {
     authState.signOut.mockReset();
     authState.signUpEmail.mockReset();
 
+    routerState.push.mockReset();
     routerState.replace.mockReset();
+  });
+
+  it('mantém o login pendente desabilitado e ignora o segundo toque', async () => {
+    const user = userEvent.setup();
+    const pending = createDeferred<{
+      data: { user: { role: 'student' } };
+      error: null;
+    }>();
+    authState.signInEmail.mockReturnValueOnce(pending.promise);
+
+    render(<LoginScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    const pendingButton = screen.getByRole('button', { name: 'Entrando...' });
+    expect(pendingButton.props.disabled).toBe(true);
+
+    await user.press(pendingButton);
+    expect(authState.signInEmail).toHaveBeenCalledOnce();
+
+    pending.resolve({ data: { user: { role: 'student' } }, error: null });
+    await waitFor(() => {
+      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+    });
   });
 
   it('faz login pelo Better Auth sem enviar papel', async () => {
@@ -133,4 +171,78 @@ describe('telas de autenticação mobile', () => {
       expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
     });
   });
+
+  it('mantém o cadastro pendente desabilitado e ignora o segundo toque', async () => {
+    const user = userEvent.setup();
+    const pending = createDeferred<{
+      data: { user: { role: 'student' } };
+      error: null;
+    }>();
+    authState.signUpEmail.mockReturnValueOnce(pending.promise);
+
+    render(<SignupScreen />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Ana Aluna');
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
+
+    const pendingButton = screen.getByRole('button', { name: 'Criando...' });
+    expect(pendingButton.props.disabled).toBe(true);
+
+    await user.press(pendingButton);
+    expect(authState.signUpEmail).toHaveBeenCalledOnce();
+
+    pending.resolve({ data: { user: { role: 'student' } }, error: null });
+    await waitFor(() => {
+      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+    });
+  });
+
+  it('mostra mensagem quando o cadastro falha', async () => {
+    const user = userEvent.setup();
+    authState.signUpEmail.mockResolvedValueOnce({
+      data: null,
+      error: { code: 'USER_ALREADY_EXISTS', status: 409 },
+    });
+
+    render(<SignupScreen />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Ana Aluna');
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
+
+    expect(await screen.findByText(/^Credenciais inválidas\./)).toBeTruthy();
+    expect(routerState.replace).not.toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('usa o destino de cadastro do link secundário do login', async () => {
+    const user = userEvent.setup();
+
+    render(<LoginScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Criar conta independente' }));
+
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/signup');
+  });
+
+  it('usa o destino de login do link secundário do cadastro', async () => {
+    const user = userEvent.setup();
+
+    render(<SignupScreen />);
+
+    await user.press(screen.getByRole('button', { name: /tenho conta/ }));
+
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/login');
+  });
 });
+
+function createDeferred<T>() {
+  let resolveDeferred: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolveDeferred = resolve;
+  });
+
+  return { promise, resolve: resolveDeferred };
+}

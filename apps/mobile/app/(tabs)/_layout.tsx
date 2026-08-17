@@ -8,7 +8,12 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
+        tabBarActiveBackgroundColor: colors.primarySoft,
         tabBarInactiveTintColor: colors.muted,
+        tabBarItemStyle: {
+          borderRadius: radii.pill,
+          overflow: 'hidden',
+        },
         tabBarLabelStyle: {
           fontFamily: fontFamilies.bodyStrong,
           fontSize: 12,
@@ -32,7 +37,6 @@ export default function TabsLayout() {
         options={{
           title: 'Hoje',
           tabBarLabel: 'Hoje',
-          tabBarActiveBackgroundColor: colors.primarySoft,
           tabBarIcon: ({ color, size }) => (
             <Ionicons color={color} name="calendar-outline" size={size} />
           ),

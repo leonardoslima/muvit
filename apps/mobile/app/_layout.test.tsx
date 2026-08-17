@@ -5,6 +5,7 @@ import { RootLayout } from './_layout';
 
 const routerState = vi.hoisted(() => ({
   segments: ['(tabs)'] as string[],
+  useSegments: vi.fn(),
 }));
 
 const fontState = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const authState = vi.hoisted(() => ({
     data: null as { user: { id: string; role: string } } | null,
     isPending: false,
   },
+  useSession: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-query', () => ({
@@ -36,7 +38,7 @@ vi.mock('@expo-google-fonts/space-grotesk', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  useSegments: () => routerState.segments,
+  useSegments: routerState.useSegments,
   Redirect: ({ href }: { href: string }) => React.createElement('Text', null, `redirect:${href}`),
   Slot: () => React.createElement('Text', { testID: 'router-slot' }, 'slot'),
 }));
@@ -52,7 +54,7 @@ vi.mock('sentry-expo', () => ({
 
 vi.mock('../src/lib/auth-client', () => ({
   authClient: {
-    useSession: () => authState.session,
+    useSession: authState.useSession,
   },
 }));
 
@@ -70,6 +72,10 @@ vi.mock('../src/components/push-token-registration', () => ({
 
 describe('RootLayout', () => {
   beforeEach(() => {
+    routerState.useSegments.mockReset();
+    routerState.useSegments.mockImplementation(() => routerState.segments);
+    authState.useSession.mockReset();
+    authState.useSession.mockImplementation(() => authState.session);
     routerState.segments = ['(tabs)'];
     authState.session.data = null;
     authState.session.isPending = false;
@@ -84,11 +90,15 @@ describe('RootLayout', () => {
 
     expect(screen.getByLabelText('Carregando aplicativo')).toBeTruthy();
     expect(screen.queryByTestId('router-slot')).toBeNull();
+    expect(routerState.useSegments).not.toHaveBeenCalled();
+    expect(authState.useSession).not.toHaveBeenCalled();
 
     fontState.loaded = true;
     rerender(<RootLayout />);
 
     expect(screen.getByTestId('router-slot')).toBeTruthy();
+    expect(routerState.useSegments).toHaveBeenCalledTimes(1);
+    expect(authState.useSession).toHaveBeenCalledTimes(1);
   });
 
   it('mantém a tela de carregamento enquanto a sessão hidrata', () => {
