@@ -39,10 +39,6 @@ vi.mock('../../src/lib/auth-client', () => ({
   },
 }));
 
-vi.mock('../../src/lib/auth-errors', () => ({
-  getAuthErrorMessage: () => 'Credenciais inválidas. Verifique os dados e tente novamente.',
-}));
-
 vi.mock('../../src/lib/config', () => ({
   config: { apiUrl: 'https://api.muvit.test' },
 }));
@@ -213,7 +209,9 @@ describe('telas de autenticação mobile', () => {
     await user.type(screen.getByLabelText('Senha'), 'senha-segura');
     await user.press(screen.getByRole('button', { name: 'Criar conta' }));
 
-    expect(await screen.findByText(/^Credenciais inválidas\./)).toBeTruthy();
+    expect(
+      await screen.findByText('Não foi possível criar a conta com os dados informados.'),
+    ).toBeTruthy();
     expect(routerState.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
 

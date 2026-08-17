@@ -1,6 +1,25 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import type { ComponentProps, ReactNode } from 'react';
+import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
 import { colors, fontFamilies, radii, spacing } from '../../src/lib/styles';
+
+type TabBarButtonProps = {
+  children: ReactNode;
+  style?: unknown;
+  [key: string]: unknown;
+};
+
+function TabBarButton({ children, style, ...props }: TabBarButtonProps) {
+  return (
+    <Pressable
+      {...(props as ComponentProps<typeof Pressable>)}
+      style={style as StyleProp<ViewStyle>}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 export default function TabsLayout() {
   return (
@@ -12,8 +31,10 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         tabBarItemStyle: {
           borderRadius: radii.pill,
-          overflow: 'hidden',
         },
+        tabBarButton: (props) => (
+          <TabBarButton {...props} style={[props.style, { borderRadius: radii.pill }]} />
+        ),
         tabBarLabelStyle: {
           fontFamily: fontFamilies.bodyStrong,
           fontSize: 12,
