@@ -79,7 +79,7 @@
 - Produces: `colors`, `spacing`, `radii`, `fontFamilies` e `sharedStyles` alinhados ao Pencil.
 - Consumes: callbacks e conteúdo por propriedades; nenhum componente acessa API, storage ou router.
 
-- [ ] **Step 1: Escrever o teste falhando dos componentes semânticos**
+- [x] **Step 1: Escrever o teste falhando dos componentes semânticos**
 
 Criar `ui.test.tsx` com contratos explícitos:
 
@@ -124,13 +124,13 @@ describe('componentes visuais mobile', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar o teste e confirmar a falha correta**
+- [x] **Step 2: Rodar o teste e confirmar a falha correta**
 
 Run: `corepack pnpm --dir apps/mobile test src/components/ui/ui.test.tsx`
 
 Expected: FAIL porque `button`, `field` e `state-panel` ainda não existem.
 
-- [ ] **Step 3: Instalar fontes e implementar os componentes mínimos**
+- [x] **Step 3: Instalar fontes e implementar os componentes mínimos**
 
 Run: `corepack pnpm --dir apps/mobile exec expo install expo-font @expo-google-fonts/inter @expo-google-fonts/space-grotesk`
 
@@ -156,7 +156,7 @@ export const fontFamilies = { body: 'Inter_400Regular', bodyStrong: 'Inter_600Se
 
 Implementar `AppButton` com propriedades `{ label: string; onPress: () => void; disabled?: boolean; variant?: 'primary' | 'secondary' }`, `accessibilityRole="button"`, `accessibilityLabel={label}`, altura mínima de 48 e texto interno. Implementar `Field` com `TextInput accessibilityLabel={label}`, label visível, unidade opcional e erro visível. Implementar `StatePanel` com `tone: 'loading' | 'empty' | 'error'`, título, descrição e ação opcional. `Screen` deve aplicar Safe Area, fundo e ScrollView opcional; `ScreenHeader` deve aceitar eyebrow, título e subtítulo.
 
-- [ ] **Step 4: Rodar teste e verificação estática focada**
+- [x] **Step 4: Rodar teste e verificação estática focada**
 
 Run: `corepack pnpm --dir apps/mobile test src/components/ui/ui.test.tsx`
 
@@ -166,7 +166,7 @@ Run: `corepack pnpm exec biome check apps/mobile/src/components/ui apps/mobile/s
 
 Expected: PASS sem warnings.
 
-- [ ] **Step 5: Commitar a fundação visual**
+- [x] **Step 5: Commitar a fundação visual**
 
 ```powershell
 git add apps/mobile/package.json pnpm-lock.yaml apps/mobile/src/lib/styles.ts apps/mobile/src/components/ui
