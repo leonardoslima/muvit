@@ -47,7 +47,7 @@ export function LogWorkoutScreen() {
     return session.sets
       .slice(0, currentSetIndex < 0 ? session.sets.length : currentSetIndex)
       .reverse()
-      .find((set) => set.completed);
+      .find((set) => set.workoutExerciseId === currentSet.workoutExerciseId && set.completed);
   }, [currentSet, session]);
   const isResumedSession = session ? session.updatedAtMs > session.startedAtMs : false;
 

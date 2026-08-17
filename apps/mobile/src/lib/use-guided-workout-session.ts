@@ -88,6 +88,7 @@ export function useGuidedWorkoutSession({
   const [draftActive, setDraftActive] = useState(false);
   const [summary, setSummary] = useState<GuidedSessionSummary | null>(null);
   const busyRef = useRef(false);
+  const editQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [busy, setBusy] = useState(false);
   const guidedQueryKey = useMemo(
     () => ['guided-workout-session', authUserId, dayId] as const,
@@ -128,11 +129,7 @@ export function useGuidedWorkoutSession({
   }, [authUserId, queryClient]);
 
   const removeGuidedSessionCache = useCallback((): void => {
-    queryClient.invalidateQueries({
-      queryKey: guidedQueryKey,
-      exact: true,
-      refetchType: 'none',
-    });
+    queryClient.removeQueries({ queryKey: guidedQueryKey, exact: true });
   }, [guidedQueryKey, queryClient]);
 
   const clearGuidedSessionCache = useCallback((): void => {
@@ -200,14 +197,14 @@ export function useGuidedWorkoutSession({
   }, [query.data]);
 
   const persistSession = useCallback(
-    async (next: GuidedSession): Promise<boolean> => {
+    async (next: GuidedSession, invalidateToday = true, syncCache = true): Promise<boolean> => {
       if (!authUserId) return false;
 
       try {
         await sessionStorage.save(authUserId, next);
         setStorageError(null);
-        syncSessionCache(next);
-        await invalidateTodayWorkout();
+        if (syncCache) syncSessionCache(next);
+        if (invalidateToday) await invalidateTodayWorkout();
         return true;
       } catch (error) {
         setStorageError('Não foi possível salvar seu progresso.');
@@ -217,17 +214,38 @@ export function useGuidedWorkoutSession({
     [authUserId, invalidateTodayWorkout, sessionStorage, syncSessionCache],
   );
 
+  const enqueueEdit = useCallback(
+    (next: GuidedSession): Promise<void> => {
+      const write = async (): Promise<void> => {
+        await persistSession(next, false, false);
+      };
+      const queued = editQueueRef.current.then(write, write);
+      editQueueRef.current = queued.then(
+        () => undefined,
+        () => undefined,
+      );
+      return editQueueRef.current;
+    },
+    [persistSession],
+  );
+
+  const waitForPendingEdits = useCallback(async (): Promise<void> => {
+    await editQueueRef.current;
+  }, []);
+
   const transition = useCallback(
     async (derive: (current: GuidedSession, day: WorkoutDay, at: number) => GuidedSession) => {
-      const current = sessionRef.current;
-      const day = query.data?.day;
-      if (!current || !day) return;
       if (!beginMutation()) return;
 
       try {
+        await waitForPendingEdits();
+        const current = sessionRef.current;
+        const day = query.data?.day ?? dayRef.current;
+        if (!current || !day) return;
         const next = derive(current, day, nowRef.current());
         sessionRef.current = next;
         setSession(next);
+        syncSessionCache(next);
         setActionError(null);
         setCanRetryFinish(false);
         await persistSession(next);
@@ -238,14 +256,37 @@ export function useGuidedWorkoutSession({
         endMutation();
       }
     },
-    [beginMutation, endMutation, persistSession, query.data?.day],
+    [
+      beginMutation,
+      endMutation,
+      persistSession,
+      query.data?.day,
+      syncSessionCache,
+      waitForPendingEdits,
+    ],
   );
 
   const updateSet = useCallback(
     async (values: { loadKg?: string; repsDone?: string }) => {
-      await transition((current, _day, at) => updateCurrentSet(current, values, at));
+      if (busyRef.current) return;
+      const current = sessionRef.current;
+      const day = query.data?.day ?? dayRef.current;
+      if (!current || !day) return;
+
+      try {
+        const next = updateCurrentSet(current, values, nowRef.current());
+        sessionRef.current = next;
+        setSession(next);
+        syncSessionCache(next);
+        setActionError(null);
+        setCanRetryFinish(false);
+        await enqueueEdit(next);
+      } catch (error) {
+        setActionError(getErrorMessage(error));
+        setCanRetryFinish(false);
+      }
     },
-    [transition],
+    [enqueueEdit, query.data?.day, syncSessionCache],
   );
 
   const completeSet = useCallback(async () => {
@@ -265,32 +306,34 @@ export function useGuidedWorkoutSession({
   }, [transition]);
 
   const saveDraft = useCallback(async (): Promise<boolean> => {
-    const current = sessionRef.current;
-    if (!current) return false;
     if (!beginMutation()) return false;
     try {
+      await waitForPendingEdits();
+      const current = sessionRef.current;
+      if (!current) return false;
       return await persistSession(current);
     } finally {
       endMutation();
     }
-  }, [beginMutation, endMutation, persistSession]);
+  }, [beginMutation, endMutation, persistSession, waitForPendingEdits]);
 
   const finishWorkout = useCallback(async (): Promise<void> => {
-    const current = sessionRef.current;
-    const day = query.data?.day;
-    if (!current || !day || !authUserId || !dayId) return;
+    if (!authUserId || !dayId || !beginMutation()) return;
 
     setActionError(null);
     setCanRetryFinish(false);
-    if (current.phase !== 'ready-to-finish' || current.sets.some((set) => !set.completed)) {
-      setActionError('O treino ainda não está pronto para finalizar.');
-      return;
-    }
-    if (!beginMutation()) return;
-    const finishedAtMs = nowRef.current();
-    const nextSummary = buildSessionSummary(current, finishedAtMs);
 
     try {
+      await waitForPendingEdits();
+      const current = sessionRef.current;
+      const day = query.data?.day ?? dayRef.current;
+      if (!current || !day) return;
+      if (current.phase !== 'ready-to-finish' || current.sets.some((set) => !set.completed)) {
+        setActionError('O treino ainda não está pronto para finalizar.');
+        return;
+      }
+      const finishedAtMs = nowRef.current();
+      const nextSummary = buildSessionSummary(current, finishedAtMs);
       const result = await finishWorkoutWithOfflineFallback({
         api,
         date: todayIsoDate(),
@@ -334,6 +377,7 @@ export function useGuidedWorkoutSession({
     query.data?.day,
     sessionStorage,
     syncSessionCache,
+    waitForPendingEdits,
   ]);
 
   const discard = useCallback(async (): Promise<boolean> => {
@@ -341,6 +385,7 @@ export function useGuidedWorkoutSession({
     if (!beginMutation()) return false;
 
     try {
+      await waitForPendingEdits();
       await sessionStorage.remove(authUserId, dayId);
       removeGuidedSessionCache();
       await invalidateTodayWorkout();
@@ -361,6 +406,7 @@ export function useGuidedWorkoutSession({
     invalidateTodayWorkout,
     removeGuidedSessionCache,
     sessionStorage,
+    waitForPendingEdits,
   ]);
 
   const state: GuidedWorkoutState =
