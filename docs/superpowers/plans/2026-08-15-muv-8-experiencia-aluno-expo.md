@@ -648,7 +648,7 @@ git commit -m "feat(mobile): redesenha treino do dia"
 - Produces: estado de tela `loading | error | ready`, ações persistentes e resultado final `queued: boolean`.
 - Remove o rascunho somente depois de conclusão enviada ou enfileirada.
 
-- [ ] **Step 1: Escrever testes falhando do fluxo observável**
+- [x] **Step 1: Escrever testes falhando do fluxo observável**
 
 Substituir o teste de formulário em lote por um fluxo guiado:
 
@@ -707,13 +707,13 @@ await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
 expect(storageState.removeItem).toHaveBeenCalledWith('muvit_workout_session:auth-user-id:day-id');
 ```
 
-- [ ] **Step 2: Rodar o teste e confirmar falha contra a tela em lote**
+- [x] **Step 2: Rodar o teste e confirmar falha contra a tela em lote**
 
 Run: `corepack pnpm --dir apps/mobile test src/screens/log-workout.test.tsx`
 
 Expected: FAIL porque a tela atual exibe todas as séries e não possui descanso, rascunho ou saída segura.
 
-- [ ] **Step 3: Implementar hook e estados visuais da sessão**
+- [x] **Step 3: Implementar hook e estados visuais da sessão**
 
 O hook deve expor:
 
@@ -739,7 +739,7 @@ O hook carrega dia e rascunho, cria sessão quando necessário, persiste após c
 
 Usar `usePreventRemove` com rascunho ativo. Guardar a ação de navegação interceptada; “Salvar e sair” persiste e despacha essa ação, “Encerrar treino” remove e despacha, e “Continuar treinando” apenas fecha a confirmação. A rota `app/session/[dayId].tsx` exporta `LogWorkoutScreen`.
 
-- [ ] **Step 4: Rodar teste da sessão e regressão do núcleo**
+- [x] **Step 4: Rodar teste da sessão e regressão do núcleo**
 
 Run: `corepack pnpm --dir apps/mobile test src/screens/log-workout.test.tsx src/application/workouts/guided-session.test.ts src/lib/workout-session-storage.test.ts`
 
@@ -749,7 +749,7 @@ Run: `corepack pnpm --dir apps/mobile typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commitar a sessão guiada**
+- [x] **Step 5: Commitar a sessão guiada**
 
 ```powershell
 git add apps/mobile/src/lib/use-guided-workout-session.ts apps/mobile/src/screens/log-workout.tsx apps/mobile/src/screens/log-workout.test.tsx 'apps/mobile/app/session/[dayId].tsx'

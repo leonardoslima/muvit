@@ -1,144 +1,487 @@
-import type { workoutPlanFullSchema } from '@muvit/validators';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import type { z } from 'zod';
-import { loadWorkoutDay } from '../application/workouts/today-workout';
-import {
-  type WorkoutSetState,
-  buildInitialSets,
-  finishWorkoutWithOfflineFallback,
-  groupSetsByExercise,
-} from '../application/workouts/workout-log';
-
-import { todayIsoDate } from '../lib/date';
-import { createLogQueue, sendPendingWorkoutLog } from '../lib/log-queue';
-import { colors, sharedStyles } from '../lib/styles';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Modal, Text, View } from 'react-native';
+import { AppButton } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Field } from '../components/ui/field';
+import { Screen, ScreenHeader } from '../components/ui/screen';
+import { StatePanel } from '../components/ui/state-panel';
+import { authClient } from '../lib/auth-client';
+import { colors, sharedStyles, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
+import { type WorkoutDay, useGuidedWorkoutSession } from '../lib/use-guided-workout-session';
+import { usePreventRemove } from '../lib/use-prevent-remove';
 
-type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
-type WorkoutDay = WorkoutPlan['days'][number];
-type WorkoutExercise = WorkoutDay['exercises'][number];
+type NavigationAction = unknown;
+type Navigation = {
+  dispatch: (action: NavigationAction) => void;
+};
 
 export function LogWorkoutScreen() {
-  const params = useLocalSearchParams<{ dayId: string }>();
   const api = useApiClient();
+  const sessionState = authClient.useSession();
+  const authUserId = sessionState.data?.user.id;
+  const params = useLocalSearchParams<{ dayId: string | string[] }>();
+  const dayId = Array.isArray(params.dayId) ? params.dayId[0] : params.dayId;
+  const navigation = useNavigation<Navigation>();
+  const pendingActionRef = useRef<NavigationAction | null>(null);
+  const [exitVisible, setExitVisible] = useState(false);
 
-  const [sets, setSets] = useState<WorkoutSetState[]>([]);
-  const [saving, setSaving] = useState(false);
-  const query = useQuery({
-    enabled: Boolean(params.dayId),
-    queryKey: ['log-workout', params.dayId],
-    queryFn: async () => {
-      if (!params.dayId) throw new Error('treino não encontrado');
-      const day = await loadWorkoutDay({ api, dayId: params.dayId });
-      setSets((current) => (current.length > 0 ? current : buildInitialSets(day.exercises)));
-      return day;
-    },
+  const controller = useGuidedWorkoutSession({ api, authUserId, dayId });
+  const session = controller.session;
+  const day = controller.day;
+  const currentExercise = day && session ? day.exercises[session.currentExerciseIndex] : undefined;
+  const currentSet = useMemo(() => {
+    if (!session || !currentExercise) return undefined;
+    return session.sets.filter((set) => set.workoutExerciseId === currentExercise.id)[
+      session.currentSetIndex
+    ];
+  }, [currentExercise, session]);
+  const isResumedSession = session ? session.updatedAtMs > session.startedAtMs : false;
+
+  usePreventRemove(controller.draftActive, ({ data }) => {
+    pendingActionRef.current = data.action;
+    setExitVisible(true);
   });
 
-  const groupedSets = useMemo(() => groupSetsByExercise(sets), [sets]);
-
-  function updateSet(next: WorkoutSetState) {
-    setSets((current) =>
-      current.map((item) =>
-        item.workoutExerciseId === next.workoutExerciseId && item.setNumber === next.setNumber
-          ? next
-          : item,
-      ),
-    );
-  }
-
-  async function finish() {
-    if (!params.dayId) return;
-    setSaving(true);
-
-    try {
-      await finishWorkoutWithOfflineFallback({
-        api,
-        queue: createLogQueue(AsyncStorage),
-        send: sendPendingWorkoutLog,
-        workoutDayId: params.dayId,
-        date: todayIsoDate(),
-        durationMin: 45,
-        sets,
-      });
-      router.back();
-    } finally {
-      setSaving(false);
+  useEffect(() => {
+    if (!authUserId || !dayId) {
+      pendingActionRef.current = null;
+      setExitVisible(false);
+      return;
     }
-  }
+    pendingActionRef.current = null;
+    setExitVisible(false);
+  }, [authUserId, dayId]);
 
-  if (query.isLoading) {
+  if (controller.state === 'loading') {
     return (
-      <View style={[sharedStyles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          description="Estamos buscando os exercícios do treino."
+          title="Carregando treino"
+          tone="loading"
+        />
+      </Screen>
     );
   }
 
-  if (query.isError || !query.data) {
+  if (controller.state === 'error' || !day || !session) {
     return (
-      <View style={[sharedStyles.screen, { justifyContent: 'center', gap: 12 }]}>
-        <Text style={sharedStyles.title}>Treino indisponivel</Text>
-        <Text style={sharedStyles.subtitle}>Nao foi possivel abrir este treino agora.</Text>
-      </View>
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          actionLabel="Tentar novamente"
+          description="Verifique sua conexão e tente novamente."
+          onAction={() => void controller.retry()}
+          title="Treino indisponível"
+          tone="error"
+        />
+      </Screen>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 32 }} style={sharedStyles.screen}>
-      <Text style={sharedStyles.title}>{query.data.label}</Text>
-      {query.data.exercises.map((exercise: WorkoutExercise) => (
-        <View key={exercise.id} style={sharedStyles.card}>
-          <Text style={{ color: colors.ink, fontSize: 18, fontWeight: '700' }}>
-            {exercise.exercise.name}
+    <>
+      <Screen scroll contentContainerStyle={styles.content}>
+        <AppButton label="Voltar" onPress={() => router.back()} variant="secondary" />
+        <ScreenHeader
+          eyebrow={
+            session.phase === 'summary' ? 'RESUMO' : isResumedSession ? 'RETOMAR' : 'SESSÃO GUIADA'
+          }
+          subtitle={`${day.label} · ${day.exercises.length} exercícios`}
+          title={
+            session.phase === 'summary'
+              ? 'Treino concluído'
+              : isResumedSession
+                ? 'Treino em andamento'
+                : day.label
+          }
+        />
+
+        {controller.storageError ? (
+          <Text accessibilityLiveRegion="polite" style={styles.warning}>
+            {controller.storageError}
           </Text>
-          {(groupedSets.get(exercise.id) ?? []).map((set) => (
-            <View
-              key={`${set.workoutExerciseId}-${set.setNumber}`}
-              style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
-            >
-              <Pressable
-                onPress={() => updateSet({ ...set, completed: !set.completed })}
-                style={[
-                  sharedStyles.secondaryButton,
-                  {
-                    minHeight: 44,
-                    width: 44,
-                    backgroundColor: set.completed ? colors.primary : colors.surface,
-                  },
-                ]}
-              >
-                <Text style={{ color: set.completed ? '#ffffff' : colors.ink, fontWeight: '700' }}>
-                  {set.setNumber}
-                </Text>
-              </Pressable>
-              <TextInput
-                keyboardType="number-pad"
-                onChangeText={(value) => updateSet({ ...set, repsDone: value })}
-                placeholder="reps"
-                style={[sharedStyles.input, { flex: 1 }]}
-                value={set.repsDone}
-              />
-              <TextInput
-                keyboardType="decimal-pad"
-                onChangeText={(value) => updateSet({ ...set, loadKg: value })}
-                placeholder="kg"
-                style={[sharedStyles.input, { flex: 1 }]}
-                value={set.loadKg}
-              />
-            </View>
-          ))}
-        </View>
-      ))}
-      <Pressable disabled={saving} onPress={finish} style={sharedStyles.button}>
-        <Text style={sharedStyles.buttonText}>
-          {saving ? 'Finalizando...' : 'Finalizar treino'}
-        </Text>
-      </Pressable>
-    </ScrollView>
+        ) : null}
+        {controller.actionError ? (
+          <Card>
+            <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
+              {controller.actionError}
+            </Text>
+            <AppButton label="Tentar novamente" onPress={() => void controller.finishWorkout()} />
+          </Card>
+        ) : null}
+
+        {session.phase === 'set' ? (
+          <CurrentSetView
+            currentExercise={currentExercise}
+            currentSet={currentSet}
+            onChangeLoad={(loadKg) => void controller.updateSet({ loadKg })}
+            onChangeReps={(repsDone) => void controller.updateSet({ repsDone })}
+            onComplete={() => void controller.completeSet()}
+            setNumber={session.currentSetIndex + 1}
+          />
+        ) : null}
+
+        {session.phase === 'rest' ? (
+          <RestView
+            restEndsAtMs={session.restEndsAtMs}
+            onAddTime={() => void controller.addRestTime()}
+            onSkip={() => void controller.skipRest()}
+          />
+        ) : null}
+
+        {session.phase === 'exercise-complete' ? (
+          <ExerciseCompleteView
+            exerciseName={currentExercise?.exercise.name ?? 'Exercício'}
+            onContinue={() => void controller.continueAfterExercise()}
+          />
+        ) : null}
+
+        {session.phase === 'ready-to-finish' ? (
+          <ReadyToFinishView
+            exerciseName={currentExercise?.exercise.name ?? 'Exercício'}
+            onFinish={() => void controller.finishWorkout()}
+          />
+        ) : null}
+
+        {session.phase === 'summary' && controller.summary ? (
+          <SummaryView
+            queued={controller.queued}
+            summary={controller.summary}
+            onBackHome={() => router.replace('/(tabs)')}
+          />
+        ) : null}
+      </Screen>
+
+      <ExitSessionModal
+        currentExerciseName={currentExercise?.exercise.name}
+        currentSetNumber={session.currentSetIndex + 1}
+        onContinue={() => {
+          pendingActionRef.current = null;
+          setExitVisible(false);
+        }}
+        onDiscard={async () => {
+          const discarded = await controller.discard();
+          if (!discarded) return;
+          const action = pendingActionRef.current;
+          pendingActionRef.current = null;
+          if (action) navigation.dispatch(action);
+          else router.replace('/(tabs)');
+          setExitVisible(false);
+        }}
+        onSave={async () => {
+          const saved = await controller.saveDraft();
+          if (!saved) return;
+          const action = pendingActionRef.current;
+          pendingActionRef.current = null;
+          if (action) navigation.dispatch(action);
+          else router.replace('/(tabs)');
+          setExitVisible(false);
+        }}
+        visible={exitVisible}
+      />
+    </>
   );
 }
+
+function CurrentSetView({
+  currentExercise,
+  currentSet,
+  onChangeLoad,
+  onChangeReps,
+  onComplete,
+  setNumber,
+}: {
+  currentExercise: WorkoutDay['exercises'][number] | undefined;
+  currentSet: { loadKg: string; repsDone: string } | undefined;
+  onChangeLoad: (value: string) => void;
+  onChangeReps: (value: string) => void;
+  onComplete: () => void;
+  setNumber: number;
+}) {
+  if (!currentExercise || !currentSet) return null;
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.exerciseTitle}>{currentExercise.exercise.name}</Text>
+      <Text style={sharedStyles.subtitle}>
+        {currentExercise.sets} séries · {currentExercise.reps} reps
+      </Text>
+      <View style={styles.currentSetBadge}>
+        <Text style={styles.currentSetBadgeText}>
+          Série {setNumber} de {currentExercise.sets}
+        </Text>
+      </View>
+      <View style={styles.fieldsRow}>
+        <Field
+          accessibilityHint="Informe a quantidade de repetições realizadas"
+          keyboardType="number-pad"
+          label="Repetições realizadas"
+          onChangeText={onChangeReps}
+          value={currentSet.repsDone}
+        />
+        <Field
+          accessibilityHint="Informe a carga usada no exercício"
+          keyboardType="decimal-pad"
+          label="Carga utilizada"
+          onChangeText={onChangeLoad}
+          unit="kg"
+          value={currentSet.loadKg}
+        />
+      </View>
+      <Text style={styles.hint}>Registre o que você fez antes de avançar.</Text>
+      <AppButton label="Concluir série" onPress={onComplete} />
+    </View>
+  );
+}
+
+function RestView({
+  onAddTime,
+  onSkip,
+  restEndsAtMs,
+}: {
+  onAddTime: () => void;
+  onSkip: () => void;
+  restEndsAtMs: number | null;
+}) {
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    setNowMs(Date.now());
+    const interval = setInterval(() => setNowMs(Date.now()), 1_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remainingSeconds = Math.max(0, Math.ceil(((restEndsAtMs ?? nowMs) - nowMs) / 1_000));
+  const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
+  const seconds = String(remainingSeconds % 60).padStart(2, '0');
+
+  return (
+    <View style={styles.section}>
+      <Card style={styles.restCard}>
+        <Text style={styles.restTitle}>Descanso</Text>
+        <Text style={styles.restDescription}>Respire e se prepare para a próxima série.</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.timer}>
+          {minutes}:{seconds}
+        </Text>
+        <Text style={styles.restDescription}>Tempo restante</Text>
+      </Card>
+      <View style={styles.actionsRow}>
+        <AppButton label="+15 s" onPress={onAddTime} variant="secondary" />
+        <AppButton label="Pular descanso" onPress={onSkip} variant="secondary" />
+      </View>
+    </View>
+  );
+}
+
+function ExerciseCompleteView({
+  exerciseName,
+  onContinue,
+}: {
+  exerciseName: string;
+  onContinue: () => void;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.successMark}>✓</Text>
+      <Text style={styles.exerciseTitle}>{exerciseName} concluído</Text>
+      <Text style={sharedStyles.subtitle}>Séries registradas. Você está avançando bem.</Text>
+      <AppButton label="Próximo exercício" onPress={onContinue} />
+    </View>
+  );
+}
+
+function ReadyToFinishView({
+  exerciseName,
+  onFinish,
+}: {
+  exerciseName: string;
+  onFinish: () => void;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.exerciseTitle}>{exerciseName}</Text>
+      <Text style={sharedStyles.subtitle}>Última série do treino</Text>
+      <Text style={styles.readyTitle}>Pronto para finalizar</Text>
+      <AppButton label="Concluir e finalizar treino" onPress={onFinish} />
+    </View>
+  );
+}
+
+function SummaryView({
+  onBackHome,
+  queued,
+  summary,
+}: {
+  onBackHome: () => void;
+  queued: boolean;
+  summary: NonNullable<ReturnType<typeof useGuidedWorkoutSession>['summary']>;
+}) {
+  return (
+    <View style={styles.section}>
+      <Text style={styles.successMark}>✓</Text>
+      <Text style={styles.summaryTitle}>Treino concluído</Text>
+      <Text style={sharedStyles.subtitle}>Parabéns! Você concluiu a sessão.</Text>
+      <Card>
+        <Text style={styles.metric}>Duração total: {summary.durationMin} min</Text>
+        <Text style={styles.metric}>Exercícios: {summary.exerciseCount}</Text>
+        <Text style={styles.metric}>Séries: {summary.completedSetCount}</Text>
+        <Text style={styles.metric}>Volume total: {summary.volumeKg} kg</Text>
+      </Card>
+      <Text style={styles.hint}>
+        {queued ? 'Treino salvo para sincronização' : 'Resumo salvo no seu acompanhamento.'}
+      </Text>
+      <AppButton label="Voltar ao início" onPress={onBackHome} />
+    </View>
+  );
+}
+
+function ExitSessionModal({
+  currentExerciseName,
+  currentSetNumber,
+  onContinue,
+  onDiscard,
+  onSave,
+  visible,
+}: {
+  currentExerciseName?: string;
+  currentSetNumber: number;
+  onContinue: () => void;
+  onDiscard: () => Promise<void>;
+  onSave: () => Promise<void>;
+  visible: boolean;
+}) {
+  return (
+    <Modal animationType="slide" onRequestClose={onContinue} transparent visible={visible}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalSurface}>
+          <ScreenHeader
+            eyebrow="SAÍDA SEGURA"
+            subtitle="Seu progresso até aqui foi salvo."
+            title="Sair da sessão"
+          />
+          <Card>
+            <Text style={styles.metric}>Treino em andamento</Text>
+            <Text style={sharedStyles.subtitle}>
+              {currentExerciseName ?? 'Exercício atual'} · Série {currentSetNumber}
+            </Text>
+          </Card>
+          <AppButton label="Continuar treinando" onPress={onContinue} />
+          <AppButton label="Salvar e sair" onPress={() => void onSave()} variant="secondary" />
+          <AppButton label="Encerrar treino" onPress={() => void onDiscard()} variant="secondary" />
+          <Text style={styles.hint}>Você poderá retomar depois se escolher salvar e sair.</Text>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = {
+  centeredState: {
+    justifyContent: 'center' as const,
+    padding: spacing.lg,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  section: {
+    gap: spacing.md,
+  },
+  exerciseTitle: {
+    color: colors.ink,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 24,
+  },
+  currentSetBadge: {
+    alignItems: 'center' as const,
+    backgroundColor: colors.primarySoft,
+    borderRadius: spacing.md,
+    padding: spacing.md,
+  },
+  currentSetBadgeText: {
+    color: colors.primary,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 15,
+  },
+  fieldsRow: {
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+  },
+  hint: {
+    color: colors.muted,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+  },
+  warning: {
+    color: colors.warning,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  restCard: {
+    alignItems: 'center' as const,
+    backgroundColor: colors.ink,
+    borderColor: colors.ink,
+    minHeight: 260,
+    justifyContent: 'center' as const,
+  },
+  restTitle: {
+    color: colors.surface,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 24,
+  },
+  restDescription: {
+    color: '#D1CCC4',
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    textAlign: 'center' as const,
+  },
+  timer: {
+    color: colors.surface,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 48,
+  },
+  actionsRow: {
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+  },
+  successMark: {
+    alignSelf: 'center' as const,
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    color: colors.surface,
+    fontSize: 28,
+    overflow: 'hidden' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  readyTitle: {
+    color: colors.primary,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+  },
+  summaryTitle: {
+    color: colors.ink,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 32,
+    textAlign: 'center' as const,
+  },
+  metric: {
+    color: colors.ink,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
+  },
+  modalBackdrop: {
+    backgroundColor: '#00000040',
+    flex: 1,
+    justifyContent: 'flex-end' as const,
+  },
+  modalSurface: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    gap: spacing.md,
+    padding: spacing.xxl,
+  },
+};
