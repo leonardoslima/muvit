@@ -7,6 +7,7 @@ import { TodayWorkoutScreen } from './today-workout';
 
 const authState = vi.hoisted(() => ({ userId: 'auth-user-a' }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
+const linkState = vi.hoisted(() => ({ hrefs: [] as string[] }));
 const storageState = vi.hoisted(() => ({
   getItem: vi.fn(),
   removeItem: vi.fn(),
@@ -32,16 +33,22 @@ vi.mock('react-native-safe-area-context', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  Link: ({ children }: { children: ReactNode }) => children,
+  Link: ({ children, href }: { children: ReactNode; href: string }) => {
+    linkState.hrefs.push(href);
+    return children;
+  },
 }));
 
-function renderWithQueryClient() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderWithQueryClient(queryClient = createQueryClient()) {
   return render(
     <QueryClientProvider client={queryClient}>
       <TodayWorkoutScreen />
     </QueryClientProvider>,
   );
+}
+
+function createQueryClient() {
+  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
 }
 
 const activeWorkout = {
@@ -51,18 +58,104 @@ const activeWorkout = {
     {
       id: 'day-id',
       label: 'Treino A',
+      dayOrder: 0,
+      planId: 'plan-id',
       exercises: [
         {
           id: 'we-1',
-          sets: 3,
+          workoutDayId: 'day-id',
+          exerciseId: 'catalog-1',
+          exerciseOrder: 0,
+          sets: 2,
           reps: '10',
           restSeconds: 60,
+          loadKg: 20,
           notes: null,
-          exercise: { name: 'Supino', muscleGroup: 'chest' },
+          tempo: null,
+          exercise: { id: 'catalog-1', name: 'Supino', muscleGroup: 'chest' },
+        },
+        {
+          id: 'we-2',
+          workoutDayId: 'day-id',
+          exerciseId: 'catalog-2',
+          exerciseOrder: 1,
+          sets: 1,
+          reps: '12',
+          restSeconds: 45,
+          loadKg: null,
+          notes: null,
+          tempo: null,
+          exercise: { id: 'catalog-2', name: 'Remada', muscleGroup: 'costas' },
         },
       ],
     },
   ],
+};
+
+const cachedWorkout = {
+  plan: {
+    id: '44444444-4444-4444-8444-444444444444',
+    studentId: '55555555-5555-4555-8555-555555555555',
+    trainerId: null,
+    name: 'Plano A',
+    startDate: null,
+    endDate: null,
+    status: 'active',
+    notes: null,
+    createdAt: '2026-08-15T12:00:00.000Z',
+    days: [
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        planId: '44444444-4444-4444-8444-444444444444',
+        label: 'Treino A',
+        dayOrder: 0,
+        exercises: [
+          {
+            id: '11111111-1111-4111-8111-111111111111',
+            workoutDayId: '22222222-2222-4222-8222-222222222222',
+            exerciseId: '33333333-3333-4333-8333-333333333333',
+            exerciseOrder: 0,
+            sets: 1,
+            reps: '10',
+            restSeconds: 60,
+            loadKg: null,
+            tempo: null,
+            notes: null,
+            exercise: {
+              id: '33333333-3333-4333-8333-333333333333',
+              name: 'Supino',
+              muscleGroup: 'Peito',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  day: {
+    id: '22222222-2222-4222-8222-222222222222',
+    planId: '44444444-4444-4444-8444-444444444444',
+    label: 'Treino A',
+    dayOrder: 0,
+    exercises: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        workoutDayId: '22222222-2222-4222-8222-222222222222',
+        exerciseId: '33333333-3333-4333-8333-333333333333',
+        exerciseOrder: 0,
+        sets: 1,
+        reps: '10',
+        restSeconds: 60,
+        loadKg: null,
+        tempo: null,
+        notes: null,
+        exercise: {
+          id: '33333333-3333-4333-8333-333333333333',
+          name: 'Supino',
+          muscleGroup: 'Peito',
+        },
+      },
+    ],
+  },
 };
 
 describe('TodayWorkoutScreen', () => {
@@ -72,6 +165,7 @@ describe('TodayWorkoutScreen', () => {
     storageState.getItem.mockReset();
     storageState.removeItem.mockReset();
     storageState.setItem.mockReset();
+    linkState.hrefs = [];
     storageState.getItem.mockResolvedValue(null);
     storageState.removeItem.mockResolvedValue(undefined);
     storageState.setItem.mockResolvedValue(undefined);
@@ -112,6 +206,7 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.getByText('Iniciar treino')).toBeTruthy();
+    expect(linkState.hrefs).toContain('/log/day-id');
     expect(storageState.getItem).toHaveBeenCalledWith(workoutSessionKey('auth-user-a', 'day-id'));
     await waitFor(() => expect(screen.queryByText('Sem treino ativo')).toBeNull());
   });
@@ -126,7 +221,29 @@ describe('TodayWorkoutScreen', () => {
       currentSetIndex: 0,
       phase: 'set',
       restEndsAtMs: null,
-      sets: [],
+      sets: [
+        {
+          workoutExerciseId: 'we-1',
+          setNumber: 1,
+          repsDone: '10',
+          loadKg: '20',
+          completed: true,
+        },
+        {
+          workoutExerciseId: 'we-1',
+          setNumber: 2,
+          repsDone: '10',
+          loadKg: '20',
+          completed: true,
+        },
+        {
+          workoutExerciseId: 'we-2',
+          setNumber: 1,
+          repsDone: '',
+          loadKg: '',
+          completed: false,
+        },
+      ],
     };
     storageState.getItem.mockImplementation(async (key: string) =>
       key === workoutSessionKey('auth-user-a', 'day-id') ? JSON.stringify(savedSession) : null,
@@ -139,7 +256,11 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Treino em andamento')).toBeTruthy();
+    expect(screen.getByText('1 de 2 exercícios concluídos')).toBeTruthy();
+    expect(screen.getByText('Próximo: Remada · Série 1 de 1')).toBeTruthy();
+    expect(screen.getByTestId('workout-progress')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continuar treino' })).toBeTruthy();
+    expect(linkState.hrefs).toContain('/session/day-id');
   });
 
   it('shows a retry action when loading today fails without cache', async () => {
@@ -158,12 +279,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('renders stale offline badge from cached workout', async () => {
     apiState.request.mockRejectedValueOnce(new Error('offline'));
-    storageState.getItem.mockResolvedValueOnce(
-      JSON.stringify({
-        plan: { id: 'plan-id', name: 'Plano A' },
-        day: activeWorkout.days[0],
-      }),
-    );
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
 
     renderWithQueryClient();
 
@@ -171,31 +287,65 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
   });
 
-  it('isolates the offline cache when the authenticated account changes', async () => {
-    apiState.request.mockRejectedValue(new Error('offline'));
-    storageState.getItem.mockResolvedValue(
+  it('shows the offline badge for stale empty states', async () => {
+    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify({ status: 'no-active-plan' }));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
+    expect(screen.getByText('offline')).toBeTruthy();
+  });
+
+  it('shows the offline badge for a stale recovery state', async () => {
+    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    storageState.getItem.mockResolvedValueOnce(
       JSON.stringify({
-        plan: { id: 'plan-id', name: 'Plano A' },
-        day: activeWorkout.days[0],
+        status: 'no-workout-today',
+        plan: { ...cachedWorkout.plan, days: [] },
       }),
     );
 
-    const firstRender = renderWithQueryClient();
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Hoje é dia de recuperação')).toBeTruthy();
+    expect(screen.getByText('offline')).toBeTruthy();
+  });
+
+  it('shows retry when stale cache is invalid', async () => {
+    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify({ cached: true }));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+  });
+
+  it('isolates the offline cache when the authenticated account changes', async () => {
+    apiState.request.mockRejectedValue(new Error('offline'));
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === 'today-workout:auth-user-a'
+        ? JSON.stringify({
+            status: 'no-active-plan',
+          })
+        : null,
+    );
+
+    const queryClient = createQueryClient();
+    const firstRender = renderWithQueryClient(queryClient);
 
     expect(await screen.findByText('offline')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-a');
 
     authState.userId = 'auth-user-b';
-    const nextQueryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
     firstRender.rerender(
-      <QueryClientProvider client={nextQueryClient}>
-        <TodayWorkoutScreen key="auth-user-b" />
+      <QueryClientProvider client={queryClient}>
+        <TodayWorkoutScreen />
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-b');
   });
 

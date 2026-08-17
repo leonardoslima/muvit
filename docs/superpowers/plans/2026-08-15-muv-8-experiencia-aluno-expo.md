@@ -535,7 +535,22 @@ const availableApi = {
     .mockResolvedValueOnce({
       id: 'plan-id',
       name: 'Plano',
-      days: [{ id: 'day-b', label: 'Treino B', exercises: [] }],
+      days: [
+        {
+          id: 'day-b',
+          label: 'Treino B',
+          exercises: [
+            {
+              id: 'exercise-b',
+              sets: 1,
+              reps: '10',
+              loadKg: null,
+              restSeconds: 60,
+              exercise: { name: 'Supino', muscleGroup: 'Peito' },
+            },
+          ],
+        },
+      ],
     })
     .mockResolvedValueOnce({ items: [] }),
 };

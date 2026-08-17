@@ -4,11 +4,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import type { z } from 'zod';
-import { loadWorkoutDay } from '../application/workouts/today-workout';
+import { estimateWorkoutDuration, loadWorkoutDay } from '../application/workouts/today-workout';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
+import { authClient } from '../lib/auth-client';
 import { colors, sharedStyles, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
@@ -18,15 +19,16 @@ type WorkoutExercise = WorkoutDay['exercises'][number];
 
 export function WorkoutOverviewScreen() {
   const api = useApiClient();
+  const authUserId = authClient.useSession().data?.user.id;
   const params = useLocalSearchParams<{ dayId: string }>();
   const dayId = Array.isArray(params.dayId) ? params.dayId[0] : params.dayId;
   const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
 
   const query = useQuery({
-    enabled: Boolean(dayId),
-    queryKey: ['workout-overview', dayId],
+    enabled: Boolean(authUserId && dayId),
+    queryKey: ['workout-overview', authUserId, dayId],
     queryFn: async () => {
-      if (!dayId) throw new Error('Treino não encontrado.');
+      if (!authUserId || !dayId) throw new Error('Treino não encontrado.');
       return loadWorkoutDay({ api, dayId });
     },
   });
@@ -65,7 +67,7 @@ export function WorkoutOverviewScreen() {
       <AppButton label="Voltar" onPress={() => router.back()} variant="secondary" />
       <ScreenHeader
         eyebrow="VISÃO GERAL"
-        subtitle={`${day.exercises.length} exercícios · prepare-se no seu ritmo`}
+        subtitle={`${day.exercises.length} exercícios · ~${estimateWorkoutDuration(day)} min`}
         title={day.label}
       />
 

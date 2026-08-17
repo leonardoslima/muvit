@@ -6,7 +6,10 @@ import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import type { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
-import type { TodayWorkoutResult } from '../application/workouts/today-workout';
+import {
+  type TodayWorkoutResult,
+  getWorkoutDraftProgress,
+} from '../application/workouts/today-workout';
 import {
   estimateWorkoutDuration,
   loadTodayWorkout,
@@ -48,7 +51,8 @@ export function TodayWorkoutScreen() {
         `today-workout:${authUserId}`,
         async () => loadTodayWorkout({ api }),
       );
-      const data = normalizeCachedTodayWorkout(cached.data);
+      const data = cached.stale ? normalizeCachedTodayWorkout(cached.data) : cached.data;
+      if (!data) throw new Error('Cache do treino inválido.');
 
       if (data.status !== 'available') {
         return { ...cached, data, draft: null };
@@ -91,6 +95,7 @@ export function TodayWorkoutScreen() {
   if (data.status === 'no-active-plan') {
     return (
       <Screen style={styles.centeredState}>
+        {stale ? <OfflineBadge /> : null}
         <StatePanel
           description="Seu professor ainda não publicou um plano de treino."
           title="Sem plano ativo"
@@ -103,6 +108,7 @@ export function TodayWorkoutScreen() {
   if (data.status === 'no-workout-today') {
     return (
       <Screen style={styles.centeredState}>
+        {stale ? <OfflineBadge /> : null}
         <StatePanel
           description="Aproveite para descansar e se preparar para o próximo treino."
           title="Hoje é dia de recuperação"
@@ -132,6 +138,8 @@ export function TodayWorkoutScreen() {
           {day.exercises.length} exercícios · {estimateWorkoutDuration(day)} min estimados
         </Text>
       </Card>
+
+      {draft ? <ResumeProgressCard day={day} session={draft} /> : null}
 
       <View style={styles.exerciseList}>
         <Text style={styles.sectionTitle}>Exercícios</Text>
@@ -164,6 +172,26 @@ export function TodayWorkoutScreen() {
 
       <ExerciseModal exercise={selectedExercise} onClose={() => setSelectedExercise(undefined)} />
     </Screen>
+  );
+}
+
+function ResumeProgressCard({ day, session }: { day: WorkoutDay; session: GuidedSession }) {
+  const progress = getWorkoutDraftProgress(day, session);
+
+  return (
+    <Card>
+      <Text style={sharedStyles.stateTitle}>
+        {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
+      </Text>
+      <View testID="workout-progress" style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progress.progressPercent}%` }]} />
+      </View>
+      <Text style={sharedStyles.subtitle}>
+        {progress.next
+          ? `Próximo: ${progress.next.exerciseName} · Série ${progress.next.setNumber} de ${progress.next.totalSets}`
+          : 'Treino pronto para concluir'}
+      </Text>
+    </Card>
   );
 }
 
@@ -234,6 +262,17 @@ const styles = {
     color: colors.primary,
     fontFamily: 'Inter_600SemiBold',
     fontSize: 12,
+  },
+  progressTrack: {
+    backgroundColor: colors.line,
+    borderRadius: 999,
+    height: 8,
+    overflow: 'hidden' as const,
+  },
+  progressFill: {
+    backgroundColor: colors.primary,
+    borderRadius: 999,
+    height: 8,
   },
   modalBackdrop: {
     backgroundColor: '#00000040',
