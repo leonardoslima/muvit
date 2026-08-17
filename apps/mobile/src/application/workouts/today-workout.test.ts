@@ -131,6 +131,46 @@ describe('cache do treino de hoje', () => {
   it('estima pelo menos um minuto quando o treino está vazio', () => {
     expect(estimateWorkoutDuration(cachedEmptyPlan.days[0])).toBe(1);
   });
+  it('calcula progresso apenas com exercícios executáveis', () => {
+    const zeroSetExercise = {
+      ...cachedExercise,
+      id: '66666666-6666-4666-8666-666666666666',
+      exerciseId: '77777777-7777-4777-8777-777777777777',
+      sets: 0,
+      exercise: {
+        ...cachedExercise.exercise,
+        id: '77777777-7777-4777-8777-777777777777',
+        name: 'Alongamento',
+      },
+    };
+    const day = { ...cachedDay, exercises: [cachedExercise, zeroSetExercise] };
+    const session: GuidedSession = {
+      version: 1,
+      workoutDayId: day.id,
+      startedAtMs: 1_000,
+      updatedAtMs: 2_000,
+      currentExerciseIndex: 0,
+      currentSetIndex: 0,
+      phase: 'ready-to-finish',
+      restEndsAtMs: null,
+      sets: [
+        {
+          workoutExerciseId: cachedExercise.id,
+          setNumber: 1,
+          repsDone: '10',
+          loadKg: '20',
+          completed: true,
+        },
+      ],
+    };
+
+    expect(getWorkoutDraftProgress(day, session)).toEqual({
+      completedExerciseCount: 1,
+      totalExerciseCount: 1,
+      progressPercent: 100,
+      next: null,
+    });
+  });
 });
 
 describe('loadTodayWorkout', () => {

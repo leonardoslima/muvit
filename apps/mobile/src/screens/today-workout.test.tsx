@@ -254,6 +254,35 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.queryByText('Supino')).toBeNull();
   });
 
+  it('shows retry instead of stale content when online validation fails', async () => {
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({
+        ...activeWorkout,
+        days: [
+          {
+            ...activeWorkout.days[0],
+            exercises: [
+              {
+                ...activeWorkout.days[0].exercises[0],
+                workoutDayId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+              },
+            ],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ items: [] });
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+    expect(screen.queryByText('offline')).toBeNull();
+    expect(screen.queryByText('Supino')).toBeNull();
+    expect(storageState.setItem).not.toHaveBeenCalled();
+  });
+
   it('offers continuing the workout when a draft exists for the authenticated user and day', async () => {
     const savedSession = {
       version: 1,
@@ -329,6 +358,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('offline')).toBeTruthy();
+    expect(storageState.setItem).not.toHaveBeenCalled();
     expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
   });
 

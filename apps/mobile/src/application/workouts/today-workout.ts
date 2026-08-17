@@ -19,6 +19,11 @@ type WorkoutLogSummary = {
   completed: boolean;
 };
 
+type TodayWorkoutCacheStorage = {
+  getItem: (key: string) => Promise<string | null>;
+  setItem: (key: string, value: string) => Promise<void>;
+};
+
 export type TodayWorkoutResult =
   | {
       status: 'available';
@@ -34,6 +39,21 @@ export type TodayWorkoutResult =
     };
 
 export type TodayWorkout = Extract<TodayWorkoutResult, { status: 'available' }>;
+
+export class InvalidTodayWorkoutPayloadError extends Error {
+  readonly code = 'invalid-today-workout-payload' as const;
+
+  constructor() {
+    super('Resposta online do treino inválida.');
+    this.name = 'InvalidTodayWorkoutPayloadError';
+  }
+}
+
+export function normalizeOnlineTodayWorkout(data: unknown): TodayWorkoutResult {
+  const normalized = normalizeCachedTodayWorkout(data);
+  if (!normalized) throw new InvalidTodayWorkoutPayloadError();
+  return normalized;
+}
 
 export function normalizeCachedTodayWorkout(data: unknown): TodayWorkoutResult | undefined {
   if (!isRecord(data)) return undefined;
@@ -106,6 +126,31 @@ export async function loadTodayWorkout({
   return { status: 'available', plan, day };
 }
 
+export async function loadTodayWorkoutWithOfflineFallback({
+  api,
+  authUserId,
+  storage,
+}: {
+  api: WorkoutApiClient;
+  authUserId: string;
+  storage: TodayWorkoutCacheStorage;
+}): Promise<{ data: TodayWorkoutResult; stale: boolean }> {
+  try {
+    const online = normalizeOnlineTodayWorkout(await loadTodayWorkout({ api }));
+    await storage.setItem(`today-workout:${authUserId}`, JSON.stringify(online));
+    return { data: online, stale: false };
+  } catch (error) {
+    if (error instanceof InvalidTodayWorkoutPayloadError) throw error;
+
+    const serialized = await storage.getItem(`today-workout:${authUserId}`);
+    if (!serialized) throw error;
+
+    const data = normalizeCachedTodayWorkout(JSON.parse(serialized));
+    if (!data) throw new Error('Cache do treino inválido.');
+    return { data, stale: true };
+  }
+}
+
 export function selectNextWorkoutDay(
   days: WorkoutDay[],
   logs: WorkoutLogSummary[],
@@ -136,10 +181,11 @@ export function getWorkoutDraftProgress(
   day: WorkoutDay,
   session: GuidedSession,
 ): WorkoutDraftProgress {
-  const completedExerciseCount = day.exercises.filter((exercise) =>
+  const executableExercises = day.exercises.filter(isExecutableWorkoutExercise);
+  const completedExerciseCount = executableExercises.filter((exercise) =>
     isExerciseComplete(exercise, session),
   ).length;
-  const totalExerciseCount = day.exercises.length;
+  const totalExerciseCount = executableExercises.length;
   const progressPercent =
     totalExerciseCount === 0 ? 0 : Math.round((completedExerciseCount / totalExerciseCount) * 100);
 

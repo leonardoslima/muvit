@@ -8,12 +8,9 @@ import type { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
 import {
   type TodayWorkoutResult,
-  getWorkoutDraftProgress,
-} from '../application/workouts/today-workout';
-import {
   estimateWorkoutDuration,
-  loadTodayWorkout,
-  normalizeCachedTodayWorkout,
+  getWorkoutDraftProgress,
+  loadTodayWorkoutWithOfflineFallback,
 } from '../application/workouts/today-workout';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -21,7 +18,6 @@ import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
 import type { CacheResult } from '../lib/offline-cache';
-import { createOfflineCache } from '../lib/offline-cache';
 import { colors, sharedStyles, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
@@ -51,17 +47,12 @@ export function TodayWorkoutScreen() {
         throw new Error('Sessão não autenticada.');
       }
 
-      const cache = createOfflineCache(AsyncStorage);
-      const cached = await cache.get<TodayWorkoutResult | null>(
-        `today-workout:${authUserId}`,
-        async () => {
-          const online = normalizeCachedTodayWorkout(await loadTodayWorkout({ api }));
-          if (!online) throw new Error('Resposta online do treino inválida.');
-          return online;
-        },
-      );
-      const data = normalizeCachedTodayWorkout(cached.data);
-      if (!data) throw new Error('Cache do treino inválido.');
+      const cached = await loadTodayWorkoutWithOfflineFallback({
+        api,
+        authUserId,
+        storage: AsyncStorage,
+      });
+      const { data } = cached;
 
       if (data.status !== 'available') {
         return { ...cached, data, draft: null };
