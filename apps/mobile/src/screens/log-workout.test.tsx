@@ -162,8 +162,35 @@ const draftSession: GuidedSession = {
   ],
 };
 
-function renderWithQueryClient() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const readySession: GuidedSession = {
+  ...draftSession,
+  currentExerciseIndex: 1,
+  currentSetIndex: 0,
+  phase: 'ready-to-finish',
+  sets: draftSession.sets.map((set) => ({
+    ...set,
+    repsDone: set.repsDone || '10',
+    completed: true,
+  })),
+};
+
+const incompleteReadySession: GuidedSession = {
+  ...readySession,
+  sets: readySession.sets.map((set, index) => (index === 0 ? { ...set, completed: false } : set)),
+};
+
+function planWithExercises(exercises: WorkoutPlan['days'][number]['exercises']): WorkoutPlan {
+  return {
+    ...workoutPlan,
+    days: [{ ...workoutPlan.days[0], exercises }],
+  };
+}
+
+function renderWithQueryClient(
+  queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+  }),
+) {
   const view = render(
     <QueryClientProvider client={queryClient}>
       <LogWorkoutScreen />
@@ -172,23 +199,56 @@ function renderWithQueryClient() {
   return { queryClient, view };
 }
 
-function mockWorkoutDay(): void {
+function mockWorkoutDay(plan: WorkoutPlan = workoutPlan): void {
   apiState.request
-    .mockResolvedValueOnce({ items: [planSummary] })
-    .mockResolvedValueOnce(workoutPlan);
+    .mockResolvedValueOnce({ items: [{ ...planSummary, id: plan.id, studentId: plan.studentId }] })
+    .mockResolvedValueOnce(plan);
 }
 
 function mockSuccessfulFinish(): void {
   apiState.request.mockResolvedValueOnce({ id: 'log-id' }).mockResolvedValueOnce(undefined);
 }
 
-function mockDraftStorage(): void {
+function mockDraftStorage(session: GuidedSession = draftSession): void {
   storageState.getItem.mockImplementation(async (key: string) => {
     if (key === `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`) {
-      return JSON.stringify(draftSession);
+      return JSON.stringify(session);
     }
     return null;
   });
+}
+
+function mockStatefulDraftStorage(session: GuidedSession | null = null): {
+  getSerialized: () => string | null;
+} {
+  const key = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+  let serialized = session ? JSON.stringify(session) : null;
+
+  storageState.getItem.mockImplementation(async (requestedKey: string) =>
+    requestedKey === key ? serialized : null,
+  );
+  storageState.setItem.mockImplementation(async (requestedKey: string, value: string) => {
+    if (requestedKey === key) serialized = value;
+  });
+  storageState.removeItem.mockImplementation(async (requestedKey: string) => {
+    if (requestedKey === key) serialized = null;
+  });
+
+  return { getSerialized: () => serialized };
+}
+
+function createDeferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolvePromise: (value: T) => void = () => undefined;
+  let rejectPromise: (reason?: unknown) => void = () => undefined;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+  return { promise, resolve: resolvePromise, reject: rejectPromise };
 }
 
 function pressPreventedNavigation(action: unknown = { type: 'GO_BACK' }): void {
@@ -250,6 +310,8 @@ describe('LogWorkoutScreen', () => {
     expect(restAfter.restEndsAtMs).toBe((restBefore.restEndsAtMs ?? 0) + 15_000);
     await user.press(screen.getByRole('button', { name: 'Pular descanso' }));
     expect(screen.getByText('Série 2 de 2')).toBeTruthy();
+    expect(screen.getByText('Última série registrada')).toBeTruthy();
+    expect(screen.getByText('10 reps · 20 kg')).toBeTruthy();
     await user.type(screen.getByLabelText('Repetições realizadas'), '10');
     await user.press(screen.getByRole('button', { name: 'Concluir série' }));
     expect(await screen.findByText('Supino inclinado concluído')).toBeTruthy();
@@ -279,9 +341,100 @@ describe('LogWorkoutScreen', () => {
     expect(screen.getByText('Série 2 de 2')).toBeTruthy();
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
     expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '22');
+    expect(screen.getByText('Última série registrada')).toBeTruthy();
+    expect(screen.getByText('10 reps · 22 kg')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith(
       `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
     );
+  });
+
+  it('sincroniza o cache ao editar e reabre o mesmo rascunho no mesmo QueryClient', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    queryClient.setQueryData(['today-workout', authState.data.user.id], { status: 'old' });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { view } = renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+    await user.type(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(storage.getSerialized()).toContain('10'));
+
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'save-cache' });
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['today-workout', authState.data.user.id],
+    });
+
+    mockWorkoutDay();
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen key="remount-after-save" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByLabelText('Repetições realizadas')).toHaveProp('value', '10');
+  });
+
+  it('remove o cache ao descartar e não ressuscita o rascunho na remontagem', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockStatefulDraftStorage(draftSession);
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { view } = renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'discard-cache' });
+    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['today-workout', authState.data.user.id],
+    });
+
+    mockWorkoutDay();
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen key="remount-after-discard" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '20');
+  });
+
+  it('remove o cache ao concluir e não ressuscita o resumo como rascunho', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockStatefulDraftStorage(readySession);
+    mockSuccessfulFinish();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { view } = renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+    await waitFor(() => expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0));
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['today-workout', authState.data.user.id],
+    });
+
+    mockWorkoutDay();
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen key="remount-after-finish" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
   });
 
   it('exibe conclusão enfileirada e remove o rascunho após confirmar a fila offline', async () => {
@@ -341,8 +494,175 @@ describe('LogWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
-    expect(await screen.findByText(/Não foi possível salvar seu progresso/)).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getAllByText(/Não foi possível salvar seu progresso/).length).toBeGreaterThan(
+        0,
+      ),
+    );
   });
+
+  it('mantém texto neutro na saída quando o salvamento inicial falhou', async () => {
+    mockWorkoutDay();
+    storageState.setItem.mockRejectedValue(new Error('storage indisponível'));
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'initial-failure' });
+
+    expect(await screen.findByText('Escolha como deseja sair.')).toBeTruthy();
+    expect(screen.queryByText('Seu progresso até aqui foi salvo.')).toBeNull();
+  });
+
+  it('mantém a saída aberta e sem navegação quando Salvar e sair falha', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    storageState.setItem.mockRejectedValueOnce(new Error('storage indisponível'));
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'save-failure' });
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+
+    expect(screen.getByText('Sair da sessão')).toBeTruthy();
+    expect(screen.getByText('Escolha como deseja sair.')).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getAllByText(/Não foi possível salvar seu progresso/).length).toBeGreaterThan(
+        0,
+      ),
+    );
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+  });
+
+  it('não inicia um segundo salvamento enquanto salvar e sair está pendente', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const initialSaveCount = storageState.setItem.mock.calls.filter(
+      ([key]) => key === sessionKey,
+    ).length;
+    const pending = createDeferred<void>();
+    storageState.setItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) return pending.promise;
+    });
+
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'pending-save' });
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+
+    expect(storageState.setItem.mock.calls.filter(([key]) => key === sessionKey)).toHaveLength(
+      initialSaveCount + 1,
+    );
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    pending.resolve();
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+  });
+
+  it('não inicia um segundo descarte enquanto Encerrar treino está pendente', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const pending = createDeferred<void>();
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) return pending.promise;
+    });
+
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'pending-discard' });
+    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+
+    expect(storageState.removeItem.mock.calls.filter(([key]) => key === sessionKey)).toHaveLength(
+      1,
+    );
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    pending.resolve();
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+  });
+
+  it('não envia duas conclusões enquanto a API está pendente', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockDraftStorage(readySession);
+    renderWithQueryClient();
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+
+    const pending = createDeferred<unknown>();
+    apiState.request.mockReset().mockImplementation(() => pending.promise);
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+
+    expect(apiState.request).toHaveBeenCalledOnce();
+    expect(storageState.removeItem).not.toHaveBeenCalledWith(
+      `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
+    );
+
+    pending.resolve({ id: 'log-id' });
+    await waitFor(() => expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0));
+  });
+
+  it('recusa finalizar uma fase pronta que ainda tenha séries incompletas', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockDraftStorage(incompleteReadySession);
+    renderWithQueryClient();
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+
+    apiState.request.mockReset();
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+
+    expect(apiState.request).not.toHaveBeenCalled();
+    expect(storageState.removeItem).not.toHaveBeenCalledWith(
+      `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
+    );
+  });
+
+  const draftMismatchCases: Array<[string, WorkoutPlan, number]> = [
+    ['remoção de exercício', planWithExercises([workoutPlan.days[0].exercises[0]]), 2],
+    [
+      'reordenação de exercícios',
+      planWithExercises([...workoutPlan.days[0].exercises].reverse()),
+      3,
+    ],
+    [
+      'redução de séries',
+      planWithExercises([
+        { ...workoutPlan.days[0].exercises[0], sets: 1 },
+        workoutPlan.days[0].exercises[1],
+      ]),
+      2,
+    ],
+  ];
+
+  it.each(draftMismatchCases)(
+    'recria o rascunho quando há %s no plano atual',
+    async (_caseName, plan, expectedSetCount) => {
+      mockWorkoutDay(plan);
+      const storage = mockStatefulDraftStorage(draftSession);
+      renderWithQueryClient();
+
+      expect(await screen.findByText(/Série 1 de/)).toBeTruthy();
+      await waitFor(() =>
+        expect(storageState.removeItem).toHaveBeenCalledWith(
+          `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
+        ),
+      );
+      const serialized = storage.getSerialized();
+      expect(serialized).toEqual(expect.any(String));
+      const recreated = JSON.parse(serialized ?? '') as GuidedSession;
+      expect(recreated.sets).toHaveLength(expectedSetCount);
+      expect(recreated.currentExerciseIndex).toBe(0);
+      expect(recreated.currentSetIndex).toBe(0);
+    },
+  );
 
   it('continua treinando sem despachar nem remover o rascunho', async () => {
     const user = userEvent.setup();

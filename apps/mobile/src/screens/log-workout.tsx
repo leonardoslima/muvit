@@ -37,9 +37,22 @@ export function LogWorkoutScreen() {
       session.currentSetIndex
     ];
   }, [currentExercise, session]);
+  const lastCompletedSet = useMemo(() => {
+    if (!session || !currentSet) return undefined;
+    const currentSetIndex = session.sets.findIndex(
+      (set) =>
+        set.workoutExerciseId === currentSet.workoutExerciseId &&
+        set.setNumber === currentSet.setNumber,
+    );
+    return session.sets
+      .slice(0, currentSetIndex < 0 ? session.sets.length : currentSetIndex)
+      .reverse()
+      .find((set) => set.completed);
+  }, [currentSet, session]);
   const isResumedSession = session ? session.updatedAtMs > session.startedAtMs : false;
 
   usePreventRemove(controller.draftActive, ({ data }) => {
+    if (controller.busy) return;
     pendingActionRef.current = data.action;
     setExitVisible(true);
   });
@@ -83,7 +96,12 @@ export function LogWorkoutScreen() {
   return (
     <>
       <Screen scroll contentContainerStyle={styles.content}>
-        <AppButton label="Voltar" onPress={() => router.back()} variant="secondary" />
+        <AppButton
+          disabled={controller.busy}
+          label="Voltar"
+          onPress={() => router.back()}
+          variant="secondary"
+        />
         <ScreenHeader
           eyebrow={
             session.phase === 'summary' ? 'RESUMO' : isResumedSession ? 'RETOMAR' : 'SESSÃO GUIADA'
@@ -108,7 +126,13 @@ export function LogWorkoutScreen() {
             <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
               {controller.actionError}
             </Text>
-            <AppButton label="Tentar novamente" onPress={() => void controller.finishWorkout()} />
+            {controller.canRetryFinish ? (
+              <AppButton
+                disabled={controller.busy}
+                label="Tentar novamente"
+                onPress={() => void controller.finishWorkout()}
+              />
+            ) : null}
           </Card>
         ) : null}
 
@@ -116,10 +140,12 @@ export function LogWorkoutScreen() {
           <CurrentSetView
             currentExercise={currentExercise}
             currentSet={currentSet}
+            lastCompletedSet={lastCompletedSet}
             onChangeLoad={(loadKg) => void controller.updateSet({ loadKg })}
             onChangeReps={(repsDone) => void controller.updateSet({ repsDone })}
             onComplete={() => void controller.completeSet()}
             setNumber={session.currentSetIndex + 1}
+            busy={controller.busy}
           />
         ) : null}
 
@@ -128,6 +154,7 @@ export function LogWorkoutScreen() {
             restEndsAtMs={session.restEndsAtMs}
             onAddTime={() => void controller.addRestTime()}
             onSkip={() => void controller.skipRest()}
+            busy={controller.busy}
           />
         ) : null}
 
@@ -135,6 +162,7 @@ export function LogWorkoutScreen() {
           <ExerciseCompleteView
             exerciseName={currentExercise?.exercise.name ?? 'Exercício'}
             onContinue={() => void controller.continueAfterExercise()}
+            busy={controller.busy}
           />
         ) : null}
 
@@ -142,11 +170,13 @@ export function LogWorkoutScreen() {
           <ReadyToFinishView
             exerciseName={currentExercise?.exercise.name ?? 'Exercício'}
             onFinish={() => void controller.finishWorkout()}
+            busy={controller.busy}
           />
         ) : null}
 
         {session.phase === 'summary' && controller.summary ? (
           <SummaryView
+            busy={controller.busy}
             queued={controller.queued}
             summary={controller.summary}
             onBackHome={() => router.replace('/(tabs)')}
@@ -157,6 +187,7 @@ export function LogWorkoutScreen() {
       <ExitSessionModal
         currentExerciseName={currentExercise?.exercise.name}
         currentSetNumber={session.currentSetIndex + 1}
+        storageError={controller.storageError}
         onContinue={() => {
           pendingActionRef.current = null;
           setExitVisible(false);
@@ -179,6 +210,7 @@ export function LogWorkoutScreen() {
           else router.replace('/(tabs)');
           setExitVisible(false);
         }}
+        busy={controller.busy}
         visible={exitVisible}
       />
     </>
@@ -188,17 +220,21 @@ export function LogWorkoutScreen() {
 function CurrentSetView({
   currentExercise,
   currentSet,
+  lastCompletedSet,
   onChangeLoad,
   onChangeReps,
   onComplete,
   setNumber,
+  busy,
 }: {
   currentExercise: WorkoutDay['exercises'][number] | undefined;
   currentSet: { loadKg: string; repsDone: string } | undefined;
+  lastCompletedSet: { loadKg: string; repsDone: string } | undefined;
   onChangeLoad: (value: string) => void;
   onChangeReps: (value: string) => void;
   onComplete: () => void;
   setNumber: number;
+  busy: boolean;
 }) {
   if (!currentExercise || !currentSet) return null;
 
@@ -213,12 +249,21 @@ function CurrentSetView({
           Série {setNumber} de {currentExercise.sets}
         </Text>
       </View>
+      {lastCompletedSet ? (
+        <Card>
+          <Text style={styles.previousSetTitle}>Última série registrada</Text>
+          <Text style={sharedStyles.subtitle}>
+            {lastCompletedSet.repsDone || '—'} reps · {lastCompletedSet.loadKg || '—'} kg
+          </Text>
+        </Card>
+      ) : null}
       <View style={styles.fieldsRow}>
         <Field
           accessibilityHint="Informe a quantidade de repetições realizadas"
           keyboardType="number-pad"
           label="Repetições realizadas"
           onChangeText={onChangeReps}
+          editable={!busy}
           value={currentSet.repsDone}
         />
         <Field
@@ -226,12 +271,13 @@ function CurrentSetView({
           keyboardType="decimal-pad"
           label="Carga utilizada"
           onChangeText={onChangeLoad}
+          editable={!busy}
           unit="kg"
           value={currentSet.loadKg}
         />
       </View>
       <Text style={styles.hint}>Registre o que você fez antes de avançar.</Text>
-      <AppButton label="Concluir série" onPress={onComplete} />
+      <AppButton disabled={busy} label="Concluir série" onPress={onComplete} />
     </View>
   );
 }
@@ -240,10 +286,12 @@ function RestView({
   onAddTime,
   onSkip,
   restEndsAtMs,
+  busy,
 }: {
   onAddTime: () => void;
   onSkip: () => void;
   restEndsAtMs: number | null;
+  busy: boolean;
 }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -268,8 +316,8 @@ function RestView({
         <Text style={styles.restDescription}>Tempo restante</Text>
       </Card>
       <View style={styles.actionsRow}>
-        <AppButton label="+15 s" onPress={onAddTime} variant="secondary" />
-        <AppButton label="Pular descanso" onPress={onSkip} variant="secondary" />
+        <AppButton disabled={busy} label="+15 s" onPress={onAddTime} variant="secondary" />
+        <AppButton disabled={busy} label="Pular descanso" onPress={onSkip} variant="secondary" />
       </View>
     </View>
   );
@@ -278,16 +326,18 @@ function RestView({
 function ExerciseCompleteView({
   exerciseName,
   onContinue,
+  busy,
 }: {
   exerciseName: string;
   onContinue: () => void;
+  busy: boolean;
 }) {
   return (
     <View style={styles.section}>
       <Text style={styles.successMark}>✓</Text>
       <Text style={styles.exerciseTitle}>{exerciseName} concluído</Text>
       <Text style={sharedStyles.subtitle}>Séries registradas. Você está avançando bem.</Text>
-      <AppButton label="Próximo exercício" onPress={onContinue} />
+      <AppButton disabled={busy} label="Próximo exercício" onPress={onContinue} />
     </View>
   );
 }
@@ -295,25 +345,29 @@ function ExerciseCompleteView({
 function ReadyToFinishView({
   exerciseName,
   onFinish,
+  busy,
 }: {
   exerciseName: string;
   onFinish: () => void;
+  busy: boolean;
 }) {
   return (
     <View style={styles.section}>
       <Text style={styles.exerciseTitle}>{exerciseName}</Text>
       <Text style={sharedStyles.subtitle}>Última série do treino</Text>
       <Text style={styles.readyTitle}>Pronto para finalizar</Text>
-      <AppButton label="Concluir e finalizar treino" onPress={onFinish} />
+      <AppButton disabled={busy} label="Concluir e finalizar treino" onPress={onFinish} />
     </View>
   );
 }
 
 function SummaryView({
+  busy,
   onBackHome,
   queued,
   summary,
 }: {
+  busy: boolean;
   onBackHome: () => void;
   queued: boolean;
   summary: NonNullable<ReturnType<typeof useGuidedWorkoutSession>['summary']>;
@@ -332,7 +386,7 @@ function SummaryView({
       <Text style={styles.hint}>
         {queued ? 'Treino salvo para sincronização' : 'Resumo salvo no seu acompanhamento.'}
       </Text>
-      <AppButton label="Voltar ao início" onPress={onBackHome} />
+      <AppButton disabled={busy} label="Voltar ao início" onPress={onBackHome} />
     </View>
   );
 }
@@ -343,6 +397,8 @@ function ExitSessionModal({
   onContinue,
   onDiscard,
   onSave,
+  storageError,
+  busy,
   visible,
 }: {
   currentExerciseName?: string;
@@ -350,15 +406,24 @@ function ExitSessionModal({
   onContinue: () => void;
   onDiscard: () => Promise<void>;
   onSave: () => Promise<void>;
+  storageError: string | null;
+  busy: boolean;
   visible: boolean;
 }) {
   return (
-    <Modal animationType="slide" onRequestClose={onContinue} transparent visible={visible}>
+    <Modal
+      animationType="slide"
+      onRequestClose={() => {
+        if (!busy) onContinue();
+      }}
+      transparent
+      visible={visible}
+    >
       <View style={styles.modalBackdrop}>
         <View style={styles.modalSurface}>
           <ScreenHeader
             eyebrow="SAÍDA SEGURA"
-            subtitle="Seu progresso até aqui foi salvo."
+            subtitle="Escolha como deseja sair."
             title="Sair da sessão"
           />
           <Card>
@@ -367,9 +432,24 @@ function ExitSessionModal({
               {currentExerciseName ?? 'Exercício atual'} · Série {currentSetNumber}
             </Text>
           </Card>
-          <AppButton label="Continuar treinando" onPress={onContinue} />
-          <AppButton label="Salvar e sair" onPress={() => void onSave()} variant="secondary" />
-          <AppButton label="Encerrar treino" onPress={() => void onDiscard()} variant="secondary" />
+          {storageError ? (
+            <Text accessibilityLiveRegion="polite" style={styles.warning}>
+              {storageError}
+            </Text>
+          ) : null}
+          <AppButton disabled={busy} label="Continuar treinando" onPress={onContinue} />
+          <AppButton
+            disabled={busy}
+            label="Salvar e sair"
+            onPress={() => void onSave()}
+            variant="secondary"
+          />
+          <AppButton
+            disabled={busy}
+            label="Encerrar treino"
+            onPress={() => void onDiscard()}
+            variant="secondary"
+          />
           <Text style={styles.hint}>Você poderá retomar depois se escolher salvar e sair.</Text>
         </View>
       </View>
@@ -404,6 +484,11 @@ const styles = {
     color: colors.primary,
     fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
+  },
+  previousSetTitle: {
+    color: colors.ink,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 14,
   },
   fieldsRow: {
     flexDirection: 'row' as const,
