@@ -415,7 +415,7 @@ git commit -m "feat(mobile): persiste rascunho do treino"
 - Consumes: componentes visuais da Task 1 e `authClient` existente.
 - Produces: fontes carregadas antes da navegação, autenticação alinhada a `OII7y`, `P9kNT`, `J6jZMI`, `W7qGN` e tabs alinhadas ao Pencil.
 
-- [ ] **Step 1: Adicionar testes falhando para labels, submissão e fontes**
+- [x] **Step 1: Adicionar testes falhando para labels, submissão e fontes**
 
 Em `auth-screens.test.tsx`, trocar seletores duplicados por papéis acessíveis e adicionar:
 
@@ -453,13 +453,13 @@ render(<RootLayout />);
 expect(screen.getByTestId('router-slot')).toBeTruthy();
 ```
 
-- [ ] **Step 2: Rodar testes e confirmar as falhas visuais/semânticas**
+- [x] **Step 2: Rodar testes e confirmar as falhas visuais/semânticas**
 
 Run: `corepack pnpm --dir apps/mobile test app/_layout.test.tsx 'app/(auth)/auth-screens.test.tsx'`
 
 Expected: FAIL porque as fontes e labels acessíveis ainda não estão conectadas.
 
-- [ ] **Step 3: Implementar fontes, autenticação e tabs**
+- [x] **Step 3: Implementar fontes, autenticação e tabs**
 
 No root layout, carregar exatamente:
 
@@ -475,7 +475,7 @@ Antes de avaliar sessão e segmentos, renderizar `ActivityIndicator` com `access
 
 Reconstruir login e cadastro com `Screen`, `Brand`, `Field` e `AppButton`, mantendo os mesmos payloads Better Auth. Configurar tabs com `headerShown: false`, ícones `calendar-outline`, `stats-chart-outline` e `person-outline`, labels Hoje, Progresso e Perfil e estilos de cápsula flutuante.
 
-- [ ] **Step 4: Rodar testes de autenticação e layout**
+- [x] **Step 4: Rodar testes de autenticação e layout**
 
 Run: `corepack pnpm --dir apps/mobile test app/_layout.test.tsx 'app/(auth)/auth-screens.test.tsx'`
 
@@ -485,7 +485,7 @@ Run: `corepack pnpm --dir apps/mobile typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commitar autenticação e navegação**
+- [x] **Step 5: Commitar autenticação e navegação**
 
 ```powershell
 git add apps/mobile/app/_layout.tsx apps/mobile/app/_layout.test.tsx 'apps/mobile/app/(auth)' 'apps/mobile/app/(tabs)/_layout.tsx'

@@ -16,6 +16,10 @@ vi.mock('expo-router', () => ({
   Link: ({ children }: { children: ReactNode }) => children,
 }));
 
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: { children: ReactNode }) => children,
+}));
+
 vi.mock('../../src/lib/auth-client', () => ({
   authClient: {
     signIn: { email: authState.signInEmail },
@@ -50,9 +54,9 @@ describe('telas de autenticação mobile', () => {
 
     render(<LoginScreen />);
 
-    await user.type(screen.getByPlaceholderText('Email'), 'ana@example.com');
-    await user.type(screen.getByPlaceholderText('Senha'), 'senha-segura');
-    await user.press(screen.getAllByText('Entrar')[1]);
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
 
     await waitFor(() => {
       expect(authState.signInEmail).toHaveBeenCalledWith({
@@ -73,9 +77,12 @@ describe('telas de autenticação mobile', () => {
 
     render(<LoginScreen />);
 
-    await user.type(screen.getByPlaceholderText('Email'), 'ana@example.com');
-    await user.type(screen.getByPlaceholderText('Senha'), 'errada');
-    await user.press(screen.getAllByText('Entrar')[1]);
+    expect(screen.getByLabelText('Email')).toBeTruthy();
+    expect(screen.getByLabelText('Senha')).toBeTruthy();
+
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'errada');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(
       await screen.findByText('Credenciais inválidas. Verifique os dados e tente novamente.'),
@@ -92,9 +99,9 @@ describe('telas de autenticação mobile', () => {
 
     render(<LoginScreen />);
 
-    await user.type(screen.getByPlaceholderText('Email'), 'treinador@example.com');
-    await user.type(screen.getByPlaceholderText('Senha'), 'senha-segura');
-    await user.press(screen.getAllByText('Entrar')[1]);
+    await user.type(screen.getByLabelText('Email'), 'treinador@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(await screen.findByText('Este aplicativo é exclusivo para alunos.')).toBeTruthy();
     expect(authState.signOut).toHaveBeenCalledOnce();
@@ -110,10 +117,10 @@ describe('telas de autenticação mobile', () => {
 
     render(<SignupScreen />);
 
-    await user.type(screen.getByPlaceholderText('Nome'), 'Ana Aluna');
-    await user.type(screen.getByPlaceholderText('Email'), 'ana@example.com');
-    await user.type(screen.getByPlaceholderText('Senha'), 'senha-segura');
-    await user.press(screen.getAllByText('Criar conta')[1]);
+    await user.type(screen.getByLabelText('Nome'), 'Ana Aluna');
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
 
     await waitFor(() => {
       expect(authState.signUpEmail).toHaveBeenCalledWith({

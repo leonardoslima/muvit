@@ -1,9 +1,13 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
+import { Brand } from '../../src/components/ui/brand';
+import { AppButton } from '../../src/components/ui/button';
+import { Field } from '../../src/components/ui/field';
+import { Screen, ScreenHeader } from '../../src/components/ui/screen';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import { sharedStyles } from '../../src/lib/styles';
+import { colors, sharedStyles, spacing } from '../../src/lib/styles';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -37,36 +41,61 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={[sharedStyles.screen, { justifyContent: 'center', gap: 18 }]}>
-      <View style={{ gap: 6 }}>
-        <Text style={sharedStyles.title}>Entrar</Text>
-        <Text style={sharedStyles.subtitle}>Acesse seus treinos e registre sua evolução.</Text>
+    <Screen
+      scroll
+      contentContainerStyle={{
+        flexGrow: 1,
+        gap: spacing.xl,
+        justifyContent: 'center',
+        padding: spacing.xxl,
+      }}
+    >
+      <Brand />
+      <ScreenHeader subtitle="Acesse seus treinos e registre sua evolução." title="Entrar" />
+      <View style={{ gap: spacing.md }}>
+        <Field
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          label="Email"
+          onChangeText={setEmail}
+          placeholder="voce@exemplo.com"
+          value={email}
+        />
+        <Field
+          label="Senha"
+          onChangeText={setPassword}
+          placeholder="Sua senha"
+          secureTextEntry
+          value={password}
+        />
       </View>
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        onChangeText={setEmail}
-        placeholder="Email"
-        style={sharedStyles.input}
-        value={email}
-      />
-      <TextInput
-        onChangeText={setPassword}
-        placeholder="Senha"
-        secureTextEntry
-        style={sharedStyles.input}
-        value={password}
-      />
-      {error ? <Text style={sharedStyles.error}>{error}</Text> : null}
-      <Pressable disabled={submitting} onPress={submit} style={sharedStyles.button}>
-        <Text style={sharedStyles.buttonText}>{submitting ? 'Entrando...' : 'Entrar'}</Text>
-      </Pressable>
-      <Link href="/(auth)/signup" asChild>
-        <Pressable style={sharedStyles.secondaryButton}>
-          <Text style={sharedStyles.secondaryButtonText}>Criar conta independente</Text>
-        </Pressable>
-      </Link>
-    </View>
+      {error ? (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{
+            backgroundColor: `${colors.danger}18`,
+            borderRadius: 10,
+            padding: spacing.md,
+          }}
+        >
+          <Text style={sharedStyles.error}>{error}</Text>
+        </View>
+      ) : null}
+      <View style={{ gap: spacing.sm }}>
+        <AppButton
+          disabled={submitting}
+          label={submitting ? 'Entrando...' : 'Entrar'}
+          onPress={submit}
+        />
+        <Link href="/(auth)/signup" asChild>
+          <AppButton
+            label="Criar conta independente"
+            onPress={() => undefined}
+            variant="secondary"
+          />
+        </Link>
+      </View>
+    </Screen>
   );
 }

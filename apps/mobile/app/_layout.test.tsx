@@ -7,6 +7,10 @@ const routerState = vi.hoisted(() => ({
   segments: ['(tabs)'] as string[],
 }));
 
+const fontState = vi.hoisted(() => ({
+  loaded: true,
+}));
+
 const authState = vi.hoisted(() => ({
   session: {
     data: null as { user: { id: string; role: string } } | null,
@@ -18,10 +22,23 @@ vi.mock('@tanstack/react-query', () => ({
   QueryClientProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
+vi.mock('expo-font', () => ({
+  useFonts: () => [fontState.loaded],
+}));
+
+vi.mock('@expo-google-fonts/inter', () => ({
+  Inter_400Regular: 'Inter_400Regular',
+  Inter_600SemiBold: 'Inter_600SemiBold',
+}));
+
+vi.mock('@expo-google-fonts/space-grotesk', () => ({
+  SpaceGrotesk_600SemiBold: 'SpaceGrotesk_600SemiBold',
+}));
+
 vi.mock('expo-router', () => ({
   useSegments: () => routerState.segments,
   Redirect: ({ href }: { href: string }) => React.createElement('Text', null, `redirect:${href}`),
-  Slot: () => React.createElement('Text', null, 'slot'),
+  Slot: () => React.createElement('Text', { testID: 'router-slot' }, 'slot'),
 }));
 
 vi.mock('expo-status-bar', () => ({
@@ -56,6 +73,22 @@ describe('RootLayout', () => {
     routerState.segments = ['(tabs)'];
     authState.session.data = null;
     authState.session.isPending = false;
+    fontState.loaded = true;
+  });
+
+  it('aguarda as fontes antes de montar a árvore autenticada', () => {
+    authState.session.data = { user: { id: 'auth-user-id', role: 'student' } };
+    fontState.loaded = false;
+
+    const { rerender } = render(<RootLayout />);
+
+    expect(screen.getByLabelText('Carregando aplicativo')).toBeTruthy();
+    expect(screen.queryByTestId('router-slot')).toBeNull();
+
+    fontState.loaded = true;
+    rerender(<RootLayout />);
+
+    expect(screen.getByTestId('router-slot')).toBeTruthy();
   });
 
   it('mantém a tela de carregamento enquanto a sessão hidrata', () => {

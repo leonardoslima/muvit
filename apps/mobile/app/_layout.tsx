@@ -1,4 +1,7 @@
+import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
@@ -17,7 +20,7 @@ if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
   });
 }
 
-export function RootLayout() {
+function AuthenticatedRootLayout() {
   const segments = useSegments();
   const session = authClient.useSession();
 
@@ -47,6 +50,24 @@ export function RootLayout() {
       <Slot />
     </QueryClientProvider>
   );
+}
+
+export function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    SpaceGrotesk_600SemiBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator accessibilityLabel="Carregando aplicativo" color={colors.primary} />
+      </View>
+    );
+  }
+
+  return <AuthenticatedRootLayout />;
 }
 
 export default Sentry.Native.wrap(RootLayout);
