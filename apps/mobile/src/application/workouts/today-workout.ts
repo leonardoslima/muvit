@@ -49,6 +49,7 @@ export function normalizeCachedTodayWorkout(data: unknown): TodayWorkoutResult |
     return parseCachedAvailable(data.plan, data.day);
   }
 
+  if ('status' in data) return undefined;
   if ('plan' in data && 'day' in data) return parseCachedAvailable(data.plan, data.day);
 
   return undefined;
@@ -75,9 +76,11 @@ export async function loadWorkoutDay({
   const selected = selectWorkoutLogPlan(summaries.items);
   if (!selected) throw new Error('sem plano');
 
-  const plan = await api.request<WorkoutPlan>(`/workout-plans/${selected.id}`);
+  const plan = parseWorkoutPlan(await api.request<unknown>(`/workout-plans/${selected.id}`));
+  if (!plan) throw new Error('plano inválido');
   const day = plan.days.find((candidate) => candidate.id === dayId);
   if (!day) throw new Error('dia não encontrado');
+  if (!isExecutableWorkoutDay(day)) throw new Error('dia não executável');
   return day;
 }
 
@@ -153,28 +156,49 @@ function selectWorkoutLogPlan(summaries: WorkoutPlanSummary[]): WorkoutPlanSumma
 }
 
 function parseCachedPlan(value: unknown): WorkoutPlan | undefined {
-  const parsed = workoutPlanFullSchema.safeParse(value);
-  return parsed.success ? parsed.data : undefined;
+  return parseWorkoutPlan(value);
 }
 
 function parseCachedAvailable(planValue: unknown, dayValue: unknown): TodayWorkout | undefined {
   const plan = parseCachedPlan(planValue);
   const parsedDay = workoutDayFullSchema.safeParse(dayValue);
-  if (!plan || !parsedDay.success || parsedDay.data.planId !== plan.id) return undefined;
+  if (!plan || !parsedDay.success || !isValidWorkoutDay(parsedDay.data, plan.id)) {
+    return undefined;
+  }
 
   const day = plan.days.find((candidate) => candidate.id === parsedDay.data.id);
-  if (!day) return undefined;
+  if (!day || !isExecutableWorkoutDay(day)) return undefined;
   return { status: 'available', plan, day };
 }
 
+function parseWorkoutPlan(value: unknown): WorkoutPlan | undefined {
+  const parsed = workoutPlanFullSchema.safeParse(value);
+  if (!parsed.success) return undefined;
+  if (!parsed.data.days.every((day) => isValidWorkoutDay(day, parsed.data.id))) {
+    return undefined;
+  }
+  return parsed.data;
+}
+
+function isValidWorkoutDay(day: WorkoutDay, planId: string): boolean {
+  return (
+    day.planId === planId && day.exercises.every((exercise) => exercise.workoutDayId === day.id)
+  );
+}
+
 function isExecutableWorkoutDay(day: WorkoutDay): boolean {
-  return day.exercises.some((exercise) => exercise.sets >= 1);
+  return day.exercises.some(isExecutableWorkoutExercise);
+}
+
+function isExecutableWorkoutExercise(exercise: WorkoutDay['exercises'][number]): boolean {
+  return exercise.sets >= 1;
 }
 
 function isExerciseComplete(
   exercise: WorkoutDay['exercises'][number],
   session: GuidedSession,
 ): boolean {
+  if (!isExecutableWorkoutExercise(exercise)) return false;
   const sets = session.sets.filter((set) => set.workoutExerciseId === exercise.id);
   return (
     sets.length >= exercise.sets &&
@@ -188,44 +212,16 @@ function findNextWorkoutStep(
   day: WorkoutDay,
   session: GuidedSession,
 ): WorkoutDraftProgress['next'] {
-  let preferredExerciseIndex = session.currentExerciseIndex;
-  let preferredSetIndex = session.currentSetIndex;
-
-  if (session.phase === 'exercise-complete') {
-    preferredExerciseIndex += 1;
-    preferredSetIndex = 0;
-  }
-  if (session.phase === 'rest') preferredSetIndex += 1;
-  if (session.phase === 'ready-to-finish' || session.phase === 'summary') {
-    preferredExerciseIndex = 0;
-    preferredSetIndex = 0;
-  }
-
-  const preferred = findIncompleteStep(day, session, preferredExerciseIndex, preferredSetIndex);
-  return preferred ?? findIncompleteStep(day, session, 0, 0);
-}
-
-function findIncompleteStep(
-  day: WorkoutDay,
-  session: GuidedSession,
-  startExerciseIndex: number,
-  startSetIndex: number,
-): WorkoutDraftProgress['next'] {
-  for (
-    let exerciseIndex = Math.max(0, startExerciseIndex);
-    exerciseIndex < day.exercises.length;
-    exerciseIndex += 1
-  ) {
-    const exercise = day.exercises[exerciseIndex];
-    const firstSetIndex = exerciseIndex === startExerciseIndex ? Math.max(0, startSetIndex) : 0;
+  for (const exercise of day.exercises) {
+    if (!isExecutableWorkoutExercise(exercise)) continue;
     const sets = session.sets.filter((set) => set.workoutExerciseId === exercise.id);
 
-    for (let setIndex = firstSetIndex; setIndex < exercise.sets; setIndex += 1) {
-      const set = sets.find((candidate) => candidate.setNumber === setIndex + 1);
-      if (!set?.completed) {
+    for (let setNumber = 1; setNumber <= exercise.sets; setNumber += 1) {
+      const completed = sets.some((set) => set.setNumber === setNumber && set.completed);
+      if (!completed) {
         return {
           exerciseName: exercise.exercise.name,
-          setNumber: setIndex + 1,
+          setNumber,
           totalSets: exercise.sets,
         };
       }

@@ -16,13 +16,18 @@ import { useApiClient } from '../lib/use-api';
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
+type SelectedExercise = {
+  authUserId: string;
+  dayId: string;
+  exerciseId: string;
+};
 
 export function WorkoutOverviewScreen() {
   const api = useApiClient();
   const authUserId = authClient.useSession().data?.user.id;
   const params = useLocalSearchParams<{ dayId: string }>();
   const dayId = Array.isArray(params.dayId) ? params.dayId[0] : params.dayId;
-  const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
+  const [selectedExerciseSelection, setSelectedExerciseSelection] = useState<SelectedExercise>();
 
   const query = useQuery({
     enabled: Boolean(authUserId && dayId),
@@ -61,6 +66,12 @@ export function WorkoutOverviewScreen() {
 
   const day = query.data;
   const muscleGroups = getMuscleGroups(day);
+  const selectedExercise =
+    selectedExerciseSelection &&
+    selectedExerciseSelection.authUserId === authUserId &&
+    selectedExerciseSelection.dayId === day.id
+      ? day.exercises.find((exercise) => exercise.id === selectedExerciseSelection.exerciseId)
+      : undefined;
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
@@ -83,7 +94,14 @@ export function WorkoutOverviewScreen() {
             accessibilityLabel={exercise.exercise.name}
             accessibilityRole="button"
             key={exercise.id}
-            onPress={() => setSelectedExercise(exercise)}
+            onPress={() => {
+              if (!authUserId) return;
+              setSelectedExerciseSelection({
+                authUserId,
+                dayId: day.id,
+                exerciseId: exercise.id,
+              });
+            }}
             style={styles.exerciseCard}
           >
             <View style={styles.exerciseText}>
@@ -99,7 +117,10 @@ export function WorkoutOverviewScreen() {
 
       <AppButton label="Iniciar treino" onPress={() => router.push(`/session/${day.id}`)} />
 
-      <ExerciseModal exercise={selectedExercise} onClose={() => setSelectedExercise(undefined)} />
+      <ExerciseModal
+        exercise={selectedExercise}
+        onClose={() => setSelectedExerciseSelection(undefined)}
+      />
     </Screen>
   );
 }

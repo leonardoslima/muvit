@@ -538,15 +538,19 @@ const availableApi = {
       days: [
         {
           id: 'day-b',
+          planId: 'plan-id',
           label: 'Treino B',
           exercises: [
             {
               id: 'exercise-b',
+              workoutDayId: 'day-b',
+              exerciseId: 'catalog-b',
+              exerciseOrder: 0,
               sets: 1,
               reps: '10',
               loadKg: null,
               restSeconds: 60,
-              exercise: { name: 'Supino', muscleGroup: 'Peito' },
+              exercise: { id: 'catalog-b', name: 'Supino', muscleGroup: 'Peito' },
             },
           ],
         },
@@ -562,14 +566,22 @@ Em `today-workout.test.tsx`, cobrir retry e rascunho:
 ```tsx
 const savedSession = {
   version: 1,
-  workoutDayId: 'day-id',
+  workoutDayId: 'day-b',
   startedAtMs: 1_000,
   updatedAtMs: 2_000,
   currentExerciseIndex: 0,
   currentSetIndex: 0,
   phase: 'set',
   restEndsAtMs: null,
-  sets: [],
+  sets: [
+    {
+      workoutExerciseId: 'exercise-b',
+      setNumber: 1,
+      repsDone: '',
+      loadKg: '',
+      completed: false,
+    },
+  ],
 };
 
 expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();

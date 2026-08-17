@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { GuidedSession, GuidedSessionPhase } from './guided-session';
 import {
   estimateWorkoutDuration,
+  getWorkoutDraftProgress,
   loadTodayWorkout,
   loadWorkoutDay,
   normalizeCachedTodayWorkout,
@@ -48,7 +50,7 @@ const cachedEmptyPlan = {
   days: [{ ...cachedDay, exercises: [] }],
 };
 
-function createWorkoutDay(id: string, exerciseCount = 1) {
+function createWorkoutDay(id: string, exerciseCount = 1, sets = 1) {
   return {
     id,
     label: id,
@@ -59,7 +61,7 @@ function createWorkoutDay(id: string, exerciseCount = 1) {
       workoutDayId: id,
       exerciseId: `${id}-catalog-${index}`,
       exerciseOrder: index,
-      sets: 1,
+      sets,
       reps: '10',
       restSeconds: 60,
       loadKg: null,
@@ -96,6 +98,32 @@ describe('cache do treino de hoje', () => {
         status: 'available',
         plan: cachedPlan,
         day: { ...cachedDay, id: '66666666-6666-4666-8666-666666666666' },
+      }),
+    ).toBeUndefined();
+    expect(
+      normalizeCachedTodayWorkout({
+        status: 'available',
+        plan: {
+          ...cachedPlan,
+          days: [{ ...cachedDay, planId: '66666666-6666-4666-8666-666666666666' }],
+        },
+        day: cachedDay,
+      }),
+    ).toBeUndefined();
+    expect(
+      normalizeCachedTodayWorkout({
+        status: 'no-workout-today',
+        plan: {
+          ...cachedEmptyPlan,
+          days: [
+            {
+              ...cachedEmptyPlan.days[0],
+              exercises: [
+                { ...cachedExercise, workoutDayId: '66666666-6666-4666-8666-666666666666' },
+              ],
+            },
+          ],
+        },
       }),
     ).toBeUndefined();
   });
@@ -185,13 +213,93 @@ describe('selectNextWorkoutDay', () => {
   it('ignores days without a usable exercise', () => {
     const emptyDay = createWorkoutDay('empty-day', 0);
     const validDay = createWorkoutDay('valid-day');
+    const zeroSetDay = createWorkoutDay('zero-set-day', 1, 0);
 
     expect(selectNextWorkoutDay([emptyDay, validDay], [])).toEqual(validDay);
     expect(selectNextWorkoutDay([emptyDay], [])).toBeUndefined();
+    expect(selectNextWorkoutDay([zeroSetDay], [])).toBeUndefined();
   });
+
+  it.each<GuidedSessionPhase>(['set', 'rest', 'exercise-complete', 'ready-to-finish', 'summary'])(
+    'retorna a primeira série incompleta na ordem do dia durante a fase %s',
+    (phase) => {
+      const day = createWorkoutDay('day-id', 2, 2);
+      const sessionsByPhase: Record<
+        GuidedSessionPhase,
+        Pick<GuidedSession, 'currentExerciseIndex' | 'currentSetIndex'>
+      > = {
+        set: { currentExerciseIndex: 1, currentSetIndex: 1 },
+        rest: { currentExerciseIndex: 1, currentSetIndex: 0 },
+        'exercise-complete': { currentExerciseIndex: 0, currentSetIndex: 0 },
+        'ready-to-finish': { currentExerciseIndex: 1, currentSetIndex: 1 },
+        summary: { currentExerciseIndex: 1, currentSetIndex: 1 },
+      };
+      const session: GuidedSession = {
+        version: 1,
+        workoutDayId: day.id,
+        startedAtMs: 1_000,
+        updatedAtMs: 2_000,
+        ...sessionsByPhase[phase],
+        phase,
+        restEndsAtMs: phase === 'rest' ? 5_000 : null,
+        sets: [
+          {
+            workoutExerciseId: day.exercises[0].id,
+            setNumber: 1,
+            repsDone: '10',
+            loadKg: '20',
+            completed: true,
+          },
+          {
+            workoutExerciseId: day.exercises[1].id,
+            setNumber: 1,
+            repsDone: '10',
+            loadKg: '20',
+            completed: true,
+          },
+          {
+            workoutExerciseId: 'external-exercise',
+            setNumber: 1,
+            repsDone: '10',
+            loadKg: '20',
+            completed: true,
+          },
+        ],
+      };
+
+      expect(getWorkoutDraftProgress(day, session).next).toEqual({
+        exerciseName: 'Supino',
+        setNumber: 2,
+        totalSets: 2,
+      });
+    },
+  );
 });
 
 describe('loadWorkoutDay', () => {
+  it('rejects an online day whose exercise belongs to another day', async () => {
+    const api = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({
+          items: [{ id: cachedPlan.id, status: 'active' }],
+        })
+        .mockResolvedValueOnce({
+          ...cachedPlan,
+          days: [
+            {
+              ...cachedDay,
+              exercises: [
+                { ...cachedExercise, workoutDayId: '66666666-6666-4666-8666-666666666666' },
+              ],
+            },
+          ],
+        }),
+    };
+
+    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).rejects.toThrow('plano inválido');
+  });
+
   it('loads the requested day from the active plan', async () => {
     const api = {
       request: vi
@@ -199,18 +307,16 @@ describe('loadWorkoutDay', () => {
         .mockResolvedValueOnce({
           items: [
             { id: 'draft-plan-id', status: 'draft' },
-            { id: 'active-plan-id', status: 'active' },
+            { id: cachedPlan.id, status: 'active' },
           ],
         })
-        .mockResolvedValueOnce({
-          id: 'active-plan-id',
-          name: 'Plano ativo',
-          days: [createWorkoutDay('day-a'), { ...createWorkoutDay('day-b'), dayOrder: 1 }],
-        }),
+        .mockResolvedValueOnce(cachedPlan),
     };
 
-    await expect(loadWorkoutDay({ api, dayId: 'day-b' })).resolves.toMatchObject({ id: 'day-b' });
-    expect(api.request).toHaveBeenNthCalledWith(2, '/workout-plans/active-plan-id');
+    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).resolves.toMatchObject({
+      id: cachedDay.id,
+    });
+    expect(api.request).toHaveBeenNthCalledWith(2, `/workout-plans/${cachedPlan.id}`);
   });
 
   it('falls back to the first plan when there is no active plan', async () => {
@@ -219,36 +325,30 @@ describe('loadWorkoutDay', () => {
         .fn()
         .mockResolvedValueOnce({
           items: [
-            { id: 'first-plan-id', status: 'draft' },
+            { id: cachedPlan.id, status: 'draft' },
             { id: 'second-plan-id', status: 'paused' },
           ],
         })
-        .mockResolvedValueOnce({
-          id: 'first-plan-id',
-          name: 'Plano inicial',
-          days: [createWorkoutDay('day-a')],
-        }),
+        .mockResolvedValueOnce(cachedPlan),
     };
 
-    await expect(loadWorkoutDay({ api, dayId: 'day-a' })).resolves.toMatchObject({ id: 'day-a' });
-    expect(api.request).toHaveBeenNthCalledWith(2, '/workout-plans/first-plan-id');
+    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).resolves.toMatchObject({
+      id: cachedDay.id,
+    });
+    expect(api.request).toHaveBeenNthCalledWith(2, `/workout-plans/${cachedPlan.id}`);
   });
 
   it('rejects when the requested day is not found', async () => {
     const api = {
       request: vi
         .fn()
-        .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
-        .mockResolvedValueOnce({
-          id: 'plan-id',
-          name: 'Plano',
-          days: [createWorkoutDay('day-a')],
-        }),
+        .mockResolvedValueOnce({ items: [{ id: cachedPlan.id, status: 'active' }] })
+        .mockResolvedValueOnce(cachedPlan),
     };
 
-    await expect(loadWorkoutDay({ api, dayId: 'missing-day' })).rejects.toThrow(
-      'dia não encontrado',
-    );
+    await expect(
+      loadWorkoutDay({ api, dayId: '66666666-6666-4666-8666-666666666666' }),
+    ).rejects.toThrow('dia não encontrado');
   });
 
   it('rejects when there is no workout plan to load from', async () => {

@@ -29,6 +29,11 @@ import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
+type SelectedExercise = {
+  authUserId: string;
+  dayId: string;
+  exerciseId: string;
+};
 type TodayWorkoutQueryData = CacheResult<TodayWorkoutResult> & {
   draft: GuidedSession | null;
 };
@@ -36,7 +41,7 @@ type TodayWorkoutQueryData = CacheResult<TodayWorkoutResult> & {
 export function TodayWorkoutScreen() {
   const api = useApiClient();
   const authUserId = authClient.useSession().data?.user.id;
-  const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
+  const [selectedExerciseSelection, setSelectedExerciseSelection] = useState<SelectedExercise>();
 
   const query = useQuery<TodayWorkoutQueryData>({
     enabled: Boolean(authUserId),
@@ -49,9 +54,13 @@ export function TodayWorkoutScreen() {
       const cache = createOfflineCache(AsyncStorage);
       const cached = await cache.get<TodayWorkoutResult | null>(
         `today-workout:${authUserId}`,
-        async () => loadTodayWorkout({ api }),
+        async () => {
+          const online = normalizeCachedTodayWorkout(await loadTodayWorkout({ api }));
+          if (!online) throw new Error('Resposta online do treino inválida.');
+          return online;
+        },
       );
-      const data = cached.stale ? normalizeCachedTodayWorkout(cached.data) : cached.data;
+      const data = normalizeCachedTodayWorkout(cached.data);
       if (!data) throw new Error('Cache do treino inválido.');
 
       if (data.status !== 'available') {
@@ -119,6 +128,12 @@ export function TodayWorkoutScreen() {
   }
 
   const { day, plan } = data;
+  const selectedExercise =
+    selectedExerciseSelection &&
+    selectedExerciseSelection.authUserId === authUserId &&
+    selectedExerciseSelection.dayId === day.id
+      ? day.exercises.find((exercise) => exercise.id === selectedExerciseSelection.exerciseId)
+      : undefined;
   const actionLabel = draft ? 'Continuar treino' : 'Iniciar treino';
   const actionHref = draft ? `/session/${day.id}` : `/log/${day.id}`;
 
@@ -147,7 +162,14 @@ export function TodayWorkoutScreen() {
           <Pressable
             accessibilityRole="button"
             key={exercise.id}
-            onPress={() => setSelectedExercise(exercise)}
+            onPress={() => {
+              if (!authUserId) return;
+              setSelectedExerciseSelection({
+                authUserId,
+                dayId: day.id,
+                exerciseId: exercise.id,
+              });
+            }}
             style={sharedStyles.card}
           >
             <Text style={styles.exerciseTitle}>{exercise.exercise.name}</Text>
@@ -170,7 +192,10 @@ export function TodayWorkoutScreen() {
         </Pressable>
       </Link>
 
-      <ExerciseModal exercise={selectedExercise} onClose={() => setSelectedExercise(undefined)} />
+      <ExerciseModal
+        exercise={selectedExercise}
+        onClose={() => setSelectedExerciseSelection(undefined)}
+      />
     </Screen>
   );
 }

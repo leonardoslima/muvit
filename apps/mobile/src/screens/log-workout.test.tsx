@@ -3,7 +3,10 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import { describe, expect, it, vi } from 'vitest';
 import { LogWorkoutScreen } from './log-workout';
 
-const routerState = vi.hoisted(() => ({ back: vi.fn(), dayId: 'day-id' }));
+const routerState = vi.hoisted(() => ({
+  back: vi.fn(),
+  dayId: '22222222-2222-4222-8222-222222222222',
+}));
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const storageState = vi.hoisted(() => ({
@@ -46,20 +49,42 @@ describe('LogWorkoutScreen', () => {
   it('edits sets and finishes workout', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
       .mockResolvedValueOnce({
-        id: 'plan-id',
+        items: [{ id: '44444444-4444-4444-8444-444444444444', status: 'active' }],
+      })
+      .mockResolvedValueOnce({
+        id: '44444444-4444-4444-8444-444444444444',
+        studentId: '55555555-5555-4555-8555-555555555555',
+        trainerId: null,
+        name: 'Plano A',
+        startDate: null,
+        endDate: null,
+        status: 'active',
+        notes: null,
+        createdAt: '2026-08-15T12:00:00.000Z',
         days: [
           {
-            id: 'day-id',
+            id: '22222222-2222-4222-8222-222222222222',
+            planId: '44444444-4444-4444-8444-444444444444',
             label: 'Treino A',
+            dayOrder: 0,
             exercises: [
               {
-                id: 'we-1',
+                id: '11111111-1111-4111-8111-111111111111',
+                workoutDayId: '22222222-2222-4222-8222-222222222222',
+                exerciseId: '33333333-3333-4333-8333-333333333333',
+                exerciseOrder: 0,
                 sets: 1,
                 reps: '10',
                 loadKg: 40,
-                exercise: { name: 'Supino' },
+                restSeconds: 60,
+                tempo: null,
+                notes: null,
+                exercise: {
+                  id: '33333333-3333-4333-8333-333333333333',
+                  name: 'Supino',
+                  muscleGroup: 'Peito',
+                },
               },
             ],
           },

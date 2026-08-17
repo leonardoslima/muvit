@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
-const authState = vi.hoisted(() => ({ userId: 'auth-user-a' }));
+const authState = vi.hoisted(() => ({ userId: 'auth-user-a' as string | null }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const linkState = vi.hoisted(() => ({ hrefs: [] as string[] }));
 const storageState = vi.hoisted(() => ({
@@ -52,19 +52,26 @@ function createQueryClient() {
 }
 
 const activeWorkout = {
-  id: 'plan-id',
+  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  studentId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  trainerId: null,
   name: 'Plano A',
+  startDate: null,
+  endDate: null,
+  status: 'active' as const,
+  notes: null,
+  createdAt: '2026-08-15T12:00:00.000Z',
   days: [
     {
-      id: 'day-id',
+      id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
       label: 'Treino A',
       dayOrder: 0,
-      planId: 'plan-id',
+      planId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
       exercises: [
         {
-          id: 'we-1',
-          workoutDayId: 'day-id',
-          exerciseId: 'catalog-1',
+          id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+          workoutDayId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          exerciseId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
           exerciseOrder: 0,
           sets: 2,
           reps: '10',
@@ -72,12 +79,16 @@ const activeWorkout = {
           loadKg: 20,
           notes: null,
           tempo: null,
-          exercise: { id: 'catalog-1', name: 'Supino', muscleGroup: 'chest' },
+          exercise: {
+            id: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+            name: 'Supino',
+            muscleGroup: 'chest',
+          },
         },
         {
-          id: 'we-2',
-          workoutDayId: 'day-id',
-          exerciseId: 'catalog-2',
+          id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+          workoutDayId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          exerciseId: '11111111-1111-4111-8111-111111111111',
           exerciseOrder: 1,
           sets: 1,
           reps: '12',
@@ -85,7 +96,11 @@ const activeWorkout = {
           loadKg: null,
           notes: null,
           tempo: null,
-          exercise: { id: 'catalog-2', name: 'Remada', muscleGroup: 'costas' },
+          exercise: {
+            id: '11111111-1111-4111-8111-111111111111',
+            name: 'Remada',
+            muscleGroup: 'costas',
+          },
         },
       ],
     },
@@ -182,8 +197,8 @@ describe('TodayWorkoutScreen', () => {
 
   it('renders the recovery state when there is no workout today', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
-      .mockResolvedValueOnce({ id: 'plan-id', name: 'Plano A', days: [] })
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ ...activeWorkout, days: [] })
       .mockResolvedValueOnce({ items: [] });
 
     renderWithQueryClient();
@@ -196,7 +211,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('renders loaded workout', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -206,15 +221,43 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.getByText('Iniciar treino')).toBeTruthy();
-    expect(linkState.hrefs).toContain('/log/day-id');
-    expect(storageState.getItem).toHaveBeenCalledWith(workoutSessionKey('auth-user-a', 'day-id'));
+    expect(linkState.hrefs).toContain(`/log/${activeWorkout.days[0].id}`);
+    expect(storageState.getItem).toHaveBeenCalledWith(
+      workoutSessionKey('auth-user-a', activeWorkout.days[0].id),
+    );
     await waitFor(() => expect(screen.queryByText('Sem treino ativo')).toBeNull());
+  });
+
+  it('rejects an invalid online workout before caching or rendering it', async () => {
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({
+        ...activeWorkout,
+        days: [
+          {
+            ...activeWorkout.days[0],
+            exercises: [
+              {
+                ...activeWorkout.days[0].exercises[0],
+                workoutDayId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+              },
+            ],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(storageState.setItem).not.toHaveBeenCalled();
+    expect(screen.queryByText('Supino')).toBeNull();
   });
 
   it('offers continuing the workout when a draft exists for the authenticated user and day', async () => {
     const savedSession = {
       version: 1,
-      workoutDayId: 'day-id',
+      workoutDayId: activeWorkout.days[0].id,
       startedAtMs: 1_000,
       updatedAtMs: 2_000,
       currentExerciseIndex: 0,
@@ -223,21 +266,21 @@ describe('TodayWorkoutScreen', () => {
       restEndsAtMs: null,
       sets: [
         {
-          workoutExerciseId: 'we-1',
+          workoutExerciseId: activeWorkout.days[0].exercises[0].id,
           setNumber: 1,
           repsDone: '10',
           loadKg: '20',
           completed: true,
         },
         {
-          workoutExerciseId: 'we-1',
+          workoutExerciseId: activeWorkout.days[0].exercises[0].id,
           setNumber: 2,
           repsDone: '10',
           loadKg: '20',
           completed: true,
         },
         {
-          workoutExerciseId: 'we-2',
+          workoutExerciseId: activeWorkout.days[0].exercises[1].id,
           setNumber: 1,
           repsDone: '',
           loadKg: '',
@@ -246,10 +289,12 @@ describe('TodayWorkoutScreen', () => {
       ],
     };
     storageState.getItem.mockImplementation(async (key: string) =>
-      key === workoutSessionKey('auth-user-a', 'day-id') ? JSON.stringify(savedSession) : null,
+      key === workoutSessionKey('auth-user-a', activeWorkout.days[0].id)
+        ? JSON.stringify(savedSession)
+        : null,
     );
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -260,13 +305,13 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByText('Próximo: Remada · Série 1 de 1')).toBeTruthy();
     expect(screen.getByTestId('workout-progress')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continuar treino' })).toBeTruthy();
-    expect(linkState.hrefs).toContain('/session/day-id');
+    expect(linkState.hrefs).toContain(`/session/${activeWorkout.days[0].id}`);
   });
 
   it('shows a retry action when loading today fails without cache', async () => {
     apiState.request
       .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -352,7 +397,7 @@ describe('TodayWorkoutScreen', () => {
   it('opens and closes the exercise details modal', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
       .mockResolvedValueOnce({
         ...activeWorkout,
         days: [
@@ -379,5 +424,55 @@ describe('TodayWorkoutScreen', () => {
     await user.press(screen.getByText('Fechar'));
 
     await waitFor(() => expect(screen.queryByText('Grupo: chest')).toBeNull());
+  });
+
+  it('closes the exercise modal when the authenticated account changes', async () => {
+    const user = userEvent.setup();
+    const otherWorkout = {
+      ...activeWorkout,
+      id: '22222222-2222-4222-8222-222222222222',
+      days: [
+        {
+          ...activeWorkout.days[0],
+          id: '33333333-3333-4333-8333-333333333333',
+          planId: '22222222-2222-4222-8222-222222222222',
+          exercises: [
+            {
+              ...activeWorkout.days[0].exercises[0],
+              id: '44444444-4444-4444-8444-444444444444',
+              workoutDayId: '33333333-3333-4333-8333-333333333333',
+              exerciseId: '55555555-5555-4555-8555-555555555555',
+              exercise: {
+                id: '55555555-5555-4555-8555-555555555555',
+                name: 'Agachamento',
+                muscleGroup: 'legs',
+              },
+            },
+          ],
+        },
+      ],
+    };
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] })
+      .mockResolvedValueOnce({ items: [{ id: 'plan-b-id', status: 'active' }] })
+      .mockResolvedValueOnce(otherWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    const queryClient = createQueryClient();
+    const firstRender = renderWithQueryClient(queryClient);
+    await user.press(await screen.findByText('Supino'));
+    expect(screen.getByText('Grupo: chest')).toBeTruthy();
+
+    authState.userId = 'auth-user-b';
+    firstRender.rerender(
+      <QueryClientProvider client={queryClient}>
+        <TodayWorkoutScreen />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('Agachamento')).toBeTruthy();
+    expect(screen.queryByText('Grupo: chest')).toBeNull();
   });
 });
