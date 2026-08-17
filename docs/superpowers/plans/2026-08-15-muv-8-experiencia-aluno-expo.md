@@ -509,7 +509,7 @@ git commit -m "feat(mobile): redesenha autenticacao e navegacao"
 - Consumes: `WorkoutSessionStorage` para detectar rascunho do dia selecionado.
 - Produces: links `/log/<dayId>` e `/session/<dayId>` sem mudar a API.
 
-- [ ] **Step 1: Escrever testes falhando dos três estados e da retomada**
+- [x] **Step 1: Escrever testes falhando dos três estados e da retomada**
 
 Em `today-workout.test.ts`, substituir expectativas `null` por discriminantes:
 
@@ -573,13 +573,13 @@ expect(screen.getByText('Supino')).toBeTruthy();
 expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
 ```
 
-- [ ] **Step 2: Rodar os testes e confirmar falhas de contrato e módulo**
+- [x] **Step 2: Rodar os testes e confirmar falhas de contrato e módulo**
 
 Run: `corepack pnpm --dir apps/mobile test src/application/workouts/today-workout.test.ts src/screens/today-workout.test.tsx src/screens/workout-overview.test.tsx`
 
 Expected: FAIL por retorno antigo, UI antiga e tela ausente.
 
-- [ ] **Step 3: Implementar os estados e a visão geral**
+- [x] **Step 3: Implementar os estados e a visão geral**
 
 Fazer `loadTodayWorkout` retornar `no-active-plan` antes de buscar detalhes; retornar `no-workout-today` quando o plano ativo não tiver um dia selecionável; manter `available` com plano e dia.
 
@@ -594,13 +594,13 @@ Em Hoje, mapear:
 
 `WorkoutOverviewScreen` usa `loadWorkoutDay`, lista exercícios e abre `/session/<dayId>`. A rota existente `app/log/[dayId].tsx` passa a exportar essa tela. O modal de exercício mantém nome, grupo muscular, séries, repetições, descanso e notas.
 
-- [ ] **Step 4: Rodar testes de Hoje e visão geral**
+- [x] **Step 4: Rodar testes de Hoje e visão geral**
 
 Run: `corepack pnpm --dir apps/mobile test src/application/workouts/today-workout.test.ts src/screens/today-workout.test.tsx src/screens/workout-overview.test.tsx`
 
 Expected: PASS para carregando, erro, vazios, treino disponível, offline e retomada.
 
-- [ ] **Step 5: Commitar Hoje e visão geral**
+- [x] **Step 5: Commitar Hoje e visão geral**
 
 ```powershell
 git add apps/mobile/src/application/workouts/today-workout.ts apps/mobile/src/application/workouts/today-workout.test.ts apps/mobile/src/screens/today-workout.tsx apps/mobile/src/screens/today-workout.test.tsx apps/mobile/src/screens/workout-overview.tsx apps/mobile/src/screens/workout-overview.test.tsx 'apps/mobile/app/log/[dayId].tsx'

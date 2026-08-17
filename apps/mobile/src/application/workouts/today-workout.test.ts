@@ -1,13 +1,53 @@
 import { describe, expect, it, vi } from 'vitest';
-import { loadTodayWorkout, loadWorkoutDay, selectNextWorkoutDay } from './today-workout';
+import {
+  estimateWorkoutDuration,
+  loadTodayWorkout,
+  loadWorkoutDay,
+  normalizeCachedTodayWorkout,
+  selectNextWorkoutDay,
+} from './today-workout';
+
+const cachedPlan = { id: 'plan-id', name: 'Plano', days: [] };
+const cachedDay = {
+  id: 'day-id',
+  label: 'Treino A',
+  dayOrder: 0,
+  planId: 'plan-id',
+  exercises: [],
+};
+
+describe('cache do treino de hoje', () => {
+  it('normaliza os estados atuais e o formato legado do cache', () => {
+    expect(normalizeCachedTodayWorkout(null)).toEqual({ status: 'no-active-plan' });
+    expect(normalizeCachedTodayWorkout({ status: 'no-active-plan' })).toEqual({
+      status: 'no-active-plan',
+    });
+    expect(
+      normalizeCachedTodayWorkout({ status: 'available', plan: cachedPlan, day: cachedDay }),
+    ).toMatchObject({ status: 'available', day: cachedDay });
+    expect(
+      normalizeCachedTodayWorkout({ status: 'no-workout-today', plan: cachedPlan }),
+    ).toMatchObject({ status: 'no-workout-today', plan: cachedPlan });
+    expect(normalizeCachedTodayWorkout({ plan: cachedPlan, day: cachedDay })).toMatchObject({
+      status: 'available',
+      day: cachedDay,
+    });
+    expect(normalizeCachedTodayWorkout({ cached: true })).toEqual({ status: 'no-active-plan' });
+  });
+
+  it('estima pelo menos um minuto quando o treino está vazio', () => {
+    expect(estimateWorkoutDuration(cachedDay)).toBe(1);
+  });
+});
 
 describe('loadTodayWorkout', () => {
-  it('returns null when there is no active plan', async () => {
+  it('returns no-active-plan before requesting plan details', async () => {
     const api = {
       request: vi.fn().mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'draft' }] }),
     };
 
-    await expect(loadTodayWorkout({ api })).resolves.toBeNull();
+    await expect(loadTodayWorkout({ api })).resolves.toEqual({ status: 'no-active-plan' });
+    expect(api.request).toHaveBeenCalledOnce();
   });
 
   it('selects the first non-completed day from the active plan', async () => {
@@ -27,11 +67,12 @@ describe('loadTodayWorkout', () => {
     };
 
     await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
+      status: 'available',
       day: { id: 'day-b' },
     });
   });
 
-  it('returns null when the active plan has no days', async () => {
+  it('returns no-workout-today when the active plan has no days', async () => {
     const api = {
       request: vi
         .fn()
@@ -40,7 +81,10 @@ describe('loadTodayWorkout', () => {
         .mockResolvedValueOnce({ items: [] }),
     };
 
-    await expect(loadTodayWorkout({ api })).resolves.toBeNull();
+    await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
+      status: 'no-workout-today',
+      plan: { id: 'plan-id' },
+    });
   });
 });
 

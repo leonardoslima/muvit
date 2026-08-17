@@ -3,23 +3,39 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import type { z } from 'zod';
-import { loadTodayWorkout } from '../application/workouts/today-workout';
+import type { GuidedSession } from '../application/workouts/guided-session';
+import type { TodayWorkoutResult } from '../application/workouts/today-workout';
+import {
+  estimateWorkoutDuration,
+  loadTodayWorkout,
+  normalizeCachedTodayWorkout,
+} from '../application/workouts/today-workout';
+import { AppButton } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Screen, ScreenHeader } from '../components/ui/screen';
+import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
+import type { CacheResult } from '../lib/offline-cache';
 import { createOfflineCache } from '../lib/offline-cache';
-import { colors, sharedStyles } from '../lib/styles';
+import { colors, sharedStyles, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
+import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
 
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutExercise = WorkoutDay['exercises'][number];
+type TodayWorkoutQueryData = CacheResult<TodayWorkoutResult> & {
+  draft: GuidedSession | null;
+};
 
 export function TodayWorkoutScreen() {
   const api = useApiClient();
   const authUserId = authClient.useSession().data?.user.id;
+  const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
 
-  const query = useQuery({
+  const query = useQuery<TodayWorkoutQueryData>({
     enabled: Boolean(authUserId),
     queryKey: ['today-workout', authUserId],
     queryFn: async () => {
@@ -28,70 +44,134 @@ export function TodayWorkoutScreen() {
       }
 
       const cache = createOfflineCache(AsyncStorage);
-      return cache.get(`today-workout:${authUserId}`, async () => loadTodayWorkout({ api }));
+      const cached = await cache.get<TodayWorkoutResult | null>(
+        `today-workout:${authUserId}`,
+        async () => loadTodayWorkout({ api }),
+      );
+      const data = normalizeCachedTodayWorkout(cached.data);
+
+      if (data.status !== 'available') {
+        return { ...cached, data, draft: null };
+      }
+
+      const sessionStorage = createWorkoutSessionStorage(AsyncStorage);
+      const draft = await sessionStorage.load(authUserId, data.day.id);
+      return { ...cached, data, draft };
     },
   });
 
-  const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
-
   if (query.isLoading) {
     return (
-      <View style={[sharedStyles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          description="Estamos buscando seu treino de hoje."
+          title="Carregando treino"
+          tone="loading"
+        />
+      </Screen>
     );
   }
 
-  if (query.isError || !query.data?.data) {
+  if (query.isError || !query.data) {
     return (
-      <View style={[sharedStyles.screen, { justifyContent: 'center', gap: 12 }]}>
-        <Text style={sharedStyles.title}>Sem treino ativo</Text>
-        <Text style={sharedStyles.subtitle}>
-          Quando seu professor publicar um treino ativo, ele aparece aqui.
-        </Text>
-      </View>
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          actionLabel="Tentar novamente"
+          description="Verifique sua conexão e tente novamente."
+          onAction={() => void query.refetch()}
+          title="Não foi possível carregar seu treino"
+          tone="error"
+        />
+      </Screen>
     );
   }
 
-  const { plan, day } = query.data.data;
+  const { data, draft, stale } = query.data;
+
+  if (data.status === 'no-active-plan') {
+    return (
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          description="Seu professor ainda não publicou um plano de treino."
+          title="Sem plano ativo"
+          tone="empty"
+        />
+      </Screen>
+    );
+  }
+
+  if (data.status === 'no-workout-today') {
+    return (
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          description="Aproveite para descansar e se preparar para o próximo treino."
+          title="Hoje é dia de recuperação"
+          tone="empty"
+        />
+      </Screen>
+    );
+  }
+
+  const { day, plan } = data;
+  const actionLabel = draft ? 'Continuar treino' : 'Iniciar treino';
+  const actionHref = draft ? `/session/${day.id}` : `/log/${day.id}`;
 
   return (
-    <ScrollView contentContainerStyle={{ gap: 16, paddingBottom: 32 }} style={sharedStyles.screen}>
-      <View style={{ gap: 6 }}>
-        <Text style={sharedStyles.title}>Treino de hoje</Text>
+    <Screen scroll contentContainerStyle={styles.content}>
+      <ScreenHeader
+        eyebrow={draft ? 'RETOMAR' : 'HOJE'}
+        subtitle={draft ? 'Seu progresso foi salvo' : `${plan.name} · ${day.label}`}
+        title={draft ? 'Treino em andamento' : 'Seu treino de hoje'}
+      />
+
+      {stale ? <OfflineBadge /> : null}
+
+      <Card>
+        <Text style={sharedStyles.stateTitle}>{day.label}</Text>
         <Text style={sharedStyles.subtitle}>
-          {plan.name} - {day.label}
+          {day.exercises.length} exercícios · {estimateWorkoutDuration(day)} min estimados
         </Text>
-        {query.data.stale ? (
-          <Text style={{ alignSelf: 'flex-start', color: colors.accent, fontWeight: '700' }}>
-            offline
-          </Text>
-        ) : null}
+      </Card>
+
+      <View style={styles.exerciseList}>
+        <Text style={styles.sectionTitle}>Exercícios</Text>
+        {day.exercises.map((exercise) => (
+          <Pressable
+            accessibilityRole="button"
+            key={exercise.id}
+            onPress={() => setSelectedExercise(exercise)}
+            style={sharedStyles.card}
+          >
+            <Text style={styles.exerciseTitle}>{exercise.exercise.name}</Text>
+            <Text style={sharedStyles.subtitle}>
+              {exercise.sets} séries · {exercise.reps} repetições · descanso{' '}
+              {exercise.restSeconds ?? 0} s
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
-      {day.exercises.map((item: WorkoutExercise) => (
+      <Link asChild href={actionHref}>
         <Pressable
-          key={item.id}
-          onPress={() => setSelectedExercise(item)}
-          style={sharedStyles.card}
+          accessible
+          accessibilityLabel={actionLabel}
+          accessibilityRole="button"
+          style={sharedStyles.button}
         >
-          <Text style={{ color: colors.ink, fontSize: 18, fontWeight: '700' }}>
-            {item.exercise.name}
-          </Text>
-          <Text style={sharedStyles.subtitle}>
-            {item.sets} series - {item.reps} reps - {item.restSeconds ?? 0}s descanso
-          </Text>
-        </Pressable>
-      ))}
-
-      <Link href={`/log/${day.id}`} asChild>
-        <Pressable style={sharedStyles.button}>
-          <Text style={sharedStyles.buttonText}>Iniciar treino</Text>
+          <Text style={sharedStyles.buttonText}>{actionLabel}</Text>
         </Pressable>
       </Link>
 
       <ExerciseModal exercise={selectedExercise} onClose={() => setSelectedExercise(undefined)} />
-    </ScrollView>
+    </Screen>
+  );
+}
+
+function OfflineBadge() {
+  return (
+    <View style={styles.offlineBadge}>
+      <Text style={styles.offlineText}>offline</Text>
+    </View>
   );
 }
 
@@ -104,24 +184,79 @@ function ExerciseModal({
 }) {
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={Boolean(exercise)}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.25)' }}>
-        <View
-          style={[sharedStyles.card, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
-        >
-          <Text style={{ color: colors.ink, fontSize: 22, fontWeight: '700' }}>
-            {exercise?.exercise.name}
-          </Text>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalSurface}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>{exercise?.exercise.name}</Text>
           <Text style={sharedStyles.subtitle}>Grupo: {exercise?.exercise.muscleGroup}</Text>
           <Text style={sharedStyles.subtitle}>
-            {exercise?.sets} series de {exercise?.reps} reps
+            {exercise?.sets} séries de {exercise?.reps} repetições
           </Text>
-          <Text style={sharedStyles.subtitle}>Descanso: {exercise?.restSeconds ?? 0}s</Text>
+          <Text style={sharedStyles.subtitle}>Descanso: {exercise?.restSeconds ?? 0} s</Text>
           {exercise?.notes ? <Text style={sharedStyles.subtitle}>{exercise.notes}</Text> : null}
-          <Pressable onPress={onClose} style={sharedStyles.button}>
-            <Text style={sharedStyles.buttonText}>Fechar</Text>
-          </Pressable>
+          <AppButton label="Fechar" onPress={onClose} variant="secondary" />
         </View>
       </View>
     </Modal>
   );
 }
+
+const styles = {
+  centeredState: {
+    justifyContent: 'center' as const,
+    padding: spacing.lg,
+  },
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xxxl,
+  },
+  exerciseList: {
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    color: colors.ink,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 16,
+  },
+  exerciseTitle: {
+    color: colors.ink,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 18,
+  },
+  offlineBadge: {
+    alignSelf: 'flex-start' as const,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  offlineText: {
+    color: colors.primary,
+    fontFamily: 'Inter_600SemiBold',
+    fontSize: 12,
+  },
+  modalBackdrop: {
+    backgroundColor: '#00000040',
+    flex: 1,
+    justifyContent: 'flex-end' as const,
+  },
+  modalSurface: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    gap: spacing.md,
+    padding: spacing.xxl,
+  },
+  modalHandle: {
+    alignSelf: 'center' as const,
+    backgroundColor: colors.muted,
+    borderRadius: 2,
+    height: 4,
+    width: 44,
+  },
+  modalTitle: {
+    color: colors.ink,
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    fontSize: 26,
+  },
+};

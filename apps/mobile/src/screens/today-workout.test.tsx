@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
 const authState = vi.hoisted(() => ({ userId: 'auth-user-a' }));
@@ -24,6 +25,10 @@ vi.mock('../lib/use-api', () => ({
 
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: storageState,
+}));
+
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: 'View',
 }));
 
 vi.mock('expo-router', () => ({
@@ -61,21 +66,38 @@ const activeWorkout = {
 };
 
 describe('TodayWorkoutScreen', () => {
-  it('renders empty state when there is no active workout', async () => {
-    beforeEach(() => {
-      authState.userId = 'auth-user-a';
-      apiState.request.mockReset();
-      storageState.getItem.mockReset();
-      storageState.removeItem.mockReset();
-      storageState.setItem.mockReset();
-    });
+  beforeEach(() => {
+    authState.userId = 'auth-user-a';
+    apiState.request.mockReset();
+    storageState.getItem.mockReset();
+    storageState.removeItem.mockReset();
+    storageState.setItem.mockReset();
+    storageState.getItem.mockResolvedValue(null);
+    storageState.removeItem.mockResolvedValue(undefined);
+    storageState.setItem.mockResolvedValue(undefined);
+  });
 
+  it('renders the no-active-plan state', async () => {
     apiState.request.mockResolvedValueOnce({ items: [] });
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Sem treino ativo')).toBeTruthy();
-    expect(screen.getByText(/professor publicar um treino ativo/i)).toBeTruthy();
+    expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
+    expect(screen.getByText('Seu professor ainda não publicou um plano de treino.')).toBeTruthy();
+  });
+
+  it('renders the recovery state when there is no workout today', async () => {
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce({ id: 'plan-id', name: 'Plano A', days: [] })
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Hoje é dia de recuperação')).toBeTruthy();
+    expect(
+      screen.getByText('Aproveite para descansar e se preparar para o próximo treino.'),
+    ).toBeTruthy();
   });
 
   it('renders loaded workout', async () => {
@@ -86,11 +108,52 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Treino de hoje')).toBeTruthy();
-    expect(screen.getByText('Plano A - Treino A')).toBeTruthy();
+    expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.getByText('Iniciar treino')).toBeTruthy();
+    expect(storageState.getItem).toHaveBeenCalledWith(workoutSessionKey('auth-user-a', 'day-id'));
     await waitFor(() => expect(screen.queryByText('Sem treino ativo')).toBeNull());
+  });
+
+  it('offers continuing the workout when a draft exists for the authenticated user and day', async () => {
+    const savedSession = {
+      version: 1,
+      workoutDayId: 'day-id',
+      startedAtMs: 1_000,
+      updatedAtMs: 2_000,
+      currentExerciseIndex: 0,
+      currentSetIndex: 0,
+      phase: 'set',
+      restEndsAtMs: null,
+      sets: [],
+    };
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === workoutSessionKey('auth-user-a', 'day-id') ? JSON.stringify(savedSession) : null,
+    );
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino em andamento')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continuar treino' })).toBeTruthy();
+  });
+
+  it('shows a retry action when loading today fails without cache', async () => {
+    apiState.request
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByText('Iniciar treino')).toBeTruthy();
   });
 
   it('renders stale offline badge from cached workout', async () => {
@@ -105,7 +168,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('offline')).toBeTruthy();
-    expect(screen.getByText('Plano A - Treino A')).toBeTruthy();
+    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
   });
 
   it('isolates the offline cache when the authenticated account changes', async () => {
@@ -120,7 +183,7 @@ describe('TodayWorkoutScreen', () => {
     const firstRender = renderWithQueryClient();
 
     expect(await screen.findByText('offline')).toBeTruthy();
-    expect(storageState.getItem).toHaveBeenLastCalledWith('today-workout:auth-user-a');
+    expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-a');
 
     authState.userId = 'auth-user-b';
     const nextQueryClient = new QueryClient({
@@ -133,7 +196,7 @@ describe('TodayWorkoutScreen', () => {
     );
 
     expect(await screen.findByText('offline')).toBeTruthy();
-    expect(storageState.getItem).toHaveBeenLastCalledWith('today-workout:auth-user-b');
+    expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-b');
   });
 
   it('opens and closes the exercise details modal', async () => {
