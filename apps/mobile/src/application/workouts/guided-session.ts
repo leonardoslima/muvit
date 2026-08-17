@@ -73,16 +73,28 @@ export function getCurrentSet(session: GuidedSession): WorkoutSetState | undefin
   const exerciseSets = session.sets.filter(
     (set) => set.workoutExerciseId === getCurrentExerciseId(session),
   );
+  if (
+    !Number.isInteger(session.currentSetIndex) ||
+    session.currentSetIndex < 0 ||
+    session.currentSetIndex >= exerciseSets.length
+  ) {
+    throw new Error('série atual não encontrada');
+  }
   return exerciseSets[session.currentSetIndex];
 }
 
-export function updateCurrentSet(session: GuidedSession, values: CurrentSetValues): GuidedSession {
+export function updateCurrentSet(
+  session: GuidedSession,
+  values: CurrentSetValues,
+  updatedAtMs: number,
+): GuidedSession {
   assertPhase(session, 'set');
   const currentSet = getCurrentSet(session);
   if (!currentSet) throw new Error('série atual não encontrada');
 
   return {
     ...session,
+    updatedAtMs,
     sets: session.sets.map((set) => (isSameSet(set, currentSet) ? { ...set, ...values } : set)),
   };
 }
@@ -132,17 +144,22 @@ export function completeCurrentSet(
   };
 }
 
-export function extendRest(session: GuidedSession): GuidedSession {
+export function extendRest(session: GuidedSession, updatedAtMs: number): GuidedSession {
   assertPhase(session, 'rest');
   if (session.restEndsAtMs === null) throw new Error('descanso sem horário de término');
 
   return {
     ...session,
     restEndsAtMs: session.restEndsAtMs + REST_EXTENSION_MS,
+    updatedAtMs,
   };
 }
 
-export function skipRest(session: GuidedSession, day: GuidedSessionDay): GuidedSession {
+export function skipRest(
+  session: GuidedSession,
+  day: GuidedSessionDay,
+  updatedAtMs: number,
+): GuidedSession {
   assertPhase(session, 'rest');
   const exercise = getCurrentExercise(day, session);
   if (session.currentSetIndex >= exercise.sets - 1) {
@@ -154,12 +171,14 @@ export function skipRest(session: GuidedSession, day: GuidedSessionDay): GuidedS
     currentSetIndex: session.currentSetIndex + 1,
     phase: 'set',
     restEndsAtMs: null,
+    updatedAtMs,
   };
 }
 
 export function continueAfterExercise(
   session: GuidedSession,
   day: GuidedSessionDay,
+  updatedAtMs: number,
 ): GuidedSession {
   assertPhase(session, 'exercise-complete');
   if (session.currentExerciseIndex >= day.exercises.length - 1) {
@@ -172,6 +191,7 @@ export function continueAfterExercise(
     currentSetIndex: 0,
     phase: 'set',
     restEndsAtMs: null,
+    updatedAtMs,
   };
 }
 
@@ -198,7 +218,10 @@ export function buildSessionSummary(
   );
 
   return {
-    durationMin: Math.max(1, Math.ceil((finishedAtMs - session.startedAtMs) / 60_000)),
+    durationMin: Math.min(
+      600,
+      Math.max(1, Math.ceil((finishedAtMs - session.startedAtMs) / 60_000)),
+    ),
     exerciseCount: exerciseIds.size,
     completedSetCount: completedSets.length,
     volumeKg,

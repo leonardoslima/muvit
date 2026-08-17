@@ -276,7 +276,7 @@ export type GuidedSessionSummary = {
 };
 ```
 
-`completeCurrentSet` deve marcar somente a série corrente; usar `rest` entre séries, `exercise-complete` entre exercícios e `ready-to-finish` após a última série do último exercício. `markSessionFinished` aceita apenas `ready-to-finish` e retorna `summary`. Calcular duração com `Math.max(1, Math.ceil((finishedAtMs - startedAtMs) / 60_000))`.
+`completeCurrentSet` deve marcar somente a série corrente; usar `rest` entre séries, `exercise-complete` entre exercícios e `ready-to-finish` após a última série do último exercício. `markSessionFinished` aceita apenas `ready-to-finish` e retorna `summary`. Calcular duração com `Math.min(600, Math.max(1, Math.ceil((finishedAtMs - startedAtMs) / 60_000)))`, limitando qualquer valor acima de 600 ao máximo aceito pelo log.
 
 Alterar `buildFinishWorkoutLogInput` e `finishWorkoutWithOfflineFallback` para receber `durationMin` explicitamente, mantendo o mesmo schema e a mesma fila.
 
