@@ -1,22 +1,28 @@
 import {
   workoutDayFullSchema,
+  workoutLogSummarySchema,
   workoutPlanFullSchema,
-  type workoutPlanSummarySchema,
+  workoutPlanSummarySchema,
 } from '@muvit/validators';
-import type { z } from 'zod';
+import { z } from 'zod';
+import { ApiTransportError } from '../../lib/api';
 import type { GuidedSession } from './guided-session';
 
 type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
+type WorkoutLogSummary = z.infer<typeof workoutLogSummarySchema>;
+type WorkoutLogSelection = Pick<WorkoutLogSummary, 'workoutDayId' | 'completed'>;
+
+const workoutPlanSummariesResponseSchema = z.object({
+  items: z.array(workoutPlanSummarySchema),
+});
+const workoutLogSummariesResponseSchema = z.object({
+  items: z.array(workoutLogSummarySchema),
+});
 
 type WorkoutApiClient = {
   request: <T>(path: string, init?: RequestInit) => Promise<T>;
-};
-
-type WorkoutLogSummary = {
-  workoutDayId: string;
-  completed: boolean;
 };
 
 type TodayWorkoutCacheStorage = {
@@ -90,14 +96,14 @@ export async function loadWorkoutDay({
   api: WorkoutApiClient;
   dayId: string;
 }): Promise<WorkoutDay> {
-  const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    '/students/me/workout-plans',
+  const summaries = parseOnlinePayload(
+    workoutPlanSummariesResponseSchema,
+    await api.request<unknown>('/students/me/workout-plans'),
   );
   const selected = selectWorkoutLogPlan(summaries.items);
   if (!selected) throw new Error('sem plano');
 
-  const plan = parseWorkoutPlan(await api.request<unknown>(`/workout-plans/${selected.id}`));
-  if (!plan) throw new Error('plano inválido');
+  const plan = parseOnlineWorkoutPlan(await api.request<unknown>(`/workout-plans/${selected.id}`));
   const day = plan.days.find((candidate) => candidate.id === dayId);
   if (!day) throw new Error('dia não encontrado');
   if (!isExecutableWorkoutDay(day)) throw new Error('dia não executável');
@@ -109,16 +115,19 @@ export async function loadTodayWorkout({
 }: {
   api: WorkoutApiClient;
 }): Promise<TodayWorkoutResult> {
-  const summaries = await api.request<{ items: WorkoutPlanSummary[] }>(
-    '/students/me/workout-plans',
+  const summaries = parseOnlinePayload(
+    workoutPlanSummariesResponseSchema,
+    await api.request<unknown>('/students/me/workout-plans'),
   );
   const active = summaries.items.find((plan) => plan.status === 'active');
   if (!active) return { status: 'no-active-plan' };
 
-  const [plan, logs] = await Promise.all([
-    api.request<WorkoutPlan>(`/workout-plans/${active.id}`),
-    api.request<{ items: WorkoutLogSummary[] }>('/students/me/workout-logs?limit=30'),
+  const [planPayload, logsPayload] = await Promise.all([
+    api.request<unknown>(`/workout-plans/${active.id}`),
+    api.request<unknown>('/students/me/workout-logs?limit=30'),
   ]);
+  const plan = parseOnlineWorkoutPlan(planPayload);
+  const logs = parseOnlinePayload(workoutLogSummariesResponseSchema, logsPayload);
 
   const day = selectNextWorkoutDay(plan.days, logs.items);
   if (!day) return { status: 'no-workout-today', plan };
@@ -135,12 +144,11 @@ export async function loadTodayWorkoutWithOfflineFallback({
   authUserId: string;
   storage: TodayWorkoutCacheStorage;
 }): Promise<{ data: TodayWorkoutResult; stale: boolean }> {
+  let online: TodayWorkoutResult;
   try {
-    const online = normalizeOnlineTodayWorkout(await loadTodayWorkout({ api }));
-    await storage.setItem(`today-workout:${authUserId}`, JSON.stringify(online));
-    return { data: online, stale: false };
+    online = normalizeOnlineTodayWorkout(await loadTodayWorkout({ api }));
   } catch (error) {
-    if (error instanceof InvalidTodayWorkoutPayloadError) throw error;
+    if (!(error instanceof ApiTransportError)) throw error;
 
     const serialized = await storage.getItem(`today-workout:${authUserId}`);
     if (!serialized) throw error;
@@ -149,11 +157,14 @@ export async function loadTodayWorkoutWithOfflineFallback({
     if (!data) throw new Error('Cache do treino inválido.');
     return { data, stale: true };
   }
+
+  await storage.setItem(`today-workout:${authUserId}`, JSON.stringify(online));
+  return { data: online, stale: false };
 }
 
 export function selectNextWorkoutDay(
   days: WorkoutDay[],
-  logs: WorkoutLogSummary[],
+  logs: WorkoutLogSelection[],
 ): WorkoutDay | undefined {
   const executableDays = days.filter(isExecutableWorkoutDay);
   if (executableDays.length === 0) return undefined;
@@ -223,6 +234,21 @@ function parseWorkoutPlan(value: unknown): WorkoutPlan | undefined {
   if (!parsed.data.days.every((day) => isValidWorkoutDay(day, parsed.data.id))) {
     return undefined;
   }
+  return parsed.data;
+}
+
+function parseOnlineWorkoutPlan(value: unknown): WorkoutPlan {
+  const plan = parseWorkoutPlan(value);
+  if (!plan) throw new InvalidTodayWorkoutPayloadError();
+  return plan;
+}
+
+function parseOnlinePayload<TSchema extends z.ZodType>(
+  schema: TSchema,
+  value: unknown,
+): z.output<TSchema> {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success) throw new InvalidTodayWorkoutPayloadError();
   return parsed.data;
 }
 

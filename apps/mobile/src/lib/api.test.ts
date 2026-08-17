@@ -6,7 +6,7 @@ function createClient({
   cookie = 'muvit.session_token=session-value',
   onUnauthorized = vi.fn(),
 }: {
-  fetcher: Fetcher;
+  fetcher?: Fetcher;
   cookie?: string;
   onUnauthorized?: () => void | Promise<void>;
 }) {
@@ -19,6 +19,19 @@ function createClient({
 }
 
 describe('ApiClient', () => {
+  it('classifica rejeicao do fetch nativo como erro de transporte tipado', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('Network request failed'));
+    const client = createClient({});
+
+    await expect(client.request('/students/me')).rejects.toMatchObject({
+      name: 'ApiTransportError',
+    });
+
+    fetchSpy.mockRestore();
+  });
+
   it('encaminha o cookie nativo sem Authorization e omite credenciais do runtime', async () => {
     const fetcher = vi
       .fn<Fetcher>()

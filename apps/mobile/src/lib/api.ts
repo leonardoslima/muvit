@@ -21,6 +21,13 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiTransportError extends Error {
+  constructor(readonly cause: unknown) {
+    super('Falha de transporte ao acessar a API.');
+    this.name = 'ApiTransportError';
+  }
+}
+
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly fetcher: Fetcher;
@@ -29,7 +36,7 @@ export class ApiClient {
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
-    this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
+    this.fetcher = options.fetcher ?? fetchFromNetwork;
     this.getCookie = options.getCookie;
     this.onUnauthorized = options.onUnauthorized;
   }
@@ -73,6 +80,14 @@ export class ApiClient {
 
   private url(path: string): string {
     return `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+}
+
+async function fetchFromNetwork(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (cause) {
+    throw new ApiTransportError(cause);
   }
 }
 

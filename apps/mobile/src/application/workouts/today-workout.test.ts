@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ApiError, ApiTransportError } from '../../lib/api';
 import type { GuidedSession, GuidedSessionPhase } from './guided-session';
 import {
+  InvalidTodayWorkoutPayloadError,
   estimateWorkoutDuration,
   getWorkoutDraftProgress,
   loadTodayWorkout,
+  loadTodayWorkoutWithOfflineFallback,
   loadWorkoutDay,
   normalizeCachedTodayWorkout,
   selectNextWorkoutDay,
@@ -49,6 +52,28 @@ const cachedEmptyPlan = {
   ...cachedPlan,
   days: [{ ...cachedDay, exercises: [] }],
 };
+const cachedPlanSummary = {
+  id: cachedPlan.id,
+  studentId: cachedPlan.studentId,
+  trainerId: cachedPlan.trainerId,
+  name: cachedPlan.name,
+  startDate: cachedPlan.startDate,
+  endDate: cachedPlan.endDate,
+  status: cachedPlan.status,
+  createdAt: cachedPlan.createdAt,
+};
+const cachedTodayWorkout = {
+  status: 'available',
+  plan: cachedPlan,
+  day: cachedDay,
+};
+
+function createCacheStorage(serialized = JSON.stringify(cachedTodayWorkout)) {
+  return {
+    getItem: vi.fn().mockResolvedValue(serialized),
+    setItem: vi.fn().mockResolvedValue(undefined),
+  };
+}
 
 function createWorkoutDay(id: string, exerciseCount = 1, sets = 1) {
   return {
@@ -176,7 +201,9 @@ describe('cache do treino de hoje', () => {
 describe('loadTodayWorkout', () => {
   it('returns no-active-plan before requesting plan details', async () => {
     const api = {
-      request: vi.fn().mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'draft' }] }),
+      request: vi.fn().mockResolvedValueOnce({
+        items: [{ ...cachedPlanSummary, status: 'draft' }],
+      }),
     };
 
     await expect(loadTodayWorkout({ api })).resolves.toEqual({ status: 'no-active-plan' });
@@ -187,18 +214,30 @@ describe('loadTodayWorkout', () => {
     const api = {
       request: vi
         .fn()
-        .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
         .mockResolvedValueOnce({
-          id: 'plan-id',
-          name: 'Plano',
-          days: [createWorkoutDay('day-a', 0), createWorkoutDay('day-b')],
+          ...cachedPlan,
+          days: [
+            { ...cachedDay, exercises: [] },
+            {
+              ...cachedDay,
+              id: '66666666-6666-4666-8666-666666666666',
+              exercises: [
+                {
+                  ...cachedExercise,
+                  id: '77777777-7777-4777-8777-777777777777',
+                  workoutDayId: '66666666-6666-4666-8666-666666666666',
+                },
+              ],
+            },
+          ],
         })
-        .mockResolvedValueOnce({ items: [{ workoutDayId: 'day-a', completed: true }] }),
+        .mockResolvedValueOnce({ items: [] }),
     };
 
     await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
       status: 'available',
-      day: { id: 'day-b' },
+      day: { id: '66666666-6666-4666-8666-666666666666' },
     });
   });
 
@@ -206,14 +245,14 @@ describe('loadTodayWorkout', () => {
     const api = {
       request: vi
         .fn()
-        .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
-        .mockResolvedValueOnce({ id: 'plan-id', name: 'Plano', days: [] })
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
+        .mockResolvedValueOnce({ ...cachedPlan, days: [] })
         .mockResolvedValueOnce({ items: [] }),
     };
 
     await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
       status: 'no-workout-today',
-      plan: { id: 'plan-id' },
+      plan: { id: cachedPlan.id },
     });
   });
 
@@ -221,19 +260,119 @@ describe('loadTodayWorkout', () => {
     const api = {
       request: vi
         .fn()
-        .mockResolvedValueOnce({ items: [{ id: 'plan-id', status: 'active' }] })
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
         .mockResolvedValueOnce({
-          id: 'plan-id',
-          name: 'Plano',
-          days: [createWorkoutDay('day-a', 0), createWorkoutDay('day-b', 0)],
+          ...cachedPlan,
+          days: [{ ...cachedDay, exercises: [{ ...cachedExercise, sets: 0 }] }],
         })
         .mockResolvedValueOnce({ items: [] }),
     };
 
     await expect(loadTodayWorkout({ api })).resolves.toMatchObject({
       status: 'no-workout-today',
-      plan: { id: 'plan-id' },
+      plan: { id: cachedPlan.id },
     });
+  });
+});
+
+describe('fallback offline do treino de hoje', () => {
+  it.each([
+    ['summaries', [{ records: [] }]],
+    ['plano', [{ items: [cachedPlanSummary] }, { id: cachedPlan.id, days: [] }, { items: [] }]],
+    [
+      'logs',
+      [
+        { items: [cachedPlanSummary] },
+        cachedPlan,
+        { items: [{ workoutDayId: cachedDay.id, completed: true }] },
+      ],
+    ],
+  ])(
+    'propaga payload estrutural invalido de %s mesmo com cache valido',
+    async (_name, responses) => {
+      const api = { request: vi.fn() };
+      for (const response of responses) api.request.mockResolvedValueOnce(response);
+      const storage = createCacheStorage();
+
+      await expect(
+        loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+      ).rejects.toBeInstanceOf(InvalidTodayWorkoutPayloadError);
+      expect(storage.getItem).not.toHaveBeenCalled();
+      expect(storage.setItem).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([401, 403, 500])('propaga ApiError %i mesmo com cache valido', async (status) => {
+    const error = new ApiError('falha HTTP', status);
+    const api = { request: vi.fn().mockRejectedValueOnce(error) };
+    const storage = createCacheStorage();
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBe(error);
+    expect(storage.getItem).not.toHaveBeenCalled();
+  });
+
+  it('retorna stale somente para erro de transporte tipado', async () => {
+    const api = {
+      request: vi.fn().mockRejectedValueOnce(new ApiTransportError(new TypeError('offline'))),
+    };
+    const storage = createCacheStorage();
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).resolves.toEqual({ data: cachedTodayWorkout, stale: true });
+    expect(storage.getItem).toHaveBeenCalledWith('today-workout:auth-user-id');
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('propaga erro inesperado sem consultar cache', async () => {
+    const error = new Error('falha inesperada');
+    const api = { request: vi.fn().mockRejectedValueOnce(error) };
+    const storage = createCacheStorage();
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBe(error);
+    expect(storage.getItem).not.toHaveBeenCalled();
+  });
+
+  it('propaga falha de escrita sem consultar cache anterior', async () => {
+    const writeError = new Error('falha ao escrever cache');
+    const api = {
+      request: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
+        .mockResolvedValueOnce(cachedPlan)
+        .mockResolvedValueOnce({ items: [] }),
+    };
+    const storage = createCacheStorage();
+    storage.setItem.mockRejectedValueOnce(writeError);
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBe(writeError);
+    expect(storage.getItem).not.toHaveBeenCalled();
+  });
+
+  it('propaga falha de leitura do cache no caminho de transporte', async () => {
+    const readError = new Error('falha ao ler cache');
+    const api = { request: vi.fn().mockRejectedValueOnce(new ApiTransportError('offline')) };
+    const storage = createCacheStorage();
+    storage.getItem.mockRejectedValueOnce(readError);
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBe(readError);
+  });
+
+  it('propaga falha de parsing do cache no caminho de transporte', async () => {
+    const api = { request: vi.fn().mockRejectedValueOnce(new ApiTransportError('offline')) };
+    const storage = createCacheStorage('{invalido');
+
+    await expect(
+      loadTodayWorkoutWithOfflineFallback({ api, authUserId: 'auth-user-id', storage }),
+    ).rejects.toBeInstanceOf(SyntaxError);
   });
 });
 
@@ -322,7 +461,7 @@ describe('loadWorkoutDay', () => {
       request: vi
         .fn()
         .mockResolvedValueOnce({
-          items: [{ id: cachedPlan.id, status: 'active' }],
+          items: [cachedPlanSummary],
         })
         .mockResolvedValueOnce({
           ...cachedPlan,
@@ -337,7 +476,9 @@ describe('loadWorkoutDay', () => {
         }),
     };
 
-    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).rejects.toThrow('plano inválido');
+    await expect(loadWorkoutDay({ api, dayId: cachedDay.id })).rejects.toBeInstanceOf(
+      InvalidTodayWorkoutPayloadError,
+    );
   });
 
   it('loads the requested day from the active plan', async () => {
@@ -346,8 +487,12 @@ describe('loadWorkoutDay', () => {
         .fn()
         .mockResolvedValueOnce({
           items: [
-            { id: 'draft-plan-id', status: 'draft' },
-            { id: cachedPlan.id, status: 'active' },
+            {
+              ...cachedPlanSummary,
+              id: '66666666-6666-4666-8666-666666666666',
+              status: 'draft',
+            },
+            cachedPlanSummary,
           ],
         })
         .mockResolvedValueOnce(cachedPlan),
@@ -365,8 +510,12 @@ describe('loadWorkoutDay', () => {
         .fn()
         .mockResolvedValueOnce({
           items: [
-            { id: cachedPlan.id, status: 'draft' },
-            { id: 'second-plan-id', status: 'paused' },
+            { ...cachedPlanSummary, status: 'draft' },
+            {
+              ...cachedPlanSummary,
+              id: '66666666-6666-4666-8666-666666666666',
+              status: 'archived',
+            },
           ],
         })
         .mockResolvedValueOnce(cachedPlan),
@@ -382,7 +531,7 @@ describe('loadWorkoutDay', () => {
     const api = {
       request: vi
         .fn()
-        .mockResolvedValueOnce({ items: [{ id: cachedPlan.id, status: 'active' }] })
+        .mockResolvedValueOnce({ items: [cachedPlanSummary] })
         .mockResolvedValueOnce(cachedPlan),
     };
 

@@ -65,6 +65,16 @@ const workoutPlan = {
     },
   ],
 };
+const workoutPlanSummary = {
+  id: workoutPlan.id,
+  studentId: workoutPlan.studentId,
+  trainerId: workoutPlan.trainerId,
+  name: workoutPlan.name,
+  startDate: workoutPlan.startDate,
+  endDate: workoutPlan.endDate,
+  status: workoutPlan.status,
+  createdAt: workoutPlan.createdAt,
+};
 
 function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -97,7 +107,7 @@ describe('WorkoutOverviewScreen', () => {
   it('renders the workout content and starts the guided session', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: workoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [workoutPlanSummary] })
       .mockResolvedValueOnce(workoutPlan);
 
     renderWithQueryClient();
@@ -116,7 +126,7 @@ describe('WorkoutOverviewScreen', () => {
   it('keeps exercise details available from the overview', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: workoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [workoutPlanSummary] })
       .mockResolvedValueOnce(workoutPlan);
 
     renderWithQueryClient();
@@ -157,9 +167,11 @@ describe('WorkoutOverviewScreen', () => {
       ],
     };
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: workoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [workoutPlanSummary] })
       .mockResolvedValueOnce(workoutPlan)
-      .mockResolvedValueOnce({ items: [{ id: otherWorkoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({
+        items: [{ ...workoutPlanSummary, id: otherWorkoutPlan.id }],
+      })
       .mockResolvedValueOnce(otherWorkoutPlan);
 
     const queryClient = createQueryClient();
@@ -205,9 +217,11 @@ describe('WorkoutOverviewScreen', () => {
       ],
     };
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: workoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [workoutPlanSummary] })
       .mockResolvedValueOnce(workoutPlan)
-      .mockResolvedValueOnce({ items: [{ id: otherWorkoutPlan.id, status: 'active' }] })
+      .mockResolvedValueOnce({
+        items: [{ ...workoutPlanSummary, id: otherWorkoutPlan.id }],
+      })
       .mockResolvedValueOnce(otherWorkoutPlan);
 
     const queryClient = createQueryClient();

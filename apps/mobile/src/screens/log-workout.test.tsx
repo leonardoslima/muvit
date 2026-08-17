@@ -50,7 +50,18 @@ describe('LogWorkoutScreen', () => {
     const user = userEvent.setup();
     apiState.request
       .mockResolvedValueOnce({
-        items: [{ id: '44444444-4444-4444-8444-444444444444', status: 'active' }],
+        items: [
+          {
+            id: '44444444-4444-4444-8444-444444444444',
+            studentId: '55555555-5555-4555-8555-555555555555',
+            trainerId: null,
+            name: 'Plano A',
+            startDate: null,
+            endDate: null,
+            status: 'active',
+            createdAt: '2026-08-15T12:00:00.000Z',
+          },
+        ],
       })
       .mockResolvedValueOnce({
         id: '44444444-4444-4444-8444-444444444444',

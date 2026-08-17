@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, ApiTransportError } from '../lib/api';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
@@ -106,6 +107,16 @@ const activeWorkout = {
     },
   ],
 };
+const activeWorkoutSummary = {
+  id: activeWorkout.id,
+  studentId: activeWorkout.studentId,
+  trainerId: activeWorkout.trainerId,
+  name: activeWorkout.name,
+  startDate: activeWorkout.startDate,
+  endDate: activeWorkout.endDate,
+  status: activeWorkout.status,
+  createdAt: activeWorkout.createdAt,
+};
 
 const cachedWorkout = {
   plan: {
@@ -197,7 +208,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('renders the recovery state when there is no workout today', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({ ...activeWorkout, days: [] })
       .mockResolvedValueOnce({ items: [] });
 
@@ -211,7 +222,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('renders loaded workout', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -230,7 +241,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('rejects an invalid online workout before caching or rendering it', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({
         ...activeWorkout,
         days: [
@@ -256,7 +267,7 @@ describe('TodayWorkoutScreen', () => {
 
   it('shows retry instead of stale content when online validation fails', async () => {
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({
         ...activeWorkout,
         days: [
@@ -281,6 +292,33 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.queryByText('offline')).toBeNull();
     expect(screen.queryByText('Supino')).toBeNull();
     expect(storageState.setItem).not.toHaveBeenCalled();
+  });
+
+  it('shows retry instead of stale content for a structurally invalid summary payload', async () => {
+    apiState.request.mockResolvedValueOnce({
+      items: [{ id: activeWorkout.id, status: 'paused' }],
+    });
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+    expect(screen.queryByText('offline')).toBeNull();
+    expect(storageState.getItem).not.toHaveBeenCalled();
+    expect(storageState.setItem).not.toHaveBeenCalled();
+  });
+
+  it('shows retry instead of stale content for an HTTP API error', async () => {
+    apiState.request.mockRejectedValueOnce(new ApiError('unauthorized', 401));
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+    expect(screen.queryByText('offline')).toBeNull();
+    expect(storageState.getItem).not.toHaveBeenCalled();
   });
 
   it('offers continuing the workout when a draft exists for the authenticated user and day', async () => {
@@ -323,7 +361,7 @@ describe('TodayWorkoutScreen', () => {
         : null,
     );
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -339,8 +377,8 @@ describe('TodayWorkoutScreen', () => {
 
   it('shows a retry action when loading today fails without cache', async () => {
     apiState.request
-      .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')))
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] });
 
@@ -352,7 +390,7 @@ describe('TodayWorkoutScreen', () => {
   });
 
   it('renders stale offline badge from cached workout', async () => {
-    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
 
     renderWithQueryClient();
@@ -363,7 +401,7 @@ describe('TodayWorkoutScreen', () => {
   });
 
   it('shows the offline badge for stale empty states', async () => {
-    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify({ status: 'no-active-plan' }));
 
     renderWithQueryClient();
@@ -373,7 +411,7 @@ describe('TodayWorkoutScreen', () => {
   });
 
   it('shows the offline badge for a stale recovery state', async () => {
-    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(
       JSON.stringify({
         status: 'no-workout-today',
@@ -388,7 +426,7 @@ describe('TodayWorkoutScreen', () => {
   });
 
   it('shows retry when stale cache is invalid', async () => {
-    apiState.request.mockRejectedValueOnce(new Error('offline'));
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify({ cached: true }));
 
     renderWithQueryClient();
@@ -398,7 +436,7 @@ describe('TodayWorkoutScreen', () => {
   });
 
   it('isolates the offline cache when the authenticated account changes', async () => {
-    apiState.request.mockRejectedValue(new Error('offline'));
+    apiState.request.mockRejectedValue(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockImplementation(async (key: string) =>
       key === 'today-workout:auth-user-a'
         ? JSON.stringify({
@@ -427,7 +465,7 @@ describe('TodayWorkoutScreen', () => {
   it('opens and closes the exercise details modal', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({
         ...activeWorkout,
         days: [
@@ -483,10 +521,17 @@ describe('TodayWorkoutScreen', () => {
       ],
     };
     apiState.request
-      .mockResolvedValueOnce({ items: [{ id: activeWorkout.id, status: 'active' }] })
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
       .mockResolvedValueOnce({ items: [] })
-      .mockResolvedValueOnce({ items: [{ id: 'plan-b-id', status: 'active' }] })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            ...activeWorkoutSummary,
+            id: otherWorkout.id,
+          },
+        ],
+      })
       .mockResolvedValueOnce(otherWorkout)
       .mockResolvedValueOnce({ items: [] });
 
