@@ -309,7 +309,7 @@ git commit -m "feat(mobile): modela sessao guiada de treino"
 - Produces: `WorkoutSessionStorage` com `load`, `save` e `remove`.
 - Produces: `createWorkoutSessionStorage(storage)` e `workoutSessionKey(authUserId, workoutDayId)`.
 
-- [ ] **Step 1: Escrever testes falhando de isolamento e corrupção**
+- [x] **Step 1: Escrever testes falhando de isolamento e corrupção**
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
@@ -357,13 +357,13 @@ describe('workoutSessionStorage', () => {
 });
 ```
 
-- [ ] **Step 2: Rodar o teste e confirmar módulo ausente**
+- [x] **Step 2: Rodar o teste e confirmar módulo ausente**
 
 Run: `corepack pnpm --dir apps/mobile test src/lib/workout-session-storage.test.ts`
 
 Expected: FAIL porque `workout-session-storage.ts` ainda não existe.
 
-- [ ] **Step 3: Implementar validação e adaptador**
+- [x] **Step 3: Implementar validação e adaptador**
 
 Definir a porta concreta:
 
@@ -383,7 +383,7 @@ export type WorkoutSessionStorage = {
 
 Validar `version`, IDs, timestamps, índices, fase, descanso e todas as séries com Zod local. Em qualquer falha de parse, remover somente a chave exata e retornar `null`. Propagar falha de `setItem` para que a interface possa informar que o progresso não foi salvo.
 
-- [ ] **Step 4: Rodar teste e Biome**
+- [x] **Step 4: Rodar teste e Biome**
 
 Run: `corepack pnpm --dir apps/mobile test src/lib/workout-session-storage.test.ts`
 
@@ -393,7 +393,7 @@ Run: `corepack pnpm exec biome check apps/mobile/src/lib/workout-session-storage
 
 Expected: PASS.
 
-- [ ] **Step 5: Commitar a persistência**
+- [x] **Step 5: Commitar a persistência**
 
 ```powershell
 git add apps/mobile/src/lib/workout-session-storage.ts apps/mobile/src/lib/workout-session-storage.test.ts
