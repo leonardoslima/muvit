@@ -15,10 +15,11 @@
 - [x] Task 7: Dashboard, perfil do aluno e exercícios.
 - [x] Task 8: wizard de aluno e avaliações.
 - [x] Task 9: construtor canônico de treinos.
-- [ ] Próxima etapa: Task 10 — tela de Relatórios e versão imprimível.
-- [ ] Tasks 11–12: configurações e verificação final.
+- [x] Task 10: tela de Relatórios e versão imprimível.
+- [ ] Próxima etapa: Task 11 — configurações de perfil, notificações e cobrança.
+- [ ] Task 12: verificação visual e qualidade integrada.
 
-Execução pausada após a aprovação formal da Task 9. Retomar pela Task 10.
+Execução pausada após a aprovação formal da Task 10. Retomar pela Task 11.
 
 ## Global Constraints
 
