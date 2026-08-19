@@ -38,10 +38,13 @@ function dateToIso(date: Date): string {
 
 function completeFrequencyDays(report: Report): Report['trainingFrequency']['days'] {
   const { from, to } = report.period;
-  const start = from ? isoDate(from) : null;
-  const end = to ? isoDate(to) : null;
+  const sortedDays = [...report.trainingFrequency.days].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+  const start = from ? isoDate(from) : isoDate(sortedDays[0]?.date ?? '');
+  const end = to ? isoDate(to) : isoDate(sortedDays.at(-1)?.date ?? '');
   if (!start || !end || start > end) {
-    return [...report.trainingFrequency.days].sort((a, b) => a.date.localeCompare(b.date));
+    return sortedDays;
   }
 
   const countsByDate = new Map(report.trainingFrequency.days.map((day) => [day.date, day.count]));
@@ -199,8 +202,11 @@ export function WorkoutPerformance({ report }: { report: Report }) {
                           aria-label={`Progressão de carga de ${exercise.name}`}
                           className="flex min-w-40 flex-col gap-1 text-xs"
                         >
-                          {exercise.progression.map((point) => (
-                            <li key={`${point.date}-${point.loadKg}`}>
+                          {exercise.progression.map((point, index) => (
+                            <li
+                              key={`${point.date}-${point.loadKg}-${index}`}
+                              aria-label={`Registro ${index + 1}: ${formatDate(point.date)}, ${point.loadKg.toLocaleString('pt-BR')} kg`}
+                            >
                               <time dateTime={point.date}>{formatDate(point.date)}</time>:{' '}
                               {point.loadKg.toLocaleString('pt-BR')} kg
                             </li>

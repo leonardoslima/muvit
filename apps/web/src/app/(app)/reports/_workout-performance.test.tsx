@@ -79,4 +79,59 @@ describe('WorkoutPerformance', () => {
       within(calendar).getByRole('listitem', { name: '31/03/2026: 2 treinos' }),
     ).toBeInTheDocument();
   });
+
+  it('deriva no período completo as lacunas entre os limites reais disponíveis', () => {
+    render(
+      <WorkoutPerformance report={{ ...report, period: { range: 'all', from: null, to: null } }} />,
+    );
+
+    const calendar = screen.getByRole('list', { name: 'Calendário de frequência de treinos' });
+    expect(within(calendar).getAllByRole('listitem')).toHaveLength(31);
+    expect(
+      within(calendar).getByRole('listitem', { name: '15/03/2026: nenhum treino' }),
+    ).toBeInTheDocument();
+
+    const table = screen.getByRole('table', { name: 'Frequência de treinos' });
+    expect(within(table).getByRole('row', { name: '15/03/2026 Nenhum' })).toBeInTheDocument();
+  });
+
+  it('distingue registros de progressão com a mesma data e carga', () => {
+    render(
+      <WorkoutPerformance
+        report={{
+          ...report,
+          topExercises: {
+            ...report.topExercises,
+            items: [
+              {
+                exerciseId: 'exercise-1',
+                name: 'Agachamento livre',
+                maxLoadKg: 100,
+                totalSets: 2,
+                totalVolumeKg: 2_000,
+                progression: [
+                  { date: '2026-03-01', loadKg: 100 },
+                  { date: '2026-03-01', loadKg: 100 },
+                ],
+              },
+            ],
+          },
+        }}
+      />,
+    );
+
+    const progression = screen.getByRole('list', {
+      name: 'Progressão de carga de Agachamento livre',
+    });
+    expect(
+      within(progression).getByRole('listitem', {
+        name: 'Registro 1: 01/03/2026, 100 kg',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(progression).getByRole('listitem', {
+        name: 'Registro 2: 01/03/2026, 100 kg',
+      }),
+    ).toBeInTheDocument();
+  });
 });
