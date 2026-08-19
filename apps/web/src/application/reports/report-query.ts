@@ -22,6 +22,10 @@ function isReportRange(value: string | undefined): value is ReportRange {
   return REPORT_RANGES.some((range) => range === value);
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function isIsoDate(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return false;
@@ -39,6 +43,11 @@ export function parseReportSearchParams(params: ReportSearchParams): ReportQuery
   const studentId = firstValue(params.studentId);
   const requestedRange = firstValue(params.range);
   const range = isReportRange(requestedRange) ? requestedRange : '90d';
+
+  if (studentId && !isUuid(studentId)) {
+    return { range, error: 'Identificador de aluno inválido.' };
+  }
+
   const base = studentId ? { studentId, range } : { range };
 
   if (range !== 'custom') return base;

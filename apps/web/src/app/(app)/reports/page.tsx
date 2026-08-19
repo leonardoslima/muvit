@@ -8,7 +8,8 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { configureServerClient } from '@/lib/api-client';
-import { getStudentReport, getStudents } from '@/lib/api/sdk.gen';
+import { getStudentReport } from '@/lib/api/sdk.gen';
+import { loadAllReportStudents } from '@/lib/report-student-list';
 import { FileText } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,9 +23,9 @@ interface ReportsPageProps {
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const query = parseReportSearchParams(await searchParams);
   const client = await configureServerClient();
-  const studentsResponse = await getStudents({ client, query: { limit: 100 } });
-  const listError = Boolean(studentsResponse.error) || !studentsResponse.data;
-  const students = studentsResponse.data?.items ?? [];
+  const studentList = await loadAllReportStudents(client);
+  const listError = studentList.status === 'error';
+  const students = studentList.students;
   const selectedStudent = students.find((student) => student.id === query.studentId);
   const canLoadReport = Boolean(selectedStudent && !query.error);
   const reportResponse =

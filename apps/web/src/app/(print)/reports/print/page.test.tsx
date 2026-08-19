@@ -8,9 +8,10 @@ vi.mock('@/lib/api/sdk.gen', () => ({ getStudentReport: vi.fn() }));
 
 const request = new Request('http://localhost');
 const response = new Response();
+const validStudentId = '11111111-1111-4111-8111-111111111111';
 
 const report = {
-  student: { id: 'student-1', name: 'Maria Silva', avatarUrl: null },
+  student: { id: validStudentId, name: 'Maria Silva', avatarUrl: null },
   period: { range: '90d' as const, from: '2026-01-01', to: '2026-03-31' },
   physicalEvolution: {
     hasEnoughData: false,
@@ -35,7 +36,7 @@ describe('PrintableReportPage', () => {
 
     render(
       await PrintableReportPage({
-        searchParams: Promise.resolve({ studentId: 'student-1', range: '90d' }),
+        searchParams: Promise.resolve({ studentId: validStudentId, range: '90d' }),
       }),
     );
 
@@ -51,14 +52,32 @@ describe('PrintableReportPage', () => {
 
     render(
       await PrintableReportPage({
-        searchParams: Promise.resolve({ studentId: 'student-1', range: 'custom' }),
+        searchParams: Promise.resolve({ studentId: validStudentId, range: 'custom' }),
       }),
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent('Informe as datas inicial e final.');
     expect(screen.getByRole('link', { name: 'Voltar aos relatórios' })).toHaveAttribute(
       'href',
-      '/reports?studentId=student-1&range=custom',
+      '/reports?studentId=11111111-1111-4111-8111-111111111111&range=custom',
+    );
+  });
+
+  it('não consulta a API quando studentId da URL não é UUID', async () => {
+    vi.mocked(getStudentReport).mockRejectedValue(
+      new Error('A API de relatório não deve receber um studentId inválido.'),
+    );
+
+    render(
+      await PrintableReportPage({
+        searchParams: Promise.resolve({ studentId: 'x', range: '90d' }),
+      }),
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Identificador de aluno inválido.');
+    expect(screen.getByRole('link', { name: 'Voltar aos relatórios' })).toHaveAttribute(
+      'href',
+      '/reports?range=90d',
     );
   });
 
@@ -72,7 +91,7 @@ describe('PrintableReportPage', () => {
 
     render(
       await PrintableReportPage({
-        searchParams: Promise.resolve({ studentId: 'student-1', range: '90d' }),
+        searchParams: Promise.resolve({ studentId: validStudentId, range: '90d' }),
       }),
     );
 

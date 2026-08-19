@@ -11,6 +11,7 @@ export default mergeConfig(
           'src/application/**/*.{ts,tsx}',
           'src/lib/uploads.ts',
           'src/lib/muscle-groups.ts',
+          'src/lib/report-student-list.ts',
           'src/lib/utils.ts',
         ],
         exclude: ['src/**/*.test.{ts,tsx}', 'test/**'],

@@ -26,8 +26,47 @@ function frequencyClass(count: number): string {
   return 'bg-primary';
 }
 
+function isoDate(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateToIso(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function completeFrequencyDays(report: Report): Report['trainingFrequency']['days'] {
+  const { from, to } = report.period;
+  const start = from ? isoDate(from) : null;
+  const end = to ? isoDate(to) : null;
+  if (!start || !end || start > end) {
+    return [...report.trainingFrequency.days].sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  const countsByDate = new Map(report.trainingFrequency.days.map((day) => [day.date, day.count]));
+  const days: Report['trainingFrequency']['days'] = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const date = dateToIso(cursor);
+    days.push({ date, count: countsByDate.get(date) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
+}
+
+function frequencyLabel(date: string, count: number): string {
+  if (count === 0) return `${formatDate(date)}: nenhum treino`;
+  if (count === 1) return `${formatDate(date)}: 1 treino`;
+  return `${formatDate(date)}: ${count} treinos`;
+}
+
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
 export function WorkoutPerformance({ report }: { report: Report }) {
   const { workoutAdherence, trainingFrequency, topExercises, rpeTrend } = report;
+  const frequencyDays = completeFrequencyDays(report);
+  const firstFrequencyDate = frequencyDays[0] ? isoDate(frequencyDays[0].date) : null;
 
   return (
     <section aria-labelledby="workout-performance-title" className="flex flex-col gap-5">
@@ -71,14 +110,36 @@ export function WorkoutPerformance({ report }: { report: Report }) {
           <p className="text-sm text-muted-foreground">Frequência ainda sem dados suficientes.</p>
         ) : (
           <>
-            <div className="flex flex-wrap gap-1.5" aria-hidden="true">
-              {trainingFrequency.days.map((day) => (
-                <span
-                  key={day.date}
-                  className={`size-4 rounded-sm ${frequencyClass(day.count)}`}
-                  title={`${formatDate(day.date)}: ${day.count} treino(s)`}
-                />
-              ))}
+            <div className="overflow-x-auto">
+              <div className="min-w-112">
+                <div
+                  aria-hidden="true"
+                  className="mb-2 grid grid-cols-7 gap-1.5 text-center text-[10px] text-muted-foreground"
+                >
+                  {WEEKDAY_LABELS.map((label) => (
+                    <span key={label}>{label}</span>
+                  ))}
+                </div>
+                <ol
+                  aria-label="Calendário de frequência de treinos"
+                  className="grid grid-cols-7 gap-1.5"
+                >
+                  {frequencyDays.map((day, index) => (
+                    <li
+                      key={day.date}
+                      aria-label={frequencyLabel(day.date, day.count)}
+                      className={`flex min-h-9 items-center justify-center rounded-md text-[11px] ${frequencyClass(day.count)}`}
+                      style={
+                        index === 0 && firstFrequencyDate
+                          ? { gridColumnStart: firstFrequencyDate.getUTCDay() + 1 }
+                          : undefined
+                      }
+                    >
+                      <time dateTime={day.date}>{Number(day.date.slice(-2))}</time>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </div>
             <table
               aria-label="Frequência de treinos"
@@ -91,10 +152,10 @@ export function WorkoutPerformance({ report }: { report: Report }) {
                 </tr>
               </thead>
               <tbody>
-                {trainingFrequency.days.map((day) => (
+                {frequencyDays.map((day) => (
                   <tr key={day.date}>
                     <td>{formatDate(day.date)}</td>
-                    <td>{day.count}</td>
+                    <td>{day.count === 0 ? 'Nenhum' : day.count}</td>
                   </tr>
                 ))}
               </tbody>
@@ -122,27 +183,37 @@ export function WorkoutPerformance({ report }: { report: Report }) {
                 </tr>
               </thead>
               <tbody>
-                {topExercises.items.map((exercise) => {
-                  const first = exercise.progression.at(0);
-                  const last = exercise.progression.at(-1);
-                  return (
-                    <tr key={exercise.exerciseId} className="border-t border-border">
-                      <th scope="row" className="px-6 py-4 text-left font-medium">
-                        {exercise.name}
-                      </th>
-                      <td className="px-4 py-4">
-                        {exercise.maxLoadKg === null ? '—' : `${exercise.maxLoadKg} kg`}
-                      </td>
-                      <td className="px-4 py-4">
-                        {first && last ? `${first.loadKg} → ${last.loadKg} kg` : '—'}
-                      </td>
-                      <td className="px-4 py-4">{exercise.totalSets}</td>
-                      <td className="px-4 py-4">
-                        {exercise.totalVolumeKg.toLocaleString('pt-BR')} kg
-                      </td>
-                    </tr>
-                  );
-                })}
+                {topExercises.items.map((exercise) => (
+                  <tr key={exercise.exerciseId} className="border-t border-border align-top">
+                    <th scope="row" className="px-6 py-4 text-left font-medium">
+                      {exercise.name}
+                    </th>
+                    <td className="px-4 py-4">
+                      {exercise.maxLoadKg === null ? '—' : `${exercise.maxLoadKg} kg`}
+                    </td>
+                    <td className="px-4 py-4">
+                      {exercise.progression.length === 0 ? (
+                        '—'
+                      ) : (
+                        <ol
+                          aria-label={`Progressão de carga de ${exercise.name}`}
+                          className="flex min-w-40 flex-col gap-1 text-xs"
+                        >
+                          {exercise.progression.map((point) => (
+                            <li key={`${point.date}-${point.loadKg}`}>
+                              <time dateTime={point.date}>{formatDate(point.date)}</time>:{' '}
+                              {point.loadKg.toLocaleString('pt-BR')} kg
+                            </li>
+                          ))}
+                        </ol>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">{exercise.totalSets}</td>
+                    <td className="px-4 py-4">
+                      {exercise.totalVolumeKg.toLocaleString('pt-BR')} kg
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

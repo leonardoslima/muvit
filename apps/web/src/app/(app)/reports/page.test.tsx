@@ -14,7 +14,7 @@ function apiOk<T>(data: T) {
 }
 
 const student = {
-  id: 'student-1',
+  id: '11111111-1111-4111-8111-111111111111',
   trainerId: 'trainer-1',
   isIndependent: false,
   name: 'Maria Silva',
@@ -31,6 +31,16 @@ const student = {
   createdAt: '2026-01-01T12:00:00.000Z',
   internalNotes: null,
 };
+
+function studentForIndex(index: number) {
+  const suffix = index.toString().padStart(12, '0');
+  return {
+    ...student,
+    id: `00000000-0000-4000-8000-${suffix}`,
+    name: `Aluno ${index.toString().padStart(3, '0')}`,
+    email: `aluno${index}@muvit.test`,
+  };
+}
 
 const completeReport = {
   student: { id: student.id, name: student.name, avatarUrl: student.avatarUrl },
@@ -125,6 +135,42 @@ describe('ReportsPage', () => {
     expect(screen.getByText('Selecione um aluno para visualizar o relatório.')).toBeInTheDocument();
   });
 
+  it('carrega por URL um aluno válido além da primeira página sem usar lista parcial como ownership', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => studentForIndex(index + 1));
+    const targetStudent = studentForIndex(101);
+    vi.mocked(getStudents).mockImplementation(async (options) => {
+      const offset = options?.query?.offset ?? 0;
+      if (offset === 0) return apiOk({ items: firstPage, total: 101 });
+      if (offset === 100) return apiOk({ items: [targetStudent], total: 101 });
+      throw new Error(`Página de alunos inesperada: ${offset}`);
+    });
+    vi.mocked(getStudentReport).mockResolvedValue(
+      apiOk({
+        ...completeReport,
+        student: {
+          id: targetStudent.id,
+          name: targetStudent.name,
+          avatarUrl: targetStudent.avatarUrl,
+        },
+      }),
+    );
+
+    render(
+      await ReportsPage({
+        searchParams: Promise.resolve({ studentId: targetStudent.id, range: '90d' }),
+      }),
+    );
+
+    const options = screen.getAllByRole('option');
+    expect(options.at(-1)).toHaveTextContent('Aluno 101');
+    expect(screen.getByLabelText('Aluno')).toHaveValue(targetStudent.id);
+    expect(screen.getByText('Relatório de')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Abrir versão para impressão' })).toHaveAttribute(
+      'href',
+      `/reports/print?studentId=${targetStudent.id}&range=90d`,
+    );
+  });
+
   it('bloqueia intervalo customizado inválido e foca o primeiro campo relevante', async () => {
     vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 1 }));
     vi.mocked(getStudentReport).mockRejectedValue(
@@ -181,7 +227,7 @@ describe('ReportsPage', () => {
     expect(screen.getByText(completeReport.summary)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Abrir versão para impressão' })).toHaveAttribute(
       'href',
-      '/reports/print?studentId=student-1&range=90d',
+      '/reports/print?studentId=11111111-1111-4111-8111-111111111111&range=90d',
     );
   });
 
