@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseProfileFormData } from './profile-form-data';
+import { buildProfileSubmission, parseProfileFormData } from './profile-form-data';
 
 describe('parseProfileFormData', () => {
   it('normaliza o perfil antes de enviá-lo para a API', () => {
@@ -37,6 +37,33 @@ describe('parseProfileFormData', () => {
       bio: null,
       specialties: [],
       avatarUrl: null,
+    });
+  });
+
+  it('mapeia os limites do validator compartilhado para erros por campo', () => {
+    const formData = new FormData();
+    formData.set('name', '');
+    formData.set('email', 'invalido');
+    formData.set('phone', '1'.repeat(21));
+    formData.set('bio', 'a'.repeat(2001));
+    formData.set(
+      'specialties',
+      Array.from({ length: 11 }, (_, index) => `Área ${index}`).join(','),
+    );
+    formData.set('avatarUrl', 'arquivo-local');
+
+    expect(buildProfileSubmission(formData)).toEqual({
+      ok: false,
+      state: {
+        fieldErrors: {
+          name: 'Informe seu nome.',
+          email: 'Informe um e-mail válido.',
+          phone: 'Informe um telefone com até 20 caracteres.',
+          bio: 'A bio deve ter até 2000 caracteres.',
+          specialties: 'Informe no máximo 10 especialidades de até 50 caracteres.',
+          avatarUrl: 'Informe uma URL válida para o avatar.',
+        },
+      },
     });
   });
 });

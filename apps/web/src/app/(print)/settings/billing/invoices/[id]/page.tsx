@@ -1,3 +1,4 @@
+import { PrintButton } from '@/app/(app)/reports/print/print-button';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { getTrainerInvoice } from '@/lib/api/sdk.gen';
@@ -7,15 +8,13 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   const client = await configureServerClient();
   const response = await getTrainerInvoice({ client, path: { id } });
-
   if (response.error || !response.data) {
     return (
-      <p role="alert" className="p-6 text-sm text-destructive">
+      <p role="alert" className="text-sm text-destructive">
         Fatura não encontrada.
       </p>
     );
   }
-
   const invoice = response.data;
   return (
     <article className="mx-auto flex max-w-3xl flex-col gap-8 bg-card p-6 shadow-card print:max-w-none print:shadow-none sm:p-10">
@@ -52,10 +51,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
           </dd>
         </div>
       </dl>
-      <div className="flex justify-end print:hidden">
+      <div className="flex flex-wrap justify-end gap-3 print:hidden">
         <Button asChild variant="secondary">
           <Link href="/settings/billing">Voltar para cobrança</Link>
         </Button>
+        <PrintButton />
       </div>
     </article>
   );
@@ -69,7 +69,6 @@ function formatDate(value: string): string {
     timeZone: 'UTC',
   }).format(new Date(value));
 }
-
 function formatPrice(cents: number, currency = 'BRL'): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(cents / 100);
 }

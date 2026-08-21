@@ -64,7 +64,9 @@ export function PlanSelector({ subscription }: { subscription: SubscriptionData 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {(Object.keys(subscription.catalog) as Plan[]).map((plan) => {
           const catalog = subscription.catalog[plan];
-          const current = plan === subscription.subscription.plan;
+          const current =
+            plan === subscription.subscription.plan &&
+            interval === subscription.subscription.billingInterval;
           const price =
             interval === 'monthly' ? catalog.monthlyPriceCents : catalog.annualPriceCents;
           return (
