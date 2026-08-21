@@ -77,9 +77,7 @@ export default async function BillingPage() {
                   <th className="px-2 py-3">PLANO</th>
                   <th className="px-2 py-3">VALOR</th>
                   <th className="px-2 py-3">STATUS</th>
-                  <th className="px-2 py-3">
-                    <span className="sr-only">Documento</span>
-                  </th>
+                  <th className="px-2 py-3" aria-label="Documento" />
                 </tr>
               </thead>
               <tbody>

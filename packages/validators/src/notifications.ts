@@ -43,10 +43,13 @@ export const updateNotificationPreferencesSchema = z
   .refine(
     (preferences) =>
       Object.values(preferences).some(
-        (section) => section !== undefined && Object.values(section).some((value) => value !== undefined),
+        (section) =>
+          section !== undefined && Object.values(section).some((value) => value !== undefined),
       ),
     { message: 'Informe ao menos uma preferência para atualizar.' },
   );
 
 export type NotificationPreferences = z.infer<typeof notificationPreferencesSchema>;
-export type UpdateNotificationPreferencesInput = z.infer<typeof updateNotificationPreferencesSchema>;
+export type UpdateNotificationPreferencesInput = z.infer<
+  typeof updateNotificationPreferencesSchema
+>;

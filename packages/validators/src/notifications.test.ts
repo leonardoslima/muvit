@@ -23,8 +23,8 @@ describe('contratos de preferências de notificação', () => {
 
   it('aceita atualização profunda e rejeita alteração vazia', () => {
     expect(updateNotificationPreferencesSchema.safeParse({}).success).toBe(false);
-    expect(
-      updateNotificationPreferencesSchema.parse({ inactivity: { afterDays: 14 } }),
-    ).toEqual({ inactivity: { afterDays: 14 } });
+    expect(updateNotificationPreferencesSchema.parse({ inactivity: { afterDays: 14 } })).toEqual({
+      inactivity: { afterDays: 14 },
+    });
   });
 });

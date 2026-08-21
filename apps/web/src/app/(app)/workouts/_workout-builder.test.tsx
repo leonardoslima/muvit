@@ -1,4 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act } from 'react';
+import { hydrateRoot } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkoutBuilder } from './_workout-builder';
 import { createWorkoutPlanAction } from './actions';
@@ -81,6 +84,26 @@ describe('WorkoutBuilder', () => {
       'min-w-0',
       'flex-1',
     );
+  });
+
+  it('mantém os identificadores estáveis entre o HTML do servidor e a hidratação', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = renderToString(<WorkoutBuilder {...defaultProps} />);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+
+    await act(async () => {
+      root = hydrateRoot(container, <WorkoutBuilder {...defaultProps} />);
+      await Promise.resolve();
+    });
+
+    expect(consoleError.mock.calls.some((call) => String(call[0]).includes('hydrated'))).toBe(
+      false,
+    );
+    if (root) {
+      await act(async () => root?.unmount());
+    }
+    consoleError.mockRestore();
   });
 
   it('abre o drawer, move o foco e fecha por Escape devolvendo o foco ao gatilho', async () => {

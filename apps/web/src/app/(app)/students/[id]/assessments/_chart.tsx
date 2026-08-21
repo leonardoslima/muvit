@@ -129,29 +129,33 @@ export function MetricEvolutionChart({
         </p>
       )}
 
-      <table aria-label={`Dados de evolução de ${metricLabel}`} className="sr-only">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>{metricLabel}</th>
-            <th>Variação desde a medição anterior</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recorded.map((point, index) => {
-            const previous = recorded[index - 1];
-            return (
-              <tr key={point.chartId}>
-                <td>{formatFullDate(point.date)}</td>
-                <td>{formatValue(point.value, unit)}</td>
-                <td>
-                  {previous ? formatDelta(point.value - previous.value, unit) : 'Primeira medição'}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="sr-only">
+        <table aria-label={`Dados de evolução de ${metricLabel}`}>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>{metricLabel}</th>
+              <th>Variação desde a medição anterior</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recorded.map((point, index) => {
+              const previous = recorded[index - 1];
+              return (
+                <tr key={point.chartId}>
+                  <td>{formatFullDate(point.date)}</td>
+                  <td>{formatValue(point.value, unit)}</td>
+                  <td>
+                    {previous
+                      ? formatDelta(point.value - previous.value, unit)
+                      : 'Primeira medição'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

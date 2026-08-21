@@ -108,8 +108,8 @@
     padding: 0;
   }
 
-  [data-slot="card"],
-  section {
+  [data-print-shell] [data-slot="card"],
+  [data-print-shell] section {
     break-inside: avoid;
   }
 }

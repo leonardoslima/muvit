@@ -30,7 +30,7 @@ const report = {
       {
         exerciseId: 'exercise-1',
         name: 'Agachamento livre',
-        maxLoadKg: 120,
+        maxLoadKg: 120.5,
         totalSets: 48,
         totalVolumeKg: 18_400,
         progression: [
@@ -59,7 +59,7 @@ describe('WorkoutPerformance', () => {
     expect(points[2]).toHaveTextContent('31/03/2026: 120 kg');
 
     const exerciseRow = screen.getByRole('row', { name: /Agachamento livre/ });
-    expect(exerciseRow).toHaveTextContent('120 kg');
+    expect(exerciseRow).toHaveTextContent('120,5 kg');
     expect(exerciseRow).toHaveTextContent('48');
     expect(exerciseRow).toHaveTextContent('18.400 kg');
   });

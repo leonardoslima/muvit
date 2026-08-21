@@ -16,7 +16,7 @@ import {
   updateWorkoutExercise,
   validateWorkoutDraft,
 } from '@/application/workouts/workout-editor-model';
-import { useRef, useState, useTransition } from 'react';
+import { useId, useRef, useState, useTransition } from 'react';
 import { ExerciseDrawer } from './_exercise-drawer';
 import { WorkoutDayTabs } from './_workout-day-tabs';
 import { WorkoutDetailsPanel } from './_workout-details-panel';
@@ -45,8 +45,9 @@ export function WorkoutBuilder({
   studentsError,
   exercisesError,
 }: WorkoutBuilderProps) {
+  const initialDayId = useId();
   const [draft, setDraft] = useState<WorkoutDraft>(() =>
-    createWorkoutDraft(initialStudentId, createId),
+    createWorkoutDraft(initialStudentId, () => initialDayId),
   );
   const [activeDay, setActiveDay] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);

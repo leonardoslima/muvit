@@ -25,7 +25,9 @@ describe('contratos de cobrança', () => {
 
   it('exige plano e periodicidade ao atualizar a assinatura', () => {
     expect(updateTrainerSubscriptionSchema.safeParse({ plan: 'pro' }).success).toBe(false);
-    expect(updateTrainerSubscriptionSchema.parse({ plan: 'pro', billingInterval: 'annual' })).toEqual({
+    expect(
+      updateTrainerSubscriptionSchema.parse({ plan: 'pro', billingInterval: 'annual' }),
+    ).toEqual({
       plan: 'pro',
       billingInterval: 'annual',
     });

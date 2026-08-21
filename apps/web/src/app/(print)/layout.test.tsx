@@ -1,3 +1,4 @@
+import { requireUser } from '@/lib/auth-server';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import PrintLayout from './layout';
@@ -15,5 +16,6 @@ describe('PrintLayout', () => {
     expect(container.querySelector('[data-print-shell]')).toBeInTheDocument();
     expect(container.querySelector('[data-app-shell]')).not.toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+    expect(requireUser).toHaveBeenCalledTimes(1);
   });
 });

@@ -29,7 +29,10 @@ export function BeforeAfter({ data, studentName }: { data: BeforeAfterData; stud
       {!comparison ? (
         <p className="text-sm text-muted-foreground">Ainda não há duas fotos para comparação.</p>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <fieldset
+          aria-label={`Comparação de fotos de ${studentName}`}
+          className="grid gap-5 sm:grid-cols-2"
+        >
           <figure className="flex flex-col gap-2">
             <Image
               src={comparison.before.photoUrl}
@@ -56,7 +59,7 @@ export function BeforeAfter({ data, studentName }: { data: BeforeAfterData; stud
               Final · {formatDate(comparison.after.date)}
             </figcaption>
           </figure>
-        </div>
+        </fieldset>
       )}
     </Card>
   );

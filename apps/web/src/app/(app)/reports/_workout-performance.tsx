@@ -192,7 +192,9 @@ export function WorkoutPerformance({ report }: { report: Report }) {
                       {exercise.name}
                     </th>
                     <td className="px-4 py-4">
-                      {exercise.maxLoadKg === null ? '—' : `${exercise.maxLoadKg} kg`}
+                      {exercise.maxLoadKg === null
+                        ? '—'
+                        : `${exercise.maxLoadKg.toLocaleString('pt-BR')} kg`}
                     </td>
                     <td className="px-4 py-4">
                       {exercise.progression.length === 0 ? (

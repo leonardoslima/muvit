@@ -218,6 +218,9 @@ describe('ReportsPage', () => {
       'src',
       'https://cdn.muvit.test/after.jpg',
     );
+    expect(
+      screen.getByRole('group', { name: 'Comparação de fotos de Maria Silva' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('18 de 24 treinos planejados concluídos')).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Frequência de treinos' })).toBeInTheDocument();
     expect(screen.getByRole('table', { name: 'Desempenho por exercício' })).toBeInTheDocument();

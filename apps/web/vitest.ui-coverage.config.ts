@@ -36,6 +36,8 @@ export default mergeConfig(
           'src/app/**/reports/loading.tsx',
           'src/app/**/reports/print/print-button.tsx',
           'src/app/**/reports/print/loading.tsx',
+          'src/app/**/reports/print/page.tsx',
+          'src/app/(print)/layout.tsx',
         ],
         exclude: ['src/**/*.test.{ts,tsx}', 'test/**'],
         thresholds: {
