@@ -80,4 +80,37 @@ describe('updateProfileAction', () => {
       },
     });
   });
+
+  it('preserva cookies renovados quando a atualização retorna conflito', async () => {
+    const response = new Response(null, { status: 409 });
+    Object.defineProperty(response.headers, 'getSetCookie', {
+      value: () => [
+        'better-auth.session_token=restaurado; Path=/; HttpOnly; SameSite=Strict',
+        'better-auth.session_data=compensado; Path=/; Max-Age=120; Secure',
+      ],
+    });
+    vi.mocked(updateTrainerProfile).mockResolvedValue({
+      data: undefined,
+      error: { error: 'conflito de identidade' },
+      request: new Request('https://api.test'),
+      response,
+    });
+
+    await expect(updateProfileAction(null, formData())).resolves.toEqual({
+      fieldErrors: {
+        email: 'Esse e-mail não está disponível. Atualize a página e tente outro e-mail.',
+      },
+    });
+    expect(cookieSet).toHaveBeenCalledTimes(2);
+    expect(cookieSet).toHaveBeenCalledWith(
+      'better-auth.session_token',
+      'restaurado',
+      expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
+    );
+    expect(cookieSet).toHaveBeenCalledWith(
+      'better-auth.session_data',
+      'compensado',
+      expect.objectContaining({ maxAge: 120, secure: true }),
+    );
+  });
 });

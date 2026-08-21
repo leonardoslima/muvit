@@ -20,11 +20,11 @@ export async function updateProfileAction(
 
   const client = await configureServerClient();
   const response = await updateTrainerProfile({ client, body: submission.body });
+  await forwardSetCookies(response.response?.headers);
   if (response.error || !response.data) {
     return getProfileError(response.response?.status);
   }
 
-  await forwardSetCookies(response.response?.headers);
   revalidatePath('/settings', 'layout');
   revalidatePath('/settings/profile');
   return { success: true };
