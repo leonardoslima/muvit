@@ -418,7 +418,7 @@ describe('LogWorkoutScreen', () => {
 
   it('preserva duas edições rápidas, a ordem dos saves e o cache sem invalidar Hoje por caractere', async () => {
     mockWorkoutDay();
-    mockStatefulDraftStorage();
+    const storage = mockStatefulDraftStorage();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
     });
@@ -429,17 +429,15 @@ describe('LogWorkoutScreen', () => {
     invalidateSpy.mockClear();
 
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
-    const pending = createDeferred<void>();
-    let firstEdit = true;
-    const savedReps: string[] = [];
+    const firstWrite = createDeferred<void>();
+    let serialized = storage.getSerialized();
+    const startedReps: string[] = [];
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       if (key !== sessionKey) return;
       const saved = JSON.parse(value) as GuidedSession;
-      savedReps.push(saved.sets[0]?.repsDone ?? '');
-      if (firstEdit) {
-        firstEdit = false;
-        await pending.promise;
-      }
+      startedReps.push(saved.sets[0]?.repsDone ?? '');
+      if (startedReps.length === 1) await firstWrite.promise;
+      serialized = value;
     });
 
     const repsField = screen.getByLabelText('Repetições realizadas');
@@ -457,11 +455,224 @@ describe('LogWorkoutScreen', () => {
       ])?.session.sets[0]?.repsDone,
     ).toBe('10');
 
-    pending.resolve();
-    await waitFor(() => expect(savedReps).toEqual(['1', '10']));
+    await waitFor(() => expect(startedReps).toEqual(['1']));
+    expect(JSON.parse(serialized ?? '').sets[0]?.repsDone).not.toBe('10');
+    firstWrite.resolve();
+    await waitFor(() => expect(startedReps).toEqual(['1', '10']));
+    expect(JSON.parse(serialized ?? '').sets[0]?.repsDone).toBe('10');
     expect(invalidateSpy).not.toHaveBeenCalledWith({
       queryKey: ['today-workout', authState.data.user.id],
     });
+  });
+
+  it('particiona a fila por identidade e não deixa falha tardia de A afetar B', async () => {
+    const user = userEvent.setup();
+    const firstUserId = authState.data.user.id;
+    const secondUserId = 'other-auth-user-id';
+    const dayId = routerState.dayId;
+    const firstKey = `muvit_workout_session:${firstUserId}:${dayId}`;
+    const secondKey = `muvit_workout_session:${secondUserId}:${dayId}`;
+    const firstWrite = createDeferred<void>();
+    const started: string[] = [];
+    let firstSerialized = JSON.stringify(draftSession);
+    let secondSerialized = JSON.stringify(draftSession);
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === firstKey) return firstSerialized;
+      if (key === secondKey) return secondSerialized;
+      return null;
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      const saved = JSON.parse(value) as GuidedSession;
+      if (key === firstKey) {
+        started.push(`A:${saved.sets[1]?.repsDone ?? ''}`);
+        await firstWrite.promise;
+        firstSerialized = value;
+        return;
+      }
+      if (key === secondKey) {
+        started.push(`B:${saved.sets[1]?.repsDone ?? ''}`);
+        secondSerialized = value;
+      }
+    });
+
+    mockWorkoutDay();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    const { view } = renderWithQueryClient(queryClient);
+
+    try {
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '7');
+      await waitFor(() => expect(started).toContain('A:7'));
+
+      authState.data = { user: { id: secondUserId, role: 'student' } };
+      mockWorkoutDay();
+      view.rerender(
+        <QueryClientProvider client={queryClient}>
+          <LogWorkoutScreen />
+        </QueryClientProvider>,
+      );
+
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '8');
+      await waitFor(() => expect(started).toContain('B:8'));
+      fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+      expect(await screen.findByText('Supino inclinado concluído')).toBeTruthy();
+      expect(
+        queryClient.getQueryData<{ session: GuidedSession }>([
+          'guided-workout-session',
+          secondUserId,
+          dayId,
+        ])?.session.phase,
+      ).toBe('exercise-complete');
+
+      firstWrite.reject(new Error('falha tardia de A'));
+      await waitFor(() =>
+        expect(screen.queryByText(/Não foi possível salvar seu progresso/)).toBeNull(),
+      );
+      expect(secondSerialized).toContain('"repsDone":"8"');
+    } finally {
+      firstWrite.resolve();
+    }
+  });
+
+  it('compartilha a fila same-key entre remontagens e remove depois do write antigo', async () => {
+    const user = userEvent.setup();
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const pendingWrite = createDeferred<void>();
+    const events: string[] = [];
+    let serialized: string | null = JSON.stringify(draftSession);
+
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey ? serialized : null,
+    );
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      events.push('save:start');
+      await pendingWrite.promise;
+      serialized = value;
+      events.push('save:complete');
+    });
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key !== sessionKey) return;
+      serialized = null;
+      events.push('remove');
+    });
+
+    mockWorkoutDay();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
+    });
+    const { view } = renderWithQueryClient(queryClient);
+
+    try {
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+      await waitFor(() => expect(events).toEqual(['save:start']));
+
+      view.rerender(
+        <QueryClientProvider client={queryClient}>
+          <LogWorkoutScreen key="same-key-remount" />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      await waitFor(() => expect(navigationState.enabled).toBe(true));
+      pressPreventedNavigation({ type: 'GO_BACK', key: 'same-key-remount' });
+      fireEvent.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+
+      expect(events).toEqual(['save:start']);
+      pendingWrite.resolve();
+      await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+      expect(events).toEqual(['save:start', 'save:complete', 'remove']);
+      expect(serialized).toBeNull();
+    } finally {
+      pendingWrite.resolve();
+    }
+  });
+
+  it('aguarda a edição pendente antes de concluir a série', async () => {
+    mockWorkoutDay();
+    mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const pendingWrite = createDeferred<void>();
+    const events: string[] = [];
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      const saved = JSON.parse(value) as GuidedSession;
+      events.push(`${saved.phase}:${saved.sets[0]?.repsDone ?? ''}`);
+      await pendingWrite.promise;
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(events).toEqual(['set:10']));
+    fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+    expect(events).toEqual(['set:10']);
+    expect(screen.queryByText('Descanso')).toBeNull();
+
+    pendingWrite.resolve();
+    expect(await screen.findByText('Descanso')).toBeTruthy();
+    expect(events).toEqual(['set:10', 'rest:10']);
+  });
+
+  it('aguarda a edição pendente antes de Salvar e sair', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const pendingWrite = createDeferred<void>();
+    const events: string[] = [];
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      const saved = JSON.parse(value) as GuidedSession;
+      events.push(`${saved.phase}:${saved.sets[0]?.repsDone ?? ''}`);
+      await pendingWrite.promise;
+    });
+
+    pressPreventedNavigation({ type: 'GO_BACK', key: 'queued-save' });
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(events).toEqual(['set:10']));
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+    expect(events).toEqual(['set:10']);
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    pendingWrite.resolve();
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+    expect(events).toEqual(['set:10', 'set:10']);
+  });
+
+  it('mantém a fila utilizável após falha de save em background', async () => {
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    let serialized = storage.getSerialized();
+    let writes = 0;
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      writes += 1;
+      if (writes === 1) throw new Error('falha no save em background');
+      serialized = value;
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '1');
+    await waitFor(() =>
+      expect(screen.getAllByText(/Não foi possível salvar seu progresso/).length).toBeGreaterThan(
+        0,
+      ),
+    );
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(JSON.parse(serialized ?? '').sets[0]?.repsDone).toBe('10'));
+    expect(screen.queryByText(/Não foi possível salvar seu progresso/)).toBeNull();
   });
 
   it('aguarda a persistência de edição antes de descartar e não grava depois da remoção', async () => {
