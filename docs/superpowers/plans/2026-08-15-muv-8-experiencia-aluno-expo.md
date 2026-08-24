@@ -847,7 +847,7 @@ git commit -m "feat(mobile): redesenha progresso e perfil"
 - Consumes: toda a implementação, a base visual atual, a auditoria Impeccable e os node IDs do Pencil como referência funcional. Se MUV-20, `PRODUCT.md` ou `DESIGN.md` estiverem disponíveis nesta etapa, eles passam a ter precedência visual.
 - Produces: evidência local de testes, qualidade estática, Expo Doctor e verificação visual, registrando separadamente qualquer dependência visual ainda pendente da MUV-20.
 
-- [ ] **Step 1: Executar a suíte mobile completa**
+- [x] **Step 1: Executar a suíte mobile completa**
 
 Run: `corepack pnpm --dir apps/mobile test`
 
@@ -861,7 +861,7 @@ Run: `corepack pnpm --dir apps/mobile test:coverage:ui`
 
 Expected: PASS com todas as telas críticas incluídas.
 
-- [ ] **Step 2: Executar verificações estáticas e de ambiente**
+- [x] **Step 2: Executar verificações estáticas e de ambiente**
 
 Run: `corepack pnpm --dir apps/mobile typecheck`
 
@@ -875,7 +875,7 @@ Run: `corepack pnpm --dir apps/mobile doctor`
 
 Expected: todos os checks do Expo Doctor PASS.
 
-- [ ] **Step 3: Verificar UTF-8 e o diff final**
+- [x] **Step 3: Verificar UTF-8 e o diff final**
 
 ```powershell
 $changed = git diff --name-only origin/develop...HEAD
@@ -886,7 +886,7 @@ git status --short
 
 Expected: busca Unicode vazia, diff check vazio e worktree sem arquivos externos ao escopo.
 
-- [ ] **Step 4: Fazer verificação visual em uma plataforma Expo disponível**
+- [x] **Step 4: Fazer verificação visual em uma plataforma Expo disponível**
 
 Sem iniciar ou reiniciar servidor automaticamente, usar a instância Expo fornecida pelo usuário para verificar em largura de 390 px e em uma largura menor:
 
@@ -900,7 +900,9 @@ Sem iniciar ou reiniciar servidor automaticamente, usar a instância Expo fornec
 
 Usar `OII7y`, `uJLDm`, `OVuJm`, `jYzas`, `nerHC`, `IRuyd`, `VoY8I`, `I1EuxI`, `jwmjt`, `p4oS1`, `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L` para validar estados, conteúdo, ações e transições. Avaliar visualmente contra os componentes e tokens atuais com Impeccable; se MUV-20, `PRODUCT.md` ou `DESIGN.md` já existirem, priorizá-los. Corrigir clipping, contraste, desalinhamento e áreas tocáveis, sem bloquear por diferenças meramente pixel-perfect em relação ao Pencil.
 
-- [ ] **Step 5: Registrar evidência no Linear sem encerrar prematuramente**
+Resultado em 24/08/2026: não havia instância Expo, terminal ou shell fornecido pelo usuário; nenhum servidor foi iniciado. A ausência de evidência visual direta foi registrada na MUV-8, junto da validação disponível por RNTL, cobertura UI e detector Impeccable.
+
+- [x] **Step 5: Registrar evidência no Linear sem encerrar prematuramente**
 
 Adicionar comentário na MUV-8 com:
 
@@ -913,7 +915,9 @@ Adicionar comentário na MUV-8 com:
 
 Manter a issue em `In Progress` enquanto a mudança estiver apenas local. Mover para o status de revisão somente após publicação da branch e abertura de PR autorizadas pelo usuário.
 
-- [ ] **Step 6: Criar commit final somente se a verificação exigiu correções**
+Resultado em 24/08/2026: comentário de evidências `ad53c187-0926-4be9-9e39-88c21923723e` criado e issue preservada em `In Progress`.
+
+- [x] **Step 6: Criar commit final somente se a verificação exigiu correções**
 
 Inspecionar `git status --short`, formar `$correctionFiles` somente com os caminhos corrigidos nas Tasks 1–7 e executar:
 
@@ -924,3 +928,5 @@ git commit -m "fix(mobile): ajusta verificacao visual da MUV-8"
 ```
 
 Se não houver correções após a verificação, não criar commit vazio.
+
+Resultado em 24/08/2026: nenhuma correção de código foi necessária; somente o plano foi atualizado com as evidências e o estado final da checklist.
