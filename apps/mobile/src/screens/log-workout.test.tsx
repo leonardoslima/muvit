@@ -1,6 +1,7 @@
 import type { workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { useLayoutEffect } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
@@ -589,6 +590,237 @@ describe('LogWorkoutScreen', () => {
       expect(serialized).toBeNull();
     } finally {
       pendingWrite.resolve();
+    }
+  });
+
+  it('vence um refetch stale iniciado antes do descarte e não ressuscita o rascunho', async () => {
+    const user = userEvent.setup();
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const guidedQueryKey = [
+      'guided-workout-session',
+      authState.data.user.id,
+      routerState.dayId,
+    ] as const;
+    const pendingWrite = createDeferred<void>();
+    const refetchSummary = createDeferred<unknown>();
+    const refetchPlan = createDeferred<unknown>();
+    const refetchLoad = createDeferred<string | null>();
+    const events: string[] = [];
+    let loadCount = 0;
+    let serialized: string | null = JSON.stringify(draftSession);
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key !== sessionKey) return null;
+      loadCount += 1;
+      return loadCount === 1 ? serialized : refetchLoad.promise;
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      const saved = JSON.parse(value) as GuidedSession;
+      events.push(`save:${saved.sets[1]?.repsDone ?? ''}`);
+      await pendingWrite.promise;
+      serialized = value;
+      events.push('save:complete');
+    });
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key !== sessionKey) return;
+      serialized = null;
+      events.push('remove');
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ ...planSummary, id: workoutPlan.id }] })
+      .mockResolvedValueOnce(workoutPlan)
+      .mockImplementation((path: string) =>
+        path === '/students/me/workout-plans' ? refetchSummary.promise : refetchPlan.promise,
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 0 } },
+    });
+    const { view } = renderWithQueryClient(queryClient);
+
+    try {
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+      await waitFor(() => expect(events).toEqual(['save:10']));
+
+      view.rerender(
+        <QueryClientProvider client={queryClient}>
+          <LogWorkoutScreen key="stale-remount" />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      await waitFor(() =>
+        expect(
+          apiState.request.mock.calls.filter(([path]) => path === '/students/me/workout-plans')
+            .length,
+        ).toBeGreaterThanOrEqual(2),
+      );
+      await waitFor(() => expect(navigationState.enabled).toBe(true));
+      pressPreventedNavigation({ type: 'GO_BACK', key: 'stale-discard' });
+      await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+      expect(events).toEqual(['save:10']);
+
+      pendingWrite.resolve();
+      await waitFor(() => expect(events).toContain('remove'));
+      refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+      refetchPlan.resolve(workoutPlan);
+      refetchLoad.resolve(null);
+      await act(async () => undefined);
+      await waitFor(() => expect(queryClient.getQueryData(guidedQueryKey)).toBeUndefined());
+
+      expect(serialized).toBeNull();
+      expect(storageState.setItem).toHaveBeenCalledTimes(1);
+      expect(queryClient.getQueryData(guidedQueryKey)).toBeUndefined();
+      expect(screen.queryByText('Série 2 de 2')).toBeNull();
+    } finally {
+      pendingWrite.resolve();
+      refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+      refetchPlan.resolve(workoutPlan);
+    }
+  });
+
+  it('preserva a edição otimista quando um refetch devolve um snapshot antigo', async () => {
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const guidedQueryKey = [
+      'guided-workout-session',
+      authState.data.user.id,
+      routerState.dayId,
+    ] as const;
+    const refetchSummary = createDeferred<unknown>();
+    const refetchPlan = createDeferred<unknown>();
+    const refetchLoad = createDeferred<string | null>();
+    let serialized: string | null = JSON.stringify(draftSession);
+    let loadCount = 0;
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key !== sessionKey) return null;
+      loadCount += 1;
+      return loadCount === 1 ? serialized : refetchLoad.promise;
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key === sessionKey) serialized = value;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ ...planSummary, id: workoutPlan.id }] })
+      .mockResolvedValueOnce(workoutPlan)
+      .mockImplementation((path: string) =>
+        path === '/students/me/workout-plans' ? refetchSummary.promise : refetchPlan.promise,
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
+    });
+    renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    const refetchPromise = queryClient.refetchQueries({ queryKey: guidedQueryKey, exact: true });
+    await waitFor(() =>
+      expect(
+        apiState.request.mock.calls.filter(([path]) => path === '/students/me/workout-plans')
+          .length,
+      ).toBeGreaterThanOrEqual(2),
+    );
+    refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+    await waitFor(() =>
+      expect(
+        apiState.request.mock.calls.filter(([path]) => String(path).startsWith('/workout-plans/'))
+          .length,
+      ).toBeGreaterThanOrEqual(2),
+    );
+    refetchPlan.resolve(workoutPlan);
+    await waitFor(() => expect(loadCount).toBeGreaterThanOrEqual(2));
+
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(JSON.parse(serialized ?? '').sets[1]?.repsDone).toBe('10'));
+
+    refetchLoad.resolve(JSON.stringify(draftSession));
+    await refetchPromise;
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '10'),
+    );
+    expect(JSON.parse(serialized ?? '').sets[1]?.repsDone).toBe('10');
+    expect(
+      queryClient.getQueryData<{ session: GuidedSession }>(guidedQueryKey)?.session.sets[1]
+        ?.repsDone,
+    ).toBe('10');
+  });
+
+  it('bloqueia o primeiro commit de uma identidade nova antes do reset passivo', async () => {
+    const secondUserId = 'other-auth-user-id';
+    const secondDayId = '88888888-8888-4888-8888-888888888888';
+    const secondSessionKey = `muvit_workout_session:${secondUserId}:${secondDayId}`;
+    const secondDay = {
+      ...workoutPlan.days[0],
+      id: secondDayId,
+      exercises: workoutPlan.days[0].exercises.map((exercise) => ({
+        ...exercise,
+        workoutDayId: secondDayId,
+      })),
+    };
+    const secondPlan: WorkoutPlan = { ...workoutPlan, days: [secondDay] };
+    const secondSummary = createDeferred<unknown>();
+    const secondPlanResponse = createDeferred<unknown>();
+    const writes: Array<{ key: string; value: string }> = [];
+    const preEffect = { foundField: false };
+
+    function PreEffectHarness({ probe }: { probe: boolean }) {
+      useLayoutEffect(() => {
+        if (!probe) return;
+        const repsField = screen.queryByLabelText('Repetições realizadas');
+        if (!repsField) return;
+        preEffect.foundField = true;
+        fireEvent.changeText(repsField, '99');
+      }, [probe]);
+      return <LogWorkoutScreen />;
+    }
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`) {
+        return JSON.stringify(draftSession);
+      }
+      return null;
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      writes.push({ key, value });
+    });
+    storageState.removeItem.mockResolvedValue(undefined);
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ ...planSummary, id: workoutPlan.id }] })
+      .mockResolvedValueOnce(workoutPlan)
+      .mockImplementation((path: string) =>
+        path === '/students/me/workout-plans' ? secondSummary.promise : secondPlanResponse.promise,
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
+    });
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <PreEffectHarness probe={false} />
+      </QueryClientProvider>,
+    );
+
+    try {
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      authState.data = { user: { id: secondUserId, role: 'student' } };
+      routerState.dayId = secondDayId;
+      view.rerender(
+        <QueryClientProvider client={queryClient}>
+          <PreEffectHarness probe />
+        </QueryClientProvider>,
+      );
+      await act(async () => undefined);
+
+      expect(preEffect.foundField).toBe(false);
+      expect(screen.getByText('Carregando treino')).toBeTruthy();
+      expect(screen.queryByLabelText('Repetições realizadas')).toBeNull();
+      expect(writes).toEqual([]);
+      expect(storageState.removeItem).not.toHaveBeenCalledWith(secondSessionKey);
+    } finally {
+      secondSummary.resolve({ items: [{ ...planSummary, id: secondPlan.id }] });
+      secondPlanResponse.resolve(secondPlan);
     }
   });
 

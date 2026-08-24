@@ -60,6 +60,8 @@ export type GuidedWorkoutController = {
 type SessionData = {
   day: WorkoutDay;
   session: GuidedSession;
+  lifecycleGeneration?: number;
+  lifecycleRevision?: number;
 };
 
 const defaultNow = (): number => Date.now();
@@ -68,7 +70,19 @@ type PersistenceTail = {
   tail: Promise<void>;
 };
 
+type SessionLifecycle = {
+  generation: number;
+  revision: number;
+  tombstoned: boolean;
+};
+
+type SessionLifecycleVersion = {
+  generation: number;
+  revision: number;
+};
+
 const persistenceTails = new Map<string, PersistenceTail>();
+const sessionLifecycles = new Map<string, SessionLifecycle>();
 
 function enqueuePersistence<T>(key: string | null, operation: () => Promise<T>): Promise<T> {
   if (!key) return operation();
@@ -88,6 +102,62 @@ function enqueuePersistence<T>(key: string | null, operation: () => Promise<T>):
 
 function waitForPersistence(key: string | null): Promise<void> {
   return key ? (persistenceTails.get(key)?.tail ?? Promise.resolve()) : Promise.resolve();
+}
+
+function getSessionLifecycle(key: string | null): SessionLifecycle | null {
+  if (!key) return null;
+  const current = sessionLifecycles.get(key);
+  if (current) return current;
+  const created: SessionLifecycle = { generation: 0, revision: 0, tombstoned: false };
+  sessionLifecycles.set(key, created);
+  return created;
+}
+
+function activateSessionLifecycle(key: string | null): SessionLifecycleVersion | null {
+  const lifecycle = getSessionLifecycle(key);
+  if (!lifecycle) return null;
+  if (lifecycle.tombstoned) {
+    lifecycle.generation += 1;
+    lifecycle.tombstoned = false;
+  }
+  return { generation: lifecycle.generation, revision: lifecycle.revision };
+}
+
+function captureSessionLifecycle(key: string | null): SessionLifecycleVersion | null {
+  const lifecycle = getSessionLifecycle(key);
+  return lifecycle ? { generation: lifecycle.generation, revision: lifecycle.revision } : null;
+}
+
+function isSessionLifecycleCurrent(
+  key: string | null,
+  version: SessionLifecycleVersion | null,
+): boolean {
+  const lifecycle = getSessionLifecycle(key);
+  return Boolean(
+    lifecycle && version && lifecycle.generation === version.generation && !lifecycle.tombstoned,
+  );
+}
+
+function bumpSessionRevision(key: string | null): number {
+  const lifecycle = getSessionLifecycle(key);
+  if (!lifecycle) return 0;
+  lifecycle.revision += 1;
+  return lifecycle.revision;
+}
+
+function invalidateSessionLifecycle(key: string | null): void {
+  const lifecycle = getSessionLifecycle(key);
+  if (!lifecycle) return;
+  lifecycle.generation += 1;
+  lifecycle.revision += 1;
+  lifecycle.tombstoned = true;
+}
+
+class StaleGuidedSessionQueryError extends Error {
+  constructor() {
+    super('Consulta da sessão guiada obsoleta.');
+    this.name = 'StaleGuidedSessionQueryError';
+  }
 }
 
 function persistenceKey(authUserId?: string, dayId?: string): string | null {
@@ -110,6 +180,7 @@ export function useGuidedWorkoutSession({
   const sessionRef = useRef<GuidedSession | null>(null);
   const dayRef = useRef<WorkoutDay | null>(null);
   const mountedRef = useRef(true);
+  const lifecycleIdentityRef = useRef<string | null>(null);
   const identityStateRef = useRef<{ identity: string | null; generation: number }>({
     identity: null,
     generation: 0,
@@ -125,8 +196,19 @@ export function useGuidedWorkoutSession({
   const busyRef = useRef(false);
   const mutationTokenRef = useRef<symbol | null>(null);
   const [busy, setBusy] = useState(false);
+  const [queryEnabled, setQueryEnabled] = useState(true);
+  const [identityReadyVersion, setIdentityReadyVersion] = useState(0);
+  const appliedIdentityReadyVersionRef = useRef(0);
   const identity = persistenceKey(authUserId, dayId);
+  if (identity !== null && resetIdentityRef.current === null) {
+    resetIdentityRef.current = identity;
+  }
+  if (lifecycleIdentityRef.current !== identity) {
+    lifecycleIdentityRef.current = identity;
+    activateSessionLifecycle(identity);
+  }
   if (identityStateRef.current.identity !== identity) {
+    invalidateSessionLifecycle(identityStateRef.current.identity);
     identityStateRef.current = {
       identity,
       generation: identityStateRef.current.generation + 1,
@@ -137,8 +219,10 @@ export function useGuidedWorkoutSession({
     (): boolean =>
       mountedRef.current &&
       identityStateRef.current.identity === identity &&
-      identityStateRef.current.generation === identityGeneration,
-    [identity, identityGeneration],
+      identityStateRef.current.generation === identityGeneration &&
+      resetIdentityRef.current === identity &&
+      appliedIdentityReadyVersionRef.current === identityReadyVersion,
+    [identity, identityGeneration, identityReadyVersion],
   );
   const guidedQueryKey = useMemo(
     () => ['guided-workout-session', authUserId, dayId] as const,
@@ -164,11 +248,19 @@ export function useGuidedWorkoutSession({
   const syncSessionCache = useCallback(
     (next: GuidedSession): void => {
       if (!authUserId || !dayId || !isCurrentIdentity()) return;
+      const lifecycle = getSessionLifecycle(identity);
       queryClient.setQueryData<SessionData>(guidedQueryKey, (current) =>
-        current ? { ...current, session: next } : current,
+        current
+          ? {
+              ...current,
+              lifecycleGeneration: lifecycle?.generation,
+              lifecycleRevision: lifecycle?.revision,
+              session: next,
+            }
+          : current,
       );
     },
-    [authUserId, dayId, guidedQueryKey, isCurrentIdentity, queryClient],
+    [authUserId, dayId, guidedQueryKey, identity, isCurrentIdentity, queryClient],
   );
 
   const invalidateTodayWorkout = useCallback(async (): Promise<void> => {
@@ -182,11 +274,13 @@ export function useGuidedWorkoutSession({
     }
   }, [authUserId, isCurrentIdentity, queryClient]);
 
-  const removeGuidedSessionCache = useCallback((): void => {
+  const removeGuidedSessionCache = useCallback(async (): Promise<void> => {
+    await queryClient.cancelQueries({ queryKey: guidedQueryKey, exact: true });
     queryClient.removeQueries({ queryKey: guidedQueryKey, exact: true });
   }, [guidedQueryKey, queryClient]);
 
-  const clearGuidedSessionCache = useCallback((): void => {
+  const clearGuidedSessionCache = useCallback(async (): Promise<void> => {
+    await queryClient.cancelQueries({ queryKey: guidedQueryKey, exact: true });
     queryClient.removeQueries({ queryKey: guidedQueryKey, exact: true });
   }, [guidedQueryKey, queryClient]);
 
@@ -214,58 +308,133 @@ export function useGuidedWorkoutSession({
     busyRef.current = false;
     mutationTokenRef.current = null;
     setBusy(false);
+    setQueryEnabled(true);
+    setIdentityReadyVersion((current) => {
+      const next = current + 1;
+      appliedIdentityReadyVersionRef.current = next;
+      return next;
+    });
   }, [identity]);
 
   const query = useQuery<SessionData>({
-    enabled: Boolean(authUserId && dayId),
+    enabled: Boolean(authUserId && dayId) && queryEnabled,
     queryKey: guidedQueryKey,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!authUserId || !dayId) throw new Error('Sessão não autenticada.');
-      await waitForPersistence(identity);
+      const version = captureSessionLifecycle(identity);
+      const isQueryIdentityCurrent = (): boolean =>
+        mountedRef.current &&
+        identityStateRef.current.identity === identity &&
+        identityStateRef.current.generation === identityGeneration;
+      const assertActive = (): void => {
+        if (
+          signal.aborted ||
+          !isQueryIdentityCurrent() ||
+          !isSessionLifecycleCurrent(identity, version)
+        ) {
+          throw new StaleGuidedSessionQueryError();
+        }
+      };
 
       const day = await loadWorkoutDay({ api, dayId });
-      let draft: GuidedSession | null = null;
+      assertActive();
+      await waitForPersistence(identity);
+      assertActive();
 
+      let draft: GuidedSession | null = null;
       try {
         draft = await sessionStorage.load(authUserId, dayId);
+        assertActive();
       } catch (error) {
+        if (error instanceof StaleGuidedSessionQueryError) throw error;
         if (isCurrentIdentity()) setStorageError(getErrorMessage(error));
+      }
+
+      const lifecycle = getSessionLifecycle(identity);
+      if (lifecycle && version && lifecycle.revision !== version.revision) {
+        const currentSession = sessionRef.current;
+        const currentDay = dayRef.current;
+        if (currentSession && currentDay) {
+          return {
+            day: currentDay,
+            lifecycleGeneration: lifecycle.generation,
+            lifecycleRevision: lifecycle.revision,
+            session: currentSession,
+          };
+        }
+        throw new StaleGuidedSessionQueryError();
       }
 
       if (draft && !isDraftCompatible(draft, day)) {
         try {
           await enqueuePersistence(identity, async () => {
+            assertActive();
             await sessionStorage.remove(authUserId, dayId);
+            assertActive();
           });
-        } catch {
+        } catch (error) {
+          if (error instanceof StaleGuidedSessionQueryError) throw error;
           if (isCurrentIdentity())
             setStorageError('Não foi possível remover o rascunho incompatível.');
         }
+        assertActive();
         draft = null;
       }
 
-      if (draft) return { day, session: draft };
+      if (draft) {
+        return {
+          day,
+          lifecycleGeneration: version?.generation,
+          lifecycleRevision: version?.revision,
+          session: draft,
+        };
+      }
 
       const created = createGuidedSession(day, nowRef.current());
+      assertActive();
       try {
         await enqueuePersistence(identity, async () => {
+          assertActive();
+          const currentLifecycle = getSessionLifecycle(identity);
+          if (currentLifecycle && version && currentLifecycle.revision !== version.revision) {
+            throw new StaleGuidedSessionQueryError();
+          }
           await sessionStorage.save(authUserId, created);
+          assertActive();
         });
         await invalidateTodayWorkout();
       } catch (error) {
+        if (error instanceof StaleGuidedSessionQueryError) throw error;
         if (isCurrentIdentity()) setStorageError('Não foi possível salvar seu progresso.');
       }
-      return { day, session: created };
+      assertActive();
+      return {
+        day,
+        lifecycleGeneration: version?.generation,
+        lifecycleRevision: version?.revision,
+        session: created,
+      };
     },
   });
 
   useEffect(() => {
     if (!query.data || !isCurrentIdentity()) return;
+    const lifecycle = getSessionLifecycle(identity);
+    if (
+      (query.data.lifecycleGeneration !== undefined &&
+        query.data.lifecycleGeneration !== lifecycle?.generation) ||
+      (query.data.lifecycleRevision !== undefined &&
+        query.data.lifecycleRevision < (lifecycle?.revision ?? 0))
+    ) {
+      const current = sessionRef.current;
+      if (current) syncSessionCache(current);
+      return;
+    }
     dayRef.current = query.data.day;
     sessionRef.current = query.data.session;
     setSession(query.data.session);
     setDraftActive(query.data.session.phase !== 'summary');
-  }, [isCurrentIdentity, query.data]);
+  }, [identity, isCurrentIdentity, query.data, syncSessionCache]);
 
   const persistSession = useCallback(
     async (next: GuidedSession, invalidateToday = true, syncCache = true): Promise<boolean> => {
@@ -297,6 +466,7 @@ export function useGuidedWorkoutSession({
 
   const transition = useCallback(
     async (derive: (current: GuidedSession, day: WorkoutDay, at: number) => GuidedSession) => {
+      if (!isCurrentIdentity()) return;
       const token = beginMutation();
       if (!token) return;
 
@@ -305,6 +475,7 @@ export function useGuidedWorkoutSession({
           const current = sessionRef.current;
           const day = query.data?.day ?? dayRef.current;
           if (!current || !day || !isCurrentIdentity()) return;
+          bumpSessionRevision(identity);
           const next = derive(current, day, nowRef.current());
           sessionRef.current = next;
           setSession(next);
@@ -342,6 +513,7 @@ export function useGuidedWorkoutSession({
       if (!current || !day) return;
 
       try {
+        bumpSessionRevision(identity);
         const next = updateCurrentSet(current, values, nowRef.current());
         sessionRef.current = next;
         setSession(next);
@@ -356,7 +528,7 @@ export function useGuidedWorkoutSession({
         }
       }
     },
-    [enqueueEdit, isCurrentIdentity, query.data?.day, syncSessionCache],
+    [enqueueEdit, identity, isCurrentIdentity, query.data?.day, syncSessionCache],
   );
 
   const completeSet = useCallback(async () => {
@@ -376,6 +548,7 @@ export function useGuidedWorkoutSession({
   }, [transition]);
 
   const saveDraft = useCallback(async (): Promise<boolean> => {
+    if (!isCurrentIdentity()) return false;
     const token = beginMutation();
     if (!token) return false;
     try {
@@ -391,7 +564,7 @@ export function useGuidedWorkoutSession({
   }, [beginMutation, endMutation, identity, isCurrentIdentity, persistSession]);
 
   const finishWorkout = useCallback(async (): Promise<void> => {
-    if (!authUserId || !dayId) return;
+    if (!authUserId || !dayId || !isCurrentIdentity()) return;
     const token = beginMutation();
     if (!token) return;
 
@@ -421,6 +594,8 @@ export function useGuidedWorkoutSession({
           workoutDayId: day.id,
         });
 
+        invalidateSessionLifecycle(identity);
+        setQueryEnabled(false);
         try {
           await sessionStorage.remove(authUserId, dayId);
           if (isCurrentIdentity()) {
@@ -440,7 +615,7 @@ export function useGuidedWorkoutSession({
         setSummary(nextSummary);
         setQueued(result.queued);
         syncSessionCache(finished);
-        clearGuidedSessionCache();
+        await clearGuidedSessionCache();
         await invalidateTodayWorkout();
       });
     } catch (error) {
@@ -467,16 +642,21 @@ export function useGuidedWorkoutSession({
   ]);
 
   const discard = useCallback(async (): Promise<boolean> => {
-    if (!authUserId || !dayId) return false;
+    if (!authUserId || !dayId || !isCurrentIdentity()) return false;
     const token = beginMutation();
     if (!token) return false;
+    invalidateSessionLifecycle(identity);
+    setQueryEnabled(false);
 
     try {
       return await enqueuePersistence(identity, async () => {
         await sessionStorage.remove(authUserId, dayId);
-        removeGuidedSessionCache();
+        await removeGuidedSessionCache();
         await invalidateTodayWorkout();
         if (!isCurrentIdentity()) return false;
+        sessionRef.current = null;
+        dayRef.current = null;
+        setSession(null);
         setDraftActive(false);
         setStorageError(null);
         return true;
@@ -499,8 +679,12 @@ export function useGuidedWorkoutSession({
     sessionStorage,
   ]);
 
-  const state: GuidedWorkoutState =
-    query.isPending && !session
+  const identityReady = isCurrentIdentity();
+  const visibleSession = identityReady ? session : null;
+  const visibleDay = identityReady ? (query.data?.day ?? dayRef.current) : null;
+  const state: GuidedWorkoutState = !identityReady
+    ? 'loading'
+    : query.isPending && !session
       ? 'loading'
       : query.isError && !session
         ? 'error'
@@ -514,7 +698,7 @@ export function useGuidedWorkoutSession({
     addRestTime,
     completeSet,
     continueAfterExercise: continueAfterExerciseAction,
-    day: query.data?.day ?? dayRef.current,
+    day: visibleDay,
     discard,
     draftActive,
     error:
@@ -528,7 +712,7 @@ export function useGuidedWorkoutSession({
     queued,
     retry: query.refetch,
     saveDraft,
-    session,
+    session: visibleSession,
     skipRest: skipRestAction,
     state,
     storageError,
