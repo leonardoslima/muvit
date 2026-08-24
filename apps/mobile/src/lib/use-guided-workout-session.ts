@@ -430,6 +430,16 @@ export function useGuidedWorkoutSession({
       appliedIdentityReadyVersionRef.current === identityReadyVersion,
     [identity, identityGeneration, identityReadyVersion],
   );
+  const isCurrentLogicalIdentity = useCallback(
+    (targetIdentity: string | null): boolean =>
+      mountedRef.current &&
+      identityStateRef.current.identity === targetIdentity &&
+      committedIdentityRef.current === targetIdentity &&
+      resetIdentityRef.current === targetIdentity &&
+      lifecycleIdentityRef.current === targetIdentity &&
+      lifecycleLeaseRef.current !== null,
+    [],
+  );
   const guidedQueryKey = useMemo(
     () => ['guided-workout-session', authUserId, dayId] as const,
     [authUserId, dayId],
@@ -553,6 +563,22 @@ export function useGuidedWorkoutSession({
           throw new StaleGuidedSessionQueryError();
         }
       };
+      const terminalSession = sessionRef.current;
+      const terminalDay = dayRef.current;
+      if (
+        terminalSession?.phase === 'summary' &&
+        terminalDay &&
+        isCurrentLogicalIdentity(identity)
+      ) {
+        const lifecycle = getSessionLifecycle(identity);
+        assertActive();
+        return {
+          day: terminalDay,
+          lifecycleGeneration: lifecycle?.generation,
+          lifecycleRevision: lifecycle?.revision,
+          session: terminalSession,
+        };
+      }
       const migrateIncompatibleDraft = async (freshDay: WorkoutDay): Promise<SessionData> => {
         const migration = beginStructuralMigration(identity, version);
         if (!migration) throw new StaleGuidedSessionQueryError();
@@ -874,6 +900,7 @@ export function useGuidedWorkoutSession({
           sets: current.sets,
           workoutDayId: day.id,
         });
+        const finished = markSessionFinished(current, finishedAtMs);
 
         const capturedLifecycle = getSessionLifecycle(finishIdentity);
         const capturedLifecycleWasCurrent = Boolean(
@@ -881,17 +908,30 @@ export function useGuidedWorkoutSession({
             capturedLifecycle?.finishOperation?.token === finishOperation.token,
         );
         if (capturedLifecycleWasCurrent) {
-          const stillCurrent = isCurrentIdentity();
-          invalidateSessionLifecycle(finishIdentity);
-          if (stillCurrent) setQueryEnabled(false);
+          const logicalIdentityIsCurrent = isCurrentLogicalIdentity(finishIdentity);
+          if (!logicalIdentityIsCurrent) {
+            invalidateSessionLifecycle(finishIdentity, finishVersion);
+          }
+          if (logicalIdentityIsCurrent) {
+            setQueryEnabled(false);
+            dayRef.current = day;
+            sessionRef.current = finished;
+            setSession(finished);
+            setDraftActive(false);
+            setStorageError(null);
+            setSummary(nextSummary);
+            setQueued(result.queued);
+            setActionError(null);
+            setCanRetryFinish(false);
+          }
           try {
             await sessionStorage.remove(finishAuthUserId, finishDayId);
-            if (isCurrentIdentity()) {
+            if (isCurrentLogicalIdentity(finishIdentity)) {
               setDraftActive(false);
               setStorageError(null);
             }
           } catch (error) {
-            if (isCurrentIdentity()) {
+            if (isCurrentLogicalIdentity(finishIdentity)) {
               setStorageError('Treino concluído, mas não foi possível remover o rascunho.');
             }
           }
@@ -899,15 +939,15 @@ export function useGuidedWorkoutSession({
           await clearGuidedSessionCacheForKey(finishGuidedQueryKey);
           await invalidateTodayWorkoutForUser(finishAuthUserId);
         }
-        if (!isCurrentIdentity()) return;
-        const finished = markSessionFinished(current, finishedAtMs);
+        if (!isCurrentLogicalIdentity(finishIdentity)) return;
         sessionRef.current = finished;
         setSession(finished);
         setSummary(nextSummary);
         setQueued(result.queued);
+        setDraftActive(false);
       });
     } catch (error) {
-      if (isCurrentIdentity()) {
+      if (isCurrentLogicalIdentity(finishIdentity)) {
         setActionError('Não foi possível concluir o treino. Tente novamente.');
         setCanRetryFinish(true);
       }
@@ -926,6 +966,7 @@ export function useGuidedWorkoutSession({
     identity,
     invalidateTodayWorkoutForUser,
     isCurrentIdentity,
+    isCurrentLogicalIdentity,
     query.data?.day,
     sessionStorage,
   ]);

@@ -1588,6 +1588,76 @@ describe('LogWorkoutScreen', () => {
     expect(secondSerialized).toBe(JSON.stringify(readySession));
   });
 
+  it('publica o terminal de A quando o finish resolve após A-B-A', async () => {
+    const user = userEvent.setup();
+    const firstUserId = authState.data.user.id;
+    const secondUserId = 'other-auth-user-id';
+    const dayId = routerState.dayId;
+    const firstKey = `muvit_workout_session:${firstUserId}:${dayId}`;
+    const secondKey = `muvit_workout_session:${secondUserId}:${dayId}`;
+    const guidedFirstKey = ['guided-workout-session', firstUserId, dayId] as const;
+    const finishStart = createDeferred<{ id: string }>();
+    let firstSerialized: string | null = JSON.stringify(readySession);
+    let secondSerialized: string | null = JSON.stringify(readySession);
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === firstKey) return firstSerialized;
+      if (key === secondKey) return secondSerialized;
+      return null;
+    });
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === firstKey) firstSerialized = null;
+      if (key === secondKey) secondSerialized = null;
+    });
+    apiState.request.mockImplementation(async (path: string) => {
+      if (path === '/students/me/workout-plans') {
+        return { items: [{ ...planSummary, id: workoutPlan.id }] };
+      }
+      if (path === `/workout-plans/${workoutPlan.id}`) return workoutPlan;
+      if (path === '/workout-logs') return finishStart.promise;
+      if (path === '/workout-logs/a-log-id/finish') return undefined;
+      throw new Error(`unexpected request: ${path}`);
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 0 } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { view } = renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+    await waitFor(() =>
+      expect(apiState.request).toHaveBeenCalledWith('/workout-logs', expect.anything()),
+    );
+
+    authState.data = { user: { id: secondUserId, role: 'student' } };
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+
+    authState.data = { user: { id: firstUserId, role: 'student' } };
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+
+    finishStart.resolve({ id: 'a-log-id' });
+    await waitFor(() => expect(storageState.removeItem).toHaveBeenCalledWith(firstKey));
+    await waitFor(() => expect(queryClient.getQueryData(guidedFirstKey)).toBeUndefined());
+    await waitFor(() => expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0));
+
+    expect(firstSerialized).toBeNull();
+    expect(secondSerialized).toBe(JSON.stringify(readySession));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today-workout', firstUserId] });
+    expect(screen.queryByText('Treino indisponível')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+  });
+
   it('exibe conclusão enfileirada e remove o rascunho após confirmar a fila offline', async () => {
     const user = userEvent.setup();
     mockWorkoutDay();
