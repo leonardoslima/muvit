@@ -773,7 +773,7 @@ git commit -m "feat(mobile): implementa sessao guiada"
 - Consumes: componentes visuais da Task 1, API e mutações existentes.
 - Produces: progresso, avaliação e perfil completos, usando `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L` como referência funcional sem mudar payloads.
 
-- [ ] **Step 1: Escrever testes falhando de erro, retry e sucesso**
+- [x] **Step 1: Escrever testes falhando de erro, retry e sucesso**
 
 Em `progress.test.tsx`:
 
@@ -804,13 +804,13 @@ expect(screen.getByText('Treinos e evolução')).toBeTruthy();
 expect(screen.getByText('MC')).toBeTruthy();
 ```
 
-- [ ] **Step 2: Rodar testes e confirmar ausência dos estados aprovados**
+- [x] **Step 2: Rodar testes e confirmar ausência dos estados aprovados**
 
 Run: `corepack pnpm --dir apps/mobile test src/screens/progress.test.tsx src/screens/new-assessment.test.tsx src/screens/profile.test.tsx`
 
 Expected: FAIL porque a UI atual não oferece retry, feedback persistente de erro nem os dados visuais do perfil.
 
-- [ ] **Step 3: Implementar as três telas com componentes compartilhados**
+- [x] **Step 3: Implementar as três telas com componentes compartilhados**
 
 Progresso deve formatar datas em pt-BR, renderizar peso e gordura no mesmo card, mostrar ganho/perda quando houver avaliação anterior e oferecer retry. Nova avaliação deve usar labels visíveis, `AppButton`, estado de envio, mensagem de erro e confirmação de sucesso antes de voltar. Perfil deve derivar iniciais das duas primeiras partes do nome e manter logout com `queryClient.clear()` em `finally`.
 
@@ -818,7 +818,7 @@ Reutilizar os componentes e tokens existentes e aplicar Impeccable apenas como r
 
 Não alterar `submitAssessment`, upload de foto, query key `['assessments', 'me']` ou payload Better Auth.
 
-- [ ] **Step 4: Rodar testes das telas e cobertura de UI**
+- [x] **Step 4: Rodar testes das telas e cobertura de UI**
 
 Run: `corepack pnpm --dir apps/mobile test src/screens/progress.test.tsx src/screens/new-assessment.test.tsx src/screens/profile.test.tsx`
 
@@ -828,7 +828,7 @@ Run: `corepack pnpm --dir apps/mobile test:coverage:ui`
 
 Expected: PASS com o gate configurado.
 
-- [ ] **Step 5: Commitar progresso, avaliação e perfil**
+- [x] **Step 5: Commitar progresso, avaliação e perfil**
 
 ```powershell
 git add apps/mobile/src/screens/progress.tsx apps/mobile/src/screens/progress.test.tsx apps/mobile/src/screens/new-assessment.tsx apps/mobile/src/screens/new-assessment.test.tsx apps/mobile/src/screens/profile.tsx apps/mobile/src/screens/profile.test.tsx

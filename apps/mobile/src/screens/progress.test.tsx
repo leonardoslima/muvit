@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, userEvent, within } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProgressScreen } from './progress';
@@ -8,6 +8,10 @@ const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: 'View',
 }));
 
 vi.mock('expo-router', () => ({
@@ -24,45 +28,58 @@ function renderWithQueryClient() {
 }
 
 describe('ProgressScreen', () => {
-  it('renders empty state', async () => {
-    apiState.request.mockResolvedValueOnce({ items: [], total: 0 });
+  it('exibe carregamento enquanto busca as avaliações', () => {
+    apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Nenhuma avaliacao registrada.')).toBeTruthy();
+    expect(screen.getByText('Carregando progresso')).toBeTruthy();
+    expect(screen.getByLabelText('Carregando')).toBeTruthy();
   });
 
-  it('renders assessment cards', async () => {
+  it('permite tentar novamente depois de uma falha e exibe o vazio', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ items: [], total: 0 });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Não foi possível carregar seu progresso')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+
+    expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
+    expect(apiState.request).toHaveBeenCalledTimes(2);
+  });
+
+  it('exibe uma mensagem orientadora quando não há avaliações', async () => {
     apiState.request.mockResolvedValueOnce({
-      total: 1,
+      items: [],
+      total: 0,
+    });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
+    expect(screen.getByText('Registre uma avaliação para acompanhar sua evolução.')).toBeTruthy();
+  });
+
+  it('formata a data, agrupa peso e gordura e compara com a avaliação anterior', async () => {
+    apiState.request.mockResolvedValueOnce({
+      total: 2,
       items: [
         {
-          id: 'assessment-id',
+          id: 'assessment-new',
           date: '2026-06-12',
           weightKg: 80,
           bodyFatPct: 19,
           notes: 'Evoluiu',
         },
-      ],
-    });
-
-    renderWithQueryClient();
-
-    expect(await screen.findByText('2026-06-12')).toBeTruthy();
-    expect(screen.getByText('Peso: 80 kg')).toBeTruthy();
-    expect(screen.getByText('Gordura: 19%')).toBeTruthy();
-    expect(screen.getByText('Evoluiu')).toBeTruthy();
-  });
-
-  it('renders metric fallbacks when values and notes are absent', async () => {
-    apiState.request.mockResolvedValueOnce({
-      total: 1,
-      items: [
         {
-          id: 'assessment-id',
-          date: '2026-06-12',
-          weightKg: null,
-          bodyFatPct: null,
+          id: 'assessment-previous',
+          date: '2026-05-12',
+          weightKg: 82,
+          bodyFatPct: 21,
           notes: null,
         },
       ],
@@ -70,9 +87,13 @@ describe('ProgressScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('2026-06-12')).toBeTruthy();
-    expect(screen.getByText('Peso: - kg')).toBeTruthy();
-    expect(screen.getByText('Gordura: -%')).toBeTruthy();
-    expect(screen.queryByText('Evoluiu')).toBeNull();
+    const card = await screen.findByTestId('assessment-card-assessment-new');
+    expect(within(card).getByText('12/06/2026')).toBeTruthy();
+    expect(within(card).getByText('80 kg')).toBeTruthy();
+    expect(within(card).getByText('19% de gordura')).toBeTruthy();
+    expect(within(card).getByText('2 kg a menos')).toBeTruthy();
+    expect(within(card).getByText('2 p.p. a menos')).toBeTruthy();
+    expect(within(card).getByText('Evoluiu')).toBeTruthy();
+    expect(await screen.findByText('12/05/2026')).toBeTruthy();
   });
 });
