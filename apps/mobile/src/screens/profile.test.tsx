@@ -79,6 +79,7 @@ describe('ProfileScreen', () => {
     renderWithQueryClient(<ProfileScreen />);
 
     expect(await screen.findByText('Ana Aluna')).toBeTruthy();
+    expect(screen.getByText('AA')).toBeTruthy();
     expect(screen.getByText('ana@example.com')).toBeTruthy();
     expect(screen.getByText('Aluno independente')).toBeTruthy();
 
@@ -118,6 +119,7 @@ describe('ProfileScreen', () => {
     renderWithQueryClient(<ProfileScreen />);
 
     expect(await screen.findByText('Aluno independente')).toBeTruthy();
+    expect(screen.getByText('AL')).toBeTruthy();
     expect(screen.getByText('Sem email cadastrado')).toBeTruthy();
   });
 });

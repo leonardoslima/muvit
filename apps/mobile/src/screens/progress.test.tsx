@@ -96,4 +96,32 @@ describe('ProgressScreen', () => {
     expect(within(card).getByText('Evoluiu')).toBeTruthy();
     expect(await screen.findByText('12/05/2026')).toBeTruthy();
   });
+
+  it('exibe ganhos de peso e gordura como a mais', async () => {
+    apiState.request.mockResolvedValueOnce({
+      total: 2,
+      items: [
+        {
+          id: 'assessment-gain',
+          date: '2026-06-12',
+          weightKg: 82,
+          bodyFatPct: 23,
+          notes: null,
+        },
+        {
+          id: 'assessment-before-gain',
+          date: '2026-05-12',
+          weightKg: 80,
+          bodyFatPct: 21,
+          notes: null,
+        },
+      ],
+    });
+
+    renderWithQueryClient();
+
+    const card = await screen.findByTestId('assessment-card-assessment-gain');
+    expect(within(card).getByText('2 kg a mais')).toBeTruthy();
+    expect(within(card).getByText('2 p.p. a mais')).toBeTruthy();
+  });
 });

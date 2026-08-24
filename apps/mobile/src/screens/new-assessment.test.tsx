@@ -49,6 +49,10 @@ describe('NewAssessmentScreen', () => {
 
   it('mantém a foto e o payload ao salvar uma avaliação', async () => {
     const user = userEvent.setup();
+    const events: string[] = [];
+    routerState.back.mockImplementationOnce(() => {
+      events.push('back');
+    });
     pickerState.launchImageLibraryAsync.mockResolvedValueOnce({
       canceled: false,
       assets: [{ uri: 'file:///photo.jpg', mimeType: 'image/jpeg' }],
@@ -92,7 +96,10 @@ describe('NewAssessmentScreen', () => {
     });
 
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    events.push('success');
+    expect(events).toEqual(['success']);
     await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce());
+    expect(events).toEqual(['success', 'back']);
   });
 
   it('expõe labels visíveis e bloqueia o segundo toque durante o envio', async () => {
