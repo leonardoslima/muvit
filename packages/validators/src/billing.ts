@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { trainerPlanSchema } from './trainers';
+import { trainerPlanSchema } from './trainers.js';
 
 const dateTimeSchema = z.string().datetime();
 

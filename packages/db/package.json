@@ -4,14 +4,28 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts",
-    "./seed": "./src/seed.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./src/schema/index.ts",
+      "import": "./dist/schema/index.js",
+      "default": "./dist/schema/index.js"
+    },
+    "./seed": {
+      "types": "./src/seed.ts",
+      "import": "./dist/seed.js",
+      "default": "./dist/seed.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "generate": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs generate",
     "migrate": "node --env-file=.env --import tsx src/migrate.ts",
     "migrate:test": "node --env-file=.env.test --import tsx src/ensure-database.ts && node --env-file=.env.test --import tsx src/migrate.ts",
+    "pretest": "pnpm run build",
     "studio": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs studio",
     "test": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run --passWithNoTests",
     "typecheck": "tsc --noEmit"

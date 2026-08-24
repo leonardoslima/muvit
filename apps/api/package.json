@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file=.env --import tsx --watch src/server.ts",
+    "prebuild": "pnpm --filter @muvit/validators build && pnpm --filter @muvit/db build",
     "build": "tsc -p tsconfig.build.json",
     "seed": "node --env-file=.env --import tsx src/seed-demo.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "pretest": "pnpm --filter @muvit/validators build && pnpm --filter @muvit/db build",
     "test": "corepack pnpm --dir ../../packages/db migrate:test && node --env-file=.env.test ./node_modules/vitest/vitest.mjs run",
     "test:watch": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs"
   },
