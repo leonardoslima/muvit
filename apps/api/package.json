@@ -4,14 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:runtime": "pnpm --filter @muvit/validators build && pnpm --filter @muvit/db build",
+    "prepare:runtime": "node -e \"if (!process.env.TURBO_INVOCATION_DIR) process.exit(1)\" || pnpm run build:runtime",
+    "predev": "pnpm run prepare:runtime",
     "dev": "node --env-file=.env --import tsx --watch src/server.ts",
-    "prebuild": "pnpm --filter @muvit/validators build && pnpm --filter @muvit/db build",
+    "prebuild": "pnpm run prepare:runtime",
     "build": "tsc -p tsconfig.build.json",
+    "preseed": "pnpm run prepare:runtime",
     "seed": "node --env-file=.env --import tsx src/seed-demo.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "pretest": "pnpm --filter @muvit/validators build && pnpm --filter @muvit/db build",
+    "pretest": "pnpm run prepare:runtime",
     "test": "corepack pnpm --dir ../../packages/db migrate:test && node --env-file=.env.test ./node_modules/vitest/vitest.mjs run",
+    "pretest:watch": "pnpm run prepare:runtime",
     "test:watch": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs"
   },
   "dependencies": {
