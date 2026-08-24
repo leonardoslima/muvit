@@ -2,15 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Aplicar no Expo a experiência de aluno aprovada no Pencil, incluindo sessão guiada com retomada local, sem alterar os contratos atuais da API.
+**Goal:** Implementar e refinar no Expo a experiência completa do aluno, incluindo sessão guiada com retomada local, preservando os contratos atuais da API e a base visual já construída no mobile.
 
-**Architecture:** Componentes visuais pequenos traduzem o sistema Pencil para React Native; regras e transições do treino permanecem em `src/application`, independentes da plataforma. Um adaptador de AsyncStorage persiste rascunhos particionados por usuário e treino, enquanto a conclusão continua usando a API e a fila offline existentes.
+**Architecture:** Componentes visuais pequenos reutilizam os tokens e padrões já consolidados no React Native; regras e transições do treino permanecem em `src/application`, independentes da plataforma. Um adaptador de AsyncStorage persiste rascunhos particionados por usuário e treino, enquanto a conclusão continua usando a API e a fila offline existentes. O Pencil orienta estados e comportamento, enquanto o refinamento visual restante usa a base atual e Impeccable sem absorver o escopo da MUV-20.
 
 **Tech Stack:** Expo 54, React Native 0.81, Expo Router 6, React Query 5, AsyncStorage, Zod, Vitest e React Native Testing Library.
 
 ## Global Constraints
 
-- Fonte visual primária: `assets/design/pencil_design.pen` e os node IDs registrados na spec da MUV-7.
+- Para as Tasks 7–8, preservar como base visual os componentes, tokens e padrões já implementados no mobile e aplicar refinamentos estreitos com Impeccable.
+- MUV-20, `PRODUCT.md` e `DESIGN.md` são a autoridade visual futura quando estiverem disponíveis; sua criação ou implementação permanece fora da MUV-8. A decisão registrada é prosseguir com a base atual sem aguardar esse trabalho.
+- `assets/design/pencil_design.pen` e os node IDs registrados na spec da MUV-7 são referência funcional e de UX, consultada exclusivamente pelo MCP Pencil; não exigir correspondência visual pixel-perfect.
 - Escopo exclusivo de aluno; telas e navegação de treinador permanecem fora da MUV-8.
 - Não alterar rotas, schemas, tabelas ou regras de autorização da API.
 - Persistir o rascunho em `muvit_workout_session:<authUserId>:<workoutDayId>` e nunca armazenar credenciais.
@@ -769,7 +771,7 @@ git commit -m "feat(mobile): implementa sessao guiada"
 
 **Interfaces:**
 - Consumes: componentes visuais da Task 1, API e mutações existentes.
-- Produces: estados Pencil `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L` sem mudar payloads.
+- Produces: progresso, avaliação e perfil completos, usando `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L` como referência funcional sem mudar payloads.
 
 - [ ] **Step 1: Escrever testes falhando de erro, retry e sucesso**
 
@@ -812,6 +814,8 @@ Expected: FAIL porque a UI atual não oferece retry, feedback persistente de err
 
 Progresso deve formatar datas em pt-BR, renderizar peso e gordura no mesmo card, mostrar ganho/perda quando houver avaliação anterior e oferecer retry. Nova avaliação deve usar labels visíveis, `AppButton`, estado de envio, mensagem de erro e confirmação de sucesso antes de voltar. Perfil deve derivar iniciais das duas primeiras partes do nome e manter logout com `queryClient.clear()` em `finally`.
 
+Reutilizar os componentes e tokens existentes e aplicar Impeccable apenas como refinamento estreito de hierarquia, legibilidade, espaçamento, estados e acessibilidade. Usar os nodes Pencil desta task para validar fluxo, conteúdo e feedback; não copiar o estilo pixel a pixel e não criar `PRODUCT.md`, `DESIGN.md` ou entregáveis da MUV-20 neste escopo.
+
 Não alterar `submitAssessment`, upload de foto, query key `['assessments', 'me']` ou payload Better Auth.
 
 - [ ] **Step 4: Rodar testes das telas e cobertura de UI**
@@ -840,8 +844,8 @@ git commit -m "feat(mobile): redesenha progresso e perfil"
 - External: issue Linear MUV-8.
 
 **Interfaces:**
-- Consumes: toda a implementação e os node IDs do Pencil.
-- Produces: evidência local de testes, qualidade estática, Expo Doctor e verificação visual.
+- Consumes: toda a implementação, a base visual atual, a auditoria Impeccable e os node IDs do Pencil como referência funcional. Se MUV-20, `PRODUCT.md` ou `DESIGN.md` estiverem disponíveis nesta etapa, eles passam a ter precedência visual.
+- Produces: evidência local de testes, qualidade estática, Expo Doctor e verificação visual, registrando separadamente qualquer dependência visual ainda pendente da MUV-20.
 
 - [ ] **Step 1: Executar a suíte mobile completa**
 
@@ -894,7 +898,7 @@ Sem iniciar ou reiniciar servidor automaticamente, usar a instância Expo fornec
 - nova avaliação default, envio e erro;
 - Perfil e tabs.
 
-Comparar diretamente com `OII7y`, `uJLDm`, `OVuJm`, `jYzas`, `nerHC`, `IRuyd`, `VoY8I`, `I1EuxI`, `jwmjt`, `p4oS1`, `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L`. Corrigir clipping, contraste, desalinhamento e áreas tocáveis antes de continuar.
+Usar `OII7y`, `uJLDm`, `OVuJm`, `jYzas`, `nerHC`, `IRuyd`, `VoY8I`, `I1EuxI`, `jwmjt`, `p4oS1`, `nBQZW`, `U09sO`, `I2gzs`, `CsaiW` e `q7wg2L` para validar estados, conteúdo, ações e transições. Avaliar visualmente contra os componentes e tokens atuais com Impeccable; se MUV-20, `PRODUCT.md` ou `DESIGN.md` já existirem, priorizá-los. Corrigir clipping, contraste, desalinhamento e áreas tocáveis, sem bloquear por diferenças meramente pixel-perfect em relação ao Pencil.
 
 - [ ] **Step 5: Registrar evidência no Linear sem encerrar prematuramente**
 
@@ -904,6 +908,7 @@ Adicionar comentário na MUV-8 com:
 - resumo dos fluxos implementados;
 - comandos executados e resultados numéricos;
 - plataforma usada na verificação visual ou motivo objetivo caso ela não esteja disponível;
+- disponibilidade de MUV-20, `PRODUCT.md` e `DESIGN.md`, registrando a dependência visual sem absorver seu escopo;
 - riscos ou gaps restantes, se houver.
 
 Manter a issue em `In Progress` enquanto a mudança estiver apenas local. Mover para o status de revisão somente após publicação da branch e abertura de PR autorizadas pelo usuário.
