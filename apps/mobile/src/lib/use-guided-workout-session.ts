@@ -78,6 +78,18 @@ type SessionLifecycle = {
   hookLeases: number;
   queryLeases: number;
   tailLeases: number;
+  structuralMigration: StructuralMigration | null;
+  finishOperation: FinishOperation | null;
+};
+
+type StructuralMigration = {
+  generation: number;
+  token: number;
+};
+
+type FinishOperation = {
+  generation: number;
+  token: number;
 };
 
 type SessionLifecycleVersion = {
@@ -89,6 +101,8 @@ type SessionLifecycleVersion = {
 const persistenceTails = new Map<string, PersistenceTail>();
 const sessionLifecycles = new Map<string, SessionLifecycle>();
 let nextLifecycleGeneration = 1;
+let nextStructuralMigrationToken = 1;
+let nextFinishOperationToken = 1;
 
 function enqueuePersistence<T>(key: string | null, operation: () => Promise<T>): Promise<T> {
   if (!key) return operation();
@@ -127,15 +141,26 @@ function createSessionLifecycle(revision = 0): SessionLifecycle {
     hookLeases: 0,
     queryLeases: 0,
     revision,
+    structuralMigration: null,
     tailLeases: 0,
     tombstoned: false,
+    finishOperation: null,
   };
 }
 
-function cleanupSessionLifecycle(key: string | null, lifecycle: SessionLifecycle): void {
-  if (!key || sessionLifecycles.get(key) !== lifecycle || !lifecycle.tombstoned) return;
-  if (lifecycle.hookLeases > 0 || lifecycle.queryLeases > 0 || lifecycle.tailLeases > 0) return;
+function cleanupSessionLifecycle(key: string | null, lifecycle: SessionLifecycle): boolean {
+  if (!key || sessionLifecycles.get(key) !== lifecycle) return false;
+  if (
+    lifecycle.hookLeases > 0 ||
+    lifecycle.queryLeases > 0 ||
+    lifecycle.tailLeases > 0 ||
+    lifecycle.structuralMigration ||
+    lifecycle.finishOperation
+  ) {
+    return false;
+  }
   sessionLifecycles.delete(key);
+  return true;
 }
 
 function activateSessionLifecycle(key: string | null): SessionLifecycleVersion | null {
@@ -148,6 +173,7 @@ function activateSessionLifecycle(key: string | null): SessionLifecycleVersion |
     lifecycle.generation = nextLifecycleGeneration++;
     lifecycle.revision += 1;
     lifecycle.tombstoned = false;
+    lifecycle.structuralMigration = null;
   }
   lifecycle.hookLeases += 1;
   return { generation: lifecycle.generation, lifecycle, revision: lifecycle.revision };
@@ -164,10 +190,10 @@ function releaseSessionLifecycleLease(
   key: string | null,
   lifecycle: SessionLifecycle | null,
   lease: 'hookLeases' | 'queryLeases',
-): void {
-  if (!lifecycle) return;
+): boolean {
+  if (!lifecycle) return false;
   lifecycle[lease] = Math.max(0, lifecycle[lease] - 1);
-  cleanupSessionLifecycle(key, lifecycle);
+  return cleanupSessionLifecycle(key, lifecycle);
 }
 
 function acquireSessionQueryLease(
@@ -179,6 +205,83 @@ function acquireSessionQueryLease(
   if (lifecycle !== version.lifecycle || lifecycle.tombstoned) return false;
   lifecycle.queryLeases += 1;
   return true;
+}
+
+function beginStructuralMigration(
+  key: string | null,
+  version: SessionLifecycleVersion | null,
+): StructuralMigration | null {
+  if (!key || !version) return null;
+  const lifecycle = getSessionLifecycle(key);
+  if (
+    lifecycle !== version.lifecycle ||
+    lifecycle.tombstoned ||
+    lifecycle.generation !== version.generation
+  ) {
+    return null;
+  }
+  if (lifecycle.structuralMigration) return null;
+  const migration = {
+    generation: version.generation,
+    token: nextStructuralMigrationToken++,
+  };
+  lifecycle.structuralMigration = migration;
+  return migration;
+}
+
+function clearStructuralMigration(
+  key: string | null,
+  version: SessionLifecycleVersion | null,
+  migration: StructuralMigration | null,
+): void {
+  if (!key || !version || !migration) return;
+  const lifecycle = getSessionLifecycle(key);
+  if (lifecycle !== version.lifecycle || lifecycle.structuralMigration?.token !== migration.token) {
+    return;
+  }
+  lifecycle.structuralMigration = null;
+  cleanupSessionLifecycle(key, lifecycle);
+}
+
+function beginFinishOperation(
+  key: string | null,
+  version: SessionLifecycleVersion | null,
+): FinishOperation | null {
+  if (!key || !version) return null;
+  const lifecycle = getSessionLifecycle(key);
+  if (
+    lifecycle !== version.lifecycle ||
+    lifecycle.tombstoned ||
+    lifecycle.generation !== version.generation ||
+    lifecycle.finishOperation
+  ) {
+    return null;
+  }
+  const operation = {
+    generation: version.generation,
+    token: nextFinishOperationToken++,
+  };
+  lifecycle.finishOperation = operation;
+  return operation;
+}
+
+function clearFinishOperation(
+  key: string | null,
+  version: SessionLifecycleVersion | null,
+  operation: FinishOperation | null,
+): void {
+  if (!key || !version || !operation) return;
+  const lifecycle = getSessionLifecycle(key);
+  if (lifecycle !== version.lifecycle || lifecycle.finishOperation?.token !== operation.token) {
+    return;
+  }
+  lifecycle.finishOperation = null;
+  cleanupSessionLifecycle(key, lifecycle);
+}
+
+function isIdentityMutationLocked(key: string | null): boolean {
+  const lifecycle = getSessionLifecycle(key);
+  return Boolean(lifecycle?.structuralMigration || lifecycle?.finishOperation);
 }
 
 function isSessionLifecycleCurrent(
@@ -247,6 +350,7 @@ export function useGuidedWorkoutSession({
   const mountedRef = useRef(true);
   const lifecycleIdentityRef = useRef<string | null>(null);
   const lifecycleLeaseRef = useRef<SessionLifecycleVersion | null>(null);
+  const committedIdentityRef = useRef<string | null>(null);
   const identityStateRef = useRef<{ identity: string | null; generation: number }>({
     identity: null,
     generation: 0,
@@ -269,23 +373,54 @@ export function useGuidedWorkoutSession({
   if (identity !== null && resetIdentityRef.current === null) {
     resetIdentityRef.current = identity;
   }
-  if (lifecycleIdentityRef.current !== identity) {
-    releaseSessionLifecycleLease(
-      lifecycleIdentityRef.current,
-      lifecycleLeaseRef.current?.lifecycle ?? null,
-      'hookLeases',
-    );
-    lifecycleIdentityRef.current = identity;
-    lifecycleLeaseRef.current = activateSessionLifecycle(identity);
-  }
   if (identityStateRef.current.identity !== identity) {
-    invalidateSessionLifecycle(identityStateRef.current.identity);
     identityStateRef.current = {
       identity,
       generation: identityStateRef.current.generation + 1,
     };
   }
   const identityGeneration = identityStateRef.current.generation;
+
+  useEffect(() => {
+    const previousIdentity = committedIdentityRef.current;
+    if (previousIdentity !== identity) invalidateSessionLifecycle(previousIdentity);
+    committedIdentityRef.current = identity;
+  }, [identity]);
+
+  useEffect(() => {
+    const previousLifecycle = getSessionLifecycle(identity);
+    const shouldClearGuidedCache = Boolean(
+      identity &&
+        (!previousLifecycle || previousLifecycle.tombstoned || previousLifecycle.hookLeases === 0),
+    );
+    const lease = activateSessionLifecycle(identity);
+    lifecycleIdentityRef.current = identity;
+    lifecycleLeaseRef.current = lease;
+    if (shouldClearGuidedCache && authUserId && dayId) {
+      queryClient.removeQueries({
+        queryKey: ['guided-workout-session', authUserId, dayId],
+        exact: true,
+      });
+    }
+    return () => {
+      const deleted = releaseSessionLifecycleLease(
+        identity,
+        lease?.lifecycle ?? null,
+        'hookLeases',
+      );
+      if (deleted && authUserId && dayId) {
+        queryClient.removeQueries({
+          queryKey: ['guided-workout-session', authUserId, dayId],
+          exact: true,
+        });
+      }
+      if (lifecycleIdentityRef.current === identity && lifecycleLeaseRef.current === lease) {
+        lifecycleIdentityRef.current = null;
+        lifecycleLeaseRef.current = null;
+      }
+    };
+  }, [authUserId, dayId, identity, queryClient]);
+
   const isCurrentIdentity = useCallback(
     (): boolean =>
       mountedRef.current &&
@@ -368,12 +503,6 @@ export function useGuidedWorkoutSession({
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      releaseSessionLifecycleLease(
-        lifecycleIdentityRef.current,
-        lifecycleLeaseRef.current?.lifecycle ?? null,
-        'hookLeases',
-      );
-      lifecycleLeaseRef.current = null;
       busyRef.current = false;
       mutationTokenRef.current = null;
     };
@@ -424,6 +553,64 @@ export function useGuidedWorkoutSession({
           throw new StaleGuidedSessionQueryError();
         }
       };
+      const migrateIncompatibleDraft = async (freshDay: WorkoutDay): Promise<SessionData> => {
+        const migration = beginStructuralMigration(identity, version);
+        if (!migration) throw new StaleGuidedSessionQueryError();
+
+        try {
+          const recreated = await enqueuePersistence(identity, async () => {
+            assertActive();
+            const currentLifecycle = getSessionLifecycle(identity);
+            if (
+              !currentLifecycle ||
+              currentLifecycle !== version.lifecycle ||
+              currentLifecycle.generation !== migration.generation ||
+              currentLifecycle.tombstoned ||
+              currentLifecycle.structuralMigration?.token !== migration.token
+            ) {
+              throw new StaleGuidedSessionQueryError();
+            }
+            await sessionStorage.remove(authUserId, dayId);
+            assertActive();
+            const next = createGuidedSession(freshDay, nowRef.current());
+            await sessionStorage.save(authUserId, next);
+            assertActive();
+            bumpSessionRevision(identity);
+            return next;
+          });
+          await invalidateTodayWorkout();
+          assertActive();
+          const currentLifecycle = getSessionLifecycle(identity);
+          if (!currentLifecycle) throw new StaleGuidedSessionQueryError();
+          const nextData: SessionData = {
+            day: freshDay,
+            lifecycleGeneration: currentLifecycle.generation,
+            lifecycleRevision: currentLifecycle.revision,
+            session: recreated,
+          };
+          if (isCurrentIdentity()) {
+            dayRef.current = freshDay;
+            sessionRef.current = recreated;
+            setSession(recreated);
+            setDraftActive(recreated.phase !== 'summary');
+            queryClient.setQueryData(guidedQueryKey, nextData);
+          }
+          return nextData;
+        } catch (error) {
+          if (error instanceof StaleGuidedSessionQueryError) throw error;
+          if (isCurrentIdentity()) {
+            sessionRef.current = null;
+            dayRef.current = null;
+            setSession(null);
+            setDraftActive(false);
+            setQueryEnabled(false);
+            setStorageError('Não foi possível recriar o rascunho do treino.');
+          }
+          throw error;
+        } finally {
+          clearStructuralMigration(identity, version, migration);
+        }
+      };
 
       try {
         const day = await loadWorkoutDay({ api, dayId });
@@ -452,61 +639,11 @@ export function useGuidedWorkoutSession({
             };
           }
           if (!currentSession) throw new StaleGuidedSessionQueryError();
-
-          let recreated: GuidedSession;
-          try {
-            recreated = await enqueuePersistence(identity, async () => {
-              assertActive();
-              const currentLifecycle = getSessionLifecycle(identity);
-              if (
-                !currentLifecycle ||
-                currentLifecycle !== version.lifecycle ||
-                currentLifecycle.tombstoned
-              ) {
-                throw new StaleGuidedSessionQueryError();
-              }
-              await sessionStorage.remove(authUserId, dayId);
-              assertActive();
-              const next = createGuidedSession(day, nowRef.current());
-              await sessionStorage.save(authUserId, next);
-              assertActive();
-              bumpSessionRevision(identity);
-              return next;
-            });
-            await invalidateTodayWorkout();
-          } catch (error) {
-            if (error instanceof StaleGuidedSessionQueryError) throw error;
-            if (isCurrentIdentity()) {
-              setStorageError('Não foi possível recriar o rascunho do treino.');
-            }
-            throw error;
-          }
-
-          assertActive();
-          const currentLifecycle = getSessionLifecycle(identity);
-          if (!currentLifecycle) throw new StaleGuidedSessionQueryError();
-          return {
-            day,
-            lifecycleGeneration: currentLifecycle.generation,
-            lifecycleRevision: currentLifecycle.revision,
-            session: recreated,
-          };
+          return migrateIncompatibleDraft(day);
         }
 
         if (draft && !isDraftCompatible(draft, day)) {
-          try {
-            await enqueuePersistence(identity, async () => {
-              assertActive();
-              await sessionStorage.remove(authUserId, dayId);
-              assertActive();
-            });
-          } catch (error) {
-            if (error instanceof StaleGuidedSessionQueryError) throw error;
-            if (isCurrentIdentity())
-              setStorageError('Não foi possível remover o rascunho incompatível.');
-          }
-          assertActive();
-          draft = null;
+          return migrateIncompatibleDraft(day);
         }
 
         if (draft) {
@@ -597,7 +734,7 @@ export function useGuidedWorkoutSession({
 
   const transition = useCallback(
     async (derive: (current: GuidedSession, day: WorkoutDay, at: number) => GuidedSession) => {
-      if (!isCurrentIdentity()) return;
+      if (!isCurrentIdentity() || isIdentityMutationLocked(identity)) return;
       const token = beginMutation();
       if (!token) return;
 
@@ -638,7 +775,7 @@ export function useGuidedWorkoutSession({
   const updateSet = useCallback(
     async (values: { loadKg?: string; repsDone?: string }) => {
       if (busyRef.current) return;
-      if (!isCurrentIdentity()) return;
+      if (!isCurrentIdentity() || isIdentityMutationLocked(identity)) return;
       const current = sessionRef.current;
       const day = query.data?.day ?? dayRef.current;
       if (!current || !day) return;
@@ -679,7 +816,7 @@ export function useGuidedWorkoutSession({
   }, [transition]);
 
   const saveDraft = useCallback(async (): Promise<boolean> => {
-    if (!isCurrentIdentity()) return false;
+    if (!isCurrentIdentity() || isIdentityMutationLocked(identity)) return false;
     const token = beginMutation();
     if (!token) return false;
     try {
@@ -695,7 +832,9 @@ export function useGuidedWorkoutSession({
   }, [beginMutation, endMutation, identity, isCurrentIdentity, persistSession]);
 
   const finishWorkout = useCallback(async (): Promise<void> => {
-    if (!authUserId || !dayId || !isCurrentIdentity()) return;
+    if (!authUserId || !dayId || !isCurrentIdentity() || isIdentityMutationLocked(identity)) {
+      return;
+    }
     const token = beginMutation();
     if (!token) return;
 
@@ -704,13 +843,18 @@ export function useGuidedWorkoutSession({
       setCanRetryFinish(false);
     }
 
+    const finishIdentity = identity;
+    const finishAuthUserId = authUserId;
+    const finishDayId = dayId;
+    const finishGuidedQueryKey = guidedQueryKey;
+    const finishVersion = captureSessionLifecycle(finishIdentity);
+    const finishOperation = beginFinishOperation(finishIdentity, finishVersion);
+    if (!finishVersion || !finishOperation) {
+      endMutation(token);
+      return;
+    }
+
     try {
-      const finishIdentity = identity;
-      const finishAuthUserId = authUserId;
-      const finishDayId = dayId;
-      const finishGuidedQueryKey = guidedQueryKey;
-      const finishVersion = captureSessionLifecycle(finishIdentity);
-      if (!finishVersion) return;
       await enqueuePersistence(finishIdentity, async () => {
         const current = sessionRef.current;
         const day = query.data?.day ?? dayRef.current;
@@ -734,14 +878,11 @@ export function useGuidedWorkoutSession({
         const capturedLifecycle = getSessionLifecycle(finishIdentity);
         const capturedLifecycleWasCurrent = Boolean(
           capturedLifecycle === finishVersion.lifecycle &&
-            (capturedLifecycle?.tombstoned === true ||
-              capturedLifecycle?.generation === finishVersion.generation),
+            capturedLifecycle?.finishOperation?.token === finishOperation.token,
         );
         if (capturedLifecycleWasCurrent) {
           const stillCurrent = isCurrentIdentity();
-          if (capturedLifecycle && !capturedLifecycle.tombstoned) {
-            invalidateSessionLifecycle(finishIdentity, finishVersion);
-          }
+          invalidateSessionLifecycle(finishIdentity);
           if (stillCurrent) setQueryEnabled(false);
           try {
             await sessionStorage.remove(finishAuthUserId, finishDayId);
@@ -771,6 +912,7 @@ export function useGuidedWorkoutSession({
         setCanRetryFinish(true);
       }
     } finally {
+      clearFinishOperation(finishIdentity, finishVersion, finishOperation);
       endMutation(token);
     }
   }, [
@@ -789,7 +931,9 @@ export function useGuidedWorkoutSession({
   ]);
 
   const discard = useCallback(async (): Promise<boolean> => {
-    if (!authUserId || !dayId || !isCurrentIdentity()) return false;
+    if (!authUserId || !dayId || !isCurrentIdentity() || isIdentityMutationLocked(identity)) {
+      return false;
+    }
     const token = beginMutation();
     if (!token) return false;
     invalidateSessionLifecycle(identity);

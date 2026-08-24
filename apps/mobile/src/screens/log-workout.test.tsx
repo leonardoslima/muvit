@@ -1,7 +1,7 @@
 import type { workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { useLayoutEffect } from 'react';
+import { StrictMode, useLayoutEffect } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
@@ -778,6 +778,92 @@ describe('LogWorkoutScreen', () => {
     }
   });
 
+  it('libera lifecycle normal em unmount e depois de Salvar e sair', async () => {
+    const identity = `${authState.data.user.id}:${routerState.dayId}`;
+    const lifecycleDeletes = vi.fn();
+    const originalDelete = Map.prototype.delete;
+    const deleteSpy = vi.spyOn(Map.prototype, 'delete').mockImplementation(function (
+      this: Map<unknown, unknown>,
+      key: unknown,
+    ) {
+      const value = this.get(key);
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        'tombstoned' in value &&
+        'queryLeases' in value
+      ) {
+        lifecycleDeletes(key);
+      }
+      return originalDelete.call(this, key);
+    });
+
+    try {
+      apiState.request.mockReset();
+      mockWorkoutDay();
+      const second = renderWithQueryClient();
+      expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+      await act(async () => {
+        navigationState.callback?.({
+          data: { action: { type: 'GO_BACK', key: 'normal-save' } },
+        });
+      });
+      fireEvent.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+      await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalled());
+      await act(async () => {
+        second.view.unmount();
+      });
+      await waitFor(() => expect(lifecycleDeletes).toHaveBeenCalledWith(identity));
+    } finally {
+      deleteSpy.mockRestore();
+    }
+  });
+
+  it('não mantém lease em render abortado e tolera replay de effects', async () => {
+    const abortedUserId = 'aborted-auth-user-id';
+    const identity = `${abortedUserId}:${routerState.dayId}`;
+    authState.data = { user: { id: abortedUserId, role: 'student' } };
+    const lifecycleDeletes = vi.fn();
+    const originalDelete = Map.prototype.delete;
+    const deleteSpy = vi.spyOn(Map.prototype, 'delete').mockImplementation(function (
+      this: Map<unknown, unknown>,
+      key: unknown,
+    ) {
+      const value = this.get(key);
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        'tombstoned' in value &&
+        'queryLeases' in value
+      ) {
+        lifecycleDeletes(key);
+      }
+      return originalDelete.call(this, key);
+    });
+
+    function AbortedScreen(): null {
+      LogWorkoutScreen();
+      return null;
+    }
+
+    try {
+      const abortedView = render(
+        <StrictMode>
+          <QueryClientProvider client={new QueryClient()}>
+            <AbortedScreen />
+          </QueryClientProvider>
+        </StrictMode>,
+        { concurrentRoot: true },
+      );
+      await act(async () => {
+        abortedView.unmount();
+      });
+      await waitFor(() => expect(lifecycleDeletes).toHaveBeenCalledWith(identity));
+    } finally {
+      deleteSpy.mockRestore();
+    }
+  });
+
   it('preserva a edição otimista quando um refetch devolve um snapshot antigo', async () => {
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
     const guidedQueryKey = [
@@ -932,6 +1018,149 @@ describe('LogWorkoutScreen', () => {
       expect(screen.queryByText('Série 2 de 2')).toBeNull();
     },
   );
+
+  it('não deixa uma edição do draft incompatível vencer a recriação estrutural', async () => {
+    const guidedQueryKey = [
+      'guided-workout-session',
+      authState.data.user.id,
+      routerState.dayId,
+    ] as const;
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const nextPlan = planWithExercises([workoutPlan.days[0].exercises[0]]);
+    const refetchSummary = createDeferred<unknown>();
+    const refetchPlan = createDeferred<unknown>();
+    const firstWriteDone = createDeferred<void>();
+    const removeDone = createDeferred<void>();
+    const replacementSaveDone = createDeferred<void>();
+    const events: string[] = [];
+    let serialized: string | null = JSON.stringify(draftSession);
+    let writeCount = 0;
+
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey ? serialized : null,
+    );
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key !== sessionKey) return;
+      events.push('remove:start');
+      await removeDone.promise;
+      serialized = null;
+      events.push('remove:done');
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      const saved = JSON.parse(value) as GuidedSession;
+      writeCount += 1;
+      const marker = `save:${writeCount}:${saved.sets.length}:${saved.sets[1]?.repsDone ?? ''}`;
+      events.push(marker);
+      if (writeCount === 1) await firstWriteDone.promise;
+      if (saved.sets.length === 2) await replacementSaveDone.promise;
+      serialized = value;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ ...planSummary, id: workoutPlan.id }] })
+      .mockResolvedValueOnce(workoutPlan)
+      .mockImplementation((path: string) =>
+        path === '/students/me/workout-plans' ? refetchSummary.promise : refetchPlan.promise,
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
+    });
+    renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    const refetchPromise = queryClient.refetchQueries({ queryKey: guidedQueryKey, exact: true });
+    refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+    await waitFor(() =>
+      expect(
+        apiState.request.mock.calls.filter(([path]) => String(path).startsWith('/workout-plans/'))
+          .length,
+      ).toBeGreaterThanOrEqual(2),
+    );
+    refetchPlan.resolve(nextPlan);
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(events).toContain('save:1:3:10'));
+    firstWriteDone.resolve();
+    await waitFor(() => expect(events).toContain('remove:start'));
+
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '77');
+    removeDone.resolve();
+    await waitFor(() => expect(events).toContain('save:2:2:'));
+    replacementSaveDone.resolve();
+    await refetchPromise;
+    await act(async () => undefined);
+
+    expect(events.some((event) => event === 'save:3:3:77')).toBe(false);
+    expect(JSON.parse(serialized ?? '').sets).toHaveLength(2);
+    expect(queryClient.getQueryData(guidedQueryKey)).toMatchObject({
+      day: nextPlan.days[0],
+    });
+  });
+
+  it('não reexpõe o draft incompatível quando a recriação falha depois do remove', async () => {
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const nextPlan = planWithExercises([workoutPlan.days[0].exercises[0]]);
+    const refetchSummary = createDeferred<unknown>();
+    const refetchPlan = createDeferred<unknown>();
+    const firstWriteDone = createDeferred<void>();
+    const replacementSave = createDeferred<void>();
+    replacementSave.promise.catch(() => undefined);
+    let serialized: string | null = JSON.stringify(draftSession);
+    let writeCount = 0;
+
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey ? serialized : null,
+    );
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) serialized = null;
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key !== sessionKey) return;
+      const saved = JSON.parse(value) as GuidedSession;
+      writeCount += 1;
+      if (writeCount === 1) await firstWriteDone.promise;
+      if (saved.sets.length === 2) await replacementSave.promise;
+      serialized = value;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [{ ...planSummary, id: workoutPlan.id }] })
+      .mockResolvedValueOnce(workoutPlan)
+      .mockImplementation((path: string) =>
+        path === '/students/me/workout-plans' ? refetchSummary.promise : refetchPlan.promise,
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Number.POSITIVE_INFINITY } },
+    });
+    renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    const refetchPromise = queryClient.refetchQueries({
+      queryKey: ['guided-workout-session', authState.data.user.id, routerState.dayId],
+      exact: true,
+    });
+    refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+    await waitFor(() =>
+      expect(
+        apiState.request.mock.calls.filter(([path]) => String(path).startsWith('/workout-plans/'))
+          .length,
+      ).toBeGreaterThanOrEqual(2),
+    );
+    refetchPlan.resolve(nextPlan);
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() => expect(storageState.setItem).toHaveBeenCalledTimes(1));
+    firstWriteDone.resolve();
+    await waitFor(() => expect(storageState.removeItem).toHaveBeenCalledWith(sessionKey));
+    replacementSave.reject(new Error('replacement save failed'));
+    await act(async () => {
+      await refetchPromise;
+    });
+
+    await waitFor(() => expect(screen.getByText('Treino indisponível')).toBeTruthy());
+    expect(screen.queryByLabelText('Repetições realizadas')).toBeNull();
+    expect(storageState.setItem).toHaveBeenCalledTimes(2);
+    expect(serialized).toBeNull();
+  });
 
   it('bloqueia o primeiro commit de uma identidade nova antes do reset passivo', async () => {
     const secondUserId = 'other-auth-user-id';
@@ -1287,6 +1516,75 @@ describe('LogWorkoutScreen', () => {
           .length,
       ).toBeGreaterThan(secondSummaryCallsBeforeRetry),
     );
+    expect(secondSerialized).toBe(JSON.stringify(readySession));
+  });
+
+  it('limpa a conclusão de A após a sequência A-B-A sem ressuscitar o draft', async () => {
+    const user = userEvent.setup();
+    const firstUserId = authState.data.user.id;
+    const secondUserId = 'other-auth-user-id';
+    const dayId = routerState.dayId;
+    const firstKey = `muvit_workout_session:${firstUserId}:${dayId}`;
+    const secondKey = `muvit_workout_session:${secondUserId}:${dayId}`;
+    const guidedFirstKey = ['guided-workout-session', firstUserId, dayId] as const;
+    const finishStart = createDeferred<{ id: string }>();
+    let firstSerialized: string | null = JSON.stringify(readySession);
+    let secondSerialized: string | null = JSON.stringify(readySession);
+
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === firstKey) return firstSerialized;
+      if (key === secondKey) return secondSerialized;
+      return null;
+    });
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === firstKey) firstSerialized = null;
+      if (key === secondKey) secondSerialized = null;
+    });
+    apiState.request.mockImplementation(async (path: string) => {
+      if (path === '/students/me/workout-plans') {
+        return { items: [{ ...planSummary, id: workoutPlan.id }] };
+      }
+      if (path === `/workout-plans/${workoutPlan.id}`) return workoutPlan;
+      if (path === '/workout-logs') return finishStart.promise;
+      if (path === '/workout-logs/a-log-id/finish') return undefined;
+      throw new Error(`unexpected request: ${path}`);
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: 0 } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { view } = renderWithQueryClient(queryClient);
+
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+    await waitFor(() =>
+      expect(apiState.request).toHaveBeenCalledWith('/workout-logs', expect.anything()),
+    );
+
+    authState.data = { user: { id: secondUserId, role: 'student' } };
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+
+    authState.data = { user: { id: firstUserId, role: 'student' } };
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    await act(async () => undefined);
+    expect(firstSerialized).toBe(JSON.stringify(readySession));
+
+    finishStart.resolve({ id: 'a-log-id' });
+    await waitFor(() => expect(storageState.removeItem).toHaveBeenCalledWith(firstKey));
+    await waitFor(() => expect(queryClient.getQueryData(guidedFirstKey)).toBeUndefined());
+    expect(firstSerialized).toBeNull();
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today-workout', firstUserId] });
+    expect(screen.queryByText('Série 1 de 2')).toBeNull();
     expect(secondSerialized).toBe(JSON.stringify(readySession));
   });
 
