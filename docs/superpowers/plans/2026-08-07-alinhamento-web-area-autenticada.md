@@ -16,10 +16,10 @@
 - [x] Task 8: wizard de aluno e avaliações.
 - [x] Task 9: construtor canônico de treinos.
 - [x] Task 10: tela de Relatórios e versão imprimível.
-- [ ] Próxima etapa: Task 11 — configurações de perfil, notificações e cobrança.
-- [ ] Task 12: verificação visual e qualidade integrada.
+- [x] Task 11: configurações de perfil, notificações e cobrança.
+- [x] Task 12: verificação visual e qualidade integrada.
 
-Execução pausada após a aprovação formal da Task 10. Retomar pela Task 11.
+Execução concluída após a aprovação formal das 12 tasks e da revisão final da branch.
 
 ## Global Constraints
 
@@ -764,7 +764,7 @@ git commit -m "feat(web): adiciona relatórios de evolução"
 - Consumes: endpoints gerados de perfil, preferências, assinatura e faturas.
 - Produces: settings shell com entradas ativas e “Em breve” desabilitadas.
 
-- [ ] **Step 1: Escrever testes de parsers e layout**
+- [x] **Step 1: Escrever testes de parsers e layout**
 
 ```tsx
 expect(screen.getByRole('link', { name: 'Meu perfil' })).toHaveAttribute('aria-current', 'page');
@@ -776,24 +776,24 @@ expect(parseProfileFormData(formData)).toEqual({
 });
 ```
 
-- [ ] **Step 2: Executar testes e confirmar falha**
+- [x] **Step 2: Executar testes e confirmar falha**
 
 Run: `pnpm.cmd --dir apps/web test -- src/application/settings src/app/(app)/settings src/components/settings-navigation.test.tsx`
 Expected: FAIL por rotas e componentes ausentes.
 
-- [ ] **Step 3: Implementar Meu Perfil**
+- [x] **Step 3: Implementar Meu Perfil**
 
 Formulário com nome, e-mail, telefone, bio, especialidades e avatar; action fina; erros de e-mail duplicado e sincronização exibidos sem perder dados. Depois do sucesso, `revalidatePath` para settings e layout e `router.refresh()` no cliente.
 
-- [ ] **Step 4: Implementar Notificações**
+- [x] **Step 4: Implementar Notificações**
 
 Controles acessíveis para enable/canal/prazo; salvar via action; impedir submissão concorrente; refletir defaults vindos da API sem duplicá-los no componente.
 
-- [ ] **Step 5: Implementar Plano e Cobrança**
+- [x] **Step 5: Implementar Plano e Cobrança**
 
 Catálogo vem da resposta da API; troca de plano/periodicidade usa `ConfirmationDialog`; downgrade inválido apresenta erro; tabela de faturas liga para documento imprimível com ownership validado.
 
-- [ ] **Step 6: Verificar configurações**
+- [x] **Step 6: Verificar configurações**
 
 Run: `pnpm.cmd --dir apps/web test -- src/application/settings src/app/(app)/settings src/components/settings-navigation.test.tsx`
 Expected: PASS.
@@ -801,7 +801,7 @@ Expected: PASS.
 Run: `pnpm.cmd --dir apps/web typecheck`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/application/settings apps/web/src/app/'(app)'/settings apps/web/src/components/settings-navigation.tsx apps/web/src/components/settings-navigation.test.tsx
@@ -818,7 +818,7 @@ git commit -m "feat(web): adiciona configurações do treinador"
 - Consumes: aplicação completa e banco de teste migrado.
 - Produces: evidência de testes, cobertura e comparação visual.
 
-- [ ] **Step 1: Executar verificações de validators e banco**
+- [x] **Step 1: Executar verificações de validators e banco**
 
 Run: `pnpm.cmd --filter @muvit/validators test`
 Expected: PASS.
@@ -835,7 +835,7 @@ Expected: PASS.
 Run: `pnpm.cmd --filter @muvit/db migrate:test`
 Expected: PASS.
 
-- [ ] **Step 2: Executar verificações da API**
+- [x] **Step 2: Executar verificações da API**
 
 Run: `pnpm.cmd --dir apps/api test`
 Expected: PASS.
@@ -846,7 +846,7 @@ Expected: PASS.
 Run: `pnpm.cmd exec biome check apps/api packages/db packages/validators`
 Expected: PASS.
 
-- [ ] **Step 3: Executar verificações web**
+- [x] **Step 3: Executar verificações web**
 
 Run: `pnpm.cmd --dir apps/web test`
 Expected: PASS.
@@ -863,18 +863,18 @@ Expected: PASS.
 Run: `pnpm.cmd exec biome check apps/web`
 Expected: PASS.
 
-- [ ] **Step 4: Iniciar stack local e comparar com o Pencil**
+- [x] **Step 4: Iniciar stack local e comparar com o Pencil**
 
 Run: `pnpm.cmd dev`
 Expected: API em `3333` e web em `3000` sem erros de inicialização.
 
 Verificar em 1440 px: Dashboard, perfil do aluno, builder preenchido/vazio, exercícios/modal, três etapas de aluno, avaliação nova/histórico, relatórios e três telas de settings. Comparar hierarquia, dimensões, cores, tipografia, alinhamento, conteúdo e estados com os IDs listados em Global Constraints.
 
-- [ ] **Step 5: Verificar responsividade e acessibilidade**
+- [x] **Step 5: Verificar responsividade e acessibilidade**
 
 Verificar 1024 px, 768 px e 375 px; teclado completo; foco de dialogs/drawers; `Escape`; retorno de foco; overflow; tabelas; textos alternativos; console sem erro ou warning de hidratação.
 
-- [ ] **Step 6: Executar verificações finais de diff e UTF-8**
+- [x] **Step 6: Executar verificações finais de diff e UTF-8**
 
 Run: `git diff --check`
 Expected: nenhuma saída.
@@ -885,7 +885,7 @@ Expected: nenhuma ocorrência nova usada para representar texto pt-BR.
 Run: `git status --short`
 Expected: somente mudanças intencionais; `packages/db/.env.test~clear` continua não rastreado e não incluído.
 
-- [ ] **Step 7: Commit de correções de verificação, se necessário**
+- [x] **Step 7: Commit de correções de verificação, se necessário**
 
 Se houver correções, adicionar explicitamente apenas os arquivos já pertencentes às Tasks 1–11, revisar `git diff --cached` e executar:
 
