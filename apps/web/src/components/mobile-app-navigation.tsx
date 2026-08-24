@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { Sidebar } from './sidebar';
 
 interface MobileAppNavigationProps {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; image?: string | null } | null;
 }
 
 export function MobileAppNavigation({ user }: MobileAppNavigationProps) {
@@ -30,7 +30,14 @@ export function MobileAppNavigation({ user }: MobileAppNavigationProps) {
       </Link>
 
       <div className="flex items-center gap-3">
-        {user && <Avatar name={user.name} size="sm" aria-label={`Perfil de ${user.name}`} />}
+        {user && (
+          <Avatar
+            name={user.name}
+            src={user.image}
+            size="sm"
+            aria-label={`Perfil de ${user.name}`}
+          />
+        )}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <button

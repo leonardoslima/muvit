@@ -70,10 +70,11 @@ describe('createWorkoutPlanAction', () => {
     expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
-  it('envia pelo SDK, revalida as rotas afetadas e redireciona no sucesso', async () => {
-    await expect(createWorkoutPlanAction(input)).rejects.toThrow(
-      'redirect:/workouts/33333333-3333-4333-8333-333333333333',
-    );
+  it('envia pelo SDK, revalida as rotas afetadas e devolve o treino criado', async () => {
+    await expect(createWorkoutPlanAction(input)).resolves.toEqual({
+      success: true,
+      workoutId: '33333333-3333-4333-8333-333333333333',
+    });
 
     expect(mocks.postWorkoutPlans).toHaveBeenCalledWith({
       client: { name: 'client' },
@@ -84,6 +85,6 @@ describe('createWorkoutPlanAction', () => {
       '/students/11111111-1111-4111-8111-111111111111',
     );
     expect(mocks.revalidatePath).toHaveBeenNthCalledWith(2, '/workouts');
-    expect(mocks.redirect).toHaveBeenCalledWith('/workouts/33333333-3333-4333-8333-333333333333');
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 });

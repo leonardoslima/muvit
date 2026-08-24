@@ -39,13 +39,17 @@ function toInvoice(invoice: typeof schema.billingInvoices.$inferSelect): Billing
   };
 }
 
-function renewalDate(now: Date, billingInterval: 'monthly' | 'annual') {
+function renewalDate(now: Date, billingInterval: 'monthly' | 'annual'): Date {
+  const currentMonth = now.getUTCMonth();
+  const targetMonth = billingInterval === 'monthly' ? (currentMonth + 1) % 12 : currentMonth;
+  const targetYear =
+    now.getUTCFullYear() +
+    (billingInterval === 'annual' || (billingInterval === 'monthly' && currentMonth === 11)
+      ? 1
+      : 0);
+  const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
   const renewal = new Date(now);
-  if (billingInterval === 'monthly') {
-    renewal.setUTCMonth(renewal.getUTCMonth() + 1);
-  } else {
-    renewal.setUTCFullYear(renewal.getUTCFullYear() + 1);
-  }
+  renewal.setUTCFullYear(targetYear, targetMonth, Math.min(now.getUTCDate(), lastDayOfTargetMonth));
   return renewal;
 }
 
@@ -99,6 +103,19 @@ export class DrizzleBillingRepository implements BillingRepository {
     now: Date,
   ): Promise<ChangeSubscriptionResult> {
     return getTrainerPlanDatabase().transaction(async (transaction) => {
+      const [currentSubscription] = await transaction
+        .select()
+        .from(schema.trainerSubscriptions)
+        .where(eq(schema.trainerSubscriptions.trainerId, trainerId))
+        .limit(1);
+      if (
+        currentSubscription !== undefined &&
+        currentSubscription.plan === input.plan &&
+        currentSubscription.billingInterval === input.billingInterval
+      ) {
+        return { subscription: toSubscription(currentSubscription), invoice: null };
+      }
+
       const renewsAt = input.plan === 'free' ? null : renewalDate(now, input.billingInterval);
       const [subscription] = await transaction
         .insert(schema.trainerSubscriptions)

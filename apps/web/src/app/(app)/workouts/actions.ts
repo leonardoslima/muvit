@@ -4,12 +4,10 @@ import type { CreateWorkoutInput } from '@/application/workouts/workout-editor-m
 import { configureServerClient } from '@/lib/api-client';
 import { postWorkoutPlans } from '@/lib/api/sdk.gen';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
-export type CreateWorkoutPlanActionResult = {
-  success: false;
-  error: string;
-};
+export type CreateWorkoutPlanActionResult =
+  | { success: true; workoutId: string }
+  | { success: false; error: string };
 
 export async function createWorkoutPlanAction(
   input: CreateWorkoutInput,
@@ -27,5 +25,5 @@ export async function createWorkoutPlanAction(
   }
   revalidatePath(`/students/${input.studentId}`);
   revalidatePath('/workouts');
-  redirect(`/workouts/${response.data.id}`);
+  return { success: true, workoutId: response.data.id };
 }

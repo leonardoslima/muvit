@@ -2,21 +2,37 @@ import { z } from 'zod';
 
 export const notificationChannelSchema = z.enum(['email', 'push', 'both']);
 
+export const NOTIFICATION_DAY_LIMITS = {
+  inactivityAfterDays: 90,
+  workoutPlanExpiringDaysBefore: 30,
+  pendingAssessmentStaleAfterDays: 365,
+} as const;
+
 const inactivityPreferencesSchema = z.object({
   enabled: z.boolean(),
-  afterDays: z.number().int().min(1).max(90).default(7),
+  afterDays: z.number().int().min(1).max(NOTIFICATION_DAY_LIMITS.inactivityAfterDays).default(7),
   channel: notificationChannelSchema.default('both'),
 });
 
 const workoutPlanExpiringPreferencesSchema = z.object({
   enabled: z.boolean(),
-  daysBefore: z.number().int().min(1).max(30).default(7),
+  daysBefore: z
+    .number()
+    .int()
+    .min(1)
+    .max(NOTIFICATION_DAY_LIMITS.workoutPlanExpiringDaysBefore)
+    .default(7),
   channel: notificationChannelSchema.default('email'),
 });
 
 const pendingAssessmentPreferencesSchema = z.object({
   enabled: z.boolean(),
-  staleAfterDays: z.number().int().min(1).max(365).default(60),
+  staleAfterDays: z
+    .number()
+    .int()
+    .min(1)
+    .max(NOTIFICATION_DAY_LIMITS.pendingAssessmentStaleAfterDays)
+    .default(60),
   channel: notificationChannelSchema.default('push'),
 });
 

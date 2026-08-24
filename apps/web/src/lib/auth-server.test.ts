@@ -24,6 +24,7 @@ describe('getCurrentUser', () => {
             name: 'Treinador Muvit',
             email: 'trainer@muvit.dev',
             role: 'trainer',
+            image: 'https://cdn.muvit.test/avatar.png',
           },
         }),
         { status: 200, headers: { 'content-type': 'application/json' } },
@@ -35,6 +36,7 @@ describe('getCurrentUser', () => {
       name: 'Treinador Muvit',
       email: 'trainer@muvit.dev',
       role: 'trainer',
+      image: 'https://cdn.muvit.test/avatar.png',
     });
     expect(fetchSpy).toHaveBeenCalledWith(
       'http://localhost:3333/api/auth/get-session',

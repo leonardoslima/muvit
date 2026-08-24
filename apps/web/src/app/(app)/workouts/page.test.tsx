@@ -6,6 +6,7 @@ import WorkoutsPage from './page';
 
 vi.mock('@/lib/api-client', () => ({ configureServerClient: vi.fn().mockResolvedValue({}) }));
 vi.mock('@/lib/api/sdk.gen', () => ({ getStudents: vi.fn(), getExercises: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const studentItems = [
   {

@@ -1,6 +1,9 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { type VariantProps, cva } from 'class-variance-authority';
 import type * as React from 'react';
+import { useState } from 'react';
 
 const avatarVariants = cva(
   'inline-flex shrink-0 items-center justify-center rounded-pill font-display font-semibold text-primary-foreground',
@@ -39,14 +42,58 @@ interface AvatarProps
   extends React.HTMLAttributes<HTMLSpanElement>,
     VariantProps<typeof avatarVariants> {
   name: string;
+  src?: string | null;
 }
 
-function Avatar({ name, size = 'md', className, ...props }: AvatarProps) {
+function Avatar({
+  name,
+  src,
+  size = 'md',
+  className,
+  role = 'img',
+  'aria-label': ariaLabel = `Avatar de ${name}`,
+  ...props
+}: AvatarProps) {
+  const safeSrc = getSafeImageSource(src);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const showImage = safeSrc !== null && safeSrc !== failedSrc;
+
   return (
-    <span className={cn(avatarVariants({ size }), pickTone(name), className)} {...props}>
+    <span
+      className={cn(
+        avatarVariants({ size }),
+        'relative overflow-hidden',
+        pickTone(name),
+        className,
+      )}
+      role={role}
+      aria-label={ariaLabel}
+      {...props}
+    >
       {getInitials(name)}
+      {showImage && (
+        <img
+          src={safeSrc}
+          alt=""
+          aria-hidden="true"
+          width={48}
+          height={48}
+          className="absolute inset-0 size-full object-cover"
+          onError={() => setFailedSrc(safeSrc)}
+        />
+      )}
     </span>
   );
+}
+
+function getSafeImageSource(src: string | null | undefined): string | null {
+  if (!src) return null;
+  try {
+    const url = new URL(src);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
 }
 
 export { Avatar, avatarVariants };

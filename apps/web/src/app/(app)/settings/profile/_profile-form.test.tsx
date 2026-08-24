@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileForm } from './_profile-form';
 import { updateProfileAction } from './actions';
@@ -45,15 +45,42 @@ describe('ProfileForm', () => {
   });
 
   it('bloqueia novo submit enquanto salva', async () => {
-    vi.mocked(updateProfileAction).mockImplementation(() => new Promise(() => {}));
+    let resolveAction:
+      | ((state: Awaited<ReturnType<typeof updateProfileAction>>) => void)
+      | undefined;
+    vi.mocked(updateProfileAction).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAction = resolve;
+        }),
+    );
     render(<ProfileForm profile={profile} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+    const pendingButton = await screen.findByRole('button', { name: 'Salvando…' });
+    fireEvent.click(pendingButton);
+
+    expect(pendingButton).toBeDisabled();
+    await waitFor(() => expect(updateProfileAction).toHaveBeenCalledOnce());
+    await act(async () => resolveAction?.({ success: true }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  });
+
+  it('atualiza a prévia controlada e refresca o shell depois do sucesso', async () => {
+    vi.mocked(updateProfileAction).mockResolvedValue({ success: true });
+    render(<ProfileForm profile={profile} />);
+
+    const avatar = screen.getByLabelText('Avatar de João Pereira');
+    expect(avatar.querySelector('img')).toBeNull();
+    fireEvent.change(screen.getByLabelText('URL do avatar'), {
+      target: { value: 'https://cdn.muvit.test/joao.png' },
+    });
+    expect(avatar.querySelector('img')).toHaveAttribute('src', 'https://cdn.muvit.test/joao.png');
 
     const form = screen.getByRole('button', { name: 'Salvar alterações' }).closest('form');
     if (!form) throw new Error('Formulário de perfil não encontrado.');
     fireEvent.submit(form);
-    fireEvent.submit(form);
 
-    expect(await screen.findByRole('button', { name: 'Salvando…' })).toBeDisabled();
-    await waitFor(() => expect(updateProfileAction).toHaveBeenCalledOnce());
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
   });
 });

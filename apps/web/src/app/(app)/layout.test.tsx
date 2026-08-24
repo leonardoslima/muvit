@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from 'vitest';
 import AppLayout from './layout';
 
 vi.mock('@/lib/auth-server', () => ({
-  requireUser: vi.fn().mockResolvedValue({ name: 'Professor Demo', email: 'trainer@muvit.dev' }),
+  requireUser: vi.fn().mockResolvedValue({
+    name: 'Professor Demo',
+    email: 'trainer@muvit.dev',
+    image: 'https://cdn.muvit.test/professor.png',
+  }),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -35,5 +39,15 @@ describe('AppLayout', () => {
     expect(screen.getByRole('button', { name: 'Abrir menu principal' })).toBeInTheDocument();
     expect(screen.getByText('Professor Demo')).toBeInTheDocument();
     expect(screen.getByLabelText('Perfil de Professor Demo')).toBeInTheDocument();
+    const avatars = [
+      screen.getByRole('img', { name: 'Perfil de Professor Demo' }),
+      screen.getByRole('img', { name: 'Avatar de Professor Demo' }),
+    ];
+    for (const avatar of avatars) {
+      expect(avatar.querySelector('img')).toHaveAttribute(
+        'src',
+        'https://cdn.muvit.test/professor.png',
+      );
+    }
   });
 });

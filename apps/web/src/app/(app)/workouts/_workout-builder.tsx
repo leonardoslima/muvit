@@ -16,6 +16,7 @@ import {
   updateWorkoutExercise,
   validateWorkoutDraft,
 } from '@/application/workouts/workout-editor-model';
+import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useTransition } from 'react';
 import { ExerciseDrawer } from './_exercise-drawer';
 import { WorkoutDayTabs } from './_workout-day-tabs';
@@ -45,6 +46,7 @@ export function WorkoutBuilder({
   studentsError,
   exercisesError,
 }: WorkoutBuilderProps) {
+  const router = useRouter();
   const initialDayId = useId();
   const [draft, setDraft] = useState<WorkoutDraft>(() =>
     createWorkoutDraft(initialStudentId, () => initialDayId),
@@ -105,7 +107,11 @@ export function WorkoutBuilder({
     startTransition(async () => {
       try {
         const result = await createWorkoutPlanAction(validation.input);
-        if (!result.success) setError(result.error);
+        if (!result.success) {
+          setError(result.error);
+          return;
+        }
+        router.push(`/workouts/${result.workoutId}`);
       } catch {
         setError('Não foi possível salvar o treino. Tente novamente.');
       }

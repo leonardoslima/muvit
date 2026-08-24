@@ -33,7 +33,12 @@ export function ProfileForm({ profile }: { profile: GetTrainerProfileResponse })
     <form action={formAction} className="flex max-w-3xl flex-col gap-6">
       <section className="rounded-[12px] bg-card p-5 shadow-card sm:p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar name={profile.name} size="lg" aria-label={`Avatar de ${profile.name}`} />
+          <Avatar
+            name={values.name}
+            src={values.avatarUrl}
+            size="lg"
+            aria-label={`Avatar de ${values.name}`}
+          />
           <div className="min-w-0 flex-1">
             <Label htmlFor="avatarUrl">URL do avatar</Label>
             <Input

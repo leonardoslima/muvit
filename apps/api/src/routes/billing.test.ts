@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
+import { DrizzleBillingRepository } from '../modules/billing/repositories/drizzle-billing-repository.js';
 
 let app: FastifyInstance;
 
@@ -111,6 +112,93 @@ describe('billing', () => {
     });
     expect(persistedTrainer?.plan).toBe('pro');
   });
+
+  it('mantém vigência e fatura no retry sequencial do mesmo plano', async () => {
+    const trainer = await signupTrainer('billing-sequential-retry@example.com');
+    const repository = new DrizzleBillingRepository();
+
+    const first = await repository.changeSubscription(
+      trainer.profileId,
+      { plan: 'pro', billingInterval: 'annual' },
+      95880,
+      new Date('2026-08-07T12:00:00.000Z'),
+    );
+    const retry = await repository.changeSubscription(
+      trainer.profileId,
+      { plan: 'pro', billingInterval: 'annual' },
+      95880,
+      new Date('2026-08-08T12:00:00.000Z'),
+    );
+
+    const [subscriptions, invoices] = await Promise.all([
+      db.query.trainerSubscriptions.findMany({
+        where: eq(schema.trainerSubscriptions.trainerId, trainer.profileId),
+      }),
+      db.query.billingInvoices.findMany({
+        where: eq(schema.billingInvoices.trainerId, trainer.profileId),
+      }),
+    ]);
+    expect(retry).toMatchObject({
+      subscription: {
+        startsAt: first.subscription.startsAt,
+        renewsAt: first.subscription.renewsAt,
+      },
+      invoice: null,
+    });
+    expect(subscriptions).toHaveLength(1);
+    expect(invoices).toHaveLength(1);
+  });
+
+  it('serializa retries concorrentes e persiste uma única assinatura e fatura', async () => {
+    const trainer = await signupTrainer('billing-concurrent-retry@example.com');
+
+    const responses = await Promise.all(
+      Array.from({ length: 2 }, () =>
+        app.inject({
+          method: 'PATCH',
+          url: '/trainers/me/subscription',
+          headers: { cookie: trainer.cookie },
+          payload: { plan: 'pro', billingInterval: 'monthly' },
+        }),
+      ),
+    );
+
+    expect(responses.map((response) => response.statusCode)).toEqual([200, 200]);
+    expect(responses.map((response) => response.json().invoice === null).sort()).toEqual([
+      false,
+      true,
+    ]);
+    const [subscriptions, invoices] = await Promise.all([
+      db.query.trainerSubscriptions.findMany({
+        where: eq(schema.trainerSubscriptions.trainerId, trainer.profileId),
+      }),
+      db.query.billingInvoices.findMany({
+        where: eq(schema.billingInvoices.trainerId, trainer.profileId),
+      }),
+    ]);
+    expect(subscriptions).toHaveLength(1);
+    expect(invoices).toHaveLength(1);
+  });
+
+  it.each([
+    ['mensal', 'monthly' as const, '2025-01-31T15:45:30.123Z', '2025-02-28T15:45:30.123Z'],
+    ['anual', 'annual' as const, '2024-02-29T15:45:30.123Z', '2025-02-28T15:45:30.123Z'],
+  ])(
+    'limita a renovação %s ao último dia civil UTC do destino',
+    async (_, interval, now, expected) => {
+      const trainer = await signupTrainer(`billing-clamp-${interval}@example.com`);
+      const repository = new DrizzleBillingRepository();
+
+      const result = await repository.changeSubscription(
+        trainer.profileId,
+        { plan: 'pro', billingInterval: interval },
+        interval === 'monthly' ? 9990 : 95880,
+        new Date(now),
+      );
+
+      expect(result.subscription.renewsAt).toBe(expected);
+    },
+  );
 
   it('rejeita plano inválido na borda HTTP', async () => {
     const trainer = await signupTrainer('billing-invalid@example.com');

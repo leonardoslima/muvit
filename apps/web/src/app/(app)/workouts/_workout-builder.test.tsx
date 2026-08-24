@@ -6,8 +6,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WorkoutBuilder } from './_workout-builder';
 import { createWorkoutPlanAction } from './actions';
 
+const navigationState = vi.hoisted(() => ({ push: vi.fn() }));
+
 vi.mock('./actions', () => ({
   createWorkoutPlanAction: vi.fn(),
+}));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: navigationState.push }),
 }));
 
 const students = [
@@ -335,6 +340,27 @@ describe('WorkoutBuilder', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível salvar.');
       expect(screen.getByLabelText('Nome do plano')).toHaveValue(' Hipertrofia ');
     });
+  });
+
+  it('navega uma única vez após salvar sem exibir erro nem repetir a criação', async () => {
+    vi.mocked(createWorkoutPlanAction).mockResolvedValue({
+      success: true,
+      workoutId: '33333333-3333-4333-8333-333333333333',
+    });
+    renderBuilder();
+    fireEvent.change(screen.getByLabelText('Nome do plano'), { target: { value: 'Plano' } });
+    addExercise('Supino reto');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    await waitFor(() => {
+      expect(navigationState.push).toHaveBeenCalledOnce();
+      expect(navigationState.push).toHaveBeenCalledWith(
+        '/workouts/33333333-3333-4333-8333-333333333333',
+      );
+    });
+    expect(createWorkoutPlanAction).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('valida o rascunho antes de salvar', () => {

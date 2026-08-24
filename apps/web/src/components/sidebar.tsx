@@ -28,7 +28,7 @@ const NAV = [
 ];
 
 interface SidebarProps {
-  user: { name: string; email: string } | null;
+  user: { name: string; email: string; image?: string | null } | null;
   variant?: 'desktop' | 'mobile';
   onNavigate?: () => void;
 }
@@ -112,7 +112,7 @@ export function Sidebar({ user, variant = 'desktop', onNavigate }: SidebarProps)
         <div className="flex items-center gap-3 px-6">
           {user && (
             <>
-              <Avatar name={user.name} size="sm" />
+              <Avatar name={user.name} src={user.image} size="sm" />
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-display text-sm font-semibold text-sidebar-foreground">
                   {user.name}
