@@ -1,8 +1,8 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import LoginScreen from './login';
-import SignupScreen from './signup';
+import LoginScreen from '../../app/(auth)/login';
+import SignupScreen from '../../app/(auth)/signup';
 
 const routerState = vi.hoisted(() => ({
   push: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: ReactNode }) => children,
 }));
 
-vi.mock('../../src/lib/auth-client', () => ({
+vi.mock('../lib/auth-client', () => ({
   authClient: {
     signIn: { email: authState.signInEmail },
     signOut: authState.signOut,
@@ -39,7 +39,7 @@ vi.mock('../../src/lib/auth-client', () => ({
   },
 }));
 
-vi.mock('../../src/lib/config', () => ({
+vi.mock('../lib/config', () => ({
   config: { apiUrl: 'https://api.muvit.test' },
 }));
 

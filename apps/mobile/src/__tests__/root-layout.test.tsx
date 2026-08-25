@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { RootLayout } from './_layout';
+import { RootLayout } from '../../app/_layout';
 
 const routerState = vi.hoisted(() => ({
   segments: ['(tabs)'] as string[],
@@ -52,21 +52,21 @@ vi.mock('sentry-expo', () => ({
   Native: { wrap: (component: unknown) => component },
 }));
 
-vi.mock('../src/lib/auth-client', () => ({
+vi.mock('../lib/auth-client', () => ({
   authClient: {
     useSession: authState.useSession,
   },
 }));
 
-vi.mock('../src/lib/query-client', () => ({
+vi.mock('../lib/query-client', () => ({
   queryClient: {},
 }));
 
-vi.mock('../src/components/queue-drain', () => ({
+vi.mock('../components/queue-drain', () => ({
   QueueDrain: () => React.createElement('Text', null, 'queue-drain'),
 }));
 
-vi.mock('../src/components/push-token-registration', () => ({
+vi.mock('../components/push-token-registration', () => ({
   PushTokenRegistration: () => React.createElement('Text', null, 'push-registration'),
 }));
 

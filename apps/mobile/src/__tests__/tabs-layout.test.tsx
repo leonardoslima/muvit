@@ -3,8 +3,8 @@ import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { colors, radii } from '../../src/lib/styles';
-import TabsLayout from './_layout';
+import { colors, radii } from '../lib/styles';
+import TabsLayout from '../../app/(tabs)/_layout';
 
 type TabIconProps = {
   color: string;
