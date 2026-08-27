@@ -1,6 +1,6 @@
 import { finishWorkoutLogSchema } from '@muvit/validators';
 import { z } from 'zod';
-import type { ApiRequester } from './api';
+import { ApiError, type ApiRequester } from './api';
 
 const JOURNAL_KEY = 'muvit_workout_log_journal';
 
@@ -45,18 +45,34 @@ export type WorkoutLogJournal = {
   pruneTerminalsBefore: (ownerAuthUserId: string, date: string) => Promise<void>;
 };
 
-let journalSerializationTail: Promise<void> = Promise.resolve();
+let journalStorageTail: Promise<void> = Promise.resolve();
+let journalDrainTail: Promise<void> = Promise.resolve();
 
-function serializeJournalOperation<T>(operation: () => Promise<T>): Promise<T> {
-  const result = journalSerializationTail.then(
+function serializeStorageOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = journalStorageTail.then(
     () => operation(),
     () => operation(),
   );
-  journalSerializationTail = result.then(
+  journalStorageTail = result.then(
     () => undefined,
     () => undefined,
   );
   return result;
+}
+
+function serializeDrain(operation: () => Promise<void>): Promise<void> {
+  const result = journalDrainTail.then(operation, operation);
+  journalDrainTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
+function isAlreadyCompletedConflict(error: unknown): boolean {
+  return (
+    error instanceof ApiError && error.status === 409 && error.message === 'log already completed'
+  );
 }
 
 export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJournal {
@@ -84,22 +100,35 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     await storage.setItem(JOURNAL_KEY, JSON.stringify(operations));
   }
 
-  async function persistStage(
-    operations: WorkoutLogOperation[],
-    operation: WorkoutLogOperation,
+  function readOperation(operationId: string): Promise<WorkoutLogOperation | null> {
+    return serializeStorageOperation(async () => {
+      const operations = await read();
+      return operations.find((operation) => operation.operationId === operationId) ?? null;
+    });
+  }
+
+  function persistStage(
+    operationId: string,
+    expectedStage: WorkoutLogOperation['stage']['kind'],
     stage: WorkoutLogOperation['stage'],
-  ): Promise<WorkoutLogOperation[]> {
-    const advanced = workoutLogOperationSchema.parse({ ...operation, stage });
-    const next = operations.map((candidate) =>
-      candidate.operationId === operation.operationId ? advanced : candidate,
-    );
-    await write(next);
-    return next;
+  ): Promise<WorkoutLogOperation | null> {
+    return serializeStorageOperation(async () => {
+      const operations = await read();
+      const current = operations.find((operation) => operation.operationId === operationId);
+      if (!current || current.stage.kind !== expectedStage) return current ?? null;
+
+      const advanced = workoutLogOperationSchema.parse({ ...current, stage });
+      const next = operations.map((candidate) =>
+        candidate.operationId === operationId ? advanced : candidate,
+      );
+      await write(next);
+      return advanced;
+    });
   }
 
   return {
     ensure(operation) {
-      return serializeJournalOperation(async () => {
+      return serializeStorageOperation(async () => {
         const validated = workoutLogOperationSchema.parse(operation);
         const operations = await read();
         const existing = operations.find(
@@ -113,14 +142,11 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     },
 
     get(operationId) {
-      return serializeJournalOperation(async () => {
-        const operations = await read();
-        return operations.find((operation) => operation.operationId === operationId) ?? null;
-      });
+      return readOperation(operationId);
     },
 
     hasForDay(ownerAuthUserId, date, workoutDayId) {
-      return serializeJournalOperation(async () => {
+      return serializeStorageOperation(async () => {
         const operations = await read();
         return operations.some(
           (operation) =>
@@ -139,10 +165,10 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
         return Promise.resolve();
       }
 
-      return serializeJournalOperation(async () => {
-        let operations = await read();
+      return serializeDrain(async () => {
+        const candidates = await serializeStorageOperation(() => read());
 
-        for (const candidate of operations) {
+        for (const candidate of candidates) {
           if (
             candidate.ownerAuthUserId !== ownerAuthUserId ||
             candidate.stage.kind === 'terminal'
@@ -151,29 +177,37 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
           }
 
           try {
-            let current = candidate;
+            let current = await readOperation(candidate.operationId);
+            if (
+              !current ||
+              current.ownerAuthUserId !== ownerAuthUserId ||
+              current.stage.kind === 'terminal'
+            ) {
+              continue;
+            }
 
             if (current.stage.kind === 'create') {
               const started = await requester.request<{ id: string }>('/workout-logs', {
                 method: 'POST',
                 body: JSON.stringify({ workoutDayId: current.workoutDayId, date: current.date }),
               });
-              operations = await persistStage(operations, current, {
+              current = await persistStage(current.operationId, 'create', {
                 kind: 'finish',
                 workoutLogId: started.id,
               });
-              current = {
-                ...current,
-                stage: { kind: 'finish', workoutLogId: started.id },
-              };
+              if (!current) continue;
             }
 
             if (current.stage.kind === 'finish') {
-              await requester.request(`/workout-logs/${current.stage.workoutLogId}/finish`, {
-                method: 'PATCH',
-                body: JSON.stringify(current.finish),
-              });
-              operations = await persistStage(operations, current, { kind: 'terminal' });
+              try {
+                await requester.request(`/workout-logs/${current.stage.workoutLogId}/finish`, {
+                  method: 'PATCH',
+                  body: JSON.stringify(current.finish),
+                });
+              } catch (error) {
+                if (!isAlreadyCompletedConflict(error)) throw error;
+              }
+              await persistStage(current.operationId, 'finish', { kind: 'terminal' });
             }
           } catch {
             // A etapa já persistida permanece disponível para o próximo drain.
@@ -183,7 +217,7 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     },
 
     pruneTerminalsBefore(ownerAuthUserId, date) {
-      return serializeJournalOperation(async () => {
+      return serializeStorageOperation(async () => {
         const operations = await read();
         const retained = operations.filter(
           (operation) =>

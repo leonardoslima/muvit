@@ -1040,6 +1040,7 @@ export function useGuidedWorkoutSession({
           bindRequester: () => api.bindCurrentSession(),
           date: isoDateFromTimestamp(current.startedAtMs),
           durationMin: nextSummary.durationMin,
+          isOwnerCurrent: () => isCurrentLogicalIdentity(finishIdentity),
           journal: workoutLogJournal,
           ownerAuthUserId: finishAuthUserId,
           sets: current.sets,

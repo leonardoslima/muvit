@@ -70,6 +70,7 @@ export async function finishWorkoutWithOfflineFallback({
   workoutDayId,
   date,
   durationMin,
+  isOwnerCurrent,
   sets,
 }: {
   ownerAuthUserId: string;
@@ -78,6 +79,7 @@ export async function finishWorkoutWithOfflineFallback({
   workoutDayId: string;
   date: string;
   durationMin: number;
+  isOwnerCurrent: () => boolean;
   sets: WorkoutSetState[];
 }): Promise<{ queued: boolean }> {
   const operation: WorkoutLogOperation = {
@@ -91,7 +93,18 @@ export async function finishWorkoutWithOfflineFallback({
   };
 
   await journal.ensure(operation);
-  await journal.drain(ownerAuthUserId, bindRequester);
+  if (isOwnerCurrent()) {
+    let requester: ApiRequester | null = null;
+    try {
+      requester = bindRequester();
+    } catch {
+      // Sem credencial vinculável, a operação permanece no journal para retry autenticado.
+    }
+    if (requester && isOwnerCurrent()) {
+      const capturedRequester = requester;
+      await journal.drain(ownerAuthUserId, () => capturedRequester);
+    }
+  }
   const persistedOperation = await journal.get(operation.operationId);
 
   return { queued: persistedOperation?.stage.kind !== 'terminal' };

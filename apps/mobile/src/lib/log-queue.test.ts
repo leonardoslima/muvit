@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ApiRequester } from './api';
+import { ApiError, type ApiRequester, ApiTransportError } from './api';
 import { type QueueStorage, type WorkoutLogOperation, createWorkoutLogJournal } from './log-queue';
 
 const WORKOUT_DAY_ID = '11111111-1111-4111-8111-111111111111';
@@ -52,6 +52,17 @@ function workoutLogOperation({
 function persistedStage(serialized: string): string {
   const operations = JSON.parse(serialized) as WorkoutLogOperation[];
   return operations[0]?.stage.kind ?? 'empty';
+}
+
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolvePromise = (_value: T): void => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: resolvePromise };
 }
 
 describe('createWorkoutLogJournal', () => {
@@ -107,6 +118,53 @@ describe('createWorkoutLogJournal', () => {
     });
     await expect(journal.get(operation.operationId)).resolves.toMatchObject({
       stage: { kind: 'terminal' },
+    });
+  });
+
+  it('marca terminal quando o replay confirma que o log já foi concluído', async () => {
+    const operation = workoutLogOperation({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
+    });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([operation]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+    const requester = {
+      request: vi
+        .fn()
+        .mockRejectedValueOnce(new ApiTransportError(new TypeError('resposta perdida')))
+        .mockRejectedValueOnce(new ApiError('log already completed', 409)),
+    };
+
+    await journal.drain('user-a', () => requester);
+    await expect(journal.get(operation.operationId)).resolves.toMatchObject({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
+    });
+
+    await journal.drain('user-a', () => requester);
+
+    await expect(journal.get(operation.operationId)).resolves.toMatchObject({
+      stage: { kind: 'terminal' },
+    });
+    expect(requester.request).toHaveBeenCalledTimes(2);
+  });
+
+  it('mantém finish quando o servidor responde com outro conflito 409', async () => {
+    const operation = workoutLogOperation({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
+    });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([operation]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+    const requester = {
+      request: vi.fn().mockRejectedValue(new ApiError('conflito de versão', 409)),
+    };
+
+    await journal.drain('user-a', () => requester);
+
+    await expect(journal.get(operation.operationId)).resolves.toMatchObject({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
     });
   });
 
@@ -247,6 +305,57 @@ describe('createWorkoutLogJournal', () => {
       stage: { kind: 'terminal' },
     });
     expect(request).toHaveBeenCalledTimes(4);
+  });
+
+  it('não bloqueia leitura local durante rede e mantém drain single-flight entre instâncias', async () => {
+    const operation = workoutLogOperation();
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([operation]),
+    });
+    const firstJournal = createWorkoutLogJournal(storage);
+    const secondJournal = createWorkoutLogJournal(storage);
+    const requestStarted = deferred<void>();
+    const releasePost = deferred<{ id: string }>();
+    const request = vi.fn();
+    const requester: ApiRequester = {
+      async request<T>(path: string): Promise<T> {
+        request(path);
+        if (path === '/workout-logs') {
+          requestStarted.resolve();
+          return (await releasePost.promise) as T;
+        }
+        return null as T;
+      },
+    };
+
+    const firstDrain = firstJournal.drain('user-a', () => requester);
+    await requestStarted.promise;
+    const secondDrain = secondJournal.drain('user-a', () => requester);
+    let readDuringNetwork: WorkoutLogOperation | null | undefined;
+    const read = secondJournal.get(operation.operationId).then((value) => {
+      readDuringNetwork = value;
+      return value;
+    });
+
+    try {
+      await vi.waitFor(
+        () => {
+          expect(readDuringNetwork).toEqual(operation);
+        },
+        { interval: 5, timeout: 100 },
+      );
+    } finally {
+      releasePost.resolve({ id: 'log-a' });
+      await Promise.all([firstDrain, secondDrain, read]);
+    }
+
+    expect(request.mock.calls.filter(([path]) => path === '/workout-logs')).toHaveLength(1);
+    expect(
+      request.mock.calls.filter(([path]) => path === '/workout-logs/log-a/finish'),
+    ).toHaveLength(1);
+    await expect(firstJournal.get(operation.operationId)).resolves.toMatchObject({
+      stage: { kind: 'terminal' },
+    });
   });
 
   it('rejeita conteúdo persistido inválido sem sobrescrevê-lo', async () => {
