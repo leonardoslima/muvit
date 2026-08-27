@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 import {
   ScrollView,
   type ScrollViewProps,
@@ -7,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BottomTabBarHeightContext } from '../../../node_modules/@react-navigation/bottom-tabs/src/utils/BottomTabBarHeightContext';
 import { colors, fontFamilies, sharedStyles, spacing } from '../../lib/styles';
 
 export type ScreenProps = {
@@ -17,6 +19,10 @@ export type ScreenProps = {
 };
 
 export function Screen({ children, contentContainerStyle, scroll = false, style }: ScreenProps) {
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
+  const tabBarInset =
+    typeof tabBarHeight === 'number' ? { paddingBottom: tabBarHeight + spacing.lg } : undefined;
+
   if (!scroll) {
     return <SafeAreaView style={[sharedStyles.screen, style]}>{children}</SafeAreaView>;
   }
@@ -24,7 +30,11 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   return (
     <SafeAreaView style={sharedStyles.safeArea}>
       <ScrollView
-        contentContainerStyle={[{ gap: spacing.lg, padding: spacing.xxl }, contentContainerStyle]}
+        contentContainerStyle={[
+          { gap: spacing.lg, padding: spacing.xxl },
+          contentContainerStyle,
+          tabBarInset,
+        ]}
         style={style}
       >
         {children}
