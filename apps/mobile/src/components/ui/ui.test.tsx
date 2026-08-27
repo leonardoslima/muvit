@@ -1,7 +1,7 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { render, screen, userEvent } from '@testing-library/react-native';
-import { ScrollView } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { BottomTabBarHeightContext } from '../../../node_modules/@react-navigation/bottom-tabs/src/utils/BottomTabBarHeightContext';
 import { spacing } from '../../lib/styles';
 import { AppButton } from './button';
 import { Field } from './field';
@@ -42,19 +42,51 @@ describe('componentes visuais mobile', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it('reserva espaço para a tab bar absoluta somente dentro das tabs', () => {
+  it('reserva espaço da tab bar e preserva os estilos fornecidos', () => {
+    const callerStyle = {
+      backgroundColor: '#ffffff',
+      paddingBottom: 8,
+      paddingHorizontal: 12,
+    };
     const withTabs = render(
       <BottomTabBarHeightContext.Provider value={64}>
-        <Screen scroll>Conteúdo</Screen>
+        <Screen contentContainerStyle={callerStyle} scroll>
+          Conteúdo
+        </Screen>
       </BottomTabBarHeightContext.Provider>,
     );
-    expect(withTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle).toEqual(
-      expect.arrayContaining([expect.objectContaining({ paddingBottom: 64 + spacing.lg })]),
+    const withTabsStyle = StyleSheet.flatten(
+      withTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(withTabsStyle).toEqual(
+      expect.objectContaining({
+        backgroundColor: callerStyle.backgroundColor,
+        paddingBottom: 64 + spacing.lg,
+        paddingHorizontal: callerStyle.paddingHorizontal,
+      }),
     );
 
-    const outsideTabs = render(<Screen scroll>Conteúdo</Screen>);
-    expect(outsideTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ paddingBottom: 64 + spacing.lg })]),
+    const withZeroTabBar = render(
+      <BottomTabBarHeightContext.Provider value={0}>
+        <Screen contentContainerStyle={callerStyle} scroll>
+          Conteúdo
+        </Screen>
+      </BottomTabBarHeightContext.Provider>,
     );
+    const withZeroTabBarStyle = StyleSheet.flatten(
+      withZeroTabBar.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(withZeroTabBarStyle.paddingBottom).toBe(spacing.lg);
+
+    const outsideTabs = render(
+      <Screen contentContainerStyle={callerStyle} scroll>
+        Conteúdo
+      </Screen>,
+    );
+    const outsideTabsStyle = StyleSheet.flatten(
+      outsideTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(outsideTabsStyle).toEqual(expect.objectContaining(callerStyle));
+    expect(outsideTabsStyle.paddingBottom).toBe(callerStyle.paddingBottom);
   });
 });

@@ -1,3 +1,4 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { useContext } from 'react';
 import {
   ScrollView,
@@ -8,7 +9,6 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomTabBarHeightContext } from '../../../node_modules/@react-navigation/bottom-tabs/src/utils/BottomTabBarHeightContext';
 import { colors, fontFamilies, sharedStyles, spacing } from '../../lib/styles';
 
 export type ScreenProps = {
