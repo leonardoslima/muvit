@@ -8,10 +8,12 @@ export type GuidedSessionPhase =
   | 'summary';
 
 export type GuidedSession = {
-  version: 1;
+  version: 2;
   workoutDayId: string;
   startedAtMs: number;
   updatedAtMs: number;
+  activeDurationMs: number;
+  activeSinceMs: number | null;
   currentExerciseIndex: number;
   currentSetIndex: number;
   phase: GuidedSessionPhase;
@@ -57,16 +59,36 @@ export function createGuidedSession(day: GuidedSessionDay, startedAtMs: number):
   }
 
   return {
-    version: 1,
+    version: 2,
     workoutDayId: day.id,
     startedAtMs,
     updatedAtMs: startedAtMs,
+    activeDurationMs: 0,
+    activeSinceMs: startedAtMs,
     currentExerciseIndex: 0,
     currentSetIndex: 0,
     phase: 'set',
     restEndsAtMs: null,
     sets,
   };
+}
+
+export function pauseGuidedSession(session: GuidedSession, pausedAtMs: number): GuidedSession {
+  if (session.activeSinceMs === null) return session;
+
+  return {
+    ...session,
+    activeDurationMs:
+      session.activeDurationMs + Math.max(0, pausedAtMs - session.activeSinceMs),
+    activeSinceMs: null,
+    updatedAtMs: pausedAtMs,
+  };
+}
+
+export function resumeGuidedSession(session: GuidedSession, resumedAtMs: number): GuidedSession {
+  if (session.activeSinceMs !== null || session.phase === 'summary') return session;
+
+  return { ...session, activeSinceMs: resumedAtMs, updatedAtMs: resumedAtMs };
 }
 
 export function getCurrentSet(session: GuidedSession): WorkoutSetState | undefined {
@@ -216,11 +238,16 @@ export function buildSessionSummary(
     (total, set) => total + parseNumber(set.loadKg) * parseNumber(set.repsDone),
     0,
   );
+  const currentActiveDurationMs =
+    session.activeSinceMs === null
+      ? 0
+      : Math.max(0, finishedAtMs - session.activeSinceMs);
+  const activeDurationMs = session.activeDurationMs + currentActiveDurationMs;
 
   return {
     durationMin: Math.min(
       600,
-      Math.max(1, Math.ceil((finishedAtMs - session.startedAtMs) / 60_000)),
+      Math.max(1, Math.ceil(activeDurationMs / 60_000)),
     ),
     exerciseCount: exerciseIds.size,
     completedSetCount: completedSets.length,

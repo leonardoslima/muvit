@@ -7,6 +7,8 @@ import {
   extendRest,
   getCurrentSet,
   markSessionFinished,
+  pauseGuidedSession,
+  resumeGuidedSession,
   skipRest,
   updateCurrentSet,
 } from './guided-session';
@@ -20,6 +22,24 @@ const day = {
 };
 
 describe('sessão guiada', () => {
+  it('soma somente os intervalos ativos separados por salvar e retomar', () => {
+    const created = createGuidedSession(day, 1_000);
+    const paused = pauseGuidedSession(created, 61_000);
+    const resumed = resumeGuidedSession(paused, 3_661_000);
+
+    expect(paused).toMatchObject({
+      phase: 'set',
+      activeDurationMs: 60_000,
+      activeSinceMs: null,
+    });
+    expect(resumed).toMatchObject({
+      phase: 'set',
+      activeDurationMs: 60_000,
+      activeSinceMs: 3_661_000,
+    });
+    expect(buildSessionSummary(resumed, 3_721_000).durationMin).toBe(2);
+  });
+
   it('avança de série para descanso e depois para a próxima série', () => {
     const created = createGuidedSession(day, 1_000);
     const edited = updateCurrentSet(created, { loadKg: '22', repsDone: '10' }, 1_500);
