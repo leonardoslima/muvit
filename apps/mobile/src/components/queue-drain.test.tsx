@@ -48,10 +48,6 @@ vi.mock('../lib/auth-client', () => ({
   authClient: { useSession: authState.useSession },
 }));
 
-vi.mock('../lib/date', () => ({
-  todayIsoDate: () => '2026-08-27',
-}));
-
 vi.mock('../lib/log-queue', () => ({
   createWorkoutLogJournal: () => journalState,
 }));
@@ -77,24 +73,24 @@ describe('QueueDrain', () => {
     journalState.pruneTerminalsBefore.mockResolvedValue(undefined);
   });
 
-  it('captura requester e owner antes de aguardar a poda', async () => {
-    const pruneGate = deferred();
+  it('drena com o requester capturado sem apagar tombstones automaticamente', async () => {
+    const drainGate = deferred();
     const requesterA = { request: vi.fn() };
     const requesterB = { request: vi.fn() };
-    journalState.pruneTerminalsBefore.mockReturnValue(pruneGate.promise);
+    journalState.pruneTerminalsBefore.mockRejectedValue(new Error('não deve podar'));
+    journalState.drain.mockReturnValue(drainGate.promise);
     apiState.bindCurrentSession.mockReturnValue(requesterA);
 
     render(<QueueDrain />);
 
-    expect(journalState.pruneTerminalsBefore).toHaveBeenCalledWith('user-a', '2026-08-27');
     expect(apiState.bindCurrentSession).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(journalState.drain).toHaveBeenCalledTimes(1));
+    expect(journalState.pruneTerminalsBefore).not.toHaveBeenCalled();
 
     apiState.bindCurrentSession.mockReturnValue(requesterB);
-    pruneGate.resolve();
-
-    await waitFor(() => expect(journalState.drain).toHaveBeenCalledTimes(1));
     const bindRequester = journalState.drain.mock.calls[0]?.[1];
     expect(bindRequester?.()).toBe(requesterA);
     expect(apiState.bindCurrentSession).toHaveBeenCalledTimes(1);
+    drainGate.resolve();
   });
 });

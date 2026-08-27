@@ -20,7 +20,7 @@ import {
 import { loadWorkoutDay, normalizeCachedTodayWorkout } from '../application/workouts/today-workout';
 import { finishWorkoutWithOfflineFallback } from '../application/workouts/workout-log';
 import type { ApiClient } from './api';
-import { todayIsoDate } from './date';
+import { isoDateFromTimestamp, todayIsoDate } from './date';
 import { createWorkoutLogJournal } from './log-queue';
 import { type WorkoutSessionStorage, createWorkoutSessionStorage } from './workout-session-storage';
 
@@ -657,7 +657,10 @@ export function useGuidedWorkoutSession({
           if (isCurrentIdentity()) setStorageError(getErrorMessage(error));
         }
 
-        const hasCompletion = await workoutLogJournal.hasForDay(authUserId, todayIsoDate(), dayId);
+        const operationDate = stored
+          ? isoDateFromTimestamp(stored.session.startedAtMs)
+          : todayIsoDate();
+        const hasCompletion = await workoutLogJournal.hasForDay(authUserId, operationDate, dayId);
         assertActive();
         if (hasCompletion) {
           const lifecycle = getSessionLifecycle(identity);
@@ -671,6 +674,18 @@ export function useGuidedWorkoutSession({
         }
 
         if (stored?.kind === 'active') {
+          const lifecycle = getSessionLifecycle(identity);
+          if (lifecycle && version && lifecycle.revision !== version.revision) {
+            const currentSession = sessionRef.current;
+            const currentDay = dayRef.current;
+            if (!currentSession || !currentDay) throw new StaleGuidedSessionQueryError();
+            return {
+              day: currentDay,
+              lifecycleGeneration: lifecycle.generation,
+              lifecycleRevision: lifecycle.revision,
+              session: currentSession,
+            };
+          }
           if (!isDraftCompatible(stored.session, stored.day)) {
             return migrateIncompatibleDraft(stored.day);
           }
@@ -678,47 +693,53 @@ export function useGuidedWorkoutSession({
           const resumed = resumeGuidedSession(stored.session, nowRef.current());
           await enqueuePersistence(identity, async () => {
             assertActive();
+            const currentLifecycle = getSessionLifecycle(identity);
+            if (currentLifecycle && version && currentLifecycle.revision !== version.revision) {
+              throw new StaleGuidedSessionQueryError();
+            }
             await sessionStorage.save(authUserId, stored.day, resumed);
             assertActive();
             bumpSessionRevision(identity);
           });
-          const lifecycle = getSessionLifecycle(identity);
+          const resumedLifecycle = getSessionLifecycle(identity);
           return {
             day: stored.day,
-            lifecycleGeneration: lifecycle?.generation,
-            lifecycleRevision: lifecycle?.revision,
+            lifecycleGeneration: resumedLifecycle?.generation,
+            lifecycleRevision: resumedLifecycle?.revision,
             session: resumed,
           };
         }
 
         if (stored?.kind === 'legacy') {
+          let cached: ReturnType<typeof normalizeCachedTodayWorkout>;
           try {
             const cachedRaw = await AsyncStorage.getItem(`today-workout:${authUserId}`);
-            const cached = cachedRaw
+            cached = cachedRaw
               ? normalizeCachedTodayWorkout(JSON.parse(cachedRaw) as unknown)
               : undefined;
-            if (
-              cached?.status === 'available' &&
-              cached.day.id === dayId &&
-              isDraftCompatible(stored.session, cached.day)
-            ) {
-              const resumed = resumeGuidedSession(stored.session, nowRef.current());
-              await enqueuePersistence(identity, async () => {
-                assertActive();
-                await sessionStorage.save(authUserId, cached.day, resumed);
-                assertActive();
-                bumpSessionRevision(identity);
-              });
-              const lifecycle = getSessionLifecycle(identity);
-              return {
-                day: cached.day,
-                lifecycleGeneration: lifecycle?.generation,
-                lifecycleRevision: lifecycle?.revision,
-                session: resumed,
-              };
-            }
           } catch {
             // Cache ausente ou inválido exige validar o dia pela API.
+            cached = undefined;
+          }
+          if (
+            cached?.status === 'available' &&
+            cached.day.id === dayId &&
+            isDraftCompatible(stored.session, cached.day)
+          ) {
+            const resumed = resumeGuidedSession(stored.session, nowRef.current());
+            await enqueuePersistence(identity, async () => {
+              assertActive();
+              await sessionStorage.save(authUserId, cached.day, resumed);
+              assertActive();
+              bumpSessionRevision(identity);
+            });
+            const lifecycle = getSessionLifecycle(identity);
+            return {
+              day: cached.day,
+              lifecycleGeneration: lifecycle?.generation,
+              lifecycleRevision: lifecycle?.revision,
+              session: resumed,
+            };
           }
         }
 
@@ -746,11 +767,19 @@ export function useGuidedWorkoutSession({
         }
 
         if (draft) {
+          const resumed = resumeGuidedSession(draft, nowRef.current());
+          await enqueuePersistence(identity, async () => {
+            assertActive();
+            await sessionStorage.save(authUserId, day, resumed);
+            assertActive();
+            bumpSessionRevision(identity);
+          });
+          const currentLifecycle = getSessionLifecycle(identity);
           return {
             day,
-            lifecycleGeneration: version?.generation,
-            lifecycleRevision: version?.revision,
-            session: draft,
+            lifecycleGeneration: currentLifecycle?.generation,
+            lifecycleRevision: currentLifecycle?.revision,
+            session: resumed,
           };
         }
 
@@ -810,6 +839,11 @@ export function useGuidedWorkoutSession({
     dayRef.current = query.data.day;
     sessionRef.current = query.data.session;
     setSession(query.data.session);
+    setSummary(
+      query.data.session.phase === 'summary'
+        ? buildSessionSummary(query.data.session, query.data.session.updatedAtMs)
+        : null,
+    );
     setDraftActive(query.data.session.phase !== 'summary');
   }, [identity, isCurrentIdentity, query.data, syncSessionCache]);
 
@@ -1004,7 +1038,7 @@ export function useGuidedWorkoutSession({
         const nextSummary = buildSessionSummary(current, finishedAtMs);
         const result = await finishWorkoutWithOfflineFallback({
           bindRequester: () => api.bindCurrentSession(),
-          date: todayIsoDate(),
+          date: isoDateFromTimestamp(current.startedAtMs),
           durationMin: nextSummary.durationMin,
           journal: workoutLogJournal,
           ownerAuthUserId: finishAuthUserId,

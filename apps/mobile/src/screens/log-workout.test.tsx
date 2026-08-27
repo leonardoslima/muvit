@@ -442,6 +442,37 @@ describe('LogWorkoutScreen', () => {
     expect(screen.getByText(workoutPlan.days[0].exercises[0].exercise.name)).toBeTruthy();
   });
 
+  it('reconstrói o resumo de um envelope terminal sem expor nova conclusão', async () => {
+    const terminalSession: GuidedSession = {
+      ...readySession,
+      phase: 'summary',
+      startedAtMs: 1_000,
+      updatedAtMs: 121_000,
+      activeDurationMs: 120_000,
+      activeSinceMs: null,
+    };
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey
+        ? JSON.stringify({
+            kind: 'active',
+            version: 2,
+            ownerAuthUserId: authState.data.user.id,
+            day: workoutPlan.days[0],
+            session: terminalSession,
+          })
+        : null,
+    );
+    apiState.request.mockRejectedValue(new ApiTransportError(new TypeError('offline')));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Duração total: 2 min')).toBeTruthy();
+    expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
+    expect(apiState.request).not.toHaveBeenCalled();
+  });
+
   it('promove um rascunho legado com o cache de Hoje antes de consultar a API', async () => {
     const legacySession = {
       version: 1,
@@ -476,6 +507,50 @@ describe('LogWorkoutScreen', () => {
       day: { id: routerState.dayId },
       session: { version: 2, workoutDayId: routerState.dayId },
     });
+  });
+
+  it('promove um rascunho legado depois que a API valida o dia sem cache local', async () => {
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey ? serializeLegacySession(draftSession) : null,
+    );
+    mockWorkoutDay();
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino em andamento')).toBeTruthy();
+    expect(apiState.request).toHaveBeenCalledTimes(2);
+    const promotedWrite = storageState.setItem.mock.calls.find(([key]) => key === sessionKey)?.[1];
+    expect(JSON.parse(String(promotedWrite))).toMatchObject({
+      kind: 'active',
+      version: 2,
+      ownerAuthUserId: authState.data.user.id,
+      day: { id: routerState.dayId },
+      session: {
+        version: 2,
+        workoutDayId: routerState.dayId,
+      },
+    });
+  });
+
+  it('não consulta a API quando falha ao persistir a promoção legada pelo cache', async () => {
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) return serializeLegacySession(draftSession);
+      if (key === `today-workout:${authState.data.user.id}`) {
+        return JSON.stringify({ status: 'available', plan: workoutPlan, day: workoutPlan.days[0] });
+      }
+      return null;
+    });
+    storageState.setItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) throw new Error('falha ao promover legado');
+    });
+    apiState.request.mockRejectedValue(new ApiTransportError(new TypeError('offline')));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino indisponível')).toBeTruthy();
+    expect(apiState.request).not.toHaveBeenCalled();
   });
 
   it('não contabiliza o tempo salvo fora do treino após remontar a sessão', async () => {
@@ -550,6 +625,8 @@ describe('LogWorkoutScreen', () => {
 
   it('mantém o tombstone após falha ao remover o rascunho e bloqueia nova conclusão no remount', async () => {
     const user = userEvent.setup();
+    const beforeRolloverMs = new Date(2026, 7, 27, 12).getTime();
+    const afterRolloverMs = new Date(2026, 7, 28, 12).getTime();
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
     const journalKey = 'muvit_workout_log_journal';
     let serializedSession: string | null = JSON.stringify({
@@ -560,6 +637,8 @@ describe('LogWorkoutScreen', () => {
       session: {
         ...readySession,
         version: 2,
+        startedAtMs: beforeRolloverMs,
+        updatedAtMs: beforeRolloverMs + 60_000,
         activeDurationMs: 60_000,
         activeSinceMs: null,
       },
@@ -586,40 +665,48 @@ describe('LogWorkoutScreen', () => {
       if (path === '/students/me/workout-logs?limit=30') return { items: [] };
       throw new Error(`unexpected request: ${path}`);
     });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(beforeRolloverMs + 60_000);
 
-    const first = renderWithQueryClient();
-    expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
-    expect(
-      await screen.findByText('Treino concluído, mas não foi possível remover o rascunho.'),
-    ).toBeTruthy();
-    const todayQueryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, staleTime: 0 } },
-    });
-    first.view.rerender(
-      <QueryClientProvider client={todayQueryClient}>
-        <TodayWorkoutScreen />
-      </QueryClientProvider>,
-    );
-    expect(await screen.findByText('Treino concluído')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
+    try {
+      const first = renderWithQueryClient();
+      expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
+      await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+      expect(
+        await screen.findByText('Treino concluído, mas não foi possível remover o rascunho.'),
+      ).toBeTruthy();
+      vi.setSystemTime(afterRolloverMs);
 
-    const remountQueryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, staleTime: 0 } },
-    });
-    first.view.rerender(
-      <QueryClientProvider client={remountQueryClient}>
-        <LogWorkoutScreen />
-      </QueryClientProvider>,
-    );
-    expect(await screen.findByText('Treino concluído')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
+      const todayQueryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: 0 } },
+      });
+      first.view.rerender(
+        <QueryClientProvider client={todayQueryClient}>
+          <TodayWorkoutScreen />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText('Treino concluído')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
 
-    const postRequests = apiState.request.mock.calls.filter(
-      ([path, init]) => path === '/workout-logs' && init?.method === 'POST',
-    );
-    expect(postRequests).toHaveLength(1);
+      const remountQueryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: 0 } },
+      });
+      first.view.rerender(
+        <QueryClientProvider client={remountQueryClient}>
+          <LogWorkoutScreen />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText('Treino concluído')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
+
+      const postRequests = apiState.request.mock.calls.filter(
+        ([path, init]) => path === '/workout-logs' && init?.method === 'POST',
+      );
+      expect(postRequests).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('sincroniza o cache ao editar e reabre o mesmo rascunho no mesmo QueryClient', async () => {
@@ -758,8 +845,9 @@ describe('LogWorkoutScreen', () => {
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       const saved = parseStoredSession(value);
       if (key === firstKey) {
-        started.push(`A:${saved.sets[1]?.repsDone ?? ''}`);
-        await firstWrite.promise;
+        const repsDone = saved.sets[1]?.repsDone ?? '';
+        started.push(`A:${repsDone}`);
+        if (repsDone === '7') await firstWrite.promise;
         firstSerialized = value;
         return;
       }
@@ -823,6 +911,10 @@ describe('LogWorkoutScreen', () => {
     );
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       if (key !== sessionKey) return;
+      if ((parseStoredSession(value).sets[1]?.repsDone ?? '') !== '10') {
+        serialized = value;
+        return;
+      }
       events.push('save:start');
       await pendingWrite.promise;
       serialized = value;
@@ -883,6 +975,10 @@ describe('LogWorkoutScreen', () => {
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       if (key !== sessionKey) return;
       const saved = parseStoredSession(value);
+      if ((saved.sets[1]?.repsDone ?? '') !== '10') {
+        serialized = value;
+        return;
+      }
       events.push(`save:${saved.sets[1]?.repsDone ?? ''}`);
       await pendingWrite.promise;
       serialized = value;
@@ -904,6 +1000,7 @@ describe('LogWorkoutScreen', () => {
 
     try {
       expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      const initialSaveCount = storageState.setItem.mock.calls.length;
       fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
       await waitFor(() => expect(events).toEqual(['save:10']));
 
@@ -927,7 +1024,7 @@ describe('LogWorkoutScreen', () => {
       await waitFor(() => expect(queryClient.getQueryData(guidedQueryKey)).toBeUndefined());
 
       expect(serialized).toBeNull();
-      expect(storageState.setItem).toHaveBeenCalledTimes(1);
+      expect(storageState.setItem).toHaveBeenCalledTimes(initialSaveCount + 1);
       expect(queryClient.getQueryData(guidedQueryKey)).toBeUndefined();
       expect(screen.queryByText('Série 2 de 2')).toBeNull();
     } finally {
@@ -1138,6 +1235,7 @@ describe('LogWorkoutScreen', () => {
       const pendingWrite = createDeferred<void>();
       const events: string[] = [];
       let serialized: string | null = serializeLegacySession(draftSession);
+      let setupComplete = false;
       let writeCount = 0;
 
       storageState.getItem.mockImplementation(async (key: string) =>
@@ -1145,6 +1243,7 @@ describe('LogWorkoutScreen', () => {
       );
       storageState.setItem.mockImplementation(async (key: string, value: string) => {
         if (key !== sessionKey) return;
+        if (!setupComplete) return;
         writeCount += 1;
         const saved = parseStoredSession(value);
         events.push(`save:${saved.sets.length}`);
@@ -1170,6 +1269,7 @@ describe('LogWorkoutScreen', () => {
       renderWithQueryClient(queryClient);
 
       expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      setupComplete = true;
       const refetchPromise = queryClient.refetchQueries({ queryKey: guidedQueryKey, exact: true });
       await waitFor(() =>
         expect(
@@ -1227,6 +1327,7 @@ describe('LogWorkoutScreen', () => {
     const replacementSaveDone = createDeferred<void>();
     const events: string[] = [];
     let serialized: string | null = serializeLegacySession(draftSession);
+    let setupComplete = false;
     let writeCount = 0;
 
     storageState.getItem.mockImplementation(async (key: string) =>
@@ -1241,6 +1342,7 @@ describe('LogWorkoutScreen', () => {
     });
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       if (key !== sessionKey) return;
+      if (!setupComplete) return;
       const saved = parseStoredSession(value);
       writeCount += 1;
       const marker = `save:${writeCount}:${saved.sets.length}:${saved.sets[1]?.repsDone ?? ''}`;
@@ -1262,6 +1364,7 @@ describe('LogWorkoutScreen', () => {
     renderWithQueryClient(queryClient);
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    setupComplete = true;
     const refetchPromise = queryClient.refetchQueries({ queryKey: guidedQueryKey, exact: true });
     refetchSummary.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
     await waitFor(() =>
@@ -1299,6 +1402,7 @@ describe('LogWorkoutScreen', () => {
     const replacementSave = createDeferred<void>();
     replacementSave.promise.catch(() => undefined);
     let serialized: string | null = serializeLegacySession(draftSession);
+    let setupComplete = false;
     let writeCount = 0;
 
     storageState.getItem.mockImplementation(async (key: string) =>
@@ -1309,6 +1413,7 @@ describe('LogWorkoutScreen', () => {
     });
     storageState.setItem.mockImplementation(async (key: string, value: string) => {
       if (key !== sessionKey) return;
+      if (!setupComplete) return;
       const saved = parseStoredSession(value);
       writeCount += 1;
       if (writeCount === 1) await firstWriteDone.promise;
@@ -1328,6 +1433,8 @@ describe('LogWorkoutScreen', () => {
     renderWithQueryClient(queryClient);
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    setupComplete = true;
+    const initialSaveCount = storageState.setItem.mock.calls.length;
     const refetchPromise = queryClient.refetchQueries({
       queryKey: ['guided-workout-session', authState.data.user.id, routerState.dayId],
       exact: true,
@@ -1351,7 +1458,7 @@ describe('LogWorkoutScreen', () => {
 
     await waitFor(() => expect(screen.getByText('Treino indisponível')).toBeTruthy());
     expect(screen.queryByLabelText('Repetições realizadas')).toBeNull();
-    expect(storageState.setItem).toHaveBeenCalledTimes(2);
+    expect(storageState.setItem).toHaveBeenCalledTimes(initialSaveCount + 2);
     expect(serialized).toBeNull();
   });
 
@@ -1413,6 +1520,7 @@ describe('LogWorkoutScreen', () => {
 
     try {
       expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      writes.length = 0;
       authState.data = { user: { id: secondUserId, role: 'student' } };
       routerState.dayId = secondDayId;
       view.rerender(
@@ -1621,8 +1729,16 @@ describe('LogWorkoutScreen', () => {
 
   it('remove o cache ao concluir e mantém o tombstone no remount', async () => {
     const user = userEvent.setup();
+    const updatedAtMs = Date.now();
+    const currentReadySession: GuidedSession = {
+      ...readySession,
+      activeDurationMs: 60_000,
+      activeSinceMs: null,
+      startedAtMs: updatedAtMs - 60_000,
+      updatedAtMs,
+    };
     mockWorkoutDay();
-    mockStatefulDraftStorage(readySession);
+    mockStatefulDraftStorage(currentReadySession);
     mockSuccessfulFinish();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: 30_000 } },

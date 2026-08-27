@@ -375,6 +375,68 @@ describe('TodayWorkoutScreen', () => {
     expect(linkState.hrefs).toContain(`/session/${activeWorkout.days[0].id}`);
   });
 
+  it('trata um envelope summary como conclusão local sem iniciar ou continuar', async () => {
+    const day = activeWorkout.days[0];
+    const sessionKey = workoutSessionKey('auth-user-a', day.id);
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey
+        ? JSON.stringify({
+            kind: 'active',
+            version: 2,
+            ownerAuthUserId: 'auth-user-a',
+            day,
+            session: {
+              version: 2,
+              workoutDayId: day.id,
+              startedAtMs: 1_000,
+              updatedAtMs: 121_000,
+              activeDurationMs: 120_000,
+              activeSinceMs: null,
+              currentExerciseIndex: 1,
+              currentSetIndex: 0,
+              phase: 'summary',
+              restEndsAtMs: null,
+              sets: [
+                {
+                  workoutExerciseId: day.exercises[0].id,
+                  setNumber: 1,
+                  repsDone: '10',
+                  loadKg: '20',
+                  completed: true,
+                },
+                {
+                  workoutExerciseId: day.exercises[0].id,
+                  setNumber: 2,
+                  repsDone: '10',
+                  loadKg: '20',
+                  completed: true,
+                },
+                {
+                  workoutExerciseId: day.exercises[1].id,
+                  setNumber: 1,
+                  repsDone: '12',
+                  loadKg: '',
+                  completed: true,
+                },
+              ],
+            },
+          })
+        : null,
+    );
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino concluído')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
+    expect(linkState.hrefs).not.toContain(`/log/${day.id}`);
+    expect(linkState.hrefs).not.toContain(`/session/${day.id}`);
+  });
+
   it('shows a retry action when loading today fails without cache', async () => {
     apiState.request
       .mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')))

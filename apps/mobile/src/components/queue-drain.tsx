@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import type { ApiRequester } from '../lib/api';
 import { authClient } from '../lib/auth-client';
-import { todayIsoDate } from '../lib/date';
 import { createWorkoutLogJournal } from '../lib/log-queue';
 import { useApiClient } from '../lib/use-api';
 
@@ -17,7 +16,6 @@ export function QueueDrain() {
     const journal = createWorkoutLogJournal(AsyncStorage);
     const drain = async (requester: ApiRequester): Promise<void> => {
       try {
-        await journal.pruneTerminalsBefore(authUserId, todayIsoDate());
         await journal.drain(authUserId, () => requester);
       } catch {
         // O próximo foreground tenta novamente sem descartar o journal.

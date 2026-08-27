@@ -17,7 +17,7 @@ import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
-import { todayIsoDate } from '../lib/date';
+import { isoDateFromTimestamp, todayIsoDate } from '../lib/date';
 import { createWorkoutLogJournal } from '../lib/log-queue';
 import type { CacheResult } from '../lib/offline-cache';
 import { colors, sharedStyles, spacing } from '../lib/styles';
@@ -61,12 +61,16 @@ export function TodayWorkoutScreen() {
         return { ...cached, completedLocal: false, data, draft: null };
       }
 
-      const journal = createWorkoutLogJournal(AsyncStorage);
-      const completedLocal = await journal.hasForDay(authUserId, todayIsoDate(), data.day.id);
-      if (completedLocal) return { ...cached, completedLocal, data, draft: null };
-
       const sessionStorage = createWorkoutSessionStorage(AsyncStorage);
       const stored = await sessionStorage.load(authUserId, data.day.id);
+      const journal = createWorkoutLogJournal(AsyncStorage);
+      const operationDate = stored
+        ? isoDateFromTimestamp(stored.session.startedAtMs)
+        : todayIsoDate();
+      const hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
+      const completedLocal = hasJournalCompletion || stored?.session.phase === 'summary';
+      if (completedLocal) return { ...cached, completedLocal, data, draft: null };
+
       return { ...cached, completedLocal: false, data, draft: stored?.session ?? null };
     },
   });
