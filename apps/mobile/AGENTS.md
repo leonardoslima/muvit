@@ -33,7 +33,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Dados offline ou cache local devem ter origem e invalidez claras.
 - Sessoes guiadas offline devem persistir um registro versionado com snapshot validado do dia, particionado por `authUserId` e `workoutDayId`; tente restaurar esse snapshot antes da rede e migre registros legados sem descartar progresso.
 - Ao salvar uma sessao, pause-a e persista o relogio acumulado; somente intervalos entre `resumeGuidedSession` e `pauseGuidedSession` contam no resumo enviado.
-- Conclusoes devem avancar no journal duravel por `ownerAuthUserId`, data local e `workoutDayId` (`create`, `finish`, `terminal`) antes de qualquer request; o requester deve ser vinculado uma vez ao cookie da mesma sessao Better Auth e o tombstone deve bloquear duplicatas.
+- Conclusoes devem avancar no journal duravel por `ownerAuthUserId`, data local e `workoutDayId`: persistir `create` antes do POST; persistir `finish` apos o POST bem-sucedido e antes do PATCH; persistir `terminal` apos o PATCH bem-sucedido. O requester deve ser vinculado uma vez ao cookie da mesma sessao Better Auth e o tombstone deve bloquear duplicatas.
 
 ## UI nativa
 
