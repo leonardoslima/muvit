@@ -1,65 +1,215 @@
 import { describe, expect, it, vi } from 'vitest';
-import { type PendingWorkoutLog, type QueueStorage, createLogQueue } from './log-queue';
+import type { ApiRequester } from './api';
+import { type QueueStorage, type WorkoutLogOperation, createWorkoutLogJournal } from './log-queue';
 
-function memoryStorage(seed: Record<string, string | null> = {}): QueueStorage {
+const WORKOUT_DAY_ID = '11111111-1111-4111-8111-111111111111';
+const OTHER_WORKOUT_DAY_ID = '22222222-2222-4222-8222-222222222222';
+const WORKOUT_EXERCISE_ID = '33333333-3333-4333-8333-333333333333';
+
+function memoryStorage(seed: Record<string, string | null> = {}, onSet?: (value: string) => void) {
   const values = new Map(Object.entries(seed));
   return {
     getItem: vi.fn(async (key: string) => values.get(key) ?? null),
     setItem: vi.fn(async (key: string, value: string) => {
+      onSet?.(value);
       values.set(key, value);
     }),
     removeItem: vi.fn(async (key: string) => {
       values.delete(key);
     }),
-  };
+  } satisfies QueueStorage;
 }
 
-function pendingWorkoutLog(): PendingWorkoutLog {
+function workoutLogOperation({
+  operationId = 'operation-a',
+  ownerAuthUserId = 'user-a',
+  workoutDayId = WORKOUT_DAY_ID,
+  date = '2026-08-27',
+  stage = { kind: 'create' },
+}: Partial<WorkoutLogOperation> = {}): WorkoutLogOperation {
   return {
-    workoutDayId: 'day-1',
-    date: '2026-05-12',
+    version: 1,
+    operationId,
+    ownerAuthUserId,
+    workoutDayId,
+    date,
     finish: {
       durationMin: 45,
       completed: true,
-      sets: [{ workoutExerciseId: 'we-1', setNumber: 1, repsDone: 10, completed: true }],
+      sets: [
+        {
+          workoutExerciseId: WORKOUT_EXERCISE_ID,
+          setNumber: 1,
+          repsDone: 10,
+          completed: true,
+        },
+      ],
     },
+    stage,
   };
 }
 
-describe('createLogQueue', () => {
-  it('enfileira logs pendentes em storage persistente', async () => {
-    const pending = pendingWorkoutLog();
-    const storage = memoryStorage();
-    const queue = createLogQueue(storage);
+function persistedStage(serialized: string): string {
+  const operations = JSON.parse(serialized) as WorkoutLogOperation[];
+  return operations[0]?.stage.kind ?? 'empty';
+}
 
-    await queue.enqueue(pending);
+describe('createWorkoutLogJournal', () => {
+  it('persiste create antes do POST e finish antes do PATCH', async () => {
+    const events: string[] = [];
+    const storage = memoryStorage({}, (value) => events.push(`persist:${persistedStage(value)}`));
+    const journal = createWorkoutLogJournal(storage);
+    const request = vi.fn();
+    const requester: ApiRequester = {
+      async request<T>(path: string): Promise<T> {
+        request(path);
+        events.push(`request:${path}`);
+        return (path === '/workout-logs' ? { id: 'log-a' } : null) as T;
+      },
+    };
 
-    expect(storage.setItem).toHaveBeenCalledWith('muvit_pending_logs', JSON.stringify([pending]));
+    await journal.ensure(workoutLogOperation());
+    await journal.drain('user-a', () => requester);
+
+    expect(storage.setItem.mock.calls.map(([, value]) => persistedStage(value))).toEqual([
+      'create',
+      'finish',
+      'terminal',
+    ]);
+    expect(events).toEqual([
+      'persist:create',
+      'request:/workout-logs',
+      'persist:finish',
+      'request:/workout-logs/log-a/finish',
+      'persist:terminal',
+    ]);
   });
 
-  it('drena a fila e remove storage quando todos os envios passam', async () => {
-    const pending = pendingWorkoutLog();
-    const storage = memoryStorage({ muvit_pending_logs: JSON.stringify([pending]) });
-    const queue = createLogQueue(storage);
-    const sender = vi.fn(async () => undefined);
+  it('retoma finish executando somente PATCH e nunca processa operação de outro usuário', async () => {
+    const operation = workoutLogOperation({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
+    });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([operation]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+    const requester = { request: vi.fn().mockResolvedValue(null) };
 
-    await queue.drain(sender);
+    await journal.drain('user-b', () => requester);
+    expect(requester.request).not.toHaveBeenCalled();
 
-    expect(sender).toHaveBeenCalledWith(pending);
-    expect(storage.removeItem).toHaveBeenCalledWith('muvit_pending_logs');
+    await journal.drain('user-a', () => requester);
+
+    expect(requester.request).toHaveBeenCalledTimes(1);
+    expect(requester.request).toHaveBeenCalledWith('/workout-logs/log-a/finish', {
+      method: 'PATCH',
+      body: JSON.stringify(operation.finish),
+    });
+    await expect(journal.get(operation.operationId)).resolves.toMatchObject({
+      stage: { kind: 'terminal' },
+    });
   });
 
-  it('mantem na fila apenas logs que falharam no envio', async () => {
-    const first = pendingWorkoutLog();
-    const second = { ...pendingWorkoutLog(), workoutDayId: 'day-2' };
-    const storage = memoryStorage({ muvit_pending_logs: JSON.stringify([first, second]) });
-    const queue = createLogQueue(storage);
-    const sender = vi.fn(async (item: PendingWorkoutLog) => {
-      if (item.workoutDayId === 'day-2') throw new Error('offline');
+  it('mantém tombstone somente para o mesmo owner, data e dia', async () => {
+    const journal = createWorkoutLogJournal(memoryStorage());
+    await journal.ensure(workoutLogOperation({ stage: { kind: 'terminal' } }));
+
+    await expect(journal.hasForDay('user-a', '2026-08-27', WORKOUT_DAY_ID)).resolves.toBe(true);
+    await expect(journal.hasForDay('user-b', '2026-08-27', WORKOUT_DAY_ID)).resolves.toBe(false);
+    await expect(journal.hasForDay('user-a', '2026-08-28', WORKOUT_DAY_ID)).resolves.toBe(false);
+    await expect(journal.hasForDay('user-a', '2026-08-27', OTHER_WORKOUT_DAY_ID)).resolves.toBe(
+      false,
+    );
+  });
+
+  it('serializa ensures concorrentes sem perder operações', async () => {
+    const journal = createWorkoutLogJournal(memoryStorage());
+    const first = workoutLogOperation();
+    const second = workoutLogOperation({
+      operationId: 'operation-b',
+      workoutDayId: OTHER_WORKOUT_DAY_ID,
     });
 
-    await queue.drain(sender);
+    await Promise.all([journal.ensure(first), journal.ensure(second)]);
 
-    expect(storage.setItem).toHaveBeenCalledWith('muvit_pending_logs', JSON.stringify([second]));
+    await expect(journal.get(first.operationId)).resolves.toEqual(first);
+    await expect(journal.get(second.operationId)).resolves.toEqual(second);
+  });
+
+  it('mantém a operação existente quando ensure repete o operationId', async () => {
+    const existing = workoutLogOperation({ stage: { kind: 'terminal' } });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([existing]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+
+    await expect(journal.ensure(workoutLogOperation())).resolves.toEqual(existing);
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('serializa ensure e drain concorrentes sem perder avanço de etapa', async () => {
+    const first = workoutLogOperation();
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([first]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+    const second = workoutLogOperation({
+      operationId: 'operation-b',
+      workoutDayId: OTHER_WORKOUT_DAY_ID,
+    });
+    const request = vi.fn();
+    const requester: ApiRequester = {
+      async request<T>(path: string, init?: RequestInit): Promise<T> {
+        request(path, init);
+        if (path !== '/workout-logs') return null as T;
+        const body = JSON.parse(String(init?.body)) as { workoutDayId: string };
+        return { id: `log-${body.workoutDayId}` } as T;
+      },
+    };
+
+    await Promise.all([journal.ensure(second), journal.drain('user-a', () => requester)]);
+
+    await expect(journal.get(first.operationId)).resolves.toMatchObject({
+      stage: { kind: 'terminal' },
+    });
+    await expect(journal.get(second.operationId)).resolves.toMatchObject({
+      stage: { kind: 'terminal' },
+    });
+    expect(request).toHaveBeenCalledTimes(4);
+  });
+
+  it('rejeita conteúdo persistido inválido sem sobrescrevê-lo', async () => {
+    const storage = memoryStorage({ muvit_workout_log_journal: '{inválido' });
+    const journal = createWorkoutLogJournal(storage);
+
+    await expect(journal.ensure(workoutLogOperation())).rejects.toThrow();
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(storage.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('poda somente terminais antigos do owner informado', async () => {
+    const oldTerminal = workoutLogOperation({ date: '2026-08-26', stage: { kind: 'terminal' } });
+    const currentTerminal = workoutLogOperation({
+      operationId: 'operation-current',
+      stage: { kind: 'terminal' },
+    });
+    const otherOwnerTerminal = workoutLogOperation({
+      operationId: 'operation-other-owner',
+      ownerAuthUserId: 'user-b',
+      date: '2026-08-26',
+      stage: { kind: 'terminal' },
+    });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([oldTerminal, currentTerminal, otherOwnerTerminal]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+
+    await journal.pruneTerminalsBefore('user-a', '2026-08-27');
+
+    await expect(journal.get(oldTerminal.operationId)).resolves.toBeNull();
+    await expect(journal.get(currentTerminal.operationId)).resolves.toEqual(currentTerminal);
+    await expect(journal.get(otherOwnerTerminal.operationId)).resolves.toEqual(otherOwnerTerminal);
   });
 });

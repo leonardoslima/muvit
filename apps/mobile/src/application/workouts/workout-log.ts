@@ -1,6 +1,7 @@
 import type { finishWorkoutLogSchema } from '@muvit/validators';
 import type { z } from 'zod';
-import type { PendingWorkoutLog } from '../../lib/log-queue';
+import type { ApiRequester } from '../../lib/api';
+import type { WorkoutLogJournal, WorkoutLogOperation } from '../../lib/log-queue';
 
 type FinishWorkoutLogInput = z.infer<typeof finishWorkoutLogSchema>;
 
@@ -17,12 +18,6 @@ type WorkoutExerciseForSets = {
   sets: number;
   loadKg: string | number | null;
 };
-
-type Queue = {
-  enqueue: (item: PendingWorkoutLog) => Promise<void>;
-};
-
-type SendPendingWorkoutLog<TApi> = (api: TApi, item: PendingWorkoutLog) => Promise<void>;
 
 export function buildInitialSets(exercises: WorkoutExerciseForSets[]): WorkoutSetState[] {
   return exercises.flatMap((exercise) =>
@@ -68,34 +63,36 @@ export function buildFinishWorkoutLogInput(
   };
 }
 
-export async function finishWorkoutWithOfflineFallback<TApi>({
-  api,
-  queue,
-  send,
+export async function finishWorkoutWithOfflineFallback({
+  ownerAuthUserId,
+  journal,
+  bindRequester,
   workoutDayId,
   date,
   durationMin,
   sets,
 }: {
-  api: TApi;
-  queue: Queue;
-  send: SendPendingWorkoutLog<TApi>;
+  ownerAuthUserId: string;
+  journal: Pick<WorkoutLogJournal, 'ensure' | 'drain' | 'get'>;
+  bindRequester: () => ApiRequester;
   workoutDayId: string;
   date: string;
   durationMin: number;
   sets: WorkoutSetState[];
 }): Promise<{ queued: boolean }> {
-  const item: PendingWorkoutLog = {
+  const operation: WorkoutLogOperation = {
+    version: 1,
+    operationId: `${ownerAuthUserId}:${date}:${workoutDayId}`,
+    ownerAuthUserId,
     workoutDayId,
     date,
     finish: buildFinishWorkoutLogInput(sets, durationMin),
+    stage: { kind: 'create' },
   };
 
-  try {
-    await send(api, item);
-    return { queued: false };
-  } catch {
-    await queue.enqueue(item);
-    return { queued: true };
-  }
+  await journal.ensure(operation);
+  await journal.drain(ownerAuthUserId, bindRequester);
+  const persistedOperation = await journal.get(operation.operationId);
+
+  return { queued: persistedOperation?.stage.kind !== 'terminal' };
 }
