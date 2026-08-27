@@ -4,16 +4,18 @@ import { ApiClient, ApiError, ApiTransportError, type Fetcher, parseResponse } f
 function createClient({
   fetcher,
   cookie = 'muvit.session_token=session-value',
+  getCookie,
   onUnauthorized = vi.fn(),
 }: {
   fetcher?: Fetcher;
   cookie?: string;
+  getCookie?: () => string;
   onUnauthorized?: () => void | Promise<void>;
 }) {
   return new ApiClient({
     baseUrl: 'https://api.muvit.test/',
     fetcher,
-    getCookie: () => cookie,
+    getCookie: getCookie ?? (() => cookie),
     onUnauthorized,
   });
 }
@@ -68,6 +70,40 @@ describe('ApiClient', () => {
     expect(onUnauthorized).toHaveBeenCalledOnce();
     expect(fetcher).toHaveBeenCalledOnce();
     expect(fetcher.mock.calls.some(([url]) => url.endsWith(legacyRefreshPath))).toBe(false);
+  });
+
+  it('mantém o cookie capturado em todas as requests vinculadas', async () => {
+    let cookie = 'session=A';
+    const fetcher = vi
+      .fn<Fetcher>()
+      .mockImplementation(() =>
+        Promise.resolve(new Response(JSON.stringify({ ok: true }), { status: 200 })),
+      );
+    const client = createClient({ fetcher, getCookie: () => cookie });
+    const bound = client.bindCurrentSession();
+
+    await bound.request('/workout-logs', { method: 'POST' });
+    cookie = 'session=B';
+    await bound.request('/workout-logs/log-a/finish', { method: 'PATCH' });
+
+    expect(fetcher.mock.calls.map(([, init]) => (init?.headers as Headers).get('cookie'))).toEqual([
+      'session=A',
+      'session=A',
+    ]);
+  });
+
+  it('não encerra B quando um requester capturado de A recebe 401 tardio', async () => {
+    let cookie = 'session=A';
+    const onUnauthorized = vi.fn();
+    const fetcher = vi
+      .fn<Fetcher>()
+      .mockResolvedValue(new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 }));
+    const client = createClient({ fetcher, getCookie: () => cookie, onUnauthorized });
+    const bound = client.bindCurrentSession();
+    cookie = 'session=B';
+
+    await expect(bound.request('/workout-logs/log-a/finish')).rejects.toBeInstanceOf(ApiError);
+    expect(onUnauthorized).not.toHaveBeenCalled();
   });
 
   it('permite request pública explicitamente sem cookie', async () => {
