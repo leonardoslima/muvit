@@ -14,9 +14,7 @@ function listRouterTestFiles(directory: string): string[] {
         return listRouterTestFiles(entryPath);
       }
 
-      return routerTestFilePattern.test(entry.name)
-        ? [relative(process.cwd(), entryPath)]
-        : [];
+      return routerTestFilePattern.test(entry.name) ? [relative(process.cwd(), entryPath)] : [];
     })
     .sort();
 }

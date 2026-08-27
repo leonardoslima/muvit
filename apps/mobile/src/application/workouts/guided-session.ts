@@ -78,8 +78,7 @@ export function pauseGuidedSession(session: GuidedSession, pausedAtMs: number): 
 
   return {
     ...session,
-    activeDurationMs:
-      session.activeDurationMs + Math.max(0, pausedAtMs - session.activeSinceMs),
+    activeDurationMs: session.activeDurationMs + Math.max(0, pausedAtMs - session.activeSinceMs),
     activeSinceMs: null,
     updatedAtMs: pausedAtMs,
   };
@@ -239,16 +238,11 @@ export function buildSessionSummary(
     0,
   );
   const currentActiveDurationMs =
-    session.activeSinceMs === null
-      ? 0
-      : Math.max(0, finishedAtMs - session.activeSinceMs);
+    session.activeSinceMs === null ? 0 : Math.max(0, finishedAtMs - session.activeSinceMs);
   const activeDurationMs = session.activeDurationMs + currentActiveDurationMs;
 
   return {
-    durationMin: Math.min(
-      600,
-      Math.max(1, Math.ceil(activeDurationMs / 60_000)),
-    ),
+    durationMin: Math.min(600, Math.max(1, Math.ceil(activeDurationMs / 60_000))),
     exerciseCount: exerciseIds.size,
     completedSetCount: completedSets.length,
     volumeKg,
