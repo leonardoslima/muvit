@@ -10,7 +10,7 @@ import type { GuidedSession } from './guided-session';
 
 type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
-type WorkoutDay = WorkoutPlan['days'][number];
+export type WorkoutDay = WorkoutPlan['days'][number];
 type WorkoutLogSummary = z.infer<typeof workoutLogSummarySchema>;
 type WorkoutLogSelection = Pick<WorkoutLogSummary, 'workoutDayId' | 'completed'>;
 
