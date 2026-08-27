@@ -110,6 +110,36 @@ describe('createWorkoutLogJournal', () => {
     });
   });
 
+  it('captura um único requester e o reutiliza em todas as operações do drain', async () => {
+    const first = workoutLogOperation({
+      stage: { kind: 'finish', workoutLogId: 'log-a' },
+    });
+    const second = workoutLogOperation({
+      operationId: 'operation-b',
+      workoutDayId: OTHER_WORKOUT_DAY_ID,
+      stage: { kind: 'finish', workoutLogId: 'log-b' },
+    });
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([first, second]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+    const requester = { request: vi.fn().mockResolvedValue(null) };
+    const bindRequester = vi.fn(() => requester);
+
+    await journal.drain('user-a', bindRequester);
+
+    expect(bindRequester).toHaveBeenCalledTimes(1);
+    expect(requester.request).toHaveBeenCalledTimes(2);
+    expect(requester.request).toHaveBeenNthCalledWith(1, '/workout-logs/log-a/finish', {
+      method: 'PATCH',
+      body: JSON.stringify(first.finish),
+    });
+    expect(requester.request).toHaveBeenNthCalledWith(2, '/workout-logs/log-b/finish', {
+      method: 'PATCH',
+      body: JSON.stringify(second.finish),
+    });
+  });
+
   it('mantém tombstone somente para o mesmo owner, data e dia', async () => {
     const journal = createWorkoutLogJournal(memoryStorage());
     await journal.ensure(workoutLogOperation({ stage: { kind: 'terminal' } }));
@@ -134,6 +164,46 @@ describe('createWorkoutLogJournal', () => {
 
     await expect(journal.get(first.operationId)).resolves.toEqual(first);
     await expect(journal.get(second.operationId)).resolves.toEqual(second);
+  });
+
+  it('serializa ensures concorrentes entre instâncias sem perder operações', async () => {
+    const storage = memoryStorage();
+    const firstJournal = createWorkoutLogJournal(storage);
+    const secondJournal = createWorkoutLogJournal(storage);
+    const first = workoutLogOperation();
+    const second = workoutLogOperation({
+      operationId: 'operation-b',
+      workoutDayId: OTHER_WORKOUT_DAY_ID,
+    });
+
+    await Promise.all([firstJournal.ensure(first), secondJournal.ensure(second)]);
+
+    const verifier = createWorkoutLogJournal(storage);
+    await expect(verifier.get(first.operationId)).resolves.toEqual(first);
+    await expect(verifier.get(second.operationId)).resolves.toEqual(second);
+  });
+
+  it('serializa ensure e prune entre instâncias sem apagar operação recém-persistida', async () => {
+    const oldTerminal = workoutLogOperation({
+      operationId: 'operation-old',
+      date: '2026-08-26',
+      stage: { kind: 'terminal' },
+    });
+    const current = workoutLogOperation();
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([oldTerminal]),
+    });
+    const ensureJournal = createWorkoutLogJournal(storage);
+    const pruneJournal = createWorkoutLogJournal(storage);
+
+    await Promise.all([
+      ensureJournal.ensure(current),
+      pruneJournal.pruneTerminalsBefore('user-a', '2026-08-27'),
+    ]);
+
+    const verifier = createWorkoutLogJournal(storage);
+    await expect(verifier.get(oldTerminal.operationId)).resolves.toBeNull();
+    await expect(verifier.get(current.operationId)).resolves.toEqual(current);
   });
 
   it('mantém a operação existente quando ensure repete o operationId', async () => {
@@ -184,6 +254,49 @@ describe('createWorkoutLogJournal', () => {
     const journal = createWorkoutLogJournal(storage);
 
     await expect(journal.ensure(workoutLogOperation())).rejects.toThrow();
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(storage.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('rejeita campo desconhecido em finish sem regravar o journal', async () => {
+    const operation = workoutLogOperation();
+    const invalidOperation = {
+      ...operation,
+      finish: { ...operation.finish, campoDesconhecido: true },
+    };
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([invalidOperation]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+
+    await expect(journal.get(operation.operationId)).rejects.toThrow(
+      'Journal de conclusão inválido.',
+    );
+
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect(storage.removeItem).not.toHaveBeenCalled();
+  });
+
+  it('rejeita campo desconhecido em set sem regravar o journal', async () => {
+    const operation = workoutLogOperation();
+    const invalidOperation = {
+      ...operation,
+      finish: {
+        ...operation.finish,
+        sets: operation.finish.sets.map((set, index) =>
+          index === 0 ? { ...set, campoDesconhecido: true } : set,
+        ),
+      },
+    };
+    const storage = memoryStorage({
+      muvit_workout_log_journal: JSON.stringify([invalidOperation]),
+    });
+    const journal = createWorkoutLogJournal(storage);
+
+    await expect(journal.get(operation.operationId)).rejects.toThrow(
+      'Journal de conclusão inválido.',
+    );
 
     expect(storage.setItem).not.toHaveBeenCalled();
     expect(storage.removeItem).not.toHaveBeenCalled();

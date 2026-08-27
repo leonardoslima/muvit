@@ -16,6 +16,11 @@ const workoutLogStageSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('terminal') }).strict(),
 ]);
 
+const journalWorkoutLogSetSchema = finishWorkoutLogSchema.shape.sets.element.strict();
+const journalFinishWorkoutLogSchema = finishWorkoutLogSchema
+  .extend({ sets: z.array(journalWorkoutLogSetSchema).min(1) })
+  .strict();
+
 const workoutLogOperationSchema = z
   .object({
     version: z.literal(1),
@@ -23,7 +28,7 @@ const workoutLogOperationSchema = z
     ownerAuthUserId: z.string().min(1),
     workoutDayId: z.string().min(1),
     date: z.string().date(),
-    finish: finishWorkoutLogSchema,
+    finish: journalFinishWorkoutLogSchema,
     stage: workoutLogStageSchema,
   })
   .strict();
@@ -40,21 +45,21 @@ export type WorkoutLogJournal = {
   pruneTerminalsBefore: (ownerAuthUserId: string, date: string) => Promise<void>;
 };
 
+let journalSerializationTail: Promise<void> = Promise.resolve();
+
+function serializeJournalOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = journalSerializationTail.then(
+    () => operation(),
+    () => operation(),
+  );
+  journalSerializationTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
+
 export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJournal {
-  let serializationTail: Promise<void> = Promise.resolve();
-
-  function serialize<T>(operation: () => Promise<T>): Promise<T> {
-    const result = serializationTail.then(
-      () => operation(),
-      () => operation(),
-    );
-    serializationTail = result.then(
-      () => undefined,
-      () => undefined,
-    );
-    return result;
-  }
-
   async function read(): Promise<WorkoutLogOperation[]> {
     const raw = await storage.getItem(JOURNAL_KEY);
     if (raw === null) return [];
@@ -94,7 +99,7 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
 
   return {
     ensure(operation) {
-      return serialize(async () => {
+      return serializeJournalOperation(async () => {
         const validated = workoutLogOperationSchema.parse(operation);
         const operations = await read();
         const existing = operations.find(
@@ -108,14 +113,14 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     },
 
     get(operationId) {
-      return serialize(async () => {
+      return serializeJournalOperation(async () => {
         const operations = await read();
         return operations.find((operation) => operation.operationId === operationId) ?? null;
       });
     },
 
     hasForDay(ownerAuthUserId, date, workoutDayId) {
-      return serialize(async () => {
+      return serializeJournalOperation(async () => {
         const operations = await read();
         return operations.some(
           (operation) =>
@@ -127,7 +132,14 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     },
 
     drain(ownerAuthUserId, bindRequester) {
-      return serialize(async () => {
+      let requester: ApiRequester;
+      try {
+        requester = bindRequester();
+      } catch {
+        return Promise.resolve();
+      }
+
+      return serializeJournalOperation(async () => {
         let operations = await read();
 
         for (const candidate of operations) {
@@ -139,7 +151,6 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
           }
 
           try {
-            const requester = bindRequester();
             let current = candidate;
 
             if (current.stage.kind === 'create') {
@@ -172,7 +183,7 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
     },
 
     pruneTerminalsBefore(ownerAuthUserId, date) {
-      return serialize(async () => {
+      return serializeJournalOperation(async () => {
         const operations = await read();
         const retained = operations.filter(
           (operation) =>
