@@ -79,6 +79,19 @@ export function LogWorkoutScreen() {
     );
   }
 
+  if (controller.state === 'completed') {
+    return (
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          description="A conclusão deste treino já está salva neste aparelho."
+          title="Treino concluído"
+          tone="empty"
+        />
+        <AppButton label="Voltar ao início" onPress={() => router.replace('/(tabs)')} />
+      </Screen>
+    );
+  }
+
   if (controller.state === 'error' || !day || !session) {
     return (
       <Screen style={styles.centeredState}>

@@ -12,19 +12,21 @@ import {
   createGuidedSession,
   extendRest,
   markSessionFinished,
+  pauseGuidedSession,
+  resumeGuidedSession,
   skipRest,
   updateCurrentSet,
 } from '../application/workouts/guided-session';
-import { loadWorkoutDay } from '../application/workouts/today-workout';
+import { loadWorkoutDay, normalizeCachedTodayWorkout } from '../application/workouts/today-workout';
 import { finishWorkoutWithOfflineFallback } from '../application/workouts/workout-log';
 import type { ApiClient } from './api';
 import { todayIsoDate } from './date';
-import { createLogQueue, sendPendingWorkoutLog } from './log-queue';
+import { createWorkoutLogJournal } from './log-queue';
 import { type WorkoutSessionStorage, createWorkoutSessionStorage } from './workout-session-storage';
 
 export type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 export type WorkoutDay = WorkoutPlan['days'][number];
-export type GuidedWorkoutState = 'loading' | 'error' | 'ready';
+export type GuidedWorkoutState = 'loading' | 'error' | 'ready' | 'completed';
 
 type GuidedWorkoutInput = {
   api: ApiClient;
@@ -58,8 +60,9 @@ export type GuidedWorkoutController = {
 };
 
 type SessionData = {
-  day: WorkoutDay;
-  session: GuidedSession;
+  completionBlocked?: boolean;
+  day: WorkoutDay | null;
+  session: GuidedSession | null;
   lifecycleGeneration?: number;
   lifecycleRevision?: number;
 };
@@ -344,6 +347,7 @@ export function useGuidedWorkoutSession({
     () => storage ?? createWorkoutSessionStorage(AsyncStorage),
     [storage],
   );
+  const workoutLogJournal = useMemo(() => createWorkoutLogJournal(AsyncStorage), []);
   const nowRef = useRef(now);
   const sessionRef = useRef<GuidedSession | null>(null);
   const dayRef = useRef<WorkoutDay | null>(null);
@@ -362,6 +366,7 @@ export function useGuidedWorkoutSession({
   const [canRetryFinish, setCanRetryFinish] = useState(false);
   const [queued, setQueued] = useState(false);
   const [draftActive, setDraftActive] = useState(false);
+  const [completionBlocked, setCompletionBlocked] = useState(false);
   const [summary, setSummary] = useState<GuidedSessionSummary | null>(null);
   const busyRef = useRef(false);
   const mutationTokenRef = useRef<symbol | null>(null);
@@ -530,6 +535,7 @@ export function useGuidedWorkoutSession({
     setCanRetryFinish(false);
     setStorageError(null);
     setDraftActive(false);
+    setCompletionBlocked(false);
     busyRef.current = false;
     mutationTokenRef.current = null;
     setBusy(false);
@@ -599,7 +605,7 @@ export function useGuidedWorkoutSession({
             await sessionStorage.remove(authUserId, dayId);
             assertActive();
             const next = createGuidedSession(freshDay, nowRef.current());
-            await sessionStorage.save(authUserId, next);
+            await sessionStorage.save(authUserId, freshDay, next);
             assertActive();
             bumpSessionRevision(identity);
             return next;
@@ -639,19 +645,86 @@ export function useGuidedWorkoutSession({
       };
 
       try {
-        const day = await loadWorkoutDay({ api, dayId });
-        assertActive();
         await waitForPersistence(identity);
         assertActive();
 
-        let draft: GuidedSession | null = null;
+        let stored: Awaited<ReturnType<WorkoutSessionStorage['load']>> = null;
         try {
-          draft = await sessionStorage.load(authUserId, dayId);
+          stored = await sessionStorage.load(authUserId, dayId);
           assertActive();
         } catch (error) {
           if (error instanceof StaleGuidedSessionQueryError) throw error;
           if (isCurrentIdentity()) setStorageError(getErrorMessage(error));
         }
+
+        const hasCompletion = await workoutLogJournal.hasForDay(authUserId, todayIsoDate(), dayId);
+        assertActive();
+        if (hasCompletion) {
+          const lifecycle = getSessionLifecycle(identity);
+          return {
+            completionBlocked: true,
+            day: stored?.kind === 'active' ? stored.day : null,
+            lifecycleGeneration: lifecycle?.generation,
+            lifecycleRevision: lifecycle?.revision,
+            session: null,
+          };
+        }
+
+        if (stored?.kind === 'active') {
+          if (!isDraftCompatible(stored.session, stored.day)) {
+            return migrateIncompatibleDraft(stored.day);
+          }
+
+          const resumed = resumeGuidedSession(stored.session, nowRef.current());
+          await enqueuePersistence(identity, async () => {
+            assertActive();
+            await sessionStorage.save(authUserId, stored.day, resumed);
+            assertActive();
+            bumpSessionRevision(identity);
+          });
+          const lifecycle = getSessionLifecycle(identity);
+          return {
+            day: stored.day,
+            lifecycleGeneration: lifecycle?.generation,
+            lifecycleRevision: lifecycle?.revision,
+            session: resumed,
+          };
+        }
+
+        if (stored?.kind === 'legacy') {
+          try {
+            const cachedRaw = await AsyncStorage.getItem(`today-workout:${authUserId}`);
+            const cached = cachedRaw
+              ? normalizeCachedTodayWorkout(JSON.parse(cachedRaw) as unknown)
+              : undefined;
+            if (
+              cached?.status === 'available' &&
+              cached.day.id === dayId &&
+              isDraftCompatible(stored.session, cached.day)
+            ) {
+              const resumed = resumeGuidedSession(stored.session, nowRef.current());
+              await enqueuePersistence(identity, async () => {
+                assertActive();
+                await sessionStorage.save(authUserId, cached.day, resumed);
+                assertActive();
+                bumpSessionRevision(identity);
+              });
+              const lifecycle = getSessionLifecycle(identity);
+              return {
+                day: cached.day,
+                lifecycleGeneration: lifecycle?.generation,
+                lifecycleRevision: lifecycle?.revision,
+                session: resumed,
+              };
+            }
+          } catch {
+            // Cache ausente ou inválido exige validar o dia pela API.
+          }
+        }
+
+        const day = await loadWorkoutDay({ api, dayId });
+        assertActive();
+        const draft = stored?.kind === 'legacy' ? stored.session : null;
 
         const lifecycle = getSessionLifecycle(identity);
         if (lifecycle && version && lifecycle.revision !== version.revision) {
@@ -690,7 +763,7 @@ export function useGuidedWorkoutSession({
             if (currentLifecycle && version && currentLifecycle.revision !== version.revision) {
               throw new StaleGuidedSessionQueryError();
             }
-            await sessionStorage.save(authUserId, created);
+            await sessionStorage.save(authUserId, day, created);
             assertActive();
           });
           await invalidateTodayWorkout();
@@ -724,6 +797,16 @@ export function useGuidedWorkoutSession({
       if (current) syncSessionCache(current);
       return;
     }
+    if (query.data.completionBlocked) {
+      dayRef.current = query.data.day;
+      sessionRef.current = null;
+      setSession(null);
+      setCompletionBlocked(true);
+      setDraftActive(false);
+      return;
+    }
+    if (!query.data.day || !query.data.session) return;
+    setCompletionBlocked(false);
     dayRef.current = query.data.day;
     sessionRef.current = query.data.session;
     setSession(query.data.session);
@@ -731,11 +814,16 @@ export function useGuidedWorkoutSession({
   }, [identity, isCurrentIdentity, query.data, syncSessionCache]);
 
   const persistSession = useCallback(
-    async (next: GuidedSession, invalidateToday = true, syncCache = true): Promise<boolean> => {
+    async (
+      next: GuidedSession,
+      day: WorkoutDay,
+      invalidateToday = true,
+      syncCache = true,
+    ): Promise<boolean> => {
       if (!authUserId) return false;
 
       try {
-        await sessionStorage.save(authUserId, next);
+        await sessionStorage.save(authUserId, day, next);
         if (!isCurrentIdentity()) return true;
         setStorageError(null);
         if (syncCache) syncSessionCache(next);
@@ -750,9 +838,9 @@ export function useGuidedWorkoutSession({
   );
 
   const enqueueEdit = useCallback(
-    (next: GuidedSession): Promise<void> => {
+    (next: GuidedSession, day: WorkoutDay): Promise<void> => {
       return enqueuePersistence(identity, async () => {
-        await persistSession(next, false, false);
+        await persistSession(next, day, false, false);
       });
     },
     [identity, persistSession],
@@ -776,7 +864,7 @@ export function useGuidedWorkoutSession({
           syncSessionCache(next);
           setActionError(null);
           setCanRetryFinish(false);
-          await persistSession(next);
+          await persistSession(next, day);
         });
       } catch (error) {
         if (isCurrentIdentity()) {
@@ -814,7 +902,7 @@ export function useGuidedWorkoutSession({
         syncSessionCache(next);
         setActionError(null);
         setCanRetryFinish(false);
-        await enqueueEdit(next);
+        await enqueueEdit(next, day);
       } catch (error) {
         if (isCurrentIdentity()) {
           setActionError(getErrorMessage(error));
@@ -848,17 +936,40 @@ export function useGuidedWorkoutSession({
     try {
       return await enqueuePersistence(identity, async () => {
         const current = sessionRef.current;
-        if (!current || !isCurrentIdentity()) return false;
-        const persisted = await persistSession(current);
-        return isCurrentIdentity() && persisted;
+        const day = query.data?.day ?? dayRef.current;
+        if (!current || !day || !isCurrentIdentity()) return false;
+        const paused = pauseGuidedSession(current, nowRef.current());
+        const persisted = await persistSession(paused, day, false, false);
+        if (!persisted || !isCurrentIdentity()) return false;
+        bumpSessionRevision(identity);
+        sessionRef.current = paused;
+        setSession(paused);
+        syncSessionCache(paused);
+        await invalidateTodayWorkout();
+        return isCurrentIdentity();
       });
     } finally {
       endMutation(token);
     }
-  }, [beginMutation, endMutation, identity, isCurrentIdentity, persistSession]);
+  }, [
+    beginMutation,
+    endMutation,
+    identity,
+    invalidateTodayWorkout,
+    isCurrentIdentity,
+    persistSession,
+    query.data?.day,
+    syncSessionCache,
+  ]);
 
   const finishWorkout = useCallback(async (): Promise<void> => {
-    if (!authUserId || !dayId || !isCurrentIdentity() || isIdentityMutationLocked(identity)) {
+    if (
+      !authUserId ||
+      !dayId ||
+      completionBlocked ||
+      !isCurrentIdentity() ||
+      isIdentityMutationLocked(identity)
+    ) {
       return;
     }
     const token = beginMutation();
@@ -892,11 +1003,11 @@ export function useGuidedWorkoutSession({
         const finishedAtMs = nowRef.current();
         const nextSummary = buildSessionSummary(current, finishedAtMs);
         const result = await finishWorkoutWithOfflineFallback({
-          api,
+          bindRequester: () => api.bindCurrentSession(),
           date: todayIsoDate(),
           durationMin: nextSummary.durationMin,
-          queue: createLogQueue(AsyncStorage),
-          send: sendPendingWorkoutLog,
+          journal: workoutLogJournal,
+          ownerAuthUserId: finishAuthUserId,
           sets: current.sets,
           workoutDayId: day.id,
         });
@@ -960,6 +1071,7 @@ export function useGuidedWorkoutSession({
     authUserId,
     beginMutation,
     clearGuidedSessionCacheForKey,
+    completionBlocked,
     dayId,
     endMutation,
     guidedQueryKey,
@@ -969,6 +1081,7 @@ export function useGuidedWorkoutSession({
     isCurrentLogicalIdentity,
     query.data?.day,
     sessionStorage,
+    workoutLogJournal,
   ]);
 
   const discard = useCallback(async (): Promise<boolean> => {
@@ -1016,13 +1129,15 @@ export function useGuidedWorkoutSession({
   const visibleDay = identityReady ? (query.data?.day ?? dayRef.current) : null;
   const state: GuidedWorkoutState = !identityReady
     ? 'loading'
-    : query.isPending && !session
-      ? 'loading'
-      : query.isError && !session
-        ? 'error'
-        : !session
+    : completionBlocked
+      ? 'completed'
+      : query.isPending && !session
+        ? 'loading'
+        : query.isError && !session
           ? 'error'
-          : 'ready';
+          : !session
+            ? 'error'
+            : 'ready';
 
   return {
     actionError,

@@ -17,6 +17,8 @@ import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
+import { todayIsoDate } from '../lib/date';
+import { createWorkoutLogJournal } from '../lib/log-queue';
 import type { CacheResult } from '../lib/offline-cache';
 import { colors, sharedStyles, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
@@ -31,6 +33,7 @@ type SelectedExercise = {
   exerciseId: string;
 };
 type TodayWorkoutQueryData = CacheResult<TodayWorkoutResult> & {
+  completedLocal: boolean;
   draft: GuidedSession | null;
 };
 
@@ -55,12 +58,16 @@ export function TodayWorkoutScreen() {
       const { data } = cached;
 
       if (data.status !== 'available') {
-        return { ...cached, data, draft: null };
+        return { ...cached, completedLocal: false, data, draft: null };
       }
 
+      const journal = createWorkoutLogJournal(AsyncStorage);
+      const completedLocal = await journal.hasForDay(authUserId, todayIsoDate(), data.day.id);
+      if (completedLocal) return { ...cached, completedLocal, data, draft: null };
+
       const sessionStorage = createWorkoutSessionStorage(AsyncStorage);
-      const draft = await sessionStorage.load(authUserId, data.day.id);
-      return { ...cached, data, draft };
+      const stored = await sessionStorage.load(authUserId, data.day.id);
+      return { ...cached, completedLocal: false, data, draft: stored?.session ?? null };
     },
   });
 
@@ -90,7 +97,7 @@ export function TodayWorkoutScreen() {
     );
   }
 
-  const { data, draft, stale } = query.data;
+  const { completedLocal, data, draft, stale } = query.data;
 
   if (data.status === 'no-active-plan') {
     return (
@@ -131,9 +138,17 @@ export function TodayWorkoutScreen() {
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       <ScreenHeader
-        eyebrow={draft ? 'RETOMAR' : 'HOJE'}
-        subtitle={draft ? 'Seu progresso foi salvo' : `${plan.name} · ${day.label}`}
-        title={draft ? 'Treino em andamento' : 'Seu treino de hoje'}
+        eyebrow={completedLocal ? 'CONCLUÍDO' : draft ? 'RETOMAR' : 'HOJE'}
+        subtitle={
+          completedLocal
+            ? `${plan.name} · ${day.label}`
+            : draft
+              ? 'Seu progresso foi salvo'
+              : `${plan.name} · ${day.label}`
+        }
+        title={
+          completedLocal ? 'Treino concluído' : draft ? 'Treino em andamento' : 'Seu treino de hoje'
+        }
       />
 
       {stale ? <OfflineBadge /> : null}
@@ -145,7 +160,15 @@ export function TodayWorkoutScreen() {
         </Text>
       </Card>
 
-      {draft ? <ResumeProgressCard day={day} session={draft} /> : null}
+      {completedLocal ? (
+        <Card>
+          <Text style={sharedStyles.subtitle}>
+            A conclusão deste treino está salva e será sincronizada quando necessário.
+          </Text>
+        </Card>
+      ) : draft ? (
+        <ResumeProgressCard day={day} session={draft} />
+      ) : null}
 
       <View style={styles.exerciseList}>
         <Text style={styles.sectionTitle}>Exercícios</Text>
@@ -172,16 +195,18 @@ export function TodayWorkoutScreen() {
         ))}
       </View>
 
-      <Link asChild href={actionHref}>
-        <Pressable
-          accessible
-          accessibilityLabel={actionLabel}
-          accessibilityRole="button"
-          style={sharedStyles.button}
-        >
-          <Text style={sharedStyles.buttonText}>{actionLabel}</Text>
-        </Pressable>
-      </Link>
+      {completedLocal ? null : (
+        <Link asChild href={actionHref}>
+          <Pressable
+            accessible
+            accessibilityLabel={actionLabel}
+            accessibilityRole="button"
+            style={sharedStyles.button}
+          >
+            <Text style={sharedStyles.buttonText}>{actionLabel}</Text>
+          </Pressable>
+        </Link>
+      )}
 
       <ExerciseModal
         exercise={selectedExercise}

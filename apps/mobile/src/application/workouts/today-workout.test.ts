@@ -170,10 +170,12 @@ describe('cache do treino de hoje', () => {
     };
     const day = { ...cachedDay, exercises: [cachedExercise, zeroSetExercise] };
     const session: GuidedSession = {
-      version: 1,
+      version: 2,
       workoutDayId: day.id,
       startedAtMs: 1_000,
       updatedAtMs: 2_000,
+      activeDurationMs: 1_000,
+      activeSinceMs: null,
       currentExerciseIndex: 0,
       currentSetIndex: 0,
       phase: 'ready-to-finish',
@@ -459,10 +461,12 @@ describe('selectNextWorkoutDay', () => {
         summary: { currentExerciseIndex: 1, currentSetIndex: 1 },
       };
       const session: GuidedSession = {
-        version: 1,
+        version: 2,
         workoutDayId: day.id,
         startedAtMs: 1_000,
         updatedAtMs: 2_000,
+        activeDurationMs: 1_000,
+        activeSinceMs: null,
         ...sessionsByPhase[phase],
         phase,
         restEndsAtMs: phase === 'rest' ? 5_000 : null,
