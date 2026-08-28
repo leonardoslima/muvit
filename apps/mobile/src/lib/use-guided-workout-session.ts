@@ -657,11 +657,39 @@ export function useGuidedWorkoutSession({
           if (isCurrentIdentity()) setStorageError(getErrorMessage(error));
         }
 
-        const operationDate = stored
-          ? isoDateFromTimestamp(stored.session.startedAtMs)
-          : todayIsoDate();
-        const hasCompletion = await workoutLogJournal.hasForDay(authUserId, operationDate, dayId);
+        const currentDate = todayIsoDate();
+        let operationDate = stored ? isoDateFromTimestamp(stored.session.startedAtMs) : currentDate;
+        let hasCompletion = await workoutLogJournal.hasForDay(authUserId, operationDate, dayId);
         assertActive();
+        if (stored?.kind === 'active' && hasCompletion && operationDate < currentDate) {
+          try {
+            const removed = await sessionStorage.removeIfUnchanged(
+              authUserId,
+              dayId,
+              stored.session.startedAtMs,
+            );
+            assertActive();
+            if (removed) {
+              await workoutLogJournal.removeTerminal(authUserId, operationDate, dayId);
+              assertActive();
+              stored = null;
+              hasCompletion = false;
+            } else {
+              stored = await sessionStorage.load(authUserId, dayId);
+              assertActive();
+              operationDate = stored
+                ? isoDateFromTimestamp(stored.session.startedAtMs)
+                : currentDate;
+              hasCompletion = await workoutLogJournal.hasForDay(authUserId, operationDate, dayId);
+              assertActive();
+            }
+          } catch (error) {
+            if (error instanceof StaleGuidedSessionQueryError) throw error;
+            // O terminal antigo continua protegendo o ciclo encerrado e a próxima montagem tenta limpar.
+            stored = null;
+            hasCompletion = false;
+          }
+        }
         if (hasCompletion) {
           const lifecycle = getSessionLifecycle(identity);
           return {

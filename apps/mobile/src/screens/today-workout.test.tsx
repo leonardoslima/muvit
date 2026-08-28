@@ -375,6 +375,104 @@ describe('TodayWorkoutScreen', () => {
     expect(linkState.hrefs).toContain(`/session/${activeWorkout.days[0].id}`);
   });
 
+  it('libera o mesmo workoutDayId para iniciar no novo dia quando o tombstone antigo não consegue remover o rascunho', async () => {
+    const day = activeWorkout.days[0];
+    const sessionKey = workoutSessionKey('auth-user-a', day.id);
+    const journalKey = 'muvit_workout_log_journal';
+    const previousDayMs = new Date(2026, 7, 27, 12).getTime();
+    const nextDayMs = new Date(2026, 7, 28, 12).getTime();
+    const staleDraft = {
+      kind: 'active',
+      version: 2,
+      ownerAuthUserId: 'auth-user-a',
+      day,
+      session: {
+        version: 2,
+        workoutDayId: day.id,
+        startedAtMs: previousDayMs,
+        updatedAtMs: previousDayMs + 60_000,
+        activeDurationMs: 60_000,
+        activeSinceMs: null,
+        currentExerciseIndex: 0,
+        currentSetIndex: 0,
+        phase: 'set',
+        restEndsAtMs: null,
+        sets: [
+          {
+            workoutExerciseId: day.exercises[0].id,
+            setNumber: 1,
+            repsDone: '',
+            loadKg: '',
+            completed: false,
+          },
+          {
+            workoutExerciseId: day.exercises[0].id,
+            setNumber: 2,
+            repsDone: '',
+            loadKg: '',
+            completed: false,
+          },
+          {
+            workoutExerciseId: day.exercises[1].id,
+            setNumber: 1,
+            repsDone: '',
+            loadKg: '',
+            completed: false,
+          },
+        ],
+      },
+    };
+    const staleTerminal = JSON.stringify([
+      {
+        version: 1,
+        operationId: 'terminal-old-day',
+        ownerAuthUserId: 'auth-user-a',
+        workoutDayId: day.id,
+        date: '2026-08-27',
+        finish: {
+          durationMin: 1,
+          completed: true,
+          sets: [
+            {
+              workoutExerciseId: day.exercises[0].id,
+              setNumber: 1,
+              repsDone: 10,
+              loadKg: 20,
+            },
+          ],
+        },
+        stage: { kind: 'terminal' },
+      },
+    ]);
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) return JSON.stringify(staleDraft);
+      if (key === journalKey) return staleTerminal;
+      return null;
+    });
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) throw new Error('falha ao remover rascunho');
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nextDayMs);
+
+    try {
+      renderWithQueryClient();
+
+      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(screen.queryByText('Treino concluído')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
+      expect(linkState.hrefs).toContain(`/log/${day.id}`);
+      expect(storageState.setItem).not.toHaveBeenCalledWith(journalKey, expect.any(String));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('trata um envelope summary como conclusão local sem iniciar ou continuar', async () => {
     const day = activeWorkout.days[0];
     const sessionKey = workoutSessionKey('auth-user-a', day.id);

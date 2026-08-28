@@ -45,7 +45,7 @@ export function TodayWorkoutScreen() {
   const query = useQuery<TodayWorkoutQueryData>({
     enabled: Boolean(authUserId),
     queryKey: ['today-workout', authUserId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!authUserId) {
         throw new Error('Sessão não autenticada.');
       }
@@ -62,12 +62,37 @@ export function TodayWorkoutScreen() {
       }
 
       const sessionStorage = createWorkoutSessionStorage(AsyncStorage);
-      const stored = await sessionStorage.load(authUserId, data.day.id);
+      let stored = await sessionStorage.load(authUserId, data.day.id);
       const journal = createWorkoutLogJournal(AsyncStorage);
-      const operationDate = stored
-        ? isoDateFromTimestamp(stored.session.startedAtMs)
-        : todayIsoDate();
-      const hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
+      const currentDate = todayIsoDate();
+      let operationDate = stored ? isoDateFromTimestamp(stored.session.startedAtMs) : currentDate;
+      let hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
+      if (stored?.kind === 'active' && hasJournalCompletion && operationDate < currentDate) {
+        try {
+          if (signal.aborted) throw new Error('Consulta do treino cancelada.');
+          const removed = await sessionStorage.removeIfUnchanged(
+            authUserId,
+            data.day.id,
+            stored.session.startedAtMs,
+          );
+          if (signal.aborted) throw new Error('Consulta do treino cancelada.');
+          if (removed) {
+            await journal.removeTerminal(authUserId, operationDate, data.day.id);
+            if (signal.aborted) throw new Error('Consulta do treino cancelada.');
+            stored = null;
+            hasJournalCompletion = false;
+          } else {
+            stored = await sessionStorage.load(authUserId, data.day.id);
+            operationDate = stored ? isoDateFromTimestamp(stored.session.startedAtMs) : currentDate;
+            hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
+          }
+        } catch (error) {
+          if (signal.aborted) throw error;
+          // O terminal antigo continua protegendo o ciclo encerrado e a próxima montagem tenta limpar.
+          stored = null;
+          hasJournalCompletion = false;
+        }
+      }
       const completedLocal = hasJournalCompletion || stored?.session.phase === 'summary';
       if (completedLocal) return { ...cached, completedLocal, data, draft: null };
 

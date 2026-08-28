@@ -241,7 +241,7 @@ describe('createWorkoutLogJournal', () => {
     await expect(verifier.get(second.operationId)).resolves.toEqual(second);
   });
 
-  it('serializa ensure e prune entre instâncias sem apagar operação recém-persistida', async () => {
+  it('serializa ensure e removeTerminal entre instâncias sem apagar operação recém-persistida', async () => {
     const oldTerminal = workoutLogOperation({
       operationId: 'operation-old',
       date: '2026-08-26',
@@ -252,11 +252,15 @@ describe('createWorkoutLogJournal', () => {
       muvit_workout_log_journal: JSON.stringify([oldTerminal]),
     });
     const ensureJournal = createWorkoutLogJournal(storage);
-    const pruneJournal = createWorkoutLogJournal(storage);
+    const removeTerminalJournal = createWorkoutLogJournal(storage);
 
     await Promise.all([
       ensureJournal.ensure(current),
-      pruneJournal.pruneTerminalsBefore('user-a', '2026-08-27'),
+      removeTerminalJournal.removeTerminal(
+        oldTerminal.ownerAuthUserId,
+        oldTerminal.date,
+        oldTerminal.workoutDayId,
+      ),
     ]);
 
     const verifier = createWorkoutLogJournal(storage);
@@ -411,27 +415,26 @@ describe('createWorkoutLogJournal', () => {
     expect(storage.removeItem).not.toHaveBeenCalled();
   });
 
-  it('poda somente terminais antigos do owner informado', async () => {
-    const oldTerminal = workoutLogOperation({ date: '2026-08-26', stage: { kind: 'terminal' } });
-    const currentTerminal = workoutLogOperation({
-      operationId: 'operation-current',
-      stage: { kind: 'terminal' },
-    });
-    const otherOwnerTerminal = workoutLogOperation({
-      operationId: 'operation-other-owner',
-      ownerAuthUserId: 'user-b',
+  it('remove somente o tombstone reconciliado sem apagar outro dia pendente', async () => {
+    const reconciled = workoutLogOperation({ date: '2026-08-26', stage: { kind: 'terminal' } });
+    const sibling = workoutLogOperation({
+      operationId: 'operation-sibling',
+      workoutDayId: OTHER_WORKOUT_DAY_ID,
       date: '2026-08-26',
       stage: { kind: 'terminal' },
     });
     const storage = memoryStorage({
-      muvit_workout_log_journal: JSON.stringify([oldTerminal, currentTerminal, otherOwnerTerminal]),
+      muvit_workout_log_journal: JSON.stringify([reconciled, sibling]),
     });
     const journal = createWorkoutLogJournal(storage);
 
-    await journal.pruneTerminalsBefore('user-a', '2026-08-27');
+    await journal.removeTerminal(
+      reconciled.ownerAuthUserId,
+      reconciled.date,
+      reconciled.workoutDayId,
+    );
 
-    await expect(journal.get(oldTerminal.operationId)).resolves.toBeNull();
-    await expect(journal.get(currentTerminal.operationId)).resolves.toEqual(currentTerminal);
-    await expect(journal.get(otherOwnerTerminal.operationId)).resolves.toEqual(otherOwnerTerminal);
+    await expect(journal.get(reconciled.operationId)).resolves.toBeNull();
+    await expect(journal.get(sibling.operationId)).resolves.toEqual(sibling);
   });
 });

@@ -164,6 +164,46 @@ describe('workoutSessionStorage', () => {
     expect(storage.values.has(unrelatedKey)).toBe(true);
   });
 
+  it('preserva o rascunho de um ciclo novo quando a remoção condicional chega depois dele', async () => {
+    const storage = memoryStorage();
+    const adapter = createWorkoutSessionStorage(storage);
+    const oldSession = { ...sessionV2, startedAtMs: 1_000, updatedAtMs: 2_000 };
+    const newSession = { ...sessionV2, startedAtMs: 3_000, updatedAtMs: 4_000 };
+
+    await adapter.save('user-a', day, oldSession);
+    await adapter.save('user-a', day, newSession);
+
+    await expect(adapter.removeIfUnchanged('user-a', day.id, oldSession.startedAtMs)).resolves.toBe(
+      false,
+    );
+    await expect(adapter.load('user-a', day.id)).resolves.toMatchObject({
+      kind: 'active',
+      ownerAuthUserId: 'user-a',
+      session: newSession,
+    });
+  });
+
+  it('impede que um snapshot aposentado seja salvo após a remoção condicional', async () => {
+    const storage = memoryStorage();
+    const adapter = createWorkoutSessionStorage(storage);
+    const retiredUserId = 'user-retired';
+    const oldSession = { ...sessionV2, startedAtMs: 1_000, updatedAtMs: 2_000 };
+    const newSession = { ...sessionV2, startedAtMs: 3_000, updatedAtMs: 4_000 };
+
+    await adapter.save(retiredUserId, day, oldSession);
+    await expect(
+      adapter.removeIfUnchanged(retiredUserId, day.id, oldSession.startedAtMs),
+    ).resolves.toBe(true);
+
+    await expect(adapter.save(retiredUserId, day, oldSession)).rejects.toThrow(
+      'rascunho já foi encerrado',
+    );
+    await adapter.save(retiredUserId, day, newSession);
+    await expect(adapter.load(retiredUserId, day.id)).resolves.toMatchObject({
+      session: newSession,
+    });
+  });
+
   it('remove payload JSON inválido sem expor erro de parse', async () => {
     const exactKey = workoutSessionKey('user-a', day.id);
     const storage = memoryStorage({ [exactKey]: '{inválido' });

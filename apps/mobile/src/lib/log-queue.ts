@@ -42,7 +42,7 @@ export type WorkoutLogJournal = {
   get: (operationId: string) => Promise<WorkoutLogOperation | null>;
   hasForDay: (ownerAuthUserId: string, date: string, workoutDayId: string) => Promise<boolean>;
   drain: (ownerAuthUserId: string, bindRequester: () => ApiRequester) => Promise<void>;
-  pruneTerminalsBefore: (ownerAuthUserId: string, date: string) => Promise<void>;
+  removeTerminal: (ownerAuthUserId: string, date: string, workoutDayId: string) => Promise<void>;
 };
 
 let journalStorageTail: Promise<void> = Promise.resolve();
@@ -216,14 +216,15 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
       });
     },
 
-    pruneTerminalsBefore(ownerAuthUserId, date) {
+    removeTerminal(ownerAuthUserId, date, workoutDayId) {
       return serializeStorageOperation(async () => {
         const operations = await read();
         const retained = operations.filter(
           (operation) =>
             operation.ownerAuthUserId !== ownerAuthUserId ||
-            operation.stage.kind !== 'terminal' ||
-            operation.date >= date,
+            operation.date !== date ||
+            operation.workoutDayId !== workoutDayId ||
+            operation.stage.kind !== 'terminal',
         );
         if (retained.length === operations.length) return;
         await write(retained);

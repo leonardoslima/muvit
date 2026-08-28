@@ -12,6 +12,11 @@ export type SessionStorageDriver = {
 export type WorkoutSessionStorage = {
   load: (authUserId: string, workoutDayId: string) => Promise<StoredWorkoutSession | null>;
   remove: (authUserId: string, workoutDayId: string) => Promise<void>;
+  removeIfUnchanged: (
+    authUserId: string,
+    workoutDayId: string,
+    expectedStartedAtMs: number,
+  ) => Promise<boolean>;
   save: (authUserId: string, day: WorkoutDay, session: GuidedSession) => Promise<void>;
 };
 
@@ -82,65 +87,142 @@ const activeWorkoutSessionSchema = z
   })
   .strict();
 
+const sessionStorageTails = new WeakMap<SessionStorageDriver, Map<string, Promise<void>>>();
+const retiredSessionGenerations = new WeakMap<SessionStorageDriver, Set<string>>();
+
+function sessionGenerationKey(
+  authUserId: string,
+  workoutDayId: string,
+  startedAtMs: number,
+): string {
+  return `${workoutSessionKey(authUserId, workoutDayId)}:${startedAtMs}`;
+}
+
+function serializeSessionStorageOperation<T>(
+  storage: SessionStorageDriver,
+  key: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const tails = sessionStorageTails.get(storage) ?? new Map<string, Promise<void>>();
+  sessionStorageTails.set(storage, tails);
+  const result = (tails.get(key) ?? Promise.resolve()).then(operation, operation);
+  const tail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  tails.set(key, tail);
+  void tail.then(() => {
+    if (tails.get(key) === tail) tails.delete(key);
+  });
+  return result;
+}
+
+function retiredGenerationsFor(storage: SessionStorageDriver): Set<string> {
+  const generations = retiredSessionGenerations.get(storage) ?? new Set<string>();
+  retiredSessionGenerations.set(storage, generations);
+  return generations;
+}
+
 export function workoutSessionKey(authUserId: string, workoutDayId: string): string {
   return `muvit_workout_session:${authUserId}:${workoutDayId}`;
 }
 
+async function loadStoredSession(
+  storage: SessionStorageDriver,
+  authUserId: string,
+  workoutDayId: string,
+): Promise<StoredWorkoutSession | null> {
+  const key = workoutSessionKey(authUserId, workoutDayId);
+  const serialized = await storage.getItem(key);
+  if (serialized === null) return null;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(serialized) as unknown;
+  } catch {
+    await storage.removeItem(key);
+    return null;
+  }
+
+  const activeResult = activeWorkoutSessionSchema.safeParse(parsed);
+  if (activeResult.success) {
+    if (!matchesRequestedSession(activeResult.data, authUserId, workoutDayId)) {
+      await storage.removeItem(key);
+      return null;
+    }
+
+    return activeResult.data;
+  }
+
+  const legacyResult = legacyGuidedSessionSchema.safeParse(parsed);
+  if (!legacyResult.success || legacyResult.data.workoutDayId !== workoutDayId) {
+    await storage.removeItem(key);
+    return null;
+  }
+
+  return {
+    kind: 'legacy',
+    version: 1,
+    session: normalizeLegacySession(legacyResult.data),
+  };
+}
+
 export function createWorkoutSessionStorage(storage: SessionStorageDriver): WorkoutSessionStorage {
   return {
-    async load(authUserId, workoutDayId) {
+    load(authUserId, workoutDayId) {
+      return loadStoredSession(storage, authUserId, workoutDayId);
+    },
+
+    remove(authUserId, workoutDayId) {
       const key = workoutSessionKey(authUserId, workoutDayId);
-      const serialized = await storage.getItem(key);
-      if (serialized === null) return null;
+      return serializeSessionStorageOperation(storage, key, () => storage.removeItem(key));
+    },
 
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(serialized) as unknown;
-      } catch {
-        await storage.removeItem(key);
-        return null;
-      }
-
-      const activeResult = activeWorkoutSessionSchema.safeParse(parsed);
-      if (activeResult.success) {
-        if (!matchesRequestedSession(activeResult.data, authUserId, workoutDayId)) {
-          await storage.removeItem(key);
-          return null;
+    removeIfUnchanged(authUserId, workoutDayId, expectedStartedAtMs) {
+      const key = workoutSessionKey(authUserId, workoutDayId);
+      return serializeSessionStorageOperation(storage, key, async () => {
+        const stored = await loadStoredSession(storage, authUserId, workoutDayId);
+        if (
+          stored?.kind !== 'active' ||
+          stored.ownerAuthUserId !== authUserId ||
+          stored.day.id !== workoutDayId ||
+          stored.session.workoutDayId !== workoutDayId ||
+          stored.session.startedAtMs !== expectedStartedAtMs
+        ) {
+          return false;
         }
 
-        return activeResult.data;
-      }
-
-      const legacyResult = legacyGuidedSessionSchema.safeParse(parsed);
-      if (!legacyResult.success || legacyResult.data.workoutDayId !== workoutDayId) {
         await storage.removeItem(key);
-        return null;
-      }
-
-      return {
-        kind: 'legacy',
-        version: 1,
-        session: normalizeLegacySession(legacyResult.data),
-      };
-    },
-
-    async remove(authUserId, workoutDayId) {
-      await storage.removeItem(workoutSessionKey(authUserId, workoutDayId));
-    },
-
-    async save(authUserId, day, session) {
-      const record = activeWorkoutSessionSchema.parse({
-        kind: 'active',
-        version: 2,
-        ownerAuthUserId: authUserId,
-        day,
-        session,
+        retiredGenerationsFor(storage).add(
+          sessionGenerationKey(authUserId, workoutDayId, expectedStartedAtMs),
+        );
+        return true;
       });
-      if (!matchesRequestedSession(record, authUserId, day.id)) {
-        throw new Error('registro da sessão não corresponde ao treino.');
-      }
+    },
 
-      await storage.setItem(workoutSessionKey(authUserId, day.id), JSON.stringify(record));
+    save(authUserId, day, session) {
+      const key = workoutSessionKey(authUserId, day.id);
+      return serializeSessionStorageOperation(storage, key, async () => {
+        const record = activeWorkoutSessionSchema.parse({
+          kind: 'active',
+          version: 2,
+          ownerAuthUserId: authUserId,
+          day,
+          session,
+        });
+        if (!matchesRequestedSession(record, authUserId, day.id)) {
+          throw new Error('registro da sessão não corresponde ao treino.');
+        }
+        if (
+          retiredGenerationsFor(storage).has(
+            sessionGenerationKey(authUserId, day.id, session.startedAtMs),
+          )
+        ) {
+          throw new Error('rascunho já foi encerrado.');
+        }
+
+        await storage.setItem(key, JSON.stringify(record));
+      });
     },
   };
 }

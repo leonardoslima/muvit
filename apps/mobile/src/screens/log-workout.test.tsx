@@ -473,6 +473,78 @@ describe('LogWorkoutScreen', () => {
     expect(apiState.request).not.toHaveBeenCalled();
   });
 
+  it('inicia um novo ciclo ao abrir diretamente um treino com tombstone antigo e rascunho que não pôde ser removido', async () => {
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const journalKey = 'muvit_workout_log_journal';
+    const previousDayMs = new Date(2026, 7, 27, 12).getTime();
+    const nextDayMs = new Date(2026, 7, 28, 12).getTime();
+    let serializedSession: string | null = JSON.stringify({
+      kind: 'active',
+      version: 2,
+      ownerAuthUserId: authState.data.user.id,
+      day: workoutPlan.days[0],
+      session: {
+        ...draftSession,
+        startedAtMs: previousDayMs,
+        updatedAtMs: previousDayMs + 60_000,
+      },
+    });
+    persistedStorage.set(
+      journalKey,
+      JSON.stringify([
+        {
+          version: 1,
+          operationId: 'terminal-old-day',
+          ownerAuthUserId: authState.data.user.id,
+          workoutDayId: routerState.dayId,
+          date: '2026-08-27',
+          finish: {
+            durationMin: 1,
+            completed: true,
+            sets: [
+              {
+                workoutExerciseId: workoutPlan.days[0].exercises[0].id,
+                setNumber: 1,
+                repsDone: 10,
+                loadKg: 20,
+              },
+            ],
+          },
+          stage: { kind: 'terminal' },
+        },
+      ]),
+    );
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === sessionKey ? serializedSession : (persistedStorage.get(key) ?? null),
+    );
+    storageState.removeItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) throw new Error('falha ao remover rascunho');
+      persistedStorage.delete(key);
+    });
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key === sessionKey) serializedSession = value;
+      else persistedStorage.set(key, value);
+    });
+    mockWorkoutDay();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nextDayMs);
+
+    try {
+      renderWithQueryClient();
+
+      expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+      expect(
+        screen.queryByText('A conclusão deste treino já está salva neste aparelho.'),
+      ).toBeNull();
+      expect(parseStoredSession(serializedSession ?? '')).toMatchObject({
+        startedAtMs: nextDayMs,
+        workoutDayId: routerState.dayId,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('promove um rascunho legado com o cache de Hoje antes de consultar a API', async () => {
     const legacySession = {
       version: 1,
@@ -623,7 +695,7 @@ describe('LogWorkoutScreen', () => {
     }
   });
 
-  it('mantém o tombstone após falha ao remover o rascunho e bloqueia nova conclusão no remount', async () => {
+  it('bloqueia a nova conclusão no mesmo dia e inicia o próximo ciclo após falha ao remover o rascunho', async () => {
     const user = userEvent.setup();
     const beforeRolloverMs = new Date(2026, 7, 27, 12).getTime();
     const afterRolloverMs = new Date(2026, 7, 28, 12).getTime();
@@ -675,13 +747,15 @@ describe('LogWorkoutScreen', () => {
       expect(
         await screen.findByText('Treino concluído, mas não foi possível remover o rascunho.'),
       ).toBeTruthy();
-      vi.setSystemTime(afterRolloverMs);
+      expect(JSON.parse(serializedJournal ?? '')).toMatchObject([
+        { date: '2026-08-27', stage: { kind: 'terminal' } },
+      ]);
 
-      const todayQueryClient = new QueryClient({
+      const sameDayQueryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, staleTime: 0 } },
       });
       first.view.rerender(
-        <QueryClientProvider client={todayQueryClient}>
+        <QueryClientProvider client={sameDayQueryClient}>
           <TodayWorkoutScreen />
         </QueryClientProvider>,
       );
@@ -689,15 +763,28 @@ describe('LogWorkoutScreen', () => {
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
       expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
 
+      vi.setSystemTime(afterRolloverMs);
+      const nextCycleQueryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, staleTime: 0 } },
+      });
+      first.view.rerender(
+        <QueryClientProvider client={nextCycleQueryClient}>
+          <TodayWorkoutScreen key="next-cycle" />
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
+
       const remountQueryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, staleTime: 0 } },
       });
       first.view.rerender(
         <QueryClientProvider client={remountQueryClient}>
-          <LogWorkoutScreen />
+          <LogWorkoutScreen key="next-cycle" />
         </QueryClientProvider>,
       );
-      expect(await screen.findByText('Treino concluído')).toBeTruthy();
+      expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
 
       const postRequests = apiState.request.mock.calls.filter(

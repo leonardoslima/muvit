@@ -20,7 +20,8 @@ const journalState = vi.hoisted(() => ({
   get: vi.fn(),
   hasForDay: vi.fn(),
   drain: vi.fn<(ownerAuthUserId: string, bindRequester: () => ApiRequester) => Promise<void>>(),
-  pruneTerminalsBefore: vi.fn<(ownerAuthUserId: string, date: string) => Promise<void>>(),
+  removeTerminal:
+    vi.fn<(ownerAuthUserId: string, date: string, workoutDayId: string) => Promise<void>>(),
 }));
 
 const appState = vi.hoisted(() => ({
@@ -70,14 +71,14 @@ describe('QueueDrain', () => {
     authState.useSession.mockReturnValue(authState.session);
     appState.addEventListener.mockReturnValue({ remove: appState.remove });
     journalState.drain.mockResolvedValue(undefined);
-    journalState.pruneTerminalsBefore.mockResolvedValue(undefined);
+    journalState.removeTerminal.mockResolvedValue(undefined);
   });
 
-  it('drena com o requester capturado sem apagar tombstones automaticamente', async () => {
+  it('drena com o requester capturado sem reconciliar tombstones automaticamente', async () => {
     const drainGate = deferred();
     const requesterA = { request: vi.fn() };
     const requesterB = { request: vi.fn() };
-    journalState.pruneTerminalsBefore.mockRejectedValue(new Error('não deve podar'));
+    journalState.removeTerminal.mockRejectedValue(new Error('não deve reconciliar'));
     journalState.drain.mockReturnValue(drainGate.promise);
     apiState.bindCurrentSession.mockReturnValue(requesterA);
 
@@ -85,7 +86,7 @@ describe('QueueDrain', () => {
 
     expect(apiState.bindCurrentSession).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(journalState.drain).toHaveBeenCalledTimes(1));
-    expect(journalState.pruneTerminalsBefore).not.toHaveBeenCalled();
+    expect(journalState.removeTerminal).not.toHaveBeenCalled();
 
     apiState.bindCurrentSession.mockReturnValue(requesterB);
     const bindRequester = journalState.drain.mock.calls[0]?.[1];
