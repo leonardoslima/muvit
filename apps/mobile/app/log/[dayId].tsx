@@ -1,3 +1,3 @@
-import { LogWorkoutScreen } from '../../src/screens/log-workout';
+import { WorkoutOverviewScreen } from '../../src/screens/workout-overview';
 
-export default LogWorkoutScreen;
+export default WorkoutOverviewScreen;

@@ -1,0 +1,92 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
+import { render, screen, userEvent } from '@testing-library/react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { describe, expect, it, vi } from 'vitest';
+import { spacing } from '../../lib/styles';
+import { AppButton } from './button';
+import { Field } from './field';
+import { Screen } from './screen';
+import { StatePanel } from './state-panel';
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
+
+describe('componentes visuais mobile', () => {
+  it('expõe label, estado e ação de forma acessível', async () => {
+    const retry = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <>
+        <Field label="Email" onChangeText={() => undefined} value="" />
+        <StatePanel
+          actionLabel="Tentar novamente"
+          description="Não foi possível carregar seus dados."
+          onAction={retry}
+          title="Algo deu errado"
+          tone="error"
+        />
+      </>,
+    );
+
+    expect(screen.getByLabelText('Email')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(retry).toHaveBeenCalledOnce();
+  });
+
+  it('impede toque duplicado durante submissão', async () => {
+    const submit = vi.fn();
+    const user = userEvent.setup();
+    render(<AppButton disabled label="Entrando..." onPress={submit} />);
+
+    await user.press(screen.getByRole('button', { name: 'Entrando...' }));
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('reserva espaço da tab bar e preserva os estilos fornecidos', () => {
+    const callerStyle = {
+      backgroundColor: '#ffffff',
+      paddingBottom: 8,
+      paddingHorizontal: 12,
+    };
+    const withTabs = render(
+      <BottomTabBarHeightContext.Provider value={64}>
+        <Screen contentContainerStyle={callerStyle} scroll>
+          Conteúdo
+        </Screen>
+      </BottomTabBarHeightContext.Provider>,
+    );
+    const withTabsStyle = StyleSheet.flatten(
+      withTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(withTabsStyle).toEqual(
+      expect.objectContaining({
+        backgroundColor: callerStyle.backgroundColor,
+        paddingBottom: 64 + spacing.lg,
+        paddingHorizontal: callerStyle.paddingHorizontal,
+      }),
+    );
+
+    const withZeroTabBar = render(
+      <BottomTabBarHeightContext.Provider value={0}>
+        <Screen contentContainerStyle={callerStyle} scroll>
+          Conteúdo
+        </Screen>
+      </BottomTabBarHeightContext.Provider>,
+    );
+    const withZeroTabBarStyle = StyleSheet.flatten(
+      withZeroTabBar.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(withZeroTabBarStyle.paddingBottom).toBe(spacing.lg);
+
+    const outsideTabs = render(
+      <Screen contentContainerStyle={callerStyle} scroll>
+        Conteúdo
+      </Screen>,
+    );
+    const outsideTabsStyle = StyleSheet.flatten(
+      outsideTabs.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(outsideTabsStyle).toEqual(expect.objectContaining(callerStyle));
+    expect(outsideTabsStyle.paddingBottom).toBe(callerStyle.paddingBottom);
+  });
+});

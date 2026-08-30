@@ -11,6 +11,8 @@ export type ApiRequestOptions = {
   allowAnonymous?: boolean;
 };
 
+export type ApiRequester = Pick<ApiClient, 'request'>;
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -18,6 +20,13 @@ export class ApiError extends Error {
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+}
+
+export class ApiTransportError extends Error {
+  constructor(readonly cause: unknown) {
+    super('Falha de transporte ao acessar a API.');
+    this.name = 'ApiTransportError';
   }
 }
 
@@ -29,7 +38,7 @@ export class ApiClient {
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
-    this.fetcher = options.fetcher ?? ((input, init) => fetch(input, init));
+    this.fetcher = options.fetcher ?? fetchFromNetwork;
     this.getCookie = options.getCookie;
     this.onUnauthorized = options.onUnauthorized;
   }
@@ -41,6 +50,25 @@ export class ApiClient {
   ): Promise<T> {
     const cookie = this.getCookie().trim();
 
+    return this.requestWithCookie<T>(path, init, options, cookie);
+  }
+
+  bindCurrentSession(): ApiRequester {
+    const capturedCookie = this.getCookie().trim();
+    if (!capturedCookie) throw new ApiError('unauthorized', 401);
+
+    return {
+      request: <T>(path: string, init: RequestInit = {}, options: ApiRequestOptions = {}) =>
+        this.requestWithCookie<T>(path, init, options, capturedCookie),
+    };
+  }
+
+  private async requestWithCookie<T>(
+    path: string,
+    init: RequestInit,
+    options: ApiRequestOptions,
+    cookie: string,
+  ): Promise<T> {
     if (!cookie && !options.allowAnonymous) {
       await this.notifyUnauthorized();
       throw new ApiError('unauthorized', 401);
@@ -56,7 +84,7 @@ export class ApiClient {
       headers,
     });
 
-    if (response.status === 401) {
+    if (response.status === 401 && this.getCookie().trim() === cookie) {
       await this.notifyUnauthorized();
     }
 
@@ -73,6 +101,14 @@ export class ApiClient {
 
   private url(path: string): string {
     return `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  }
+}
+
+async function fetchFromNetwork(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (cause) {
+    throw new ApiTransportError(cause);
   }
 }
 
