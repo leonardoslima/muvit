@@ -1,0 +1,21 @@
+appId: host.exp.exponent
+name: Login de aluno para Hoje
+---
+- launchApp:
+    clearState: true
+- openLink: exp://127.0.0.1:8081
+- assertVisible: Entrar
+- tapOn: voce@exemplo.com
+- inputText: ${MAESTRO_DEMO_STUDENT_EMAIL}
+- tapOn: Sua senha
+- inputText: ${MAESTRO_DEMO_STUDENT_PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: Entrar
+    below: Senha
+- runFlow:
+    when:
+      visible: "Muvit needs permissions.*"
+    commands:
+      - tapOn: DENY
+- assertVisible: Hoje
