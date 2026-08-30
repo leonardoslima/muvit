@@ -1,8 +1,20 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from '../../app/(auth)/login';
 import SignupScreen from '../../app/(auth)/signup';
+
+vi.mock('react-native', async (importOriginal) => {
+  const ReactModule = await import('react');
+  const reactNative = await importOriginal<typeof import('react-native')>();
+
+  return {
+    ...reactNative,
+    KeyboardAvoidingView: ({ children, ...props }: { children?: ReactNode }) =>
+      ReactModule.createElement('KeyboardAvoidingView', props, children),
+  };
+});
 
 const routerState = vi.hoisted(() => ({
   push: vi.fn(),
@@ -43,6 +55,11 @@ vi.mock('../lib/config', () => ({
   config: { apiUrl: 'https://api.muvit.test' },
 }));
 
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: { color: string; name: string; size: number; testID?: string }) =>
+    React.createElement('Ionicons', props),
+}));
+
 describe('telas de autenticação mobile', () => {
   beforeEach(() => {
     authState.signInEmail.mockReset();
@@ -76,6 +93,34 @@ describe('telas de autenticação mobile', () => {
     pending.resolve({ data: { user: { role: 'student' } }, error: null });
     await waitFor(() => {
       expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+    });
+  });
+
+  it('apresenta a composição visual de login com marca, ícones e ações contornadas', () => {
+    render(<LoginScreen />);
+
+    expect(screen.getByTestId('login-brand-symbol').props.style).toMatchObject({
+      backgroundColor: '#2ECC71',
+      borderRadius: 8,
+      height: 42,
+      width: 42,
+    });
+    expect(screen.getByText('Muvit')).toBeTruthy();
+    expect(screen.getByText('SEU TREINO, NO SEU RITMO')).toBeTruthy();
+    expect(screen.getByTestId('login-email-icon').props.name).toBe('mail-outline');
+    expect(screen.getByTestId('login-password-icon').props.name).toBe('lock-closed-outline');
+    expect(screen.getByTestId('login-submit-icon').props.name).toBe('log-in-outline');
+    expect(screen.getByRole('button', { name: 'Criar conta independente' }).props.style).toEqual(
+      expect.any(Function),
+    );
+  });
+
+  it('ajusta o login quando o teclado está aberto', () => {
+    render(<LoginScreen />);
+
+    expect(screen.getByTestId('login-keyboard-avoiding-view').props).toMatchObject({
+      behavior: Platform.OS === 'ios' ? 'padding' : 'height',
+      style: { flex: 1 },
     });
   });
 
