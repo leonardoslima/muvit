@@ -23,9 +23,8 @@ export default function TabsLayout() {
         },
         tabBarStyle: {
           position: 'absolute',
-          left: spacing.lg,
-          right: spacing.lg,
-          bottom: spacing.lg,
+          marginHorizontal: spacing.lg,
+          transform: [{ translateY: -spacing.lg }],
           height: 64,
           borderRadius: radii.pill,
           borderTopWidth: 0,

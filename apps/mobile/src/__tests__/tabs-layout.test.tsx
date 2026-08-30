@@ -4,7 +4,7 @@ import React, { type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TabsLayout from '../../app/(tabs)/_layout';
-import { colors, radii } from '../lib/styles';
+import { colors, radii, spacing } from '../lib/styles';
 
 type TabIconProps = {
   color: string;
@@ -152,7 +152,13 @@ describe('TabsLayout', () => {
     expect(screenOptions.tabBarItemStyle).not.toHaveProperty('overflow');
     expect(screenOptions.tabBarStyle).toMatchObject({
       borderRadius: radii.pill,
+      marginHorizontal: spacing.lg,
+      transform: [{ translateY: -spacing.lg }],
     });
+    expect(screenOptions.tabBarStyle).not.toHaveProperty('marginBottom');
+    expect(screenOptions.tabBarStyle).not.toHaveProperty('bottom');
+    expect(screenOptions.tabBarStyle).not.toHaveProperty('left');
+    expect(screenOptions.tabBarStyle).not.toHaveProperty('right');
     expect(screenOptions.tabBarAllowFontScaling).not.toBe(false);
 
     expect(tabsState.screens.map(({ name }) => name)).toEqual(['index', 'progress', 'profile']);
