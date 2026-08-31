@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   submitAssessment,
   toSupportedContentType,
@@ -9,10 +9,11 @@ import {
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
+import { InlineMessage } from '../components/ui/inline-message';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
-import { colors, sharedStyles, spacing } from '../lib/styles';
+import { spacing } from '../lib/styles';
 import { type AssessmentPhoto, uploadAssessmentPhoto } from '../lib/uploads';
 import { useApiClient } from '../lib/use-api';
 
@@ -108,16 +109,8 @@ export function NewAssessmentScreen() {
         />
       </Card>
 
-      {error ? (
-        <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
-          {error}
-        </Text>
-      ) : null}
-      {success ? (
-        <Text accessibilityLiveRegion="polite" style={styles.success}>
-          Avaliação salva!
-        </Text>
-      ) : null}
+      {error ? <InlineMessage message={error} tone="error" /> : null}
+      {success ? <InlineMessage message="Avaliação salva!" tone="success" /> : null}
 
       <AppButton
         disabled={submitting || success}
@@ -137,10 +130,5 @@ export function NewAssessmentScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xxxl,
-  },
-  success: {
-    color: colors.primary,
-    fontFamily: sharedStyles.buttonText.fontFamily,
-    fontSize: 15,
   },
 });

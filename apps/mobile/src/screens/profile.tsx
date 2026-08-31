@@ -3,11 +3,12 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { InlineMessage } from '../components/ui/inline-message';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
 import { queryClient } from '../lib/query-client';
-import { colors, fontFamilies, sharedStyles, spacing } from '../lib/styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 
 export function ProfileScreen() {
   const session = authClient.useSession();
@@ -66,11 +67,7 @@ export function ProfileScreen() {
         </Text>
       </Card>
 
-      {logoutError ? (
-        <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
-          {logoutError}
-        </Text>
-      ) : null}
+      {logoutError ? <InlineMessage message={logoutError} tone="error" /> : null}
       <AppButton
         disabled={loggingOut}
         label={loggingOut ? 'Saindo...' : 'Sair'}
@@ -100,30 +97,26 @@ const styles = StyleSheet.create({
   avatar: {
     alignItems: 'center',
     backgroundColor: colors.primarySoft,
-    borderRadius: 36,
-    height: 72,
+    borderRadius: radii.avatar,
+    height: controlSizes.avatar,
     justifyContent: 'center',
-    width: 72,
+    width: controlSizes.avatar,
   },
   avatarText: {
     color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 24,
+    ...typography.brandCompact,
   },
   name: {
     color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 22,
+    ...typography.title,
     textAlign: 'center',
   },
   accountType: {
-    color: colors.primary,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 14,
+    color: colors.primaryText,
+    ...typography.bodyStrong,
   },
   sectionTitle: {
     color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 18,
+    ...typography.exerciseTitle,
   },
 });

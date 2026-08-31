@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { colors, fontFamilies, spacing } from '../../lib/styles';
+import { colors, spacing, typography } from '../../lib/styles';
 
 type BrandProps = {
   compact?: boolean;
@@ -11,8 +11,7 @@ export function Brand({ compact = false }: BrandProps) {
       <Text
         style={{
           color: colors.ink,
-          fontFamily: fontFamilies.heading,
-          fontSize: compact ? 24 : 32,
+          ...(compact ? typography.brandCompact : typography.brand),
         }}
       >
         muvit
@@ -21,8 +20,7 @@ export function Brand({ compact = false }: BrandProps) {
         <Text
           style={{
             color: colors.muted,
-            fontFamily: fontFamilies.body,
-            fontSize: 13,
+            ...typography.brandTagline,
           }}
         >
           movimento que transforma

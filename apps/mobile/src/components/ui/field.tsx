@@ -6,7 +6,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { colors, sharedStyles, spacing } from '../../lib/styles';
+import { sharedStyles, spacing } from '../../lib/styles';
 
 export type FieldProps = Omit<TextInputProps, 'onChangeText' | 'value'> & {
   label: string;
@@ -40,7 +40,7 @@ export function Field({
         {unit ? <Text style={sharedStyles.unit}>{unit}</Text> : null}
       </View>
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={{ color: colors.danger, fontSize: 14 }}>
+        <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
           {error}
         </Text>
       ) : null}

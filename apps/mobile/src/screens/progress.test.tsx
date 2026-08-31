@@ -124,4 +124,26 @@ describe('ProgressScreen', () => {
     expect(within(card).getByText('2 kg a mais')).toBeTruthy();
     expect(within(card).getByText('2 p.p. a mais')).toBeTruthy();
   });
+
+  it('preserva os valores neutros quando uma avaliação não tem medidas', async () => {
+    apiState.request.mockResolvedValueOnce({
+      total: 1,
+      items: [
+        {
+          id: 'assessment-without-measures',
+          date: 'data não informada',
+          weightKg: null,
+          bodyFatPct: null,
+          notes: null,
+        },
+      ],
+    });
+
+    renderWithQueryClient();
+
+    const card = await screen.findByTestId('assessment-card-assessment-without-measures');
+    expect(within(card).getByText('data não informada')).toBeTruthy();
+    expect(within(card).getByText('— kg')).toBeTruthy();
+    expect(within(card).getByText('—% de gordura')).toBeTruthy();
+  });
 });

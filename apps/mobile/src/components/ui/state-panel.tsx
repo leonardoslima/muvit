@@ -11,9 +11,9 @@ export type StatePanelProps = {
 };
 
 const toneColors = {
-  loading: colors.primary,
+  loading: colors.primaryText,
   empty: colors.muted,
-  error: colors.danger,
+  error: colors.dangerText,
 };
 
 export function StatePanel({ actionLabel, description, onAction, title, tone }: StatePanelProps) {

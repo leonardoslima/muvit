@@ -42,6 +42,8 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Texto visivel deve estar em pt-BR e caber em telas pequenas.
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
 - O componente `Screen` deve consumir `BottomTabBarHeightContext` e adicionar `tabBarHeight + spacing.lg` ao inset somente quando estiver dentro das tabs; telas nao devem duplicar esse espacamento.
+- Use `src/lib/styles.ts` como fonte executavel dos tokens descritos em `PRODUCT.md` e `DESIGN.md`; prefira `colors`, `spacing`, `radii`, `controlSizes` e `typography` a valores visuais locais.
+- Reutilize `InlineMessage` para feedback de erro, sucesso e aviso de operacoes ja existentes, sem mover a regra de estado para o componente visual.
 
 ## Verificacao
 

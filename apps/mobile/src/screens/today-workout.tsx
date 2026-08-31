@@ -20,7 +20,7 @@ import { authClient } from '../lib/auth-client';
 import { isoDateFromTimestamp, todayIsoDate } from '../lib/date';
 import { createWorkoutLogJournal } from '../lib/log-queue';
 import type { CacheResult } from '../lib/offline-cache';
-import { colors, sharedStyles, spacing } from '../lib/styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
 
@@ -313,59 +313,56 @@ const styles = {
   },
   sectionTitle: {
     color: colors.ink,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
+    ...typography.cardTitle,
   },
   exerciseTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 18,
+    ...typography.exerciseTitle,
   },
   offlineBadge: {
     alignSelf: 'flex-start' as const,
     backgroundColor: colors.primarySoft,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
   offlineText: {
-    color: colors.primary,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
+    color: colors.primaryText,
+    ...typography.bodyStrong,
+    fontSize: typography.caption.fontSize,
   },
   progressTrack: {
     backgroundColor: colors.line,
-    borderRadius: 999,
-    height: 8,
+    borderRadius: radii.pill,
+    height: controlSizes.progressTrack,
     overflow: 'hidden' as const,
   },
   progressFill: {
     backgroundColor: colors.primary,
-    borderRadius: 999,
-    height: 8,
+    borderRadius: radii.pill,
+    height: controlSizes.progressTrack,
   },
   modalBackdrop: {
-    backgroundColor: '#00000040',
+    backgroundColor: colors.scrim,
     flex: 1,
     justifyContent: 'flex-end' as const,
   },
   modalSurface: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radii.sheet,
+    borderTopRightRadius: radii.sheet,
     gap: spacing.md,
     padding: spacing.xxl,
   },
   modalHandle: {
     alignSelf: 'center' as const,
     backgroundColor: colors.muted,
-    borderRadius: 2,
-    height: 4,
-    width: 44,
+    borderRadius: radii.handle,
+    height: controlSizes.sheetHandleHeight,
+    width: controlSizes.sheetHandleWidth,
   },
   modalTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 26,
+    ...typography.sheetTitle,
   },
 };

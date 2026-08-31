@@ -2,9 +2,10 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { spacing } from '../../lib/styles';
+import { colors, spacing } from '../../lib/styles';
 import { AppButton } from './button';
 import { Field } from './field';
+import { InlineMessage } from './inline-message';
 import { Screen } from './screen';
 import { StatePanel } from './state-panel';
 
@@ -40,6 +41,20 @@ describe('componentes visuais mobile', () => {
 
     await user.press(screen.getByRole('button', { name: 'Entrando...' }));
     expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('apresenta feedback inline com semântica e tom visual', () => {
+    render(<InlineMessage message="Não foi possível salvar." tone="error" />);
+
+    const message = screen.getByTestId('inline-message');
+    const style = StyleSheet.flatten(message.props.style);
+
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Não foi possível salvar.')).toBeTruthy();
+    expect(style).toMatchObject({
+      backgroundColor: colors.dangerSoft,
+      borderColor: colors.danger,
+    });
   });
 
   it('reserva espaço da tab bar e preserva os estilos fornecidos', () => {
