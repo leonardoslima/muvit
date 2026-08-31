@@ -10,7 +10,19 @@ import { authClient } from '../lib/auth-client';
 import { queryClient } from '../lib/query-client';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 
-export function ProfileScreen() {
+export type ProfileScreenProps = {
+  accountType?: string;
+  fallbackInitials?: string;
+  fallbackName?: string;
+  journeyDescription?: string;
+};
+
+export function ProfileScreen({
+  accountType = 'Aluno independente',
+  fallbackInitials = 'AL',
+  fallbackName = 'Aluno',
+  journeyDescription = 'Seus treinos e avaliações aparecem aqui conforme você avança.',
+}: ProfileScreenProps = {}) {
   const session = authClient.useSession();
   const user = session.data?.user;
   const [logoutError, setLogoutError] = useState<string>();
@@ -44,8 +56,8 @@ export function ProfileScreen() {
     );
   }
 
-  const displayName = user?.name?.trim() || 'Aluno';
-  const initials = getInitials(user?.name);
+  const displayName = user?.name?.trim() || fallbackName;
+  const initials = getInitials(user?.name, fallbackInitials);
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
@@ -57,14 +69,12 @@ export function ProfileScreen() {
         </View>
         <Text style={styles.name}>{displayName}</Text>
         <Text style={sharedStyles.subtitle}>{user?.email ?? 'Sem email cadastrado'}</Text>
-        <Text style={styles.accountType}>Aluno independente</Text>
+        <Text style={styles.accountType}>{accountType}</Text>
       </Card>
 
       <Card>
         <Text style={styles.sectionTitle}>Treinos e evolução</Text>
-        <Text style={sharedStyles.subtitle}>
-          Seus treinos e avaliações aparecem aqui conforme você avança.
-        </Text>
+        <Text style={sharedStyles.subtitle}>{journeyDescription}</Text>
       </Card>
 
       {logoutError ? <InlineMessage message={logoutError} tone="error" /> : null}
@@ -78,13 +88,13 @@ export function ProfileScreen() {
   );
 }
 
-function getInitials(name: string | undefined): string {
+function getInitials(name: string | undefined, fallbackInitials: string): string {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
   const initials = parts
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
-  return initials || 'AL';
+  return initials || fallbackInitials;
 }
 
 const styles = StyleSheet.create({
