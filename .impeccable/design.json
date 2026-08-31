@@ -8,111 +8,275 @@
         "role": "neutral",
         "displayName": "Papel quente",
         "canonical": "#F5F3EF",
-        "tonalRamp": ["#302E2A", "#57534D", "#817A70", "#A9A39A", "#C5C0B8", "#DDD9D3", "#EEECE9", "#FAF9F7"]
+        "tonalRamp": [
+          "#302E2A",
+          "#57534D",
+          "#817A70",
+          "#A9A39A",
+          "#C5C0B8",
+          "#DDD9D3",
+          "#EEECE9",
+          "#FAF9F7"
+        ]
       },
       "surface": {
         "role": "neutral",
         "displayName": "Superfície branca",
         "canonical": "#FFFFFF",
-        "tonalRamp": ["#242424", "#4A4A4A", "#707070", "#969696", "#BDBDBD", "#D4D4D4", "#E8E8E8", "#FFFFFF"]
+        "tonalRamp": [
+          "#242424",
+          "#4A4A4A",
+          "#707070",
+          "#969696",
+          "#BDBDBD",
+          "#D4D4D4",
+          "#E8E8E8",
+          "#FFFFFF"
+        ]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Tinta",
         "canonical": "#1A1A1A",
-        "tonalRamp": ["#1A1A1A", "#333333", "#4C4C4C", "#666666", "#808080", "#999999", "#B3B3B3", "#CCCCCC"]
+        "tonalRamp": [
+          "#1A1A1A",
+          "#333333",
+          "#4C4C4C",
+          "#666666",
+          "#808080",
+          "#999999",
+          "#B3B3B3",
+          "#CCCCCC"
+        ]
       },
       "muted": {
         "role": "neutral",
         "displayName": "Texto secundário",
         "canonical": "#666666",
-        "tonalRamp": ["#222222", "#363636", "#4A4A4A", "#666666", "#818181", "#9D9D9D", "#B8B8B8", "#D6D6D6"]
+        "tonalRamp": [
+          "#222222",
+          "#363636",
+          "#4A4A4A",
+          "#666666",
+          "#818181",
+          "#9D9D9D",
+          "#B8B8B8",
+          "#D6D6D6"
+        ]
       },
       "line": {
         "role": "neutral",
         "displayName": "Linha mineral",
         "canonical": "#D1CCC4",
-        "tonalRamp": ["#3A3835", "#625F5B", "#898580", "#A6A29C", "#D1CCC4", "#DDD9D3", "#EBE8E4", "#F8F7F5"]
+        "tonalRamp": [
+          "#3A3835",
+          "#625F5B",
+          "#898580",
+          "#A6A29C",
+          "#D1CCC4",
+          "#DDD9D3",
+          "#EBE8E4",
+          "#F8F7F5"
+        ]
       },
       "primary": {
         "role": "primary",
         "displayName": "Verde movimento",
         "canonical": "#2ECC71",
-        "tonalRamp": ["oklch(18% 0.08 150)", "oklch(30% 0.12 150)", "oklch(42% 0.15 150)", "oklch(54% 0.17 150)", "oklch(66% 0.18 150)", "oklch(76% 0.16 150)", "oklch(86% 0.11 150)", "oklch(95% 0.05 150)"]
+        "tonalRamp": [
+          "oklch(18% 0.08 150)",
+          "oklch(30% 0.12 150)",
+          "oklch(42% 0.15 150)",
+          "oklch(54% 0.17 150)",
+          "oklch(66% 0.18 150)",
+          "oklch(76% 0.16 150)",
+          "oklch(86% 0.11 150)",
+          "oklch(95% 0.05 150)"
+        ]
       },
       "primary-soft": {
         "role": "primary",
         "displayName": "Verde suave",
         "canonical": "#E9F9F0",
-        "tonalRamp": ["oklch(20% 0.06 150)", "oklch(34% 0.08 150)", "oklch(48% 0.10 150)", "oklch(62% 0.10 150)", "oklch(74% 0.09 150)", "oklch(84% 0.07 150)", "oklch(91% 0.05 150)", "oklch(97% 0.02 150)"]
+        "tonalRamp": [
+          "oklch(20% 0.06 150)",
+          "oklch(34% 0.08 150)",
+          "oklch(48% 0.10 150)",
+          "oklch(62% 0.10 150)",
+          "oklch(74% 0.09 150)",
+          "oklch(84% 0.07 150)",
+          "oklch(91% 0.05 150)",
+          "oklch(97% 0.02 150)"
+        ]
       },
       "primary-text": {
         "role": "primary",
         "displayName": "Verde textual acessível",
         "canonical": "#167A45",
-        "tonalRamp": ["oklch(16% 0.07 150)", "oklch(28% 0.10 150)", "oklch(40% 0.13 150)", "oklch(52% 0.14 150)", "oklch(64% 0.14 150)", "oklch(75% 0.12 150)", "oklch(86% 0.08 150)", "oklch(95% 0.04 150)"]
+        "tonalRamp": [
+          "oklch(16% 0.07 150)",
+          "oklch(28% 0.10 150)",
+          "oklch(40% 0.13 150)",
+          "oklch(52% 0.14 150)",
+          "oklch(64% 0.14 150)",
+          "oklch(75% 0.12 150)",
+          "oklch(86% 0.08 150)",
+          "oklch(95% 0.04 150)"
+        ]
       },
       "warning": {
         "role": "tertiary",
         "displayName": "Âmbar de atenção",
         "canonical": "#F39C12",
-        "tonalRamp": ["oklch(18% 0.08 75)", "oklch(30% 0.12 75)", "oklch(42% 0.15 75)", "oklch(54% 0.17 75)", "oklch(66% 0.18 75)", "oklch(76% 0.16 75)", "oklch(86% 0.11 75)", "oklch(95% 0.05 75)"]
+        "tonalRamp": [
+          "oklch(18% 0.08 75)",
+          "oklch(30% 0.12 75)",
+          "oklch(42% 0.15 75)",
+          "oklch(54% 0.17 75)",
+          "oklch(66% 0.18 75)",
+          "oklch(76% 0.16 75)",
+          "oklch(86% 0.11 75)",
+          "oklch(95% 0.05 75)"
+        ]
       },
       "warning-soft": {
         "role": "tertiary",
         "displayName": "Âmbar suave",
         "canonical": "#F39C1218",
-        "tonalRamp": ["rgba(138,75,0,0.05)", "rgba(138,75,0,0.08)", "rgba(243,156,18,0.12)", "rgba(243,156,18,0.18)", "rgba(243,156,18,0.24)", "rgba(243,156,18,0.32)", "rgba(243,156,18,0.42)", "rgba(243,156,18,0.54)"]
+        "tonalRamp": [
+          "rgba(138,75,0,0.05)",
+          "rgba(138,75,0,0.08)",
+          "rgba(243,156,18,0.12)",
+          "rgba(243,156,18,0.18)",
+          "rgba(243,156,18,0.24)",
+          "rgba(243,156,18,0.32)",
+          "rgba(243,156,18,0.42)",
+          "rgba(243,156,18,0.54)"
+        ]
       },
       "warning-text": {
         "role": "tertiary",
         "displayName": "Âmbar textual acessível",
         "canonical": "#8A4B00",
-        "tonalRamp": ["oklch(16% 0.07 65)", "oklch(28% 0.10 65)", "oklch(40% 0.13 65)", "oklch(52% 0.14 65)", "oklch(64% 0.14 65)", "oklch(75% 0.12 65)", "oklch(86% 0.08 65)", "oklch(95% 0.04 65)"]
+        "tonalRamp": [
+          "oklch(16% 0.07 65)",
+          "oklch(28% 0.10 65)",
+          "oklch(40% 0.13 65)",
+          "oklch(52% 0.14 65)",
+          "oklch(64% 0.14 65)",
+          "oklch(75% 0.12 65)",
+          "oklch(86% 0.08 65)",
+          "oklch(95% 0.04 65)"
+        ]
       },
       "danger": {
         "role": "error",
         "displayName": "Vermelho de erro",
         "canonical": "#E74C3C",
-        "tonalRamp": ["oklch(18% 0.10 25)", "oklch(30% 0.14 25)", "oklch(42% 0.17 25)", "oklch(54% 0.19 25)", "oklch(66% 0.19 25)", "oklch(76% 0.17 25)", "oklch(86% 0.12 25)", "oklch(95% 0.06 25)"]
+        "tonalRamp": [
+          "oklch(18% 0.10 25)",
+          "oklch(30% 0.14 25)",
+          "oklch(42% 0.17 25)",
+          "oklch(54% 0.19 25)",
+          "oklch(66% 0.19 25)",
+          "oklch(76% 0.17 25)",
+          "oklch(86% 0.12 25)",
+          "oklch(95% 0.06 25)"
+        ]
       },
       "danger-soft": {
         "role": "error",
         "displayName": "Vermelho suave",
         "canonical": "#E74C3C18",
-        "tonalRamp": ["rgba(180,35,24,0.05)", "rgba(180,35,24,0.08)", "rgba(231,76,60,0.12)", "rgba(231,76,60,0.18)", "rgba(231,76,60,0.24)", "rgba(231,76,60,0.32)", "rgba(231,76,60,0.42)", "rgba(231,76,60,0.54)"]
+        "tonalRamp": [
+          "rgba(180,35,24,0.05)",
+          "rgba(180,35,24,0.08)",
+          "rgba(231,76,60,0.12)",
+          "rgba(231,76,60,0.18)",
+          "rgba(231,76,60,0.24)",
+          "rgba(231,76,60,0.32)",
+          "rgba(231,76,60,0.42)",
+          "rgba(231,76,60,0.54)"
+        ]
       },
       "danger-text": {
         "role": "error",
         "displayName": "Vermelho textual acessível",
         "canonical": "#B42318",
-        "tonalRamp": ["oklch(16% 0.08 25)", "oklch(28% 0.11 25)", "oklch(40% 0.14 25)", "oklch(52% 0.15 25)", "oklch(64% 0.15 25)", "oklch(75% 0.13 25)", "oklch(86% 0.09 25)", "oklch(95% 0.04 25)"]
+        "tonalRamp": [
+          "oklch(16% 0.08 25)",
+          "oklch(28% 0.11 25)",
+          "oklch(40% 0.14 25)",
+          "oklch(52% 0.15 25)",
+          "oklch(64% 0.15 25)",
+          "oklch(75% 0.13 25)",
+          "oklch(86% 0.09 25)",
+          "oklch(95% 0.04 25)"
+        ]
       },
       "scrim": {
         "role": "overlay",
         "displayName": "Scrim de modal",
         "canonical": "#00000040",
-        "tonalRamp": ["rgba(0,0,0,0.48)", "rgba(0,0,0,0.40)", "rgba(0,0,0,0.32)", "rgba(0,0,0,0.25)", "rgba(0,0,0,0.20)", "rgba(0,0,0,0.14)", "rgba(0,0,0,0.08)", "rgba(0,0,0,0.04)"]
+        "tonalRamp": [
+          "rgba(0,0,0,0.48)",
+          "rgba(0,0,0,0.40)",
+          "rgba(0,0,0,0.32)",
+          "rgba(0,0,0,0.25)",
+          "rgba(0,0,0,0.20)",
+          "rgba(0,0,0,0.14)",
+          "rgba(0,0,0,0.08)",
+          "rgba(0,0,0,0.04)"
+        ]
       },
       "surface-translucent": {
         "role": "overlay",
         "displayName": "Superfície translúcida",
         "canonical": "#FFFFFFB3",
-        "tonalRamp": ["rgba(255,255,255,0.32)", "rgba(255,255,255,0.40)", "rgba(255,255,255,0.48)", "rgba(255,255,255,0.60)", "rgba(255,255,255,0.70)", "rgba(255,255,255,0.80)", "rgba(255,255,255,0.88)", "rgba(255,255,255,0.95)"]
+        "tonalRamp": [
+          "rgba(255,255,255,0.32)",
+          "rgba(255,255,255,0.40)",
+          "rgba(255,255,255,0.48)",
+          "rgba(255,255,255,0.60)",
+          "rgba(255,255,255,0.70)",
+          "rgba(255,255,255,0.80)",
+          "rgba(255,255,255,0.88)",
+          "rgba(255,255,255,0.95)"
+        ]
       }
     },
     "typographyMeta": {
-      "display": {"displayName": "Space Grotesk display", "purpose": "Resumo de sessão e mudanças de fase."},
-      "headline": {"displayName": "Space Grotesk headline", "purpose": "Títulos principais de tela."},
-      "title": {"displayName": "Space Grotesk title", "purpose": "Estados e destaques dentro da tela."},
-      "body": {"displayName": "Inter body", "purpose": "Descrições e instruções operacionais."},
-      "label": {"displayName": "Inter label", "purpose": "Campos, métricas e controles."},
-      "caption": {"displayName": "Inter caption", "purpose": "Badges, dicas e informações auxiliares."}
+      "display": {
+        "displayName": "Space Grotesk display",
+        "purpose": "Resumo de sessão e mudanças de fase."
+      },
+      "headline": {
+        "displayName": "Space Grotesk headline",
+        "purpose": "Títulos principais de tela."
+      },
+      "title": {
+        "displayName": "Space Grotesk title",
+        "purpose": "Estados e destaques dentro da tela."
+      },
+      "body": { "displayName": "Inter body", "purpose": "Descrições e instruções operacionais." },
+      "label": { "displayName": "Inter label", "purpose": "Campos, métricas e controles." },
+      "caption": {
+        "displayName": "Inter caption",
+        "purpose": "Badges, dicas e informações auxiliares."
+      }
     },
     "shadows": [],
     "motion": [
-      {"name": "press-feedback", "value": "native Pressable opacity 0.8", "purpose": "Comunicar pressão sem criar hover de web."},
-      {"name": "modal-slide", "value": "native Modal animationType=slide", "purpose": "Manter a transição existente de bottom-sheet."}
+      {
+        "name": "press-feedback",
+        "value": "native Pressable opacity 0.8",
+        "purpose": "Comunicar pressão sem criar hover de web."
+      },
+      {
+        "name": "modal-slide",
+        "value": "native Modal animationType=slide",
+        "purpose": "Manter a transição existente de bottom-sheet."
+      }
     ],
     "breakpoints": []
   },
@@ -185,13 +349,43 @@
   "narrative": {
     "northStar": "Movimento com clareza",
     "overview": "Esta é uma fundação visual extraída da implementação mobile existente, não uma substituição de identidade. O Muvit usa uma base quente e discreta para deixar o treino legível, superfícies brancas para agrupar informação e verde para sinalizar ação e avanço. A combinação de Inter com Space Grotesk dá precisão ao conteúdo operacional e presença aos títulos sem transformar a execução do treino em uma experiência ornamental.\n\nO sistema deve servir os dois shells do produto: aluno, que executa e retoma uma sessão, e professor/personal, que terá superfícies próprias de acompanhamento e operação. A linguagem estrutural é compartilhada; conteúdo, permissões, navegação e estados continuam definidos por cada fluxo.",
-    "keyCharacteristics": ["Clareza operacional antes de decoração.", "Ritmo espacial constante, com grupos reconhecíveis.", "Contraste semântico para que estados não dependam somente da cor.", "Camadas planas e bordas discretas em vez de sombras decorativas.", "Componentes pequenos que preservam safe area, teclado e contexto da sessão."],
-    "rules": [
-      {"name": "The Semantic Contrast Rule", "body": "Preenchimento de marca e texto semântico são papéis diferentes. Texto de estado usa as variantes `*-text`, e nenhum estado crítico pode depender somente da cor.", "section": "colors"},
-      {"name": "The Two-Font Rule", "body": "Use Space Grotesk para hierarquia; use Inter para operação. Não introduza outra família por tela ou por role.", "section": "typography"},
-      {"name": "The Flat-by-Default Rule", "body": "Não adicione sombra para compensar falta de hierarquia; ajuste agrupamento, espaçamento, borda ou estado primeiro.", "section": "elevation"}
+    "keyCharacteristics": [
+      "Clareza operacional antes de decoração.",
+      "Ritmo espacial constante, com grupos reconhecíveis.",
+      "Contraste semântico para que estados não dependam somente da cor.",
+      "Camadas planas e bordas discretas em vez de sombras decorativas.",
+      "Componentes pequenos que preservam safe area, teclado e contexto da sessão."
     ],
-    "dos": ["Do evoluir `apps/mobile/src/lib/styles.ts` e `apps/mobile/src/components/ui` antes de criar primitives equivalentes.", "Do consumir tokens semânticos para cor, tipografia, raio, espaçamento e dimensões de controle.", "Do preservar safe area, teclado, inset da tab bar, labels, retries, retomada e confirmação de saída.", "Do desenhar superfícies futuras de aluno e professor/personal com a mesma base e com guards/escopos próprios.", "Do usar o Pencil como referência de fluxo, conteúdo, estados e interação, enquanto `PRODUCT.md` e este documento guiam a direção visual."],
-    "donts": ["Don't tratar `assets/design/pencil_design.pen` como especificação visual pixel-perfect.", "Don't adicionar cores, sombras, raios ou famílias de fonte locais quando um token existente cobre o caso.", "Don't comunicar sucesso, erro ou offline apenas por cor, nem remover texto/ação de recuperação.", "Don't alterar rotas, payloads, contratos, permissões, storage, journal ou regras de role em uma mudança de foundation visual.", "Don't antecipar o redesign geral e o polish final do MUV-9 neste sistema."]
+    "rules": [
+      {
+        "name": "The Semantic Contrast Rule",
+        "body": "Preenchimento de marca e texto semântico são papéis diferentes. Texto de estado usa as variantes `*-text`, e nenhum estado crítico pode depender somente da cor.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Font Rule",
+        "body": "Use Space Grotesk para hierarquia; use Inter para operação. Não introduza outra família por tela ou por role.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-by-Default Rule",
+        "body": "Não adicione sombra para compensar falta de hierarquia; ajuste agrupamento, espaçamento, borda ou estado primeiro.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do evoluir `apps/mobile/src/lib/styles.ts` e `apps/mobile/src/components/ui` antes de criar primitives equivalentes.",
+      "Do consumir tokens semânticos para cor, tipografia, raio, espaçamento e dimensões de controle.",
+      "Do preservar safe area, teclado, inset da tab bar, labels, retries, retomada e confirmação de saída.",
+      "Do desenhar superfícies futuras de aluno e professor/personal com a mesma base e com guards/escopos próprios.",
+      "Do usar o Pencil como referência de fluxo, conteúdo, estados e interação, enquanto `PRODUCT.md` e este documento guiam a direção visual."
+    ],
+    "donts": [
+      "Don't tratar `assets/design/pencil_design.pen` como especificação visual pixel-perfect.",
+      "Don't adicionar cores, sombras, raios ou famílias de fonte locais quando um token existente cobre o caso.",
+      "Don't comunicar sucesso, erro ou offline apenas por cor, nem remover texto/ação de recuperação.",
+      "Don't alterar rotas, payloads, contratos, permissões, storage, journal ou regras de role em uma mudança de foundation visual.",
+      "Don't antecipar o redesign geral e o polish final do MUV-9 neste sistema."
+    ]
   }
 }
