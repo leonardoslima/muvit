@@ -47,7 +47,7 @@ export const fontFamilies = {
 };
 
 export const controlSizes = {
-  touchTarget: 44,
+  touchTarget: 48,
   input: 48,
   authInput: 50,
   button: 48,

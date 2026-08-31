@@ -21,7 +21,7 @@ describe('foundation visual mobile', () => {
   it('centraliza dimensões, raios e escala tipográfica usados no mobile', () => {
     expect(controlSizes.button).toBe(48);
     expect(controlSizes.tabBar).toBe(64);
-    expect(controlSizes.touchTarget).toBe(44);
+    expect(controlSizes.touchTarget).toBe(48);
     expect(radii.md).toBe(10);
     expect(radii.sheet).toBe(28);
     expect(typography.headline).toMatchObject({
