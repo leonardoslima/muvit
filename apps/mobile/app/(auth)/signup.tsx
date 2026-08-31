@@ -1,6 +1,7 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { mobileRoutes } from '../../src/application/navigation/role-navigation';
 import { Brand } from '../../src/components/ui/brand';
 import { AppButton } from '../../src/components/ui/button';
 import { Field } from '../../src/components/ui/field';
@@ -33,7 +34,7 @@ export default function SignupScreen() {
         return;
       }
 
-      router.replace('/(tabs)');
+      router.replace(mobileRoutes.studentHome);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'signup'));
     } finally {

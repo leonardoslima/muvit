@@ -10,6 +10,7 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
+import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
 import { InlineMessage } from '../../src/components/ui/inline-message';
 import { Screen } from '../../src/components/ui/screen';
 import { authClient } from '../../src/lib/auth-client';
@@ -90,13 +91,14 @@ export default function LoginScreen() {
         return;
       }
 
-      if (result.data.user.role !== 'student') {
+      const destination = resolveInitialRoute(result.data.user.role);
+      if (!destination) {
         await authClient.signOut();
-        setError('Este aplicativo é exclusivo para alunos.');
+        setError('Não foi possível identificar o perfil desta conta.');
         return;
       }
 
-      router.replace('/(tabs)');
+      router.replace(destination);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'login'));
     } finally {
