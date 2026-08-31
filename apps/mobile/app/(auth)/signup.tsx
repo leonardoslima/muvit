@@ -1,13 +1,14 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Brand } from '../../src/components/ui/brand';
 import { AppButton } from '../../src/components/ui/button';
 import { Field } from '../../src/components/ui/field';
+import { InlineMessage } from '../../src/components/ui/inline-message';
 import { Screen, ScreenHeader } from '../../src/components/ui/screen';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import { colors, sharedStyles, spacing } from '../../src/lib/styles';
+import { spacing } from '../../src/lib/styles';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -71,18 +72,7 @@ export default function SignupScreen() {
           value={password}
         />
       </View>
-      {error ? (
-        <View
-          accessibilityLiveRegion="polite"
-          style={{
-            backgroundColor: `${colors.danger}18`,
-            borderRadius: 10,
-            padding: spacing.md,
-          }}
-        >
-          <Text style={sharedStyles.error}>{error}</Text>
-        </View>
-      ) : null}
+      {error ? <InlineMessage message={error} tone="error" /> : null}
       <View style={{ gap: spacing.sm }}>
         <AppButton
           disabled={submitting}

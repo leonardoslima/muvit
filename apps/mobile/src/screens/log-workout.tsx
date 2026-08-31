@@ -4,10 +4,11 @@ import { Modal, Text, View } from 'react-native';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
+import { InlineMessage } from '../components/ui/inline-message';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
-import { colors, sharedStyles, spacing } from '../lib/styles';
+import { colors, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 import { type WorkoutDay, useGuidedWorkoutSession } from '../lib/use-guided-workout-session';
 import { usePreventRemove } from '../lib/use-prevent-remove';
@@ -130,15 +131,11 @@ export function LogWorkoutScreen() {
         />
 
         {controller.storageError ? (
-          <Text accessibilityLiveRegion="polite" style={styles.warning}>
-            {controller.storageError}
-          </Text>
+          <InlineMessage message={controller.storageError} tone="warning" />
         ) : null}
         {controller.actionError ? (
           <Card>
-            <Text accessibilityLiveRegion="polite" style={sharedStyles.error}>
-              {controller.actionError}
-            </Text>
+            <InlineMessage message={controller.actionError} tone="error" />
             {controller.canRetryFinish ? (
               <AppButton
                 disabled={controller.busy}
@@ -445,11 +442,7 @@ function ExitSessionModal({
               {currentExerciseName ?? 'Exercício atual'} · Série {currentSetNumber}
             </Text>
           </Card>
-          {storageError ? (
-            <Text accessibilityLiveRegion="polite" style={styles.warning}>
-              {storageError}
-            </Text>
-          ) : null}
+          {storageError ? <InlineMessage message={storageError} tone="warning" /> : null}
           <AppButton disabled={busy} label="Continuar treinando" onPress={onContinue} />
           <AppButton
             disabled={busy}
@@ -484,24 +477,22 @@ const styles = {
   },
   exerciseTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 24,
+    ...typography.sessionTitle,
   },
   currentSetBadge: {
     alignItems: 'center' as const,
     backgroundColor: colors.primarySoft,
-    borderRadius: spacing.md,
+    borderRadius: radii.md,
     padding: spacing.md,
   },
   currentSetBadgeText: {
-    color: colors.primary,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 15,
+    color: colors.primaryText,
+    ...typography.bodyStrong,
+    fontSize: typography.subtitle.fontSize,
   },
   previousSetTitle: {
     color: colors.ink,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
+    ...typography.bodyStrong,
   },
   fieldsRow: {
     flexDirection: 'row' as const,
@@ -509,13 +500,7 @@ const styles = {
   },
   hint: {
     color: colors.muted,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 12,
-  },
-  warning: {
-    color: colors.warning,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
+    ...typography.caption,
   },
   restCard: {
     alignItems: 'center' as const,
@@ -526,19 +511,16 @@ const styles = {
   },
   restTitle: {
     color: colors.surface,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 24,
+    ...typography.sessionTitle,
   },
   restDescription: {
-    color: '#D1CCC4',
-    fontFamily: 'Inter_400Regular',
-    fontSize: 13,
+    color: colors.line,
+    ...typography.caption,
     textAlign: 'center' as const,
   },
   timer: {
     color: colors.surface,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 48,
+    ...typography.timer,
   },
   actionsRow: {
     flexDirection: 'row' as const,
@@ -547,38 +529,35 @@ const styles = {
   successMark: {
     alignSelf: 'center' as const,
     backgroundColor: colors.primary,
-    borderRadius: 999,
+    borderRadius: radii.pill,
     color: colors.surface,
     fontSize: 28,
     overflow: 'hidden' as const,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   readyTitle: {
-    color: colors.primary,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
+    color: colors.primaryText,
+    ...typography.button,
   },
   summaryTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 32,
+    ...typography.display,
     textAlign: 'center' as const,
   },
   metric: {
     color: colors.ink,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 14,
+    ...typography.bodyStrong,
   },
   modalBackdrop: {
-    backgroundColor: '#00000040',
+    backgroundColor: colors.scrim,
     flex: 1,
     justifyContent: 'flex-end' as const,
   },
   modalSurface: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radii.sheet,
+    borderTopRightRadius: radii.sheet,
     gap: spacing.md,
     padding: spacing.xxl,
   },

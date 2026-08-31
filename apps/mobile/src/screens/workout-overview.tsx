@@ -10,7 +10,7 @@ import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
-import { colors, sharedStyles, spacing } from '../lib/styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
@@ -170,22 +170,20 @@ const styles = {
   },
   cardTitle: {
     color: colors.ink,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
+    ...typography.cardTitle,
   },
   exerciseList: {
     gap: spacing.md,
   },
   sectionTitle: {
     color: colors.ink,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 16,
+    ...typography.cardTitle,
   },
   exerciseCard: {
     alignItems: 'center' as const,
     backgroundColor: colors.surface,
     borderColor: colors.line,
-    borderRadius: spacing.md,
+    borderRadius: radii.md,
     borderWidth: 1,
     flexDirection: 'row' as const,
     gap: spacing.md,
@@ -198,36 +196,34 @@ const styles = {
   },
   exerciseTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 18,
+    ...typography.exerciseTitle,
   },
   exerciseHint: {
-    color: colors.primary,
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: 12,
+    color: colors.primaryText,
+    ...typography.bodyStrong,
+    fontSize: typography.caption.fontSize,
   },
   modalBackdrop: {
-    backgroundColor: '#00000040',
+    backgroundColor: colors.scrim,
     flex: 1,
     justifyContent: 'flex-end' as const,
   },
   modalSurface: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radii.sheet,
+    borderTopRightRadius: radii.sheet,
     gap: spacing.md,
     padding: spacing.xxl,
   },
   modalHandle: {
     alignSelf: 'center' as const,
     backgroundColor: colors.muted,
-    borderRadius: 2,
-    height: 4,
-    width: 44,
+    borderRadius: radii.handle,
+    height: controlSizes.sheetHandleHeight,
+    width: controlSizes.sheetHandleWidth,
   },
   modalTitle: {
     color: colors.ink,
-    fontFamily: 'SpaceGrotesk_600SemiBold',
-    fontSize: 26,
+    ...typography.sheetTitle,
   },
 };

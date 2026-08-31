@@ -2,7 +2,7 @@
 
 ## Escopo
 
-Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
+Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entrega a experiência do aluno e poderá hospedar a experiência de professor/personal.
 
 ## Arquitetura mobile
 
@@ -26,7 +26,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Use `authClient.useSession()` como fonte unica de hidratacao e identidade; o plugin Expo do Better Auth e o unico responsavel por persistir a sessao no SecureStore.
 - Encaminhe `authClient.getCookie()` no header `Cookie` das chamadas nativas e use `credentials: 'omit'`; nao crie store paralela ou tokens proprios.
 - Chamadas de dominio do aluno usam rotas self-scoped `/students/me/*`; nunca trate o ID do usuario Better Auth como `profileId`.
-- O fluxo mobile autenticavel e exclusivo de `student`; rejeite e encerre sessoes com outro papel.
+- O fluxo mobile autenticável implementado atualmente é exclusivo de `student`; rejeite e encerre sessões com outro papel enquanto os guards e a navegação de `trainer` não forem implementados nos cards MUV-16 a MUV-19. Essa é uma restrição do escopo atual, não um limite estrutural permanente do app.
 - Particione cache persistente privado pela identidade autenticada ou limpe-o ao trocar de conta.
 - Solicite permissoes nativas no ponto de uso e trate negacao de forma explicita.
 - Push tokens e dados de sessao devem seguir os contratos da API.
@@ -42,6 +42,8 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 - Texto visivel deve estar em pt-BR e caber em telas pequenas.
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
 - O componente `Screen` deve consumir `BottomTabBarHeightContext` e adicionar `tabBarHeight + spacing.lg` ao inset somente quando estiver dentro das tabs; telas nao devem duplicar esse espacamento.
+- Use `src/lib/styles.ts` como fonte executavel dos tokens descritos em `PRODUCT.md` e `DESIGN.md`; prefira `colors`, `spacing`, `radii`, `controlSizes` e `typography` a valores visuais locais.
+- Reutilize `InlineMessage` para feedback de erro, sucesso e aviso de operacoes ja existentes, sem mover a regra de estado para o componente visual.
 
 ## Verificacao
 

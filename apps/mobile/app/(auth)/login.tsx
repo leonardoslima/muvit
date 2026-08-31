@@ -10,10 +10,18 @@ import {
   type TextInputProps,
   View,
 } from 'react-native';
+import { InlineMessage } from '../../src/components/ui/inline-message';
 import { Screen } from '../../src/components/ui/screen';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import { colors, fontFamilies, sharedStyles, spacing } from '../../src/lib/styles';
+import {
+  colors,
+  controlSizes,
+  radii,
+  sharedStyles,
+  spacing,
+  typography,
+} from '../../src/lib/styles';
 
 type LoginFieldProps = Omit<TextInputProps, 'onChangeText' | 'value'> & {
   iconName: ComponentProps<typeof Ionicons>['name'];
@@ -32,27 +40,19 @@ function LoginField({
   ...inputProps
 }: LoginFieldProps) {
   return (
-    <View style={{ gap: 7 }}>
-      <Text
-        style={{
-          color: colors.ink,
-          fontFamily: fontFamilies.bodyStrong,
-          fontSize: 13,
-        }}
-      >
-        {label}
-      </Text>
+    <View style={{ gap: spacing.sm }}>
+      <Text style={[sharedStyles.label, typography.labelCompact]}>{label}</Text>
       <View
         style={{
           alignItems: 'center',
           backgroundColor: colors.surface,
           borderColor: colors.line,
-          borderRadius: 8,
+          borderRadius: radii.control,
           borderWidth: 1,
           flexDirection: 'row',
-          gap: 10,
-          height: 50,
-          paddingHorizontal: 14,
+          gap: spacing.sm,
+          height: controlSizes.authInput,
+          paddingHorizontal: spacing.lg,
         }}
       >
         <Ionicons color={colors.muted} name={iconName} size={18} testID={iconTestID} />
@@ -63,8 +63,7 @@ function LoginField({
           style={{
             color: colors.ink,
             flex: 1,
-            fontFamily: fontFamilies.body,
-            fontSize: 14,
+            ...typography.input,
             height: '100%',
           }}
           value={value}
@@ -124,36 +123,34 @@ export default function LoginScreen() {
       >
         <View
           accessibilityLabel="Muvit"
-          style={{ alignItems: 'center', flexDirection: 'row', gap: 12 }}
+          style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.md }}
         >
           <View
             testID="login-brand-symbol"
             style={{
               alignItems: 'center',
               backgroundColor: colors.primary,
-              borderRadius: 8,
-              height: 42,
+              borderRadius: radii.control,
+              height: controlSizes.brandMark,
               justifyContent: 'center',
-              width: 42,
+              width: controlSizes.brandMark,
             }}
           >
             <Ionicons color={colors.ink} name="barbell-outline" size={22} />
           </View>
-          <View style={{ gap: 1 }}>
+          <View style={{ gap: spacing.xs }}>
             <Text
               style={{
                 color: colors.ink,
-                fontFamily: fontFamilies.heading,
-                fontSize: 24,
+                ...typography.brandCompact,
               }}
             >
               Muvit
             </Text>
             <Text
               style={{
-                color: colors.primary,
-                fontFamily: fontFamilies.bodyStrong,
-                fontSize: 9,
+                color: colors.primaryText,
+                ...typography.brandTagline,
                 letterSpacing: 0.7,
               }}
             >
@@ -163,25 +160,13 @@ export default function LoginScreen() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <Text
-            accessibilityRole="header"
-            style={{ color: colors.ink, fontFamily: fontFamilies.heading, fontSize: 28 }}
-          >
+          <Text accessibilityRole="header" style={sharedStyles.title}>
             Entrar
           </Text>
-          <Text
-            style={{
-              color: colors.muted,
-              fontFamily: fontFamilies.body,
-              fontSize: 15,
-              lineHeight: 22,
-            }}
-          >
-            Acesse seus treinos e registre sua evolução.
-          </Text>
+          <Text style={sharedStyles.subtitle}>Acesse seus treinos e registre sua evolução.</Text>
         </View>
 
-        <View style={{ gap: 14 }}>
+        <View style={{ gap: spacing.md }}>
           <LoginField
             autoCapitalize="none"
             autoComplete="email"
@@ -204,20 +189,9 @@ export default function LoginScreen() {
           />
         </View>
 
-        {error ? (
-          <View
-            accessibilityLiveRegion="polite"
-            style={{
-              backgroundColor: `${colors.danger}18`,
-              borderRadius: 10,
-              padding: spacing.md,
-            }}
-          >
-            <Text style={sharedStyles.error}>{error}</Text>
-          </View>
-        ) : null}
+        {error ? <InlineMessage message={error} tone="error" /> : null}
 
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: spacing.sm }}>
           <Pressable
             accessible
             accessibilityLabel={submitting ? 'Entrando...' : 'Entrar'}
@@ -225,20 +199,13 @@ export default function LoginScreen() {
             disabled={submitting}
             onPress={submitting ? undefined : submit}
             style={({ pressed }) => [
-              {
-                alignItems: 'center',
-                backgroundColor: colors.primary,
-                borderRadius: 8,
-                flexDirection: 'row',
-                gap: spacing.sm,
-                height: 48,
-                justifyContent: 'center',
-              },
+              sharedStyles.button,
+              { borderRadius: radii.control, flexDirection: 'row', gap: spacing.sm },
               submitting ? { opacity: 0.5 } : null,
               pressed && !submitting ? { opacity: 0.8 } : null,
             ]}
           >
-            <Text style={{ color: colors.ink, fontFamily: fontFamilies.bodyStrong, fontSize: 14 }}>
+            <Text style={[sharedStyles.buttonText, typography.bodyStrong]}>
               {submitting ? 'Entrando...' : 'Entrar'}
             </Text>
             <Ionicons
@@ -255,21 +222,12 @@ export default function LoginScreen() {
               accessibilityRole="button"
               onPress={() => undefined}
               style={({ pressed }) => [
-                {
-                  alignItems: 'center',
-                  backgroundColor: colors.surface,
-                  borderColor: colors.line,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  height: 48,
-                  justifyContent: 'center',
-                },
+                sharedStyles.secondaryButton,
+                { borderRadius: radii.control },
                 pressed ? { opacity: 0.8 } : null,
               ]}
             >
-              <Text
-                style={{ color: colors.ink, fontFamily: fontFamilies.bodyStrong, fontSize: 14 }}
-              >
+              <Text style={[sharedStyles.secondaryButtonText, typography.bodyStrong]}>
                 Criar conta independente
               </Text>
             </Pressable>

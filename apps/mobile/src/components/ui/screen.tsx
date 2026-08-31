@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, fontFamilies, sharedStyles, spacing } from '../../lib/styles';
+import { sharedStyles, spacing } from '../../lib/styles';
 
 export type ScreenProps = {
   children: React.ReactNode;
@@ -56,18 +56,7 @@ export function ScreenHeader({ eyebrow, subtitle, title }: ScreenHeaderProps) {
       <Text accessibilityRole="header" style={sharedStyles.title}>
         {title}
       </Text>
-      {subtitle ? (
-        <Text
-          style={{
-            color: colors.muted,
-            fontFamily: fontFamilies.body,
-            fontSize: 15,
-            lineHeight: 22,
-          }}
-        >
-          {subtitle}
-        </Text>
-      ) : null}
+      {subtitle ? <Text style={sharedStyles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }

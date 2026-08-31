@@ -8,7 +8,7 @@ import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
-import { colors, fontFamilies, sharedStyles, spacing } from '../lib/styles';
+import { colors, fontFamilies, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 type Assessment = z.infer<typeof assessmentSchema>;
@@ -178,12 +178,11 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     color: colors.ink,
-    fontFamily: fontFamilies.bodyStrong,
+    ...typography.cardTitle,
     fontSize: 18,
   },
   comparison: {
-    color: colors.primary,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 14,
+    color: colors.primaryText,
+    ...typography.bodyStrong,
   },
 });

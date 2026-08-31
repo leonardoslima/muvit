@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Tabs } from 'expo-router';
-import { colors, fontFamilies, radii, spacing } from '../../src/lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing } from '../../src/lib/styles';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryText,
         tabBarActiveBackgroundColor: colors.primarySoft,
         tabBarInactiveTintColor: colors.muted,
         tabBarItemStyle: {
@@ -25,10 +25,10 @@ export default function TabsLayout() {
           position: 'absolute',
           marginHorizontal: spacing.lg,
           transform: [{ translateY: -spacing.lg }],
-          height: 64,
+          height: controlSizes.tabBar,
           borderRadius: radii.pill,
           borderTopWidth: 0,
-          backgroundColor: '#FFFFFFB3',
+          backgroundColor: colors.surfaceTranslucent,
           paddingBottom: spacing.sm,
           paddingTop: spacing.sm,
         },
