@@ -6,8 +6,11 @@ import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import * as Sentry from 'sentry-expo';
-import { PushTokenRegistration } from '../src/components/push-token-registration';
-import { QueueDrain } from '../src/components/queue-drain';
+import {
+  resolveRouteAccess,
+  resolveRouteArea,
+} from '../src/application/navigation/role-navigation';
+import { UnsupportedRoleBoundary } from '../src/components/navigation/unsupported-role-boundary';
 import { authClient } from '../src/lib/auth-client';
 import { queryClient } from '../src/lib/query-client';
 import { colors } from '../src/lib/styles';
@@ -32,22 +35,18 @@ function AuthenticatedRootLayout() {
     );
   }
 
-  const routeGroup = segments[0];
-  const isAuthenticatedStudent = session.data?.user.role === 'student';
-
-  if (!isAuthenticatedStudent && routeGroup !== '(auth)') {
-    return <Redirect href="/(auth)/login" />;
-  }
-  if (isAuthenticatedStudent && routeGroup === '(auth)') {
-    return <Redirect href="/(tabs)" />;
-  }
+  const decision = resolveRouteAccess({
+    area: resolveRouteArea(segments),
+    isAuthenticated: Boolean(session.data),
+    role: session.data?.user.role,
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isAuthenticatedStudent ? <QueueDrain /> : null}
-      {isAuthenticatedStudent ? <PushTokenRegistration /> : null}
       <StatusBar style="dark" />
-      <Slot />
+      {decision.kind === 'unsupported-role' ? <UnsupportedRoleBoundary /> : null}
+      {decision.kind === 'redirect' ? <Redirect href={decision.href} /> : null}
+      {decision.kind === 'allow' ? <Slot /> : null}
     </QueryClientProvider>
   );
 }

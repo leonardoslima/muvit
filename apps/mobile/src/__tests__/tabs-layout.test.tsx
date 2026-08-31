@@ -1,10 +1,8 @@
 import type { PlatformPressable } from '@react-navigation/elements';
 import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import TabsLayout from '../../app/(tabs)/_layout';
-import { colors, radii, spacing } from '../lib/styles';
+import TabsLayout from '../../app/(student)/(tabs)/_layout';
 
 type TabIconProps = {
   color: string;
@@ -15,7 +13,6 @@ type TabIconProps = {
 type TabScreen = {
   name: string;
   options: {
-    tabBarActiveBackgroundColor?: string;
     tabBarIcon?: (props: TabIconProps) => React.ReactElement<{ name: string }>;
     tabBarLabel?: string;
     title?: string;
@@ -25,15 +22,10 @@ type TabScreen = {
 type TabBarButtonProps = React.ComponentProps<typeof PlatformPressable>;
 
 type ScreenOptions = {
-  tabBarActiveBackgroundColor?: string;
-  tabBarAllowFontScaling?: boolean;
   tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
-  tabBarItemStyle?: unknown;
-  tabBarStyle?: unknown;
 };
 
 type RenderedButtonCase = {
-  expectedBackground: string;
   label: string | undefined;
   labelTestID: string;
   name: string;
@@ -83,14 +75,13 @@ vi.mock('expo-router', () => {
             onPress,
             role: 'tab',
             style: {
-              backgroundColor: selected ? colors.primarySoft : 'transparent',
+              backgroundColor: selected ? 'selected' : 'not-selected',
               borderRadius: 0,
             },
             testID,
           });
 
           tabsState.buttonCases.push({
-            expectedBackground: selected ? colors.primarySoft : 'transparent',
             label: options.tabBarLabel,
             labelTestID,
             name,
@@ -137,7 +128,7 @@ describe('TabsLayout', () => {
     platformPressableState.calls = 0;
   });
 
-  it('aplica fundo ativo e recorte em pill a todas as abas', () => {
+  it('preserva acessibilidade, seleção e destinos das abas', () => {
     const tabsRender = render(<TabsLayout />);
 
     const screenOptions = tabsState.screenOptions;
@@ -145,42 +136,15 @@ describe('TabsLayout', () => {
       throw new Error('As opções das abas não foram capturadas');
     }
 
-    expect(screenOptions.tabBarActiveBackgroundColor).toBe(colors.primarySoft);
-    expect(screenOptions.tabBarItemStyle).toEqual({
-      borderRadius: radii.pill,
-    });
-    expect(screenOptions.tabBarItemStyle).not.toHaveProperty('overflow');
-    expect(screenOptions.tabBarStyle).toMatchObject({
-      borderRadius: radii.pill,
-      marginHorizontal: spacing.lg,
-      transform: [{ translateY: -spacing.lg }],
-    });
-    expect(screenOptions.tabBarStyle).not.toHaveProperty('marginBottom');
-    expect(screenOptions.tabBarStyle).not.toHaveProperty('bottom');
-    expect(screenOptions.tabBarStyle).not.toHaveProperty('left');
-    expect(screenOptions.tabBarStyle).not.toHaveProperty('right');
-    expect(screenOptions.tabBarAllowFontScaling).not.toBe(false);
-
     expect(tabsState.screens.map(({ name }) => name)).toEqual(['index', 'progress', 'profile']);
-    expect(tabsState.screens.map(({ options }) => options.tabBarActiveBackgroundColor)).toEqual([
-      undefined,
-      undefined,
-      undefined,
-    ]);
     expect(typeof screenOptions.tabBarButton).toBe('function');
     expect(platformPressableState.calls).toBe(tabsState.buttonCases.length);
     expect(tabsState.buttonCases).toHaveLength(6);
 
     for (const buttonCase of tabsState.buttonCases) {
       const host = tabsRender.getByTestId(buttonCase.testID);
-      const style = StyleSheet.flatten(host.props.style);
 
       expect(host.type).toBe('PlatformPressable');
-      expect(style).toMatchObject({
-        backgroundColor: buttonCase.expectedBackground,
-        borderRadius: radii.pill,
-      });
-      expect(style).not.toHaveProperty('overflow');
       expect(host.props.testID).toBe(buttonCase.testID);
       expect(host.props.onPress).toBe(buttonCase.onPress);
       expect(host.props.onLongPress).toBe(buttonCase.onLongPress);

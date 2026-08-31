@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-lib
 import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
+import { mobileRoutes } from '../application/navigation/role-navigation';
 import type { GuidedSession } from '../application/workouts/guided-session';
 import { ApiTransportError } from '../lib/api';
 
@@ -390,7 +391,7 @@ describe('LogWorkoutScreen', () => {
 
     expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0);
     await user.press(screen.getByRole('button', { name: 'Voltar ao início' }));
-    expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+    expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     await waitFor(() =>
       expect(storageState.removeItem).toHaveBeenCalledWith(
         `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,

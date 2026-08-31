@@ -1,9 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Tabs } from 'expo-router';
-import { colors, controlSizes, fontFamilies, radii, spacing } from '../../src/lib/styles';
+import type { ComponentProps } from 'react';
+import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
 
-export default function TabsLayout() {
+export type AppTab = {
+  name: string;
+  title: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+};
+
+export type AppTabsLayoutProps = {
+  tabs: readonly AppTab[];
+};
+
+export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
   return (
     <Tabs
       screenOptions={{
@@ -19,7 +30,7 @@ export default function TabsLayout() {
         ),
         tabBarLabelStyle: {
           fontFamily: fontFamilies.bodyStrong,
-          fontSize: 12,
+          fontSize: typography.caption.fontSize,
         },
         tabBarStyle: {
           position: 'absolute',
@@ -34,36 +45,17 @@ export default function TabsLayout() {
         },
       }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Hoje',
-          tabBarLabel: 'Hoje',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons color={color} name="calendar-outline" size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="progress"
-        options={{
-          title: 'Progresso',
-          tabBarLabel: 'Progresso',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons color={color} name="stats-chart-outline" size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Perfil',
-          tabBarLabel: 'Perfil',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons color={color} name="person-outline" size={size} />
-          ),
-        }}
-      />
+      {tabs.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.title,
+            tabBarLabel: tab.title,
+            tabBarIcon: ({ color, size }) => <Ionicons color={color} name={tab.icon} size={size} />,
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
+import { mobileRoutes } from '../application/navigation/role-navigation';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
@@ -88,7 +89,10 @@ export function LogWorkoutScreen() {
           title="Treino concluído"
           tone="empty"
         />
-        <AppButton label="Voltar ao início" onPress={() => router.replace('/(tabs)')} />
+        <AppButton
+          label="Voltar ao início"
+          onPress={() => router.replace(mobileRoutes.studentHome)}
+        />
       </Screen>
     );
   }
@@ -189,7 +193,7 @@ export function LogWorkoutScreen() {
             busy={controller.busy}
             queued={controller.queued}
             summary={controller.summary}
-            onBackHome={() => router.replace('/(tabs)')}
+            onBackHome={() => router.replace(mobileRoutes.studentHome)}
           />
         ) : null}
       </Screen>
@@ -208,7 +212,7 @@ export function LogWorkoutScreen() {
           const action = pendingActionRef.current;
           pendingActionRef.current = null;
           if (action) navigation.dispatch(action);
-          else router.replace('/(tabs)');
+          else router.replace(mobileRoutes.studentHome);
           setExitVisible(false);
         }}
         onSave={async () => {
@@ -217,7 +221,7 @@ export function LogWorkoutScreen() {
           const action = pendingActionRef.current;
           pendingActionRef.current = null;
           if (action) navigation.dispatch(action);
-          else router.replace('/(tabs)');
+          else router.replace(mobileRoutes.studentHome);
           setExitVisible(false);
         }}
         busy={controller.busy}

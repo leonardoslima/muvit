@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from '../../app/(auth)/login';
 import SignupScreen from '../../app/(auth)/signup';
+import { mobileRoutes } from '../application/navigation/role-navigation';
 
 vi.mock('react-native', async (importOriginal) => {
   const ReactModule = await import('react');
@@ -92,7 +93,7 @@ describe('telas de autenticação mobile', () => {
 
     pending.resolve({ data: { user: { role: 'student' } }, error: null });
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
   });
 
@@ -143,7 +144,7 @@ describe('telas de autenticação mobile', () => {
         password: 'senha-segura',
       });
 
-      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
   });
 
@@ -168,13 +169,12 @@ describe('telas de autenticação mobile', () => {
     ).toBeTruthy();
   });
 
-  it('encerra a sessão e rejeita login de treinador', async () => {
+  it('encaminha login de treinador para o shell do treinador sem logout', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValueOnce({
       data: { user: { role: 'trainer' } },
       error: null,
     });
-    authState.signOut.mockResolvedValueOnce(undefined);
 
     render(<LoginScreen />);
 
@@ -182,9 +182,31 @@ describe('telas de autenticação mobile', () => {
     await user.type(screen.getByLabelText('Senha'), 'senha-segura');
     await user.press(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(await screen.findByText('Este aplicativo é exclusivo para alunos.')).toBeTruthy();
+    await waitFor(() => {
+      expect(authState.signOut).not.toHaveBeenCalled();
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.trainerHome);
+    });
+  });
+
+  it('encerra sessão e informa role desconhecida recebida no login', async () => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockResolvedValueOnce({
+      data: { user: { role: 'legacy' } },
+      error: null,
+    });
+    authState.signOut.mockResolvedValueOnce(undefined);
+
+    render(<LoginScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'legado@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(
+      await screen.findByText('Não foi possível identificar o perfil desta conta.'),
+    ).toBeTruthy();
     expect(authState.signOut).toHaveBeenCalledOnce();
-    expect(routerState.replace).not.toHaveBeenCalledWith('/(tabs)');
+    expect(routerState.replace).not.toHaveBeenCalled();
   });
 
   it('cadastra apenas aluno pelo Better Auth', async () => {
@@ -209,7 +231,7 @@ describe('telas de autenticação mobile', () => {
         role: 'student',
       });
 
-      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
   });
 
@@ -236,7 +258,7 @@ describe('telas de autenticação mobile', () => {
 
     pending.resolve({ data: { user: { role: 'student' } }, error: null });
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith('/(tabs)');
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
   });
 
@@ -257,7 +279,7 @@ describe('telas de autenticação mobile', () => {
     expect(
       await screen.findByText('Não foi possível criar a conta com os dados informados.'),
     ).toBeTruthy();
-    expect(routerState.replace).not.toHaveBeenCalledWith('/(tabs)');
+    expect(routerState.replace).not.toHaveBeenCalledWith(mobileRoutes.studentHome);
   });
 
   it('usa o destino de cadastro do link secundário do login', async () => {

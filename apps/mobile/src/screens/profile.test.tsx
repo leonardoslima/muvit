@@ -122,4 +122,21 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('AL')).toBeTruthy();
     expect(screen.getByText('Sem email cadastrado')).toBeTruthy();
   });
+
+  it('aceita contexto de apresentação de treinador sem duplicar o fluxo de logout', async () => {
+    authState.session.data = null;
+
+    renderWithQueryClient(
+      <ProfileScreen
+        accountType="Treinador"
+        fallbackInitials="TR"
+        fallbackName="Treinador"
+        journeyDescription="Acompanhe seus alunos no Muvit."
+      />,
+    );
+
+    expect(screen.getAllByText('Treinador')).toHaveLength(2);
+    expect(screen.getByText('TR')).toBeTruthy();
+    expect(screen.getByText('Acompanhe seus alunos no Muvit.')).toBeTruthy();
+  });
 });
