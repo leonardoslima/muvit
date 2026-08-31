@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { colors, controlSizes, fontFamilies, radii, spacing } from '../../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
 
 export type AppTab = {
   name: string;
@@ -30,7 +30,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
         ),
         tabBarLabelStyle: {
           fontFamily: fontFamilies.bodyStrong,
-          fontSize: 12,
+          fontSize: typography.caption.fontSize,
         },
         tabBarStyle: {
           position: 'absolute',

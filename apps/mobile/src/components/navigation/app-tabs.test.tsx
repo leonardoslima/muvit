@@ -1,7 +1,23 @@
 import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fontFamilies, typography } from '../../lib/styles';
 import { AppTabsLayout } from './app-tabs';
+
+vi.mock('../../lib/styles', async (importOriginal) => {
+  const styles = await importOriginal<typeof import('../../lib/styles')>();
+
+  return {
+    ...styles,
+    typography: {
+      ...styles.typography,
+      caption: {
+        ...styles.typography.caption,
+        fontSize: 11,
+      },
+    },
+  };
+});
 
 type TabIconProps = {
   color: string;
@@ -29,6 +45,10 @@ type TabBarButtonProps = {
 
 type ScreenOptions = {
   tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+  tabBarLabelStyle?: {
+    fontFamily: string;
+    fontSize: number;
+  };
 };
 
 const tabsState = vi.hoisted(() => ({
@@ -112,5 +132,14 @@ describe('AppTabsLayout', () => {
       expect(tab.props.role).toBe('tab');
       expect(tab.props['aria-selected']).toBe(name === 'students');
     }
+  });
+
+  it('aplica os tokens de tipografia aos labels das abas', () => {
+    render(<AppTabsLayout tabs={[]} />);
+
+    expect(tabsState.screenOptions?.tabBarLabelStyle).toEqual({
+      fontFamily: fontFamilies.bodyStrong,
+      fontSize: typography.caption.fontSize,
+    });
   });
 });
