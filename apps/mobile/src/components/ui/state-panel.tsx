@@ -10,19 +10,13 @@ export type StatePanelProps = {
   onAction?: () => void;
 };
 
-const toneColors = {
-  loading: colors.primaryText,
-  empty: colors.muted,
-  error: colors.dangerText,
-};
-
 export function StatePanel({ actionLabel, description, onAction, title, tone }: StatePanelProps) {
   return (
     <View style={sharedStyles.statePanel}>
       {tone === 'loading' ? (
-        <ActivityIndicator accessibilityLabel="Carregando" color={toneColors[tone]} />
+        <ActivityIndicator accessibilityLabel="Carregando" color={colors.primaryText} />
       ) : null}
-      <Text style={[sharedStyles.stateTitle, { color: toneColors[tone] }]}>{title}</Text>
+      <Text style={sharedStyles.stateTitle}>{title}</Text>
       <Text style={sharedStyles.stateDescription}>{description}</Text>
       {actionLabel && onAction ? (
         <View style={{ marginTop: spacing.sm, width: '100%' }}>

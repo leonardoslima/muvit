@@ -2,7 +2,7 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, spacing } from '../../lib/styles';
+import { colors, spacing, typography } from '../../lib/styles';
 import { AppButton } from './button';
 import { Field } from './field';
 import { InlineMessage } from './inline-message';
@@ -29,7 +29,13 @@ describe('componentes visuais mobile', () => {
       </>,
     );
 
-    expect(screen.getByLabelText('Email')).toBeTruthy();
+    const emailInput = screen.getByLabelText('Email');
+    expect(emailInput).toBeTruthy();
+    expect(StyleSheet.flatten(emailInput.props.style)).toMatchObject(typography.input);
+
+    const stateTitle = screen.getByText('Algo deu errado');
+    expect(StyleSheet.flatten(stateTitle.props.style)).toMatchObject({ color: colors.ink });
+
     await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(retry).toHaveBeenCalledOnce();
   });

@@ -1,5 +1,6 @@
+import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
-import { colors, controlSizes, radii, typography } from './styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from './styles';
 
 describe('foundation visual mobile', () => {
   it('preserva a paleta incumbente e seus papéis semânticos', () => {
@@ -33,5 +34,11 @@ describe('foundation visual mobile', () => {
       fontSize: 15,
       lineHeight: 22,
     });
+    expect(StyleSheet.flatten(sharedStyles.statePanel)).toMatchObject({
+      backgroundColor: colors.background,
+      borderRadius: radii.lg,
+      padding: spacing.xxl,
+    });
+    expect(StyleSheet.flatten(sharedStyles.stateTitle)).toMatchObject({ color: colors.ink });
   });
 });

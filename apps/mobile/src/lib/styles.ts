@@ -186,13 +186,12 @@ export const sharedStyles = StyleSheet.create({
     fontSize: 14,
   },
   input: {
+    ...typography.input,
     borderColor: colors.line,
     borderRadius: radii.md,
     borderWidth: 1,
     backgroundColor: colors.surface,
     color: colors.ink,
-    fontFamily: fontFamilies.body,
-    fontSize: 16,
     minHeight: controlSizes.input,
     paddingHorizontal: spacing.lg,
   },
@@ -238,8 +237,10 @@ export const sharedStyles = StyleSheet.create({
   },
   statePanel: {
     alignItems: 'center',
+    borderRadius: radii.lg,
     gap: spacing.md,
     justifyContent: 'center',
+    backgroundColor: colors.background,
     padding: spacing.xxl,
   },
   stateTitle: {
