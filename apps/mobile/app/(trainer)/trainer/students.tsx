@@ -4,7 +4,7 @@ export default function TrainerStudentsScreen() {
   return (
     <TrainerSectionScreen
       stateDescription="Os alunos vinculados ao seu perfil aparecerão aqui."
-      stateTitle="Lista de alunos em breve"
+      stateTitle="Alunos vinculados"
       subtitle="Consulte seus alunos por aqui."
       title="Alunos"
     />

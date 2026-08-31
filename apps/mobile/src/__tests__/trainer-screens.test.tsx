@@ -41,7 +41,7 @@ describe('superfícies trainer', () => {
 
     expect(screen.getByText('Início')).toBeTruthy();
     expect(screen.getByText('Acompanhe seus alunos por aqui.')).toBeTruthy();
-    expect(screen.getByText('Visão geral em breve')).toBeTruthy();
+    expect(screen.getByText('Visão geral')).toBeTruthy();
   });
 
   it('apresenta a superfície de alunos sem antecipar o domínio', () => {
@@ -49,7 +49,7 @@ describe('superfícies trainer', () => {
 
     expect(screen.getByText('Alunos')).toBeTruthy();
     expect(screen.getByText('Consulte seus alunos por aqui.')).toBeTruthy();
-    expect(screen.getByText('Lista de alunos em breve')).toBeTruthy();
+    expect(screen.getByText('Alunos vinculados')).toBeTruthy();
   });
 
   it('apresenta o perfil com contexto de treinador', () => {
