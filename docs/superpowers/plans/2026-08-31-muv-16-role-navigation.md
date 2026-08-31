@@ -4,7 +4,7 @@
 
 **Goal:** Separar estruturalmente as experiências mobile de aluno e treinador por role, habilitando o shell do treinador sem montar efeitos ou rotas exclusivas do aluno.
 
-**Architecture:** Uma política pura em `src/application/navigation` resolverá role, área da rota, destino inicial e decisão de acesso. O root layout protegerá a árvore inteira, enquanto layouts `(student)` e `(trainer)` reforçarão o boundary antes de montar seus shells; `QueueDrain` e `PushTokenRegistration` ficarão exclusivamente no layout do aluno. O treinador usará o namespace visível `/trainer`, com tabs `Início`, `Alunos` e `Perfil`, telas de navegação mínimas e primitives visuais compartilhados.
+**Architecture:** Uma política pura em `src/application/navigation` resolverá role, área da rota, destino inicial e decisão de acesso. O `app/_layout.tsx` será a autoridade única de autenticação, deep links e redirecionamentos; layouts `(student)` e `(trainer)` serão boundaries estruturais que apenas montam seus stacks e providers. `QueueDrain` e `PushTokenRegistration` ficarão exclusivamente no layout do aluno. O treinador usará o namespace visível `/trainer`, com tabs `Início`, `Alunos` e `Perfil`, telas de navegação mínimas e primitives visuais compartilhados.
 
 **Tech Stack:** Expo Router 6, Expo 54, React Native 0.81, TypeScript estrito, Vitest, React Native Testing Library, Better Auth, TanStack Query, Biome e tokens de `apps/mobile/src/lib/styles.ts`.
 
@@ -16,8 +16,9 @@
 - Não haverá mudança no backend, schema, validators, contratos, payloads ou dependências.
 - As URLs externas existentes do aluno permanecem estáveis; o namespace visível do treinador será `/trainer`.
 - A role `student` mantém Hoje, Progresso e Perfil; a role `trainer` recebe Início, Alunos e Perfil.
-- `QueueDrain`, `PushTokenRegistration`, cache, journal, queries e rotas `/students/me/*` permanecem exclusivos da experiência do aluno.
-- O treinador não receberá busca, CRUD, avaliações, gestão de treinos, gestão de exercícios ou dados de negócio antecipados da MUV-17.
+- `QueueDrain`, `PushTokenRegistration`, cache persistido específico do domínio do aluno, journal, fila offline, workout session storage, queries de treino/aluno e rotas `/students/me/*` permanecem exclusivos da experiência do aluno.
+- O `QueryClientProvider` pode permanecer global como infraestrutura compartilhada; ele não equivale a cache persistido de domínio do aluno.
+- O treinador não receberá busca, CRUD, avaliações, gestão de treinos, gestão de exercícios ou queries de domínio antecipadas da MUV-17.
 - Papel ausente ou desconhecido em sessão existente nunca será assumido como aluno ou treinador; a árvore protegida permanece bloqueada e oferece encerramento seguro.
 - Reutilizar `Screen`, `ScreenHeader`, `StatePanel`, `InlineMessage`, `AppButton`, `Card`, `src/lib/styles.ts` e os componentes existentes antes de criar primitives equivalentes.
 - Todo texto novo será pt-BR com acentuação UTF-8 literal; não inserir sequências `\\u` para representar texto visível.
@@ -28,24 +29,24 @@
 
 - Criar `apps/mobile/src/application/navigation/role-navigation.ts`: política pura de role, área da rota, destinos canônicos e decisões de acesso.
 - Criar `apps/mobile/src/application/navigation/role-navigation.test.ts`: testes unitários da política sem React Native ou Expo Router.
-- Criar `apps/mobile/src/components/navigation/role-guard.tsx`: integração da política com `authClient.useSession()` e `Redirect` para layouts protegidos.
 - Criar `apps/mobile/src/components/navigation/unsupported-role-boundary.tsx`: bloqueio explícito e logout recuperável para role desconhecida.
-- Criar `apps/mobile/src/components/navigation/role-guard.test.tsx` e `unsupported-role-boundary.test.tsx`: testes isolados dos boundaries.
+- Criar `apps/mobile/src/components/navigation/unsupported-role-boundary.test.tsx`: teste isolado do boundary de role desconhecida.
 - Criar `apps/mobile/src/components/navigation/app-tabs.tsx`: shell de tabs parametrizado, com tokens e comportamento visual já consolidado.
-- Criar `apps/mobile/src/components/navigation/app-tabs.test.tsx`: teste do shell compartilhado, labels, ícones, estilo e acessibilidade.
+- Criar `apps/mobile/src/components/navigation/app-tabs.test.tsx`: teste do shell compartilhado, labels, ícones, destinos, seleção e acessibilidade.
 - Criar `apps/mobile/src/screens/trainer-section.tsx`: tela mínima reutilizável para Início e Alunos, sem dados ou efeitos de negócio.
 - Criar `apps/mobile/src/screens/trainer-section.test.tsx`: teste das superfícies mínimas do treinador.
 - Modificar `apps/mobile/app/_layout.tsx`: deixar apenas infraestrutura global, resolução de acesso e `Slot`; remover imports de efeitos do aluno.
-- Criar `apps/mobile/app/(student)/_layout.tsx`: guard do aluno, `Stack` do aluno e montagem de fila offline/push.
-- Criar `apps/mobile/app/(student)/(tabs)/_layout.tsx`, `index.tsx`, `progress.tsx` e `profile.tsx`: rotas atuais do aluno sob o boundary estrutural.
-- Criar `apps/mobile/app/(student)/log/[dayId].tsx`, `session/[dayId].tsx` e `new-assessment.tsx`: rotas de treino do aluno sob o mesmo boundary.
-- Criar `apps/mobile/app/(trainer)/_layout.tsx`: guard estrutural do treinador.
+- Criar `apps/mobile/app/(student)/_layout.tsx`: boundary estrutural do aluno, `Stack` do aluno e montagem de fila offline/push.
+- Mover `apps/mobile/app/(tabs)/_layout.tsx` para `apps/mobile/app/(student)/(tabs)/_layout.tsx`, preservando a composição e ajustando somente imports necessários para reutilizar o shell compartilhado.
+- Mover `apps/mobile/app/(tabs)/index.tsx`, `progress.tsx` e `profile.tsx` para `apps/mobile/app/(student)/(tabs)/`, preservando conteúdo, exports e destinos existentes.
+- Mover `apps/mobile/app/log/[dayId].tsx`, `session/[dayId].tsx` e `new-assessment.tsx` para `apps/mobile/app/(student)/`, preservando conteúdo, exports e destinos existentes; em especial, manter o named export `LogWorkoutScreen` de `session/[dayId].tsx` junto do `default export`.
+- Criar `apps/mobile/app/(trainer)/_layout.tsx`: boundary estrutural do treinador e `Stack` do treinador.
 - Criar `apps/mobile/app/(trainer)/trainer/_layout.tsx`, `index.tsx`, `students.tsx` e `profile.tsx`: shell e destinos visíveis do treinador.
 - Modificar `apps/mobile/app/(auth)/login.tsx` e `signup.tsx`: encaminhamento por destino resolvido, mantendo cadastro somente de aluno.
-- Modificar `apps/mobile/src/screens/profile.tsx`: tornar o conteúdo de conta configurável sem duplicar o logout.
+- Modificar `apps/mobile/src/screens/profile.tsx` e `profile.test.tsx`: tornar o conteúdo de conta configurável sem duplicar o logout.
 - Modificar `apps/mobile/src/screens/log-workout.tsx`: usar o destino canônico do shell de aluno nos retornos.
 - Modificar `apps/mobile/src/__tests__/root-layout.test.tsx`, `auth-screens.test.tsx`, `tabs-layout.test.tsx` e `screens/log-workout.test.tsx`: atualizar destinos e cobrir role/isolamento.
-- Criar `apps/mobile/src/__tests__/trainer-tabs-layout.test.tsx` e `trainer-screens.test.tsx`: cobrir o shell e superfícies do treinador.
+- Criar `apps/mobile/src/__tests__/role-layouts.test.tsx`, `trainer-tabs-layout.test.tsx` e `trainer-screens.test.tsx`: cobrir boundaries estruturais, shell e superfícies do treinador.
 
 ---
 
@@ -210,99 +211,47 @@ git add -- apps/mobile/src/application/navigation/role-navigation.ts apps/mobile
 git commit -m "feat(mobile): centraliza politica de navegacao por role"
 ```
 
-### Task 2: Criar guards e boundary para papel desconhecido
+### Task 2: Criar boundary para papel desconhecido
 
 **Files:**
-- Create: `apps/mobile/src/components/navigation/role-guard.tsx`
 - Create: `apps/mobile/src/components/navigation/unsupported-role-boundary.tsx`
-- Test: `apps/mobile/src/components/navigation/role-guard.test.tsx`
 - Test: `apps/mobile/src/components/navigation/unsupported-role-boundary.test.tsx`
 
 **Interfaces:**
-- `RoleGuardProps = { expectedRole: Extract<MobileRole, 'student' | 'trainer'>; children: ReactNode }`.
-- `RoleGuard` lê `authClient.useSession()`, exibe `Carregando sessão` enquanto pendente, chama `resolveRouteAccess` com a área esperada e renderiza children somente para a role correta.
-- `UnsupportedRoleBoundary` nunca renderiza children protegidos; oferece `Sair e voltar ao login`, executa `authClient.signOut()`, limpa `queryClient` e navega para `mobileRoutes.login` somente no sucesso.
+- `UnsupportedRoleBoundary` nunca renderiza conteúdo protegido; oferece `Sair e voltar ao login`, executa `authClient.signOut()` e limpa `queryClient` ao finalizar.
+- O boundary não usa `useSegments`, não decide área de rota e não chama `router.replace`. Depois de `signOut`, o `app/_layout.tsx` observa a sessão ausente e executa o redirecionamento único para `mobileRoutes.login`.
 
-- [ ] **Step 1: Escrever os testes falhando dos boundaries**
+- [ ] **Step 1: Escrever o teste falhando do boundary**
 
-Os testes devem mockar `expo-router`, `authClient`, `queryClient` e os components de UI. Fixar estes comportamentos:
+O teste deve mockar `authClient`, `queryClient` e os components de UI. Não deve precisar mockar `expo-router`, porque o boundary não navega diretamente. Fixar estes comportamentos:
 
-```ts
-it('permite o conteúdo quando a sessão corresponde ao layout', () => {
-  authState.session = { data: { user: { role: 'student' } }, isPending: false };
+```tsx
+it('bloqueia role desconhecida, encerra a sessão e não expõe conteúdo protegido', async () => {
+  authState.signOut.mockResolvedValueOnce(undefined);
 
-  render(
-    <RoleGuard expectedRole="student">
-      <Text>conteúdo do aluno</Text>
-    </RoleGuard>,
-  );
-
-  expect(screen.getByText('conteúdo do aluno')).toBeTruthy();
-  expect(screen.queryByText('redirect:/(auth)/login')).toBeNull();
-});
-
-it('redireciona trainer para o próprio início ao abrir o layout de aluno', () => {
-  authState.session = { data: { user: { role: 'trainer' } }, isPending: false };
-
-  render(
-    <RoleGuard expectedRole="student">
-      <Text>conteúdo do aluno</Text>
-    </RoleGuard>,
-  );
-
-  expect(screen.getByText(`redirect:${mobileRoutes.trainerHome}`)).toBeTruthy();
-  expect(screen.queryByText('conteúdo do aluno')).toBeNull();
-});
-
-it('bloqueia role desconhecida com ação de logout', async () => {
-  authState.session = { data: { user: { role: 'legacy' } }, isPending: false };
-
-  render(
-    <RoleGuard expectedRole="student">
-      <Text>conteúdo protegido</Text>
-    </RoleGuard>,
-  );
+  render(<UnsupportedRoleBoundary />);
 
   expect(screen.getByText('Perfil não reconhecido')).toBeTruthy();
   expect(screen.queryByText('conteúdo protegido')).toBeNull();
+
+  await user.press(screen.getByRole('button', { name: 'Sair e voltar ao login' }));
+
+  await waitFor(() => {
+    expect(authState.signOut).toHaveBeenCalledOnce();
+    expect(queryState.clear).toHaveBeenCalledOnce();
+  });
 });
 ```
 
 - [ ] **Step 2: Rodar os testes para confirmar a falha**
 
-Run: `pnpm.cmd --dir apps/mobile test src/components/navigation/role-guard.test.tsx src/components/navigation/unsupported-role-boundary.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/components/navigation/unsupported-role-boundary.test.tsx`
 
-Expected: FAIL por modules ausentes dos boundaries.
+Expected: FAIL por module ausente do boundary.
 
-- [ ] **Step 3: Implementar `RoleGuard` e `UnsupportedRoleBoundary`**
+- [ ] **Step 3: Implementar `UnsupportedRoleBoundary`**
 
-`RoleGuard` deve seguir esta forma, mantendo a política fora do componente:
-
-```tsx
-export function RoleGuard({ children, expectedRole }: RoleGuardProps) {
-  const session = authClient.useSession();
-
-  if (session.isPending) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator accessibilityLabel="Carregando sessão" color={colors.primary} />
-      </View>
-    );
-  }
-
-  const decision = resolveRouteAccess({
-    area: expectedRole,
-    isAuthenticated: Boolean(session.data),
-    role: session.data?.user.role,
-  });
-
-  if (decision.kind === 'unsupported-role') return <UnsupportedRoleBoundary />;
-  if (decision.kind === 'redirect') return <Redirect href={decision.href} />;
-  return <>{children}</>;
-}
-```
-
-`UnsupportedRoleBoundary` deve renderizar `Screen`, `StatePanel` e `InlineMessage`, com a ação de logout protegida contra segundo toque:
+O componente deve renderizar `Screen`, `StatePanel` e `InlineMessage`, com a ação de logout protegida contra segundo toque:
 
 ```tsx
 async function logoutUnsupportedSession(): Promise<void> {
@@ -311,7 +260,6 @@ async function logoutUnsupportedSession(): Promise<void> {
   setError(undefined);
   try {
     await authClient.signOut();
-    router.replace(mobileRoutes.login);
   } catch {
     setError('Não foi possível encerrar esta sessão. Tente novamente.');
   } finally {
@@ -321,19 +269,19 @@ async function logoutUnsupportedSession(): Promise<void> {
 }
 ```
 
-O painel usará `title="Perfil não reconhecido"`, descrição informando que o perfil não pode acessar o app mobile e `actionLabel` com `Sair e voltar ao login`/`Saindo...`. Nenhum conteúdo de role será exibido durante falha de logout.
+O painel usará `title="Perfil não reconhecido"`, descrição informando que o perfil não pode acessar o app mobile e `actionLabel` com `Sair e voltar ao login`/`Saindo...`. Nenhum conteúdo de role será exibido durante falha de logout. O componente não importará `expo-router`.
 
-- [ ] **Step 4: Rodar os testes dos boundaries**
+- [ ] **Step 4: Rodar o teste do boundary**
 
-Run: `pnpm.cmd --dir apps/mobile test src/components/navigation/role-guard.test.tsx src/components/navigation/unsupported-role-boundary.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/components/navigation/unsupported-role-boundary.test.tsx`
 
-Expected: visitantes, role correta, role oposta, loading e role desconhecida passam; o logout bem-sucedido navega para `mobileRoutes.login` e sempre limpa o cache.
+Expected: o papel desconhecido permanece bloqueado; o logout bem-sucedido chama `authClient.signOut()` e sempre limpa o cache de queries em memória compartilhado, sem executar navegação direta.
 
-- [ ] **Step 5: Commitar os boundaries**
+- [ ] **Step 5: Commitar o boundary**
 
 ```powershell
-git add -- apps/mobile/src/components/navigation/role-guard.tsx apps/mobile/src/components/navigation/unsupported-role-boundary.tsx apps/mobile/src/components/navigation/role-guard.test.tsx apps/mobile/src/components/navigation/unsupported-role-boundary.test.tsx
-git commit -m "feat(mobile): adiciona guards de acesso por role"
+git add -- apps/mobile/src/components/navigation/unsupported-role-boundary.tsx apps/mobile/src/components/navigation/unsupported-role-boundary.test.tsx
+git commit -m "feat(mobile): adiciona boundary para role desconhecida"
 ```
 
 ### Task 3: Consolidar o shell de tabs e as superfícies mínimas do treinador
@@ -347,28 +295,28 @@ git commit -m "feat(mobile): adiciona guards de acesso por role"
 **Interfaces:**
 - `AppTab = { name: string; title: string; icon: ComponentProps<typeof Ionicons>['name'] }`.
 - `AppTabsLayoutProps = { tabs: readonly AppTab[] }`.
-- `AppTabsLayout` preserva o estilo atual: pill, `colors.primarySoft` ativo, `colors.muted` inativo, `controlSizes.tabBar`, `spacing.lg` horizontal, transformação vertical e `PlatformPressable`.
+- `AppTabsLayout` preserva a composição atual usando os tokens de `colors`, `controlSizes`, `radii`, `spacing` e `fontFamilies`, além de `PlatformPressable`; seus testes não fixarão números de estilo.
 - `TrainerSectionScreenProps = { title: string; subtitle: string; stateTitle: string; stateDescription: string }`.
 - `TrainerSectionScreen` renderiza apenas `Screen`, `ScreenHeader` e `StatePanel`; não importa API, query client, storage, journal, push ou hooks de treino.
 
 - [ ] **Step 1: Escrever testes falhando do shell compartilhado e da tela mínima**
 
-O teste do shell deve renderizar três itens e verificar labels, nomes de ícones, fundo ativo, recorte pill, posição e acessibilidade. O teste da tela deve verificar que uma seção do treinador mostra sua hierarquia e mensagem sem montar query:
+O teste do shell deve renderizar três itens e verificar labels, nomes de ícones, destinos, papel acessível `tab` e estado selecionado. Não verificar `transform`, `borderRadius`, `backgroundColor`, `marginHorizontal` ou outras constantes visuais. O teste da tela deve verificar que uma seção do treinador mostra sua hierarquia e mensagem sem montar query:
 
 ```tsx
 it('renderiza uma seção de treinador sem dependências de domínio', () => {
   render(
     <TrainerSectionScreen
-      stateDescription="A consulta de alunos será adicionada nas próximas etapas."
-      stateTitle="Lista de alunos"
-      subtitle="Seus alunos vinculados."
+      stateDescription="Consulte seus alunos por aqui."
+      stateTitle="Acompanhamento"
+      subtitle="Sua operação no Muvit."
       title="Alunos"
     />,
   );
 
   expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
-  expect(screen.getByText('Lista de alunos')).toBeTruthy();
-  expect(screen.getByText('A consulta de alunos será adicionada nas próximas etapas.')).toBeTruthy();
+  expect(screen.getByText('Acompanhamento')).toBeTruthy();
+  expect(screen.getByText('Consulte seus alunos por aqui.')).toBeTruthy();
 });
 ```
 
@@ -431,7 +379,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
 
 Run: `pnpm.cmd --dir apps/mobile test src/components/navigation/app-tabs.test.tsx src/screens/trainer-section.test.tsx`
 
-Expected: o shell mantém a composição visual atual e a tela mínima usa somente a foundation compartilhada.
+Expected: o shell mantém labels, destinos, acessibilidade e seleção; a tela mínima usa somente a foundation compartilhada. Nenhum teste fixa valores numéricos de estilo.
 
 - [ ] **Step 5: Commitar os primitives e superfícies**
 
@@ -446,38 +394,36 @@ git commit -m "feat(mobile): cria shell compartilhado do treinador"
 - Modify: `apps/mobile/app/_layout.tsx`
 - Modify: `apps/mobile/src/__tests__/root-layout.test.tsx`
 - Modify: `apps/mobile/src/__tests__/tabs-layout.test.tsx`
+- Modify: `apps/mobile/src/screens/profile.tsx`
+- Modify: `apps/mobile/src/screens/profile.test.tsx`
+- Create: `apps/mobile/src/__tests__/role-layouts.test.tsx`
 - Create: `apps/mobile/src/__tests__/trainer-tabs-layout.test.tsx`
+- Create: `apps/mobile/src/__tests__/trainer-screens.test.tsx`
 - Create: `apps/mobile/app/(student)/_layout.tsx`
-- Create: `apps/mobile/app/(student)/(tabs)/_layout.tsx`
-- Create: `apps/mobile/app/(student)/(tabs)/index.tsx`
-- Create: `apps/mobile/app/(student)/(tabs)/progress.tsx`
-- Create: `apps/mobile/app/(student)/(tabs)/profile.tsx`
-- Create: `apps/mobile/app/(student)/log/[dayId].tsx`
-- Create: `apps/mobile/app/(student)/session/[dayId].tsx`
-- Create: `apps/mobile/app/(student)/new-assessment.tsx`
+- Move: `apps/mobile/app/(tabs)/_layout.tsx` -> `apps/mobile/app/(student)/(tabs)/_layout.tsx`
+- Move: `apps/mobile/app/(tabs)/index.tsx` -> `apps/mobile/app/(student)/(tabs)/index.tsx`
+- Move: `apps/mobile/app/(tabs)/progress.tsx` -> `apps/mobile/app/(student)/(tabs)/progress.tsx`
+- Move: `apps/mobile/app/(tabs)/profile.tsx` -> `apps/mobile/app/(student)/(tabs)/profile.tsx`
+- Move: `apps/mobile/app/log/[dayId].tsx` -> `apps/mobile/app/(student)/log/[dayId].tsx`
+- Move: `apps/mobile/app/session/[dayId].tsx` -> `apps/mobile/app/(student)/session/[dayId].tsx`
+- Move: `apps/mobile/app/new-assessment.tsx` -> `apps/mobile/app/(student)/new-assessment.tsx`
 - Create: `apps/mobile/app/(trainer)/_layout.tsx`
 - Create: `apps/mobile/app/(trainer)/trainer/_layout.tsx`
 - Create: `apps/mobile/app/(trainer)/trainer/index.tsx`
 - Create: `apps/mobile/app/(trainer)/trainer/students.tsx`
 - Create: `apps/mobile/app/(trainer)/trainer/profile.tsx`
-- Delete: `apps/mobile/app/(tabs)/_layout.tsx`
-- Delete: `apps/mobile/app/(tabs)/index.tsx`
-- Delete: `apps/mobile/app/(tabs)/progress.tsx`
-- Delete: `apps/mobile/app/(tabs)/profile.tsx`
-- Delete: `apps/mobile/app/log/[dayId].tsx`
-- Delete: `apps/mobile/app/session/[dayId].tsx`
-- Delete: `apps/mobile/app/new-assessment.tsx`
 
 **Interfaces:**
-- O root layout consumirá `resolveRouteArea`, `resolveRouteAccess` e `UnsupportedRoleBoundary`, sem importar `QueueDrain` ou `PushTokenRegistration`.
-- `(student)/_layout.tsx` consumirá `RoleGuard expectedRole="student"`, `QueueDrain`, `PushTokenRegistration` e `Stack`.
-- `(trainer)/_layout.tsx` consumirá `RoleGuard expectedRole="trainer"` e `Stack`, sem importar nenhum componente específico do aluno.
-- O shell student usará itens `index/Hoje/calendar-outline`, `progress/Progresso/stats-chart-outline`, `profile/Perfil/person-outline`.
-- O shell trainer usará itens `index/Início/home-outline`, `students/Alunos/people-outline`, `profile/Perfil/person-outline`.
+- O `app/_layout.tsx` consumirá `resolveRouteArea`, `resolveRouteAccess` e `UnsupportedRoleBoundary`, sem importar `QueueDrain` ou `PushTokenRegistration`. Ele continuará montando o `QueryClientProvider` global como infraestrutura compartilhada, mas só montará `Slot` quando a decisão for `allow`.
+- `(student)/_layout.tsx` será somente boundary estrutural: montará `QueueDrain`, `PushTokenRegistration` e `Stack`, sem `useSession`, `useSegments`, `Redirect`, política de role ou guard adicional.
+- `(trainer)/_layout.tsx` será somente boundary estrutural: montará seu `Stack`, sem importar componente, provider ou efeito específico do aluno.
+- `(student)/(tabs)/_layout.tsx` e `(trainer)/trainer/_layout.tsx` usarão `AppTabsLayout` com, respectivamente, `index/Hoje/calendar-outline`, `progress/Progresso/stats-chart-outline`, `profile/Perfil/person-outline` e `index/Início/home-outline`, `students/Alunos/people-outline`, `profile/Perfil/person-outline`.
+- `ProfileScreen` aceitará contexto de conta com defaults de aluno; `app/(trainer)/trainer/profile.tsx` passará contexto de treinador sem repetir logout ou política de role.
+- Os entrypoints movidos continuarão encaminhando para as mesmas screens e destinos. A movimentação não poderá apagar named exports, incluindo `LogWorkoutScreen` em `session/[dayId].tsx`.
 
 - [ ] **Step 1: Escrever os testes falhando de root, shells e isolamento**
 
-Atualizar `root-layout.test.tsx` para substituir o destino antigo por `mobileRoutes.studentHome` e adicionar os casos:
+Atualizar `root-layout.test.tsx` para usar `mobileRoutes` e cobrir a autoridade única do root:
 
 ```tsx
 it('encaminha trainer autenticado para o shell trainer', () => {
@@ -489,25 +435,32 @@ it('encaminha trainer autenticado para o shell trainer', () => {
   expect(screen.getByText(`redirect:${mobileRoutes.trainerHome}`)).toBeTruthy();
 });
 
-it('bloqueia aluno em rota trainer e trainer em rota student', () => {
+it('protege deep links cruzados antes de montar o Slot', () => {
   authState.session.data = { user: { id: 'auth-user-id', role: 'student' } };
-  routerState.segments = ['(trainer)', 'trainer', '(tabs)'];
+  routerState.segments = ['(trainer)', 'trainer', 'students'];
+
   const studentAttempt = render(<RootLayout />);
+
   expect(screen.getByText(`redirect:${mobileRoutes.studentHome}`)).toBeTruthy();
+  expect(screen.queryByTestId('router-slot')).toBeNull();
   studentAttempt.unmount();
 
   authState.session.data = { user: { id: 'auth-user-id', role: 'trainer' } };
   routerState.segments = ['(student)', '(tabs)'];
+
   render(<RootLayout />);
+
   expect(screen.getByText(`redirect:${mobileRoutes.trainerHome}`)).toBeTruthy();
+  expect(screen.queryByTestId('router-slot')).toBeNull();
 });
 
-it('não monta efeitos do aluno no root para sessão trainer', () => {
+it('mantém a infraestrutura de query global sem montar efeitos do aluno para trainer', () => {
   authState.session.data = { user: { id: 'auth-user-id', role: 'trainer' } };
-  routerState.segments = ['(trainer)', 'trainer', '(tabs)'];
+  routerState.segments = ['(trainer)', 'trainer', 'students'];
 
   render(<RootLayout />);
 
+  expect(screen.getByTestId('query-client-provider')).toBeTruthy();
   expect(screen.getByTestId('router-slot')).toBeTruthy();
   expect(screen.queryByText('queue-drain')).toBeNull();
   expect(screen.queryByText('push-registration')).toBeNull();
@@ -515,6 +468,7 @@ it('não monta efeitos do aluno no root para sessão trainer', () => {
 
 it('bloqueia role desconhecida sem montar Slot', () => {
   authState.session.data = { user: { id: 'auth-user-id', role: 'legacy' } };
+  routerState.segments = ['(student)', '(tabs)'];
 
   render(<RootLayout />);
 
@@ -523,30 +477,40 @@ it('bloqueia role desconhecida sem montar Slot', () => {
 });
 ```
 
-Adicionar teste do layout student que verifica a presença de `QueueDrain` e `PushTokenRegistration` somente dentro dele, e teste do layout trainer que renderiza o `Stack` sem esses providers. Atualizar `tabs-layout.test.tsx` para importar `app/(student)/(tabs)/_layout.tsx` e preservar todos os asserts de estilo e acessibilidade.
+Criar `role-layouts.test.tsx` para renderizar diretamente os boundaries estruturais com componentes mockados: o layout student deve montar `QueueDrain`, `PushTokenRegistration` e `Stack`; o layout trainer deve montar somente `Stack`. Atualizar `tabs-layout.test.tsx` para importar o entrypoint movido de `app/(student)/(tabs)/_layout.tsx`, preservando asserts de labels, destinos, acessibilidade e seleção. Remover asserts numéricos de `transform`, `borderRadius`, `backgroundColor`, `marginHorizontal` e equivalentes; eles pertencem à foundation da MUV-20, não ao contrato desta entrega.
 
 - [ ] **Step 2: Rodar os testes para confirmar as falhas**
 
-Run: `pnpm.cmd --dir apps/mobile test src/__tests__/root-layout.test.tsx src/__tests__/tabs-layout.test.tsx src/__tests__/trainer-tabs-layout.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/__tests__/root-layout.test.tsx src/__tests__/role-layouts.test.tsx src/__tests__/tabs-layout.test.tsx src/__tests__/trainer-tabs-layout.test.tsx src/__tests__/trainer-screens.test.tsx`
 
-Expected: FAIL nos destinos e arquivos novos antes da migração da árvore.
+Expected: FAIL nos destinos, boundaries e arquivos novos antes da migração da árvore.
 
-- [ ] **Step 3: Mover as rotas atuais para `(student)` sem alterar telas de domínio**
+- [ ] **Step 3: Mover as rotas atuais para `(student)` preservando os entrypoints**
 
-Criar os wrappers mantendo os imports das telas atuais e apenas ajustando a profundidade relativa:
+Criar apenas os diretórios de destino e mover os arquivos existentes com `git mv`:
 
-```tsx
-// app/(student)/(tabs)/index.tsx
-import { TodayWorkoutScreen } from '../../../src/screens/today-workout';
+```powershell
+New-Item -ItemType Directory -Force -Path `
+  'apps/mobile/app/(student)/(tabs)', `
+  'apps/mobile/app/(student)/log', `
+  'apps/mobile/app/(student)/session' | Out-Null
 
-export default TodayWorkoutScreen;
+git mv -- 'apps/mobile/app/(tabs)/_layout.tsx' 'apps/mobile/app/(student)/(tabs)/_layout.tsx'
+git mv -- 'apps/mobile/app/(tabs)/index.tsx' 'apps/mobile/app/(student)/(tabs)/index.tsx'
+git mv -- 'apps/mobile/app/(tabs)/progress.tsx' 'apps/mobile/app/(student)/(tabs)/progress.tsx'
+git mv -- 'apps/mobile/app/(tabs)/profile.tsx' 'apps/mobile/app/(student)/(tabs)/profile.tsx'
+git mv -- 'apps/mobile/app/log/[dayId].tsx' 'apps/mobile/app/(student)/log/[dayId].tsx'
+git mv -- 'apps/mobile/app/session/[dayId].tsx' 'apps/mobile/app/(student)/session/[dayId].tsx'
+git mv -- 'apps/mobile/app/new-assessment.tsx' 'apps/mobile/app/(student)/new-assessment.tsx'
 ```
 
-Aplicar o mesmo padrão para `ProgressScreen`, `ProfileScreen`, `WorkoutOverviewScreen`, `LogWorkoutScreen` e `NewAssessmentScreen`. Não copiar lógica das telas para a árvore `app/`; os arquivos continuarão sendo apenas entrypoints.
+Depois da movimentação, ajustar somente imports relativos cuja profundidade mudou (por exemplo, `../../src` para `../../../src` nos entrypoints dentro de `(student)/(tabs)`, `log` e `session`). Preservar o conteúdo e todos os exports dos arquivos movidos; em especial, `session/[dayId].tsx` continuará contendo o named export `LogWorkoutScreen` e o `default export`, alterando apenas o caminho relativo se necessário. Não recriar wrappers, não copiar lógica de screens e não substituir um entrypoint por um novo `default export`.
 
-- [ ] **Step 4: Implementar o root e os layouts protegidos**
+Usar `git diff --find-renames -- apps/mobile/app` para conferir que a migração foi registrada como movimentação e comparar os destinos públicos antes e depois.
 
-O root deve substituir o booleano de aluno por uma decisão única:
+- [ ] **Step 4: Implementar o root, os boundaries estruturais e o shell trainer**
+
+O root deve substituir o booleano de aluno por uma decisão única, preservando o estado de carregamento e a infraestrutura global existentes:
 
 ```tsx
 const decision = resolveRouteAccess({
@@ -555,66 +519,73 @@ const decision = resolveRouteAccess({
   role: session.data?.user.role,
 });
 
-if (decision.kind === 'unsupported-role') return <UnsupportedRoleBoundary />;
-if (decision.kind === 'redirect') return <Redirect href={decision.href} />;
-
 return (
   <QueryClientProvider client={queryClient}>
     <StatusBar style="dark" />
-    <Slot />
+    {decision.kind === 'unsupported-role' ? <UnsupportedRoleBoundary /> : null}
+    {decision.kind === 'redirect' ? <Redirect href={decision.href} /> : null}
+    {decision.kind === 'allow' ? <Slot /> : null}
   </QueryClientProvider>
 );
 ```
 
-O layout do aluno deve montar os efeitos somente depois do `RoleGuard` permitir:
+O código real deverá manter o tratamento de sessão pendente antes da decisão e evitar renderizar mais de uma dessas três saídas. O root não importará nem montará efeitos do aluno. O layout student será estrutural e montará diretamente `QueueDrain`, `PushTokenRegistration` e `Stack`; o layout trainer montará diretamente somente seu `Stack`. Nenhum desses layouts repetirá a política de autorização.
+
+O layout aninhado `trainer/_layout.tsx` renderizará `AppTabsLayout` com `Início`, `Alunos` e `Perfil`. As telas `index.tsx` e `students.tsx` usarão `TrainerSectionScreen` com copy neutra, como `Acompanhe seus alunos por aqui.` e `Consulte seus alunos por aqui.`. A rota `profile.tsx` chamará `ProfileScreen` com `accountType="Treinador"`, fallback `Treinador`/`TR` e descrição `Acompanhe seus alunos no Muvit.`. Não adicionar role checks, queries, CRUD, storage, listeners ou efeitos de negócio às telas trainer.
+
+Generalizar `ProfileScreen` sem duplicar o fluxo atual:
 
 ```tsx
-export default function StudentLayout() {
-  return (
-    <RoleGuard expectedRole="student">
-      <QueueDrain />
-      <PushTokenRegistration />
-      <Stack screenOptions={{ headerShown: false }} />
-    </RoleGuard>
-  );
+type ProfileScreenProps = {
+  accountType?: string;
+  fallbackName?: string;
+  fallbackInitials?: string;
+  journeyDescription?: string;
+};
+
+export function ProfileScreen({
+  accountType = 'Aluno independente',
+  fallbackInitials = 'AL',
+  fallbackName = 'Aluno',
+  journeyDescription = 'Seus treinos e avaliações aparecem aqui conforme você avança.',
+}: ProfileScreenProps = {}) {
+  // preservar authClient.useSession(), logout, queryClient.clear() e estados atuais
 }
 ```
 
-O layout do treinador deve conter somente `RoleGuard expectedRole="trainer"` e seu `Stack`. O layout aninhado `trainer/_layout.tsx` renderizará `AppTabsLayout` com `Início`, `Alunos` e `Perfil`. As telas de `index.tsx` e `students.tsx` usarão `TrainerSectionScreen`; `profile.tsx` será conectado na Task 5.
+O perfil student continuará usando os defaults atuais; o trainer apenas fornecerá contexto de apresentação e compartilhará logout.
 
-- [ ] **Step 5: Rodar os testes de navegação e isolamento**
+- [ ] **Step 5: Rodar os testes de navegação, migração e isolamento**
 
-Run: `pnpm.cmd --dir apps/mobile test src/__tests__/root-layout.test.tsx src/__tests__/tabs-layout.test.tsx src/__tests__/trainer-tabs-layout.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/__tests__/root-layout.test.tsx src/__tests__/role-layouts.test.tsx src/__tests__/tabs-layout.test.tsx src/__tests__/trainer-tabs-layout.test.tsx src/__tests__/trainer-screens.test.tsx src/screens/profile.test.tsx`
 
-Expected: visitante vai para login; aluno e treinador são encaminhados aos shells próprios; deep links cruzados são redirecionados; root não monta efeitos do aluno; tabs student permanecem iguais; tabs trainer expõem exatamente `Início`, `Alunos` e `Perfil`.
+Expected: visitante vai para login; aluno e treinador são encaminhados aos shells próprios; deep links cruzados são redirecionados pelo root antes do `Slot`; o `QueryClientProvider` global permanece disponível; efeitos do aluno aparecem somente no layout student; tabs student preservam labels/destinos; tabs trainer expõem exatamente `Início`, `Alunos` e `Perfil`; o perfil mostra o contexto correto. Nenhum teste depende de valores numéricos da foundation.
 
-- [ ] **Step 6: Commitar a árvore de rotas**
+Conferir também `git diff --find-renames -- apps/mobile/app` para garantir que os entrypoints antigos foram movidos, não recriados, e que `session/[dayId].tsx` manteve seus exports.
+
+- [ ] **Step 6: Commitar a árvore de rotas e os shells**
 
 ```powershell
-git add -- apps/mobile/app apps/mobile/src/__tests__/root-layout.test.tsx apps/mobile/src/__tests__/tabs-layout.test.tsx apps/mobile/src/__tests__/trainer-tabs-layout.test.tsx
+git add -- apps/mobile/app apps/mobile/src/screens/profile.tsx apps/mobile/src/screens/profile.test.tsx apps/mobile/src/__tests__/root-layout.test.tsx apps/mobile/src/__tests__/role-layouts.test.tsx apps/mobile/src/__tests__/tabs-layout.test.tsx apps/mobile/src/__tests__/trainer-tabs-layout.test.tsx apps/mobile/src/__tests__/trainer-screens.test.tsx
 git commit -m "feat(mobile): separa shells de aluno e treinador"
 ```
 
-### Task 5: Encaminhar login por role e generalizar o perfil sem duplicar logout
+### Task 5: Encaminhar login por role e preservar o fluxo do aluno
 
 **Files:**
 - Modify: `apps/mobile/app/(auth)/login.tsx`
 - Modify: `apps/mobile/app/(auth)/signup.tsx`
-- Modify: `apps/mobile/src/screens/profile.tsx`
 - Modify: `apps/mobile/src/screens/log-workout.tsx`
 - Modify: `apps/mobile/src/__tests__/auth-screens.test.tsx`
-- Modify: `apps/mobile/src/screens/profile.test.tsx`
 - Modify: `apps/mobile/src/screens/log-workout.test.tsx`
-- Create: `apps/mobile/src/__tests__/trainer-screens.test.tsx`
 
 **Interfaces:**
 - Login consumirá `resolveInitialRoute(role)` e, para role desconhecida, chamará `authClient.signOut()` e mostrará mensagem sem navegar para nenhum shell.
-- Signup continuará enviando literalmente `role: 'student'` e usará `mobileRoutes.studentHome` após sucesso.
-- `ProfileScreenProps` aceitará `accountType`, `fallbackName`, `fallbackInitials` e `journeyDescription`, todos com defaults de aluno para manter os consumidores existentes.
-- A rota `app/(trainer)/trainer/profile.tsx` chamará `ProfileScreen` com `accountType="Treinador"`, fallback `Treinador`/`TR` e descrição de acompanhamento, sem role check dentro da tela.
-- Retornos da sessão guiada usarão `mobileRoutes.studentHome`, preservando as URLs de sessão e log do aluno.
+- Signup continuará enviando literalmente `role: 'student'` e usará `mobileRoutes.studentHome` após sucesso; não haverá opção visual ou payload de cadastro de treinador.
+- Retornos da sessão guiada usarão `mobileRoutes.studentHome`, preservando as URLs públicas de sessão e log do aluno.
+- A autorização de uma rota já montada continuará pertencendo ao `app/_layout.tsx`; login apenas resolve o destino após autenticação e não substitui o guard global.
 
-- [ ] **Step 1: Atualizar os testes de autenticação e perfil antes da implementação**
+- [ ] **Step 1: Atualizar os testes de autenticação e regressão do aluno antes da implementação**
 
 Trocar os asserts antigos de `/(tabs)` por `mobileRoutes.studentHome` e substituir o teste que rejeitava treinador por:
 
@@ -656,13 +627,13 @@ it('encerra sessão e informa role desconhecida recebida no login', async () => 
 });
 ```
 
-Adicionar ao teste de perfil a renderização com `accountType="Treinador"` e verificar que o texto não é `Aluno independente`, mantendo os testes atuais de logout e falha de logout.
+Manter os testes existentes de erro de login, cadastro e logout do aluno; eles devem verificar destinos e contratos funcionais, não estilos da foundation.
 
 - [ ] **Step 2: Rodar os testes para confirmar as falhas**
 
-Run: `pnpm.cmd --dir apps/mobile test src/__tests__/auth-screens.test.tsx src/screens/profile.test.tsx src/screens/log-workout.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/__tests__/auth-screens.test.tsx src/screens/log-workout.test.tsx`
 
-Expected: FAIL nos novos destinos, na ausência do contexto de perfil e no comportamento antigo que ainda encerra treinador.
+Expected: FAIL no destino trainer, na role desconhecida e nos retornos que ainda usam o caminho antigo `/(tabs)`.
 
 - [ ] **Step 3: Implementar o encaminhamento de login e cadastro**
 
@@ -679,47 +650,22 @@ if (!destination) {
 router.replace(destination);
 ```
 
-No cadastro, manter `role: 'student'` e trocar somente o destino para `mobileRoutes.studentHome`. Não adicionar opção visual ou payload de cadastro de treinador.
+No cadastro, manter `role: 'student'` e trocar somente o destino para `mobileRoutes.studentHome`. Não adicionar opção visual, payload ou fluxo de cadastro de treinador.
 
-- [ ] **Step 4: Generalizar o perfil e atualizar retornos do treino**
+- [ ] **Step 4: Atualizar os retornos do treino sem mudar suas URLs**
 
-Alterar `ProfileScreen` para usar defaults de aluno:
-
-```tsx
-type ProfileScreenProps = {
-  accountType?: string;
-  fallbackName?: string;
-  fallbackInitials?: string;
-  journeyDescription?: string;
-};
-
-export function ProfileScreen({
-  accountType = 'Aluno independente',
-  fallbackInitials = 'AL',
-  fallbackName = 'Aluno',
-  journeyDescription = 'Seus treinos e avaliações aparecem aqui conforme você avança.',
-}: ProfileScreenProps = {}) {
-  // manter authClient.useSession(), logout, queryClient.clear() e estados atuais
-  const displayName = user?.name?.trim() || fallbackName;
-  const initials = getInitials(user?.name) || fallbackInitials;
-  // renderizar accountType e journeyDescription nos pontos hoje fixos para aluno
-}
-```
-
-A função `getInitials` deverá retornar apenas as iniciais calculadas ou uma string vazia quando não houver nome; o fallback recebido por `ProfileScreen` será a única fonte para o estado sem nome.
-
-Criar a rota de perfil trainer com esse contexto e trocar os quatro `router.replace('/(tabs)')` de `log-workout.tsx` por `router.replace(mobileRoutes.studentHome)`. Não alterar os caminhos `/session/:dayId` e `/log/:dayId`.
+Trocar os quatro `router.replace('/(tabs)')` de `log-workout.tsx` por `router.replace(mobileRoutes.studentHome)`. Não alterar os caminhos `/session/:dayId` e `/log/:dayId`, nem mover lógica de treino para as telas trainer.
 
 - [ ] **Step 5: Rodar os testes de autenticação e regressão do aluno**
 
-Run: `pnpm.cmd --dir apps/mobile test src/__tests__/auth-screens.test.tsx src/screens/profile.test.tsx src/screens/log-workout.test.tsx`
+Run: `pnpm.cmd --dir apps/mobile test src/__tests__/auth-screens.test.tsx src/screens/log-workout.test.tsx`
 
-Expected: login de student continua em `mobileRoutes.studentHome`, trainer vai para `mobileRoutes.trainerHome`, role desconhecida encerra sessão com mensagem, signup continua student, perfil de ambos exibe contexto correto e logout do aluno permanece funcional.
+Expected: login de student continua em `mobileRoutes.studentHome`, trainer vai para `mobileRoutes.trainerHome`, role desconhecida encerra sessão com mensagem, signup continua student e logout/navegação do aluno permanecem funcionais.
 
-- [ ] **Step 6: Commitar autenticação e perfil**
+- [ ] **Step 6: Commitar autenticação e retornos do aluno**
 
 ```powershell
-git add -- 'apps/mobile/app/(auth)/login.tsx' 'apps/mobile/app/(auth)/signup.tsx' apps/mobile/src/screens/profile.tsx apps/mobile/src/screens/log-workout.tsx apps/mobile/src/__tests__/auth-screens.test.tsx apps/mobile/src/screens/profile.test.tsx apps/mobile/src/screens/log-workout.test.tsx apps/mobile/src/__tests__/trainer-screens.test.tsx
+git add -- 'apps/mobile/app/(auth)/login.tsx' 'apps/mobile/app/(auth)/signup.tsx' apps/mobile/src/screens/log-workout.tsx apps/mobile/src/__tests__/auth-screens.test.tsx apps/mobile/src/screens/log-workout.test.tsx
 git commit -m "feat(mobile): encaminha autenticacao para o shell da role"
 ```
 
@@ -775,7 +721,7 @@ Esperado:
 
 - [ ] **Step 5: Conferir isolamento e árvore de arquivos**
 
-Verificar que `app/(student)/` contém todas as rotas de treino/avaliação do aluno, `app/(trainer)/trainer/` contém somente Início/Alunos/Perfil e nenhum arquivo trainer importa `useQuery`, `AsyncStorage`, `log-queue`, `workout-session-storage`, `use-guided-workout-session`, `QueueDrain` ou `PushTokenRegistration`. Confirmar também que o `QueryClientProvider` continua global, mas nenhum efeito de aluno é montado antes do guard.
+Verificar que `app/(student)/` contém todas as rotas de treino/avaliação do aluno, `app/(trainer)/trainer/` contém somente Início/Alunos/Perfil e nenhum arquivo trainer importa `useQuery`, `AsyncStorage`, `log-queue`, `workout-session-storage`, `use-guided-workout-session`, `QueueDrain` ou `PushTokenRegistration`. Confirmar também que o `QueryClientProvider` continua global, mas nenhum efeito de aluno é montado antes da decisão de acesso do root.
 
 - [ ] **Step 6: Fazer inspeção visual nativa quando houver dispositivo disponível**
 
@@ -793,4 +739,4 @@ Esperado: nenhuma ocorrência usada para representar caracteres visíveis; texto
 
 - [ ] **Step 8: Revisar critérios de aceite e preparar o handoff**
 
-Revisar a especificação linha a linha contra o diff e os resultados dos comandos. Informar arquitetura, arquivos, guards, isolamento, testes, comandos e resultados observados. Listar como decisão para MUV-17 que `/trainer` e o destino `Alunos` já estão reservados, mas a consulta e gestão de alunos continuam fora desta entrega.
+Revisar a especificação linha a linha contra o diff e os resultados dos comandos. Informar arquitetura, arquivos, proteção de rotas, isolamento, testes, comandos e resultados observados. Listar como decisão para MUV-17 que `/trainer` e o destino `Alunos` já estão reservados, mas a consulta e gestão de alunos continuam fora desta entrega.
