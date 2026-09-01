@@ -1,12 +1,5 @@
-import { TrainerSectionScreen } from '../../../src/screens/trainer-section';
+import { TrainerHomeScreen } from '../../../src/screens/trainer-home';
 
-export default function TrainerHomeScreen() {
-  return (
-    <TrainerSectionScreen
-      stateDescription="Os indicadores dos seus alunos aparecerão aqui."
-      stateTitle="Visão geral"
-      subtitle="Acompanhe seus alunos por aqui."
-      title="Início"
-    />
-  );
+export default function TrainerHomeRoute() {
+  return <TrainerHomeScreen />;
 }
