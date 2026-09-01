@@ -33,6 +33,7 @@ export function TrainerHomeScreen() {
     return (
       <Screen style={styles.centeredState}>
         <StatePanel
+          actionDisabled={query.isRefetching}
           actionLabel="Tentar novamente"
           description="Verifique sua conexão e tente novamente."
           onAction={() => void query.refetch()}
