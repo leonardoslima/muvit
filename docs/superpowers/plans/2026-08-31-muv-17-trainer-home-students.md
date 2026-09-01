@@ -1,6 +1,6 @@
 # MUV-17 — Home e gestão de alunos do professor no mobile Implementation Plan
 
-> **Execução registrada em 2026-09-01:** os passos de implementação, validação determinística e revisão de escopo foram concluídos e marcados. A validação manual do Step 9 foi iniciada no emulador Android, com evidências da home, carteira, busca sem resultados e abertura de detalhes, mas permaneceu parcial porque o agente não entregou a cápsula final com todos os cenários; o passo continua aberto.
+> **Execução registrada em 2026-09-01:** os passos de implementação, validação determinística, revisão de escopo e validação manual foram concluídos e marcados. O fluxo do professor foi exercitado no emulador Android com Maestro, incluindo home, carteira, busca, detalhe, 404 genérico e tabs; a regressão do aluno e o guard contra `/trainer` também foram confirmados.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -1792,7 +1792,7 @@ git diff --name-only --diff-filter=ACMR |
 
 Expected: nenhuma sequência `\uXXXX` usada para representar texto pt-BR visível.
 
-- [ ] **Step 9: Fazer validação manual em Expo quando houver dispositivo/emulador**
+- [x] **Step 9: Fazer validação manual em Expo quando houver dispositivo/emulador**
 
 Cenário treinador:
 
@@ -1818,7 +1818,7 @@ Cenário aluno:
 
 Se não houver dispositivo ADB disponível, registrar explicitamente a validação visual como não executada; não afirmar que ela passou.
 
-**Evidência parcial registrada em 2026-09-01:** o emulador `emulator-5554` foi conectado por ADB isolado, com reverse de `3333` e `8081`; foram observados a home, a carteira carregada, a busca explícita sem resultados, a limpeza da busca e a abertura de detalhes. O dispatch Android foi encerrado após ficar apenas em heartbeat, sem confirmação dos cenários restantes.
+**Evidência registrada em 2026-09-01:** o emulador `emulator-5554` foi conectado por ADB isolado na porta `5038`, com reverse de `3333` e `8081`. O Maestro 2.9.0 retornou `MAESTRO_EXIT=0` no fluxo completo do professor, na navegação das tabs e na verificação de campos longos/nulos. Foram confirmados login de treinador, métricas reais `6` ativos, `2` novos na semana, `6` planos ativos e `8` avaliações em 30 dias, atualização da home, abertura da carteira, busca aplicada por `Dalila`, limpeza, detalhe, atualização do detalhe, 404 genérico para UUID inexistente e somente as tabs Início, Alunos e Perfil. O seed consultado possui 10 alunos vinculados; como o primeiro carregamento usa `limit=25`, o caso condicional de `Carregar mais` para `total > 25` não se aplica e nenhum dado foi alterado para forçá-lo. O detalhe confirmou objetivo longo com quebra visual e fallback `Sem restrições cadastradas` para valor nulo. A regressão do aluno confirmou Hoje, Progresso e Perfil, e abrir `/trainer` manteve o aluno em Hoje pelo guard da MUV-16. Os artefatos Maestro ficaram em `%TEMP%\muvit-muv17-task9\maestro-professor\2026-09-01_202148`, `%TEMP%\muvit-muv17-task9\maestro-professor-tabs\2026-09-01_202842`, `%TEMP%\muvit-muv17-task9\maestro-professor-null\2026-09-01_203502` e `%TEMP%\muvit-muv17-task9\maestro-student\2026-09-01_203159`. O banner de limitação de notificações do Expo Go foi dispensado durante a interação das tabs; ele é uma limitação do ambiente de teste, não do fluxo MUV-17.
 
 - [x] **Step 10: Revisar escopo antes do handoff**
 
