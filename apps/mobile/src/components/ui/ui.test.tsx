@@ -49,6 +49,30 @@ describe('componentes visuais mobile', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
+  it('desabilita a ação do painel durante uma operação', async () => {
+    const retry = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <StatePanel
+        actionDisabled
+        actionLabel="Tentar novamente"
+        description="Não foi possível carregar seus dados."
+        onAction={retry}
+        title="Algo deu errado"
+        tone="error"
+      />,
+    );
+
+    const retryButton = screen.getByRole('button', { name: 'Tentar novamente' });
+    expect(retryButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+
+    await user.press(retryButton);
+    expect(retry).not.toHaveBeenCalled();
+  });
+
   it('apresenta feedback inline com semântica e tom visual', () => {
     render(<InlineMessage message="Não foi possível salvar." tone="error" />);
 

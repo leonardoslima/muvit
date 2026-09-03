@@ -7,10 +7,18 @@ export type StatePanelProps = {
   title: string;
   description: string;
   actionLabel?: string;
+  actionDisabled?: boolean;
   onAction?: () => void;
 };
 
-export function StatePanel({ actionLabel, description, onAction, title, tone }: StatePanelProps) {
+export function StatePanel({
+  actionDisabled = false,
+  actionLabel,
+  description,
+  onAction,
+  title,
+  tone,
+}: StatePanelProps) {
   return (
     <View style={sharedStyles.statePanel}>
       {tone === 'loading' ? (
@@ -20,7 +28,12 @@ export function StatePanel({ actionLabel, description, onAction, title, tone }: 
       <Text style={sharedStyles.stateDescription}>{description}</Text>
       {actionLabel && onAction ? (
         <View style={{ marginTop: spacing.sm, width: '100%' }}>
-          <AppButton label={actionLabel} onPress={onAction} variant="secondary" />
+          <AppButton
+            disabled={actionDisabled}
+            label={actionLabel}
+            onPress={onAction}
+            variant="secondary"
+          />
         </View>
       ) : null}
     </View>
