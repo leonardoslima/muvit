@@ -49,6 +49,15 @@ function renderTrainerStudents() {
   );
 }
 
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolvePromise = (_value: T): void => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
+}
+
 beforeEach(() => {
   apiState.request.mockReset();
   routerState.push.mockReset();
@@ -221,6 +230,61 @@ describe('TrainerStudentsScreen', () => {
     );
   });
 
+  it('bloqueia a atualização enquanto carrega a próxima página', async () => {
+    const user = userEvent.setup();
+    const nextPageRequest = deferred<{ total: number; items: TrainerStudent[] }>();
+    apiState.request
+      .mockResolvedValueOnce({ total: 2, items: [studentFixture()] })
+      .mockReturnValueOnce(nextPageRequest.promise);
+
+    renderTrainerStudents();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+
+    const updateButton = screen.getByRole('button', { name: 'Atualizar' });
+    expect(updateButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await user.press(updateButton);
+    expect(apiState.request).toHaveBeenCalledTimes(2);
+
+    nextPageRequest.resolve({
+      total: 2,
+      items: [studentFixture({ id: 'student-2', name: 'Bruna Lima' })],
+    });
+    expect(await screen.findByText('Bruna Lima')).toBeTruthy();
+  });
+
+  it('bloqueia carregar mais enquanto atualiza a carteira', async () => {
+    const user = userEvent.setup();
+    const refreshRequest = deferred<{ total: number; items: TrainerStudent[] }>();
+    apiState.request
+      .mockResolvedValueOnce({ total: 2, items: [studentFixture()] })
+      .mockReturnValueOnce(refreshRequest.promise);
+
+    renderTrainerStudents();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+
+    const loadMoreButton = screen.getByRole('button', { name: 'Carregar mais' });
+    expect(loadMoreButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await user.press(loadMoreButton);
+    expect(apiState.request).toHaveBeenCalledTimes(2);
+
+    refreshRequest.resolve({ total: 2, items: [studentFixture()] });
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: false }),
+      ),
+    );
+  });
+
   it('preserva itens se carregar mais falhar e permite tentar novamente', async () => {
     const user = userEvent.setup();
     apiState.request
@@ -238,6 +302,35 @@ describe('TrainerStudentsScreen', () => {
       '/students?limit=25&offset=1',
       expect.any(Object),
     );
+  });
+
+  it('bloqueia a atualização durante o retry da paginação', async () => {
+    const user = userEvent.setup();
+    const retryRequest = deferred<{ total: number; items: TrainerStudent[] }>();
+    apiState.request
+      .mockResolvedValueOnce({ total: 26, items: [studentFixture()] })
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockReturnValueOnce(retryRequest.promise);
+
+    renderTrainerStudents();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    await user.press(await screen.findByRole('button', { name: 'Tentar carregar mais' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(3));
+
+    const loadingMoreButton = screen.getByRole('button', { name: 'Carregando mais...' });
+    expect(loadingMoreButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    const updateButton = screen.getByRole('button', { name: 'Atualizar' });
+    expect(updateButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await user.press(updateButton);
+    expect(apiState.request).toHaveBeenCalledTimes(3);
+
+    retryRequest.resolve({ total: 26, items: [] });
+    expect(await screen.findByRole('button', { name: 'Carregar mais' })).toBeTruthy();
   });
 
   it('não mostra Carregar mais quando todos os itens foram carregados', async () => {

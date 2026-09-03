@@ -76,7 +76,7 @@ export function TrainerStudentsScreen() {
     return (
       <Screen style={styles.centeredState}>
         <StatePanel
-          actionDisabled={query.isRefetching}
+          actionDisabled={query.isFetching}
           actionLabel="Tentar novamente"
           description="Verifique sua conexão e tente novamente."
           onAction={() => void query.refetch()}
@@ -138,7 +138,7 @@ export function TrainerStudentsScreen() {
         <>
           <InlineMessage message="Não foi possível carregar mais alunos." tone="error" />
           <AppButton
-            disabled={query.isFetchingNextPage}
+            disabled={query.isFetching}
             label={query.isFetchingNextPage ? 'Carregando mais...' : 'Tentar carregar mais'}
             onPress={() => void query.fetchNextPage()}
             variant="secondary"
@@ -148,7 +148,7 @@ export function TrainerStudentsScreen() {
 
       {query.hasNextPage && !hasPaginationError ? (
         <AppButton
-          disabled={query.isFetchingNextPage}
+          disabled={query.isFetching}
           label={query.isFetchingNextPage ? 'Carregando mais...' : 'Carregar mais'}
           onPress={() => void query.fetchNextPage()}
           variant="secondary"
@@ -156,7 +156,7 @@ export function TrainerStudentsScreen() {
       ) : null}
 
       <AppButton
-        disabled={query.isRefetching}
+        disabled={query.isFetching}
         label={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
         onPress={() => void query.refetch()}
         variant="secondary"
