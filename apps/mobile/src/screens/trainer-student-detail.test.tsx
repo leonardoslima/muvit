@@ -6,7 +6,10 @@ import { ApiError } from '../lib/api';
 import { TrainerStudentDetailScreen } from './trainer-student-detail';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({
+  push: vi.fn(),
+  replace: vi.fn(),
+}));
 const paramsState = vi.hoisted(() => ({ studentId: 'student-1' as string | undefined }));
 
 vi.mock('../lib/use-api', () => ({
@@ -54,6 +57,7 @@ function renderTrainerStudentDetail() {
 
 beforeEach(() => {
   apiState.request.mockReset();
+  routerState.push.mockReset();
   routerState.replace.mockReset();
   paramsState.studentId = 'student-1';
 });
@@ -169,19 +173,33 @@ describe('TrainerStudentDetailScreen', () => {
     expect(screen.getByText('Ativo')).toBeTruthy();
   });
 
-  it('volta para a carteira sem ações mutáveis ou queries posteriores', async () => {
+  it('abre histórico e nova avaliação sem fazer query adicional', async () => {
     const user = userEvent.setup();
     apiState.request.mockResolvedValueOnce(studentFixture());
 
     renderTrainerStudentDetail();
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
 
+    expect(screen.getByText('Avaliações')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ver histórico' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Nova avaliação' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Excluir' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Nova avaliação' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Treinos' })).toBeNull();
     expect(apiState.request).toHaveBeenCalledTimes(1);
     expect(apiState.request).toHaveBeenCalledWith('/students/student-1', expect.any(Object));
+
+    await user.press(screen.getByRole('button', { name: 'Ver histórico' }));
+    expect(routerState.push).toHaveBeenCalledWith({
+      pathname: '/trainer/students/[studentId]/assessments',
+      params: { studentId: 'student-1' },
+    });
+
+    await user.press(screen.getByRole('button', { name: 'Nova avaliação' }));
+    expect(routerState.push).toHaveBeenCalledWith({
+      pathname: '/trainer/students/[studentId]/assessments/new',
+      params: { studentId: 'student-1' },
+    });
 
     await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
     expect(routerState.replace).toHaveBeenCalledWith('/trainer/students');
