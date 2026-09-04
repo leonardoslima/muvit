@@ -62,6 +62,53 @@ function parseOptionalNumber(
   return { ok: true, value: parsed };
 }
 
+type AssessmentValidationIssue = {
+  code: string;
+  path: ReadonlyArray<string | number>;
+};
+
+const FALLBACK_VALIDATION_MESSAGE = 'Revise os dados da avaliação.';
+
+const SCHEMA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  'invalid_string:date': 'Informe uma data válida.',
+  'invalid_type:date': 'Informe uma data válida.',
+  'too_small:weightKg': 'Peso está fora dos limites permitidos.',
+  'too_big:weightKg': 'Peso está fora dos limites permitidos.',
+  'invalid_type:weightKg': 'Informe um peso válido.',
+  'too_small:heightCm': 'Altura está fora dos limites permitidos.',
+  'too_big:heightCm': 'Altura está fora dos limites permitidos.',
+  'invalid_type:heightCm': 'Informe uma altura válida.',
+  'too_small:bodyFatPct': 'Gordura corporal está fora dos limites permitidos.',
+  'too_big:bodyFatPct': 'Gordura corporal está fora dos limites permitidos.',
+  'invalid_type:bodyFatPct': 'Informe uma gordura corporal válida.',
+  'too_small:measurements.chest': 'Peito deve ser maior que zero.',
+  'too_small:measurements.waist': 'Cintura deve ser maior que zero.',
+  'too_small:measurements.hip': 'Quadril deve ser maior que zero.',
+  'too_small:measurements.armRight': 'Braço direito deve ser maior que zero.',
+  'too_small:measurements.armLeft': 'Braço esquerdo deve ser maior que zero.',
+  'too_small:measurements.thighRight': 'Coxa direita deve ser maior que zero.',
+  'too_small:measurements.thighLeft': 'Coxa esquerda deve ser maior que zero.',
+  'too_small:measurements.calfRight': 'Panturrilha direita deve ser maior que zero.',
+  'too_small:measurements.calfLeft': 'Panturrilha esquerda deve ser maior que zero.',
+  'invalid_type:measurements': 'Informe medidas válidas.',
+  'too_big:photos': 'A quantidade de fotos excede o limite permitido.',
+  'invalid_type:photos': 'Informe fotos válidas.',
+  'too_big:notes': 'As observações excedem o limite permitido.',
+  'invalid_type:notes': 'Informe observações válidas.',
+};
+
+function localizeValidationIssue(issue: AssessmentValidationIssue): string {
+  const key = `${issue.code}:${issue.path.join('.')}`;
+  const message = SCHEMA_ERROR_MESSAGES[key];
+  if (message) return message;
+
+  if (issue.path[0] === 'photos' && issue.code === 'invalid_string') {
+    return 'A foto informada deve ser uma URL válida.';
+  }
+
+  return FALLBACK_VALIDATION_MESSAGE;
+}
+
 export function buildCreateAssessmentInput(
   values: TrainerAssessmentFormValues,
   photoUrls: string[],
@@ -114,7 +161,9 @@ export function buildCreateAssessmentInput(
   if (!parsed.success) {
     return {
       ok: false,
-      message: parsed.error.issues[0]?.message ?? 'Revise os dados da avaliação.',
+      message: parsed.error.issues[0]
+        ? localizeValidationIssue(parsed.error.issues[0])
+        : FALLBACK_VALIDATION_MESSAGE,
     };
   }
 
