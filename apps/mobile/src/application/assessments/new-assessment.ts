@@ -1,13 +1,12 @@
+import type { ApiRequester } from '../../lib/api';
+import { createAssessment } from './assessment-data';
+
 type AssessmentPayload = {
   date: string;
   weightKg?: number;
   bodyFatPct?: number;
   photos?: string[];
   notes?: string;
-};
-
-type AssessmentApiClient = {
-  request: (path: string, init?: RequestInit) => Promise<unknown>;
 };
 
 export type AssessmentPhotoInput = {
@@ -65,7 +64,7 @@ export async function submitAssessment({
   uploadPhoto,
   invalidateAssessments,
 }: {
-  api: AssessmentApiClient;
+  api: ApiRequester;
   values: AssessmentFormValues;
   uploadPhoto: (photo: AssessmentPhotoInput) => Promise<string>;
   invalidateAssessments: () => Promise<void>;
@@ -79,9 +78,6 @@ export async function submitAssessment({
     photoUrl,
   });
 
-  await api.request('/students/me/assessments', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  await createAssessment(api, { kind: 'self' }, payload);
   await invalidateAssessments();
 }
