@@ -295,6 +295,43 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
   });
 
+  it('congela campos, fotos e navegação enquanto o POST está pendente', async () => {
+    const user = userEvent.setup();
+    const request = deferred<{ id: string }>();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('https://cdn.test/front.jpg');
+    apiState.request.mockReturnValueOnce(request.promise);
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => {
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+    });
+
+    const weightField = screen.getByLabelText('Peso');
+    await user.type(weightField, '82,5');
+    expect(weightField.props.value).toBe('');
+
+    await user.press(screen.getByRole('button', { name: 'Remover foto 1' }));
+    expect(screen.getByText('Foto 1')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
+    expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+    expect(routerState.replace).not.toHaveBeenCalled();
+
+    request.resolve({ id: 'assessment-new' });
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    await waitFor(() => {
+      expect(routerState.replace).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+    });
+  });
+
   it('preserva valores e fotos quando o POST falha', async () => {
     const user = userEvent.setup();
     pickerState.launchImageLibraryAsync.mockResolvedValueOnce(

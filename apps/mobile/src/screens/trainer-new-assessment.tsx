@@ -42,6 +42,7 @@ export function TrainerNewAssessmentScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
+  const formDisabled = submitting || success;
 
   useEffect(() => {
     if (!success || !studentId) return;
@@ -57,6 +58,8 @@ export function TrainerNewAssessmentScreen() {
     key: 'date' | 'weightKg' | 'heightCm' | 'bodyFatPct' | 'notes',
     value: string,
   ): void {
+    if (formDisabled) return;
+
     setValues((current) => ({ ...current, [key]: value }));
   }
 
@@ -64,6 +67,8 @@ export function TrainerNewAssessmentScreen() {
     key: keyof TrainerAssessmentFormValues['measurements'],
     value: string,
   ): void {
+    if (formDisabled) return;
+
     setValues((current) => ({
       ...current,
       measurements: {
@@ -74,7 +79,7 @@ export function TrainerNewAssessmentScreen() {
   }
 
   async function pickPhoto(): Promise<void> {
-    if (photos.length >= MAX_PHOTOS || submitting || success) return;
+    if (photos.length >= MAX_PHOTOS || formDisabled) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
@@ -98,6 +103,8 @@ export function TrainerNewAssessmentScreen() {
   }
 
   function removePhoto(index: number): void {
+    if (formDisabled) return;
+
     setPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index));
   }
 
@@ -155,6 +162,8 @@ export function TrainerNewAssessmentScreen() {
   }
 
   function returnToAssessments(): void {
+    if (formDisabled) return;
+
     if (!studentId) {
       router.replace('/trainer/students');
       return;
@@ -187,7 +196,12 @@ export function TrainerNewAssessmentScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para avaliações" onPress={returnToAssessments} variant="secondary" />
+      <AppButton
+        disabled={formDisabled}
+        label="Voltar para avaliações"
+        onPress={returnToAssessments}
+        variant="secondary"
+      />
       <ScreenHeader
         subtitle="Registre medidas e fotos para acompanhar a evolução deste aluno."
         title="Nova avaliação"
@@ -197,6 +211,7 @@ export function TrainerNewAssessmentScreen() {
         <Text style={styles.sectionTitle}>Métricas principais</Text>
         <Field
           label="Data da avaliação"
+          editable={!formDisabled}
           onChangeText={(value) => setField('date', value)}
           placeholder="AAAA-MM-DD"
           value={values.date}
@@ -204,6 +219,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Peso"
+          editable={!formDisabled}
           onChangeText={(value) => setField('weightKg', value)}
           unit="kg"
           value={values.weightKg}
@@ -211,6 +227,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Altura"
+          editable={!formDisabled}
           onChangeText={(value) => setField('heightCm', value)}
           unit="cm"
           value={values.heightCm}
@@ -218,6 +235,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Gordura corporal"
+          editable={!formDisabled}
           onChangeText={(value) => setField('bodyFatPct', value)}
           unit="%"
           value={values.bodyFatPct}
@@ -240,6 +258,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Peito"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('chest', value)}
           unit="cm"
           value={values.measurements.chest}
@@ -247,6 +266,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Cintura"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('waist', value)}
           unit="cm"
           value={values.measurements.waist}
@@ -254,6 +274,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Quadril"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('hip', value)}
           unit="cm"
           value={values.measurements.hip}
@@ -261,6 +282,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Braço direito"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('armRight', value)}
           unit="cm"
           value={values.measurements.armRight}
@@ -268,6 +290,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Braço esquerdo"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('armLeft', value)}
           unit="cm"
           value={values.measurements.armLeft}
@@ -275,6 +298,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Coxa direita"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('thighRight', value)}
           unit="cm"
           value={values.measurements.thighRight}
@@ -282,6 +306,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Coxa esquerda"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('thighLeft', value)}
           unit="cm"
           value={values.measurements.thighLeft}
@@ -289,6 +314,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Panturrilha direita"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('calfRight', value)}
           unit="cm"
           value={values.measurements.calfRight}
@@ -296,6 +322,7 @@ export function TrainerNewAssessmentScreen() {
         <Field
           keyboardType="decimal-pad"
           label="Panturrilha esquerda"
+          editable={!formDisabled}
           onChangeText={(value) => setMeasurement('calfLeft', value)}
           unit="cm"
           value={values.measurements.calfLeft}
@@ -314,6 +341,7 @@ export function TrainerNewAssessmentScreen() {
               style={styles.photo}
             />
             <AppButton
+              disabled={formDisabled}
               label={`Remover foto ${index + 1}`}
               onPress={() => removePhoto(index)}
               variant="secondary"
@@ -322,7 +350,7 @@ export function TrainerNewAssessmentScreen() {
         ))}
         {photos.length < MAX_PHOTOS ? (
           <AppButton
-            disabled={submitting || success}
+            disabled={formDisabled}
             label={photoButtonLabel}
             onPress={() => void pickPhoto()}
             variant="secondary"
@@ -336,6 +364,7 @@ export function TrainerNewAssessmentScreen() {
           label="Observações"
           multiline
           numberOfLines={4}
+          editable={!formDisabled}
           onChangeText={(value) => setField('notes', value)}
           placeholder="Como foi a avaliação?"
           value={values.notes}
