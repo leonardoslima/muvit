@@ -228,6 +228,23 @@ describe('TrainerAssessmentsScreen', () => {
     expect(screen.queryByText('Não foi possível atualizar as avaliações.')).toBeNull();
   });
 
+  it('oculta o cache e mostra indisponibilidade quando carregar mais retorna 404', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ items: [assessmentFixture()], total: 2 })
+      .mockRejectedValueOnce(new ApiError('not found', 404));
+
+    renderTrainerAssessments();
+    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+
+    expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
+    expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
+    expect(screen.queryByText('03/09/2026')).toBeNull();
+    expect(screen.queryByText('Não foi possível carregar mais avaliações.')).toBeNull();
+  });
+
   it('mantém itens quando carregar mais falha e permite tentar novamente', async () => {
     const user = userEvent.setup();
     apiState.request

@@ -85,7 +85,7 @@ export function TrainerAssessmentsScreen() {
     );
   }
 
-  if (isNotFound && (!hasData || query.isRefetchError)) {
+  if (isNotFound) {
     return (
       <Screen style={styles.centeredState}>
         <StatePanel
