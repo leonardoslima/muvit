@@ -72,7 +72,7 @@ export function TrainerAssessmentDetailScreen() {
 
   const isNotFound = query.error instanceof ApiError && query.error.status === 404;
 
-  if (isNotFound && !query.data) {
+  if (isNotFound) {
     return (
       <Screen style={styles.centeredState}>
         <StatePanel

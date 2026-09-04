@@ -11,6 +11,7 @@ import { AppButton } from '../components/ui/button';
 import { InlineMessage } from '../components/ui/inline-message';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
+import { ApiError } from '../lib/api';
 import { spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
@@ -47,6 +48,7 @@ export function TrainerAssessmentsScreen() {
   const isInitialError = query.isError && !hasData;
   const hasPaginationError = query.isFetchNextPageError;
   const hasRefreshError = query.isRefetchError && !hasPaginationError;
+  const isNotFound = query.error instanceof ApiError && query.error.status === 404;
 
   function returnToStudent(): void {
     if (!studentId) {
@@ -78,6 +80,20 @@ export function TrainerAssessmentsScreen() {
           description="Estamos buscando o histórico deste aluno."
           title="Carregando avaliações"
           tone="loading"
+        />
+      </Screen>
+    );
+  }
+
+  if (isNotFound && (!hasData || query.isRefetchError)) {
+    return (
+      <Screen style={styles.centeredState}>
+        <StatePanel
+          actionLabel="Voltar para aluno"
+          description="Estas avaliações não estão disponíveis para sua conta."
+          onAction={returnToStudent}
+          title="Avaliações não encontradas"
+          tone="error"
         />
       </Screen>
     );

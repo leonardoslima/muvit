@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assessment, AssessmentsPage } from '../application/assessments/assessment-data';
+import { ApiError } from '../lib/api';
 import { TrainerAssessmentsScreen } from './trainer-assessments';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -207,6 +208,24 @@ describe('TrainerAssessmentsScreen', () => {
 
     expect(await screen.findByText('Não foi possível atualizar as avaliações.')).toBeTruthy();
     expect(screen.getByText('03/09/2026')).toBeTruthy();
+  });
+
+  it('oculta o cache e mostra indisponibilidade quando a atualização retorna 404', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ items: [assessmentFixture()], total: 1 })
+      .mockRejectedValueOnce(new ApiError('not found', 404));
+
+    renderTrainerAssessments();
+    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+
+    expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
+    expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar para aluno' })).toBeTruthy();
+    expect(screen.queryByText('03/09/2026')).toBeNull();
+    expect(screen.queryByText('Não foi possível atualizar as avaliações.')).toBeNull();
   });
 
   it('mantém itens quando carregar mais falha e permite tentar novamente', async () => {

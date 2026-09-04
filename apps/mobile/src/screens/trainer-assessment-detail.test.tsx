@@ -288,6 +288,24 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(screen.getByText('82,5 kg')).toBeTruthy();
   });
 
+  it('oculta o cache e mostra indisponibilidade quando a atualização retorna 404', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce(assessmentFixture())
+      .mockRejectedValueOnce(new ApiError('not found', 404));
+
+    renderTrainerAssessmentDetail();
+    expect(await screen.findByText('82,5 kg')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+
+    expect(await screen.findByText('Avaliação não encontrada')).toBeTruthy();
+    expect(screen.getByText('Esta avaliação não está disponível para sua conta.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
+    expect(screen.queryByText('82,5 kg')).toBeNull();
+    expect(screen.queryByText('Não foi possível atualizar a avaliação.')).toBeNull();
+  });
+
   it('desabilita atualizar enquanto a consulta está pendente', async () => {
     const user = userEvent.setup();
     const refreshRequest = deferred<Assessment>();
