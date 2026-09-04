@@ -48,7 +48,7 @@ export function TrainerNewAssessmentScreen() {
     if (!success || !studentId) return;
 
     const timeout = setTimeout(() => {
-      router.replace(`/trainer/students/${studentId}/assessments`);
+      router.dismissTo(`/trainer/students/${studentId}/assessments`);
     }, 150);
 
     return () => clearTimeout(timeout);
@@ -165,11 +165,11 @@ export function TrainerNewAssessmentScreen() {
     if (formDisabled) return;
 
     if (!studentId) {
-      router.replace('/trainer/students');
+      router.dismissTo('/trainer/students');
       return;
     }
 
-    router.replace(`/trainer/students/${studentId}/assessments`);
+    router.dismissTo(`/trainer/students/${studentId}/assessments`);
   }
 
   if (!studentId) {

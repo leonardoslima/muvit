@@ -6,7 +6,7 @@ import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
-const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({ dismissTo: vi.fn() }));
 const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
 const paramsState = vi.hoisted(() => ({ studentId: 'student-1' as string | undefined }));
 
@@ -62,7 +62,7 @@ beforeEach(() => {
   apiState.request.mockReset();
   pickerState.launchImageLibraryAsync.mockReset();
   queryState.invalidateQueries.mockReset();
-  routerState.replace.mockReset();
+  routerState.dismissTo.mockReset();
   uploadState.uploadAssessmentPhoto.mockReset();
   paramsState.studentId = 'student-1';
   queryState.invalidateQueries.mockResolvedValue(undefined);
@@ -145,9 +145,9 @@ describe('TrainerNewAssessmentScreen', () => {
     });
     expect(JSON.stringify(apiState.request.mock.calls)).not.toContain('bmi');
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
-    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
     });
   });
 
@@ -201,7 +201,8 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(queryState.invalidateQueries).not.toHaveBeenCalled();
   });
 
-  it('mostra estado inválido sem studentId e não faz request', () => {
+  it('usa dismissTo para o fallback sem studentId e não faz request', async () => {
+    const user = userEvent.setup();
     paramsState.studentId = undefined;
 
     renderTrainerNewAssessment();
@@ -209,6 +210,10 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(screen.getByText('Aluno inválido')).toBeTruthy();
     expect(screen.getByText('Não foi possível identificar o aluno solicitado.')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
   });
 
   it('mantém as fotos quando o picker é cancelado', async () => {
@@ -323,12 +328,12 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 
     await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
-    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
 
     request.resolve({ id: 'assessment-new' });
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
     });
   });
 
@@ -352,6 +357,6 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Salvar avaliação' })).toBeTruthy();
     expect(queryState.invalidateQueries).not.toHaveBeenCalled();
-    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
   });
 });

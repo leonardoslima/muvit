@@ -10,7 +10,7 @@ const OTHER_STUDENT_ID = '00000000-0000-0000-0000-000000000002';
 const ASSESSMENT_ID = '00000000-0000-0000-0000-000000000011';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({ dismissTo: vi.fn() }));
 const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
   assessmentId: '00000000-0000-0000-0000-000000000011' as string | undefined,
@@ -78,7 +78,7 @@ function deferred<T>(): {
 
 beforeEach(() => {
   apiState.request.mockReset();
-  routerState.replace.mockReset();
+  routerState.dismissTo.mockReset();
   paramsState.studentId = STUDENT_ID;
   paramsState.assessmentId = ASSESSMENT_ID;
 });
@@ -174,7 +174,8 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(screen.queryByRole('button', { name: 'Excluir avaliação' })).toBeNull();
   });
 
-  it('mostra estado inválido e não faz request quando faltam parâmetros', () => {
+  it('usa dismissTo para voltar aos alunos quando falta studentId', async () => {
+    const user = userEvent.setup();
     paramsState.studentId = undefined;
     paramsState.assessmentId = undefined;
 
@@ -183,6 +184,23 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(screen.getByText('Avaliação inválida')).toBeTruthy();
     expect(screen.getByText('Não foi possível identificar a avaliação solicitada.')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
+  });
+
+  it('usa dismissTo para o histórico quando falta assessmentId', async () => {
+    const user = userEvent.setup();
+    paramsState.assessmentId = undefined;
+
+    renderTrainerAssessmentDetail();
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith(
+      `/trainer/students/${STUDENT_ID}/assessments`,
+    );
   });
 
   it('mostra loading durante a carga inicial', () => {
@@ -303,6 +321,8 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
 
-    expect(routerState.replace).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/assessments`);
+    expect(routerState.dismissTo).toHaveBeenCalledWith(
+      `/trainer/students/${STUDENT_ID}/assessments`,
+    );
   });
 });

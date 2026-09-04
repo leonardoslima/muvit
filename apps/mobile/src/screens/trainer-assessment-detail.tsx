@@ -37,11 +37,11 @@ export function TrainerAssessmentDetailScreen() {
 
   function returnToAssessments(): void {
     if (!studentId) {
-      router.replace('/trainer/students');
+      router.dismissTo('/trainer/students');
       return;
     }
 
-    router.replace(`/trainer/students/${studentId}/assessments`);
+    router.dismissTo(`/trainer/students/${studentId}/assessments`);
   }
 
   if (!studentId || !assessmentId) {

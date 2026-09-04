@@ -50,11 +50,11 @@ export function TrainerAssessmentsScreen() {
 
   function returnToStudent(): void {
     if (!studentId) {
-      router.replace('/trainer/students');
+      router.dismissTo('/trainer/students');
       return;
     }
 
-    router.replace(`/trainer/students/${studentId}`);
+    router.dismissTo(`/trainer/students/${studentId}`);
   }
 
   if (!studentId) {

@@ -5,7 +5,10 @@ import type { Assessment, AssessmentsPage } from '../application/assessments/ass
 import { TrainerAssessmentsScreen } from './trainer-assessments';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const routerState = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({
+  dismissTo: vi.fn(),
+  push: vi.fn(),
+}));
 const paramsState = vi.hoisted(() => ({ studentId: 'student-1' as string | undefined }));
 
 vi.mock('../lib/use-api', () => ({
@@ -58,8 +61,8 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 
 beforeEach(() => {
   apiState.request.mockReset();
+  routerState.dismissTo.mockReset();
   routerState.push.mockReset();
-  routerState.replace.mockReset();
   paramsState.studentId = 'student-1';
 });
 
@@ -153,13 +156,18 @@ describe('TrainerAssessmentsScreen', () => {
     );
   });
 
-  it('mostra aluno inválido sem fazer request quando o parâmetro está ausente', () => {
+  it('mostra aluno inválido e usa dismissTo para o fallback sem fazer request', async () => {
+    const user = userEvent.setup();
     paramsState.studentId = undefined;
 
     renderTrainerAssessments();
 
     expect(screen.getByText('Aluno inválido')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
   });
 
   it('mostra loading durante a carga inicial', () => {
@@ -266,6 +274,6 @@ describe('TrainerAssessmentsScreen', () => {
 
     await user.press(screen.getByRole('button', { name: 'Voltar para aluno' }));
 
-    expect(routerState.replace).toHaveBeenCalledWith('/trainer/students/student-1');
+    expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1');
   });
 });
