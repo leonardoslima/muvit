@@ -6,13 +6,17 @@ export type AssessmentPhotoListProps = {
   photos: string[];
 };
 
+function createAssessmentPhotoKey(uri: string, position: number): string {
+  return `${uri}-${position}`;
+}
+
 export function AssessmentPhotoList({ dateLabel, photos }: AssessmentPhotoListProps) {
   return (
     <View style={styles.container}>
       {photos.map((uri, index) => (
         <Image
           accessibilityLabel={`Foto ${index + 1} da avaliação de ${dateLabel}`}
-          key={uri}
+          key={createAssessmentPhotoKey(uri, index)}
           resizeMode="cover"
           source={{ uri }}
           style={styles.photo}
