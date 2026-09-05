@@ -49,3 +49,4 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 
 - Para alteracoes mobile, rode `pnpm.cmd --dir apps/mobile test`, `pnpm.cmd --dir apps/mobile typecheck` e `pnpm.cmd --dir apps/mobile doctor` conforme o risco.
 - Quando alterar navegacao ou UI, teste pelo Expo em ao menos uma plataforma alvo quando possivel.
+- Para testes do app em emulador ou dispositivo, use Maestro como ferramenta padrão; registre evidências observáveis e limitações de cenários não reproduzidos.

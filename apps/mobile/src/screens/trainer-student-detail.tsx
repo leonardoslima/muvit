@@ -136,6 +136,32 @@ export function TrainerStudentDetailScreen() {
         </Text>
       </Card>
 
+      <Card>
+        <Text style={styles.sectionTitle}>Avaliações</Text>
+        <Text style={sharedStyles.subtitle}>
+          Consulte o histórico ou registre uma nova avaliação deste aluno.
+        </Text>
+        <AppButton
+          label="Ver histórico"
+          onPress={() =>
+            router.push({
+              pathname: '/trainer/students/[studentId]/assessments',
+              params: { studentId },
+            })
+          }
+          variant="secondary"
+        />
+        <AppButton
+          label="Nova avaliação"
+          onPress={() =>
+            router.push({
+              pathname: '/trainer/students/[studentId]/assessments/new',
+              params: { studentId },
+            })
+          }
+        />
+      </Card>
+
       {query.isRefetchError ? (
         <InlineMessage message="Não foi possível atualizar o aluno." tone="error" />
       ) : null}
