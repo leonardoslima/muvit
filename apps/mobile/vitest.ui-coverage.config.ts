@@ -19,6 +19,9 @@ export default mergeConfig(
           'src/screens/trainer-assessments.tsx',
           'src/screens/trainer-assessment-detail.tsx',
           'src/screens/trainer-new-assessment.tsx',
+          'src/screens/trainer-workouts.tsx',
+          'src/screens/trainer-workout-detail.tsx',
+          'src/screens/trainer-workout-editor.tsx',
         ],
         exclude: ['src/**/*.test.{ts,tsx}', 'test/**'],
         thresholds: {

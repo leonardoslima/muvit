@@ -40,6 +40,18 @@ export const Modal = React.forwardRef<unknown, NativeProps>(
       : React.createElement('Modal', { ...props, ref }, children as ReactNode),
 );
 
+export const Alert = {
+  alert: (
+    _title: string,
+    _message?: string,
+    _buttons?: Array<{
+      text?: string;
+      style?: string;
+      onPress?: () => void;
+    }>,
+  ) => undefined,
+};
+
 export const Platform = {
   OS: 'ios',
   select: (options: Record<string, unknown>) => options.ios ?? options.native ?? options.default,

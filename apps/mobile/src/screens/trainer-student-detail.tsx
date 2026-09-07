@@ -162,6 +162,32 @@ export function TrainerStudentDetailScreen() {
         />
       </Card>
 
+      <Card>
+        <Text style={styles.sectionTitle}>Treinos</Text>
+        <Text style={sharedStyles.subtitle}>
+          Consulte ou monte a prescrição de treino deste aluno.
+        </Text>
+        <AppButton
+          label="Ver treinos"
+          onPress={() =>
+            router.push({
+              pathname: '/trainer/students/[studentId]/workouts',
+              params: { studentId },
+            })
+          }
+          variant="secondary"
+        />
+        <AppButton
+          label="Novo treino"
+          onPress={() =>
+            router.push({
+              pathname: '/trainer/students/[studentId]/workouts/new',
+              params: { studentId },
+            })
+          }
+        />
+      </Card>
+
       {query.isRefetchError ? (
         <InlineMessage message="Não foi possível atualizar o aluno." tone="error" />
       ) : null}
