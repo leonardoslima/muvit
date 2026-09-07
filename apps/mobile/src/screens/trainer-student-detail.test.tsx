@@ -183,11 +183,25 @@ describe('TrainerStudentDetailScreen', () => {
     expect(screen.getByText('Avaliações')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ver histórico' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Nova avaliação' })).toBeTruthy();
+    expect(screen.getByText('Treinos')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ver treinos' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Novo treino' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Excluir' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Treinos' })).toBeNull();
     expect(apiState.request).toHaveBeenCalledTimes(1);
     expect(apiState.request).toHaveBeenCalledWith('/students/student-1', expect.any(Object));
+
+    await user.press(screen.getByRole('button', { name: 'Ver treinos' }));
+    expect(routerState.push).toHaveBeenCalledWith({
+      pathname: '/trainer/students/[studentId]/workouts',
+      params: { studentId: 'student-1' },
+    });
+
+    await user.press(screen.getByRole('button', { name: 'Novo treino' }));
+    expect(routerState.push).toHaveBeenCalledWith({
+      pathname: '/trainer/students/[studentId]/workouts/new',
+      params: { studentId: 'student-1' },
+    });
 
     await user.press(screen.getByRole('button', { name: 'Ver histórico' }));
     expect(routerState.push).toHaveBeenCalledWith({
