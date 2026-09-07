@@ -65,7 +65,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
-  const hydratedPlanId = useRef<string | undefined>(undefined);
+  const editorDirty = useRef(false);
 
   const planQuery = useQuery({
     enabled: mode === 'edit' && Boolean(studentId && planId),
@@ -82,7 +82,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       !planQuery.data ||
       planQuery.data.status === 'archived' ||
       planQuery.data.studentId !== studentId ||
-      hydratedPlanId.current === planQuery.data.id
+      editorDirty.current
     ) {
       return;
     }
@@ -90,7 +90,6 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     const next = hydrateWorkoutEditorState(planQuery.data, createLocalId);
     setEditor(next);
     setActiveDayId(next.days[0]?.localId);
-    hydratedPlanId.current = planQuery.data.id;
   }, [createLocalId, mode, planQuery.data, studentId]);
 
   function clearFeedback(): void {
@@ -102,6 +101,9 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   function commitEditor(next: WorkoutEditorState): void {
     if (submitting) return;
     clearFeedback();
+    if (next !== editor) {
+      editorDirty.current = true;
+    }
     setEditor(next);
   }
 
@@ -230,6 +232,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     try {
       const updated = await updateTrainerWorkoutPlan(api, planId, result.body);
       queryClient.setQueryData(['trainer', 'workout', planId], updated);
+      editorDirty.current = false;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['trainer', 'workouts', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['trainer', 'summary'] }),

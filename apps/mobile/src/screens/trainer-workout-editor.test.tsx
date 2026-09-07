@@ -400,6 +400,24 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     expect(screen.queryByLabelText('Nome do treino')).toBeNull();
   });
 
+  it('reidrata dados mais novos enquanto o editor está limpo', async () => {
+    const serverUpdate = editablePlanFixture({ name: 'Nome do servidor' });
+    apiState.request
+      .mockResolvedValueOnce(editablePlanFixture())
+      .mockResolvedValueOnce(serverUpdate);
+
+    const { queryClient } = renderEditor('edit');
+
+    expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome do treino').props.value).toBe('Nome do servidor');
+    });
+  });
+
   it('mantém plano arquivado em somente leitura', async () => {
     apiState.request.mockResolvedValueOnce(editablePlanFixture({ status: 'archived' }));
 
