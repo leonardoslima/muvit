@@ -1,10 +1,11 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from '../../app/(auth)/login';
 import SignupScreen from '../../app/(auth)/signup';
 import { mobileRoutes } from '../application/navigation/role-navigation';
+import { colors } from '../lib/styles';
 
 vi.mock('react-native', async (importOriginal) => {
   const ReactModule = await import('react');
@@ -114,6 +115,38 @@ describe('telas de autenticação mobile', () => {
     expect(screen.getByRole('button', { name: 'Criar conta independente' }).props.style).toEqual(
       expect.any(Function),
     );
+  });
+
+  it('mantém o limite editável do LoginField com contraste não textual mínimo', () => {
+    render(<LoginScreen />);
+
+    let fieldBoundary = screen.getByLabelText('Email').parent;
+
+    while (fieldBoundary) {
+      const candidateStyle = StyleSheet.flatten(fieldBoundary.props.style);
+      if (candidateStyle?.borderWidth === 1) {
+        break;
+      }
+
+      fieldBoundary = fieldBoundary.parent;
+    }
+
+    expect(fieldBoundary).not.toBeNull();
+    if (!fieldBoundary) {
+      throw new Error('O LoginField deve renderizar um limite ao redor do input.');
+    }
+
+    const fieldStyle = StyleSheet.flatten(fieldBoundary.props.style);
+    const { backgroundColor, borderColor } = fieldStyle;
+
+    expect(backgroundColor).toBe(colors.surface);
+    expect(typeof borderColor).toBe('string');
+    if (typeof borderColor !== 'string') {
+      throw new Error('O LoginField deve renderizar uma cor de contorno.');
+    }
+
+    expect(getContrastRatio(borderColor, colors.surface)).toBeGreaterThanOrEqual(3);
+    expect(getContrastRatio(borderColor, colors.background)).toBeGreaterThanOrEqual(3);
   });
 
   it('ajusta o login quando o teclado está aberto', () => {
@@ -310,4 +343,27 @@ function createDeferred<T>() {
   });
 
   return { promise, resolve: resolveDeferred };
+}
+
+function getContrastRatio(firstColor: string, secondColor: string): number {
+  const firstLuminance = getRelativeLuminance(firstColor);
+  const secondLuminance = getRelativeLuminance(secondColor);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getRelativeLuminance(hexColor: string): number {
+  const red = getLinearChannel(hexColor.slice(1, 3));
+  const green = getLinearChannel(hexColor.slice(3, 5));
+  const blue = getLinearChannel(hexColor.slice(5, 7));
+
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function getLinearChannel(hexChannel: string): number {
+  const channel = Number.parseInt(hexChannel, 16) / 255;
+
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
