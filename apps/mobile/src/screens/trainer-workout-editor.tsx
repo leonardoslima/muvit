@@ -212,7 +212,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   async function submit(): Promise<void> {
-    if (submitting || !studentId) return;
+    if (submitting || createdPlan || !studentId) return;
 
     if (mode === 'create') {
       const result = buildCreateTrainerWorkoutInput(editor, studentId);
@@ -511,7 +511,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
       {error ? <InlineMessage message={error} tone="error" /> : null}
       {successMessage ? <InlineMessage message={successMessage} tone="success" /> : null}
-      <AppButton disabled={submitting} label={submitButtonLabel()} onPress={() => void submit()} />
+      <AppButton
+        disabled={submitting || Boolean(createdPlan)}
+        label={submitButtonLabel()}
+        onPress={() => void submit()}
+      />
       {createdPlan ? (
         <AppButton label="Ver treino" onPress={openCreatedPlan} variant="secondary" />
       ) : null}

@@ -366,6 +366,41 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     );
   });
 
+  it('não permite segundo POST após sucesso sem edição e preserva Ver treino', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockResolvedValueOnce(createdPlan);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
+    const saveButton = screen.getByRole('button', { name: 'Salvar treino' });
+    expect(saveButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(navigationState.enabled).toBe(false);
+
+    await user.press(saveButton);
+    expect(
+      apiState.request.mock.calls.filter(
+        ([path, options]) => path === '/workout-plans' && options?.method === 'POST',
+      ),
+    ).toHaveLength(1);
+
+    await user.press(screen.getByRole('button', { name: 'Ver treino' }));
+    expect(routerState.replace).toHaveBeenCalledWith(
+      `/trainer/students/${STUDENT_ID}/workouts/${PLAN_ID}`,
+    );
+  });
+
   it('bloqueia submit concorrente, mantém valores no erro e limpa sucesso ao editar', async () => {
     const user = userEvent.setup();
     let rejectPost: (error: Error) => void = () => undefined;
