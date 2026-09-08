@@ -6,6 +6,7 @@ export const colors = {
   ink: '#1A1A1A',
   muted: '#666666',
   line: '#D1CCC4',
+  outline: '#8C857C',
   primary: '#2ECC71',
   danger: '#E74C3C',
   warning: '#F39C12',
@@ -187,7 +188,7 @@ export const sharedStyles = StyleSheet.create({
   },
   input: {
     ...typography.input,
-    borderColor: colors.line,
+    borderColor: colors.outline,
     borderRadius: radii.md,
     borderWidth: 1,
     backgroundColor: colors.surface,

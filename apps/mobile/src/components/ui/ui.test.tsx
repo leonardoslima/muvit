@@ -40,6 +40,21 @@ describe('componentes visuais mobile', () => {
     expect(retry).toHaveBeenCalledOnce();
   });
 
+  it('mantém o limite editável do Field com contraste não textual mínimo', () => {
+    render(<Field label="Email" onChangeText={() => undefined} value="" />);
+
+    const inputStyle = StyleSheet.flatten(screen.getByLabelText('Email').props.style);
+    const { borderColor } = inputStyle;
+
+    expect(typeof borderColor).toBe('string');
+    if (typeof borderColor !== 'string') {
+      throw new Error('O Field deve renderizar uma cor de contorno.');
+    }
+
+    expect(getContrastRatio(borderColor, colors.surface)).toBeGreaterThanOrEqual(3);
+    expect(getContrastRatio(borderColor, colors.background)).toBeGreaterThanOrEqual(3);
+  });
+
   it('impede toque duplicado durante submissão', async () => {
     const submit = vi.fn();
     const user = userEvent.setup();
@@ -135,3 +150,26 @@ describe('componentes visuais mobile', () => {
     expect(outsideTabsStyle.paddingBottom).toBe(callerStyle.paddingBottom);
   });
 });
+
+function getContrastRatio(firstColor: string, secondColor: string): number {
+  const firstLuminance = getRelativeLuminance(firstColor);
+  const secondLuminance = getRelativeLuminance(secondColor);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function getRelativeLuminance(hexColor: string): number {
+  const red = getLinearChannel(hexColor.slice(1, 3));
+  const green = getLinearChannel(hexColor.slice(3, 5));
+  const blue = getLinearChannel(hexColor.slice(5, 7));
+
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function getLinearChannel(hexChannel: string): number {
+  const channel = Number.parseInt(hexChannel, 16) / 255;
+
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}
