@@ -428,6 +428,52 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     );
   });
 
+  it('congela o editor depois do sucesso e mantém um único POST', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockResolvedValue(createdPlan);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Nome do treino'), 'Alteração indevida');
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(
+      apiState.request.mock.calls.filter(
+        ([path, options]) => path === '/workout-plans' && options?.method === 'POST',
+      ),
+    ).toHaveLength(1);
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
+    expect(screen.getByLabelText('Nome do treino').props.editable).toBe(false);
+    expect(screen.getByLabelText('Nome do dia').props.editable).toBe(false);
+    expect(screen.getByRole('button', { name: 'Rascunho' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(screen.getByRole('button', { name: 'Ativo' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(screen.getByRole('button', { name: 'Adicionar dia' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Selecionar Treino A' }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
+    expect(
+      screen.getByRole('button', { name: 'Adicionar exercício' }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
+    expect(screen.getByText('Treino salvo com sucesso.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ver treino' })).toBeTruthy();
+  });
+
   it('bloqueia submit concorrente, mantém valores no erro e limpa sucesso ao editar', async () => {
     const user = userEvent.setup();
     let rejectPost: (error: Error) => void = () => undefined;
@@ -451,6 +497,36 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await waitFor(() => rejectPost(new Error('offline')));
     expect(await screen.findByText('Não foi possível salvar o treino.')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
+  });
+
+  it('desabilita o retorno para treinos durante POST pendente', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    let resolvePost: (plan: TrainerWorkoutPlan) => void = () => undefined;
+    const post = new Promise<TrainerWorkoutPlan>((resolve) => {
+      resolvePost = resolve;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockReturnValueOnce(post);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    const returnButton = screen.getByRole('button', { name: 'Voltar para treinos' });
+    expect(returnButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await user.press(returnButton);
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+    await act(async () => resolvePost(createdPlan));
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
   });
 });
 

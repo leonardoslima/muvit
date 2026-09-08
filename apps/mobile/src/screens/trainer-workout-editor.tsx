@@ -74,6 +74,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
   const [editorDirty, setEditorDirty] = useState(false);
   const explicitExitRef = useRef(false);
+  const editorLocked = submitting || Boolean(createdPlan);
 
   const planQuery = useQuery({
     enabled: mode === 'edit' && Boolean(studentId && planId),
@@ -128,7 +129,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function commitEditor(next: WorkoutEditorState): void {
-    if (submitting) return;
+    if (editorLocked) return;
     clearFeedback();
     if (next !== editor) {
       setEditorDirty(true);
@@ -137,7 +138,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function changeEditor(updater: (current: WorkoutEditorState) => WorkoutEditorState): void {
-    if (submitting) return;
+    if (editorLocked) return;
     commitEditor(updater(editor));
   }
 
@@ -150,7 +151,8 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function returnToWorkouts(): void {
-    if (editorDirty && !submitting) {
+    if (submitting) return;
+    if (editorDirty) {
       showDiscardConfirmation(() => {
         explicitExitRef.current = true;
         setEditorDirty(false);
@@ -180,7 +182,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function addDay(): void {
-    if (submitting) return;
+    if (editorLocked) return;
     const next = addWorkoutEditorDay(editor, createLocalId);
     if (next === editor) return;
     commitEditor(next);
@@ -189,7 +191,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   function requestRemoveDay(dayId: string): void {
     const day = editor.days.find((item) => item.localId === dayId);
-    if (!day || editor.days.length <= 1 || submitting) return;
+    if (!day || editor.days.length <= 1 || editorLocked) return;
 
     const remove = () => {
       const next = removeWorkoutEditorDay(editor, dayId);
@@ -216,7 +218,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function selectExercise(exercise: Exercise): void {
-    if (!activeDayId || submitting) return;
+    if (!activeDayId || editorLocked) return;
     changeEditor((current) =>
       addWorkoutEditorExercise(
         current,
@@ -408,7 +410,12 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para treinos" onPress={returnToWorkouts} variant="secondary" />
+      <AppButton
+        disabled={submitting}
+        label="Voltar para treinos"
+        onPress={returnToWorkouts}
+        variant="secondary"
+      />
       <ScreenHeader
         eyebrow={mode === 'create' ? 'Prescrição' : 'Editar prescrição'}
         subtitle="Monte a rotina com os exercícios e parâmetros de cada dia."
@@ -417,7 +424,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
       <Card>
         <Field
-          editable={!submitting}
+          editable={!editorLocked}
           label="Nome do treino"
           onChangeText={(value) =>
             changeEditor((current) => updateWorkoutEditorPlanField(current, 'name', value))
@@ -425,7 +432,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
           value={editor.name}
         />
         <Field
-          editable={!submitting}
+          editable={!editorLocked}
           label="Notas"
           multiline
           onChangeText={(value) =>
@@ -445,8 +452,8 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                   accessible
                   accessibilityLabel={label}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: submitting, selected }}
-                  disabled={submitting}
+                  accessibilityState={{ disabled: editorLocked, selected }}
+                  disabled={editorLocked}
                   key={status}
                   onPress={() =>
                     changeEditor((current) =>
@@ -466,7 +473,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       <View style={styles.daysHeader}>
         <Text style={styles.sectionTitle}>Dias do treino</Text>
         <AppButton
-          disabled={submitting || editor.days.length >= 7}
+          disabled={editorLocked || editor.days.length >= 7}
           label="Adicionar dia"
           onPress={addDay}
           variant="secondary"
@@ -480,8 +487,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                 accessible
                 accessibilityLabel={`Selecionar ${day.label}`}
                 accessibilityRole="button"
-                accessibilityState={{ disabled: submitting, selected: activeDayId === day.localId }}
-                disabled={submitting}
+                accessibilityState={{
+                  disabled: editorLocked,
+                  selected: activeDayId === day.localId,
+                }}
+                disabled={editorLocked}
                 onPress={() => setActiveDayId(day.localId)}
                 style={[
                   styles.daySelector,
@@ -491,7 +501,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                 <Text style={styles.daySelectorText}>{day.label}</Text>
               </Pressable>
               <AppButton
-                disabled={submitting || editor.days.length <= 1}
+                disabled={editorLocked || editor.days.length <= 1}
                 label={`Remover ${day.label}`}
                 onPress={() => requestRemoveDay(day.localId)}
                 variant="secondary"
@@ -504,8 +514,10 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       {activeDay ? (
         <WorkoutEditorDayView
           day={activeDay}
-          disabled={submitting}
-          onAddExercise={() => setCatalogOpen(true)}
+          disabled={editorLocked}
+          onAddExercise={() => {
+            if (!editorLocked) setCatalogOpen(true);
+          }}
           onChangeExercise={(exerciseLocalId, field, value) =>
             changeEditor((current) =>
               updateWorkoutEditorExerciseField(
@@ -550,7 +562,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       ) : null}
 
       <ExerciseCatalogModal
-        disabled={submitting}
+        disabled={editorLocked}
         onClose={() => setCatalogOpen(false)}
         onSelect={selectExercise}
         visible={catalogOpen}
