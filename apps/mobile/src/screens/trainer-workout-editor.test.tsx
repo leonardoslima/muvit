@@ -173,9 +173,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     expect(navigationState.enabled).toBe(true);
 
     await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
-    expect(routerState.dismissTo).toHaveBeenCalledWith(
-      `/trainer/students/${STUDENT_ID}/workouts`,
-    );
+    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
 
     act(() => {
       navigationState.callback?.({ data: { action } });

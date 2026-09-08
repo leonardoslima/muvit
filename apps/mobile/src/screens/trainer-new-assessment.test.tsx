@@ -97,9 +97,7 @@ describe('TrainerNewAssessmentScreen', () => {
       expect(routerState.dismissTo).not.toHaveBeenCalled();
 
       act(() => vi.advanceTimersByTime(501));
-      expect(routerState.dismissTo).toHaveBeenCalledWith(
-        '/trainer/students/student-1/assessments',
-      );
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
     } finally {
       vi.useRealTimers();
     }
