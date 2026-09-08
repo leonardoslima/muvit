@@ -73,6 +73,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
   const [editorDirty, setEditorDirty] = useState(false);
+  const explicitExitRef = useRef(false);
 
   const planQuery = useQuery({
     enabled: mode === 'edit' && Boolean(studentId && planId),
@@ -99,17 +100,25 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     setActiveDayId(next.days[0]?.localId);
   }, [createLocalId, editorDirty, mode, planQuery.data, studentId]);
 
-  usePreventRemove(editorDirty, ({ data }) => {
-    if (submitting) return;
-
+  function showDiscardConfirmation(onDiscard: () => void): void {
     Alert.alert('Descartar alterações?', 'As alterações deste treino serão perdidas.', [
       { text: 'Continuar editando', style: 'cancel' },
       {
         text: 'Descartar alterações',
         style: 'destructive',
-        onPress: () => navigation.dispatch(data.action),
+        onPress: onDiscard,
       },
     ]);
+  }
+
+  usePreventRemove(editorDirty, ({ data }) => {
+    if (explicitExitRef.current) {
+      explicitExitRef.current = false;
+      return;
+    }
+    if (submitting) return;
+
+    showDiscardConfirmation(() => navigation.dispatch(data.action));
   });
 
   function clearFeedback(): void {
@@ -132,12 +141,29 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     commitEditor(updater(editor));
   }
 
-  function returnToWorkouts(): void {
+  function dismissToWorkouts(): void {
     if (!studentId) {
       router.dismissTo('/trainer/students');
       return;
     }
     router.dismissTo(`/trainer/students/${studentId}/workouts`);
+  }
+
+  function returnToWorkouts(): void {
+    if (editorDirty && !submitting) {
+      showDiscardConfirmation(() => {
+        explicitExitRef.current = true;
+        setEditorDirty(false);
+        try {
+          dismissToWorkouts();
+        } finally {
+          explicitExitRef.current = false;
+        }
+      });
+      return;
+    }
+
+    dismissToWorkouts();
   }
 
   function returnToDetail(): void {

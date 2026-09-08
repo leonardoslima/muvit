@@ -161,7 +161,7 @@ beforeEach(() => {
 });
 
 describe('TrainerWorkoutEditorScreen em criação', () => {
-  it('confirma remoção de rota quando há alterações locais', async () => {
+  it('confirma remoção nativa de rota quando há alterações locais', async () => {
     const user = userEvent.setup();
     const alert = vi.spyOn(Alert, 'alert');
     const action = { type: 'GO_BACK' };
@@ -171,9 +171,6 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     expect(navigationState.enabled).toBe(false);
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
     expect(navigationState.enabled).toBe(true);
-
-    await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
-    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
 
     act(() => {
       navigationState.callback?.({ data: { action } });
@@ -191,6 +188,38 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     act(() => discardAction?.onPress?.());
 
     expect(navigationState.dispatch).toHaveBeenCalledWith(action);
+  });
+
+  it('confirma antes de sair pelo botão explícito quando há alterações locais', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const action = { type: 'DISMISS_TO_WORKOUTS' };
+    routerState.dismissTo.mockImplementation(() => {
+      act(() => {
+        navigationState.callback?.({ data: { action } });
+      });
+    });
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
+
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+    expect(alert).toHaveBeenCalledWith(
+      'Descartar alterações?',
+      'As alterações deste treino serão perdidas.',
+      expect.any(Array),
+    );
+    expect(alert).toHaveBeenCalledTimes(1);
+
+    const actions = alert.mock.calls[0]?.[2];
+    const discardAction = actions?.find((item) => item.style === 'destructive');
+    act(() => discardAction?.onPress?.());
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
+    expect(routerState.dismissTo).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledTimes(1);
   });
 
   it('mostra aluno inválido sem fazer POST', async () => {
