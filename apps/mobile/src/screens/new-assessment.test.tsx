@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { NewAssessmentScreen } from './new-assessment';
 
@@ -32,6 +32,43 @@ vi.mock('../lib/uploads', () => ({
 }));
 
 describe('NewAssessmentScreen', () => {
+  it('mantém o sucesso anunciado por tempo perceptível antes de voltar', async () => {
+    let resolveInvalidation: () => void = () => undefined;
+    apiState.request.mockResolvedValueOnce(undefined);
+    queryState.invalidateQueries.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveInvalidation = resolve;
+        }),
+    );
+
+    render(<NewAssessmentScreen />);
+    fireEvent.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledOnce());
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        resolveInvalidation();
+      });
+
+      const feedback = screen.getByTestId('inline-message');
+      expect(feedback.props.accessibilityRole).toBe('alert');
+      expect(feedback.props.accessibilityLiveRegion).toBe('polite');
+      expect(screen.getByText('Avaliação salva!')).toBeTruthy();
+      expect(routerState.back).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(999));
+      expect(screen.getByText('Avaliação salva!')).toBeTruthy();
+      expect(routerState.back).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(501));
+      expect(routerState.back).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('mantém a ação de foto quando o seletor é cancelado', async () => {
     const user = userEvent.setup();
     pickerState.launchImageLibraryAsync.mockResolvedValueOnce({
@@ -98,7 +135,7 @@ describe('NewAssessmentScreen', () => {
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
     events.push('success');
     expect(events).toEqual(['success']);
-    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce());
+    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce(), { timeout: 2_000 });
     expect(events).toEqual(['success', 'back']);
   });
 
@@ -129,7 +166,7 @@ describe('NewAssessmentScreen', () => {
 
     resolveRequest();
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
-    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce());
+    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce(), { timeout: 2_000 });
   });
 
   it('mantém o erro visível, não volta e permite novo envio bem-sucedido', async () => {
@@ -148,6 +185,6 @@ describe('NewAssessmentScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
-    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce());
+    await waitFor(() => expect(routerState.back).toHaveBeenCalledOnce(), { timeout: 2_000 });
   });
 });
