@@ -8,7 +8,7 @@ import {
   listExerciseCatalog,
 } from '../../application/exercises/exercise-catalog';
 import { MUSCLE_GROUP_LABEL, type MuscleGroup, muscleGroupLabel } from '../../lib/muscle-groups';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
 import { useApiClient } from '../../lib/use-api';
 import { AppButton } from '../ui/button';
 import { Field } from '../ui/field';
@@ -272,6 +272,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderRadius: radii.pill,
     borderWidth: 1,
+    minHeight: controlSizes.touchTarget,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },

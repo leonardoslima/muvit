@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '../../application/exercises/exercise-catalog';
 import { ExerciseCatalogModal } from './exercise-catalog-modal';
@@ -59,6 +60,16 @@ beforeEach(() => {
 });
 
 describe('ExerciseCatalogModal', () => {
+  it('mantém filtros com 48 dp e estados selected e disabled', () => {
+    apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
+
+    renderModal();
+
+    const allFilter = screen.getByRole('button', { name: 'Todos' });
+    expect(StyleSheet.flatten(allFilter.props.style)).toMatchObject({ minHeight: 48 });
+    expect(allFilter.props.accessibilityState).toEqual({ disabled: true, selected: true });
+  });
+
   it('não faz request quando está fechado', () => {
     renderModal({ visible: false });
 
