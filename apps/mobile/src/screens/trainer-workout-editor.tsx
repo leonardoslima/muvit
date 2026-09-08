@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Exercise } from '../application/exercises/exercise-catalog';
@@ -36,6 +36,12 @@ import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day'
 import { ApiError } from '../lib/api';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
+import { usePreventRemove } from '../lib/use-prevent-remove';
+
+type NavigationAction = unknown;
+type Navigation = {
+  dispatch: (action: NavigationAction) => void;
+};
 
 export type TrainerWorkoutEditorScreenProps = {
   mode: 'create' | 'edit';
@@ -44,6 +50,7 @@ export type TrainerWorkoutEditorScreenProps = {
 export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenProps) {
   const api = useApiClient();
   const queryClient = useQueryClient();
+  const navigation = useNavigation<Navigation>();
   const params = useLocalSearchParams<{
     studentId?: string | string[];
     planId?: string | string[];
@@ -65,7 +72,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
-  const editorDirty = useRef(false);
+  const [editorDirty, setEditorDirty] = useState(false);
 
   const planQuery = useQuery({
     enabled: mode === 'edit' && Boolean(studentId && planId),
@@ -82,7 +89,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       !planQuery.data ||
       planQuery.data.status === 'archived' ||
       planQuery.data.studentId !== studentId ||
-      editorDirty.current
+      editorDirty
     ) {
       return;
     }
@@ -90,7 +97,20 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     const next = hydrateWorkoutEditorState(planQuery.data, createLocalId);
     setEditor(next);
     setActiveDayId(next.days[0]?.localId);
-  }, [createLocalId, mode, planQuery.data, studentId]);
+  }, [createLocalId, editorDirty, mode, planQuery.data, studentId]);
+
+  usePreventRemove(editorDirty, ({ data }) => {
+    if (submitting) return;
+
+    Alert.alert('Descartar alterações?', 'As alterações deste treino serão perdidas.', [
+      { text: 'Continuar editando', style: 'cancel' },
+      {
+        text: 'Descartar alterações',
+        style: 'destructive',
+        onPress: () => navigation.dispatch(data.action),
+      },
+    ]);
+  });
 
   function clearFeedback(): void {
     setCreatedPlan(undefined);
@@ -102,7 +122,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     if (submitting) return;
     clearFeedback();
     if (next !== editor) {
-      editorDirty.current = true;
+      setEditorDirty(true);
     }
     setEditor(next);
   }
@@ -210,6 +230,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
           queryClient.invalidateQueries({ queryKey: ['trainer', 'summary'] }),
         ]);
         queryClient.setQueryData(['trainer', 'workout', created.id], created);
+        setEditorDirty(false);
         setCreatedPlan(created);
         setSuccessMessage('Treino salvo com sucesso.');
       } catch {
@@ -232,7 +253,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     try {
       const updated = await updateTrainerWorkoutPlan(api, planId, result.body);
       queryClient.setQueryData(['trainer', 'workout', planId], updated);
-      editorDirty.current = false;
+      setEditorDirty(false);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['trainer', 'workouts', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['trainer', 'summary'] }),

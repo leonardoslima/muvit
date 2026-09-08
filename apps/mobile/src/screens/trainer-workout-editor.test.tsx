@@ -7,6 +7,8 @@ import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout
 import { ApiError } from '../lib/api';
 import { TrainerWorkoutEditorScreen } from './trainer-workout-editor';
 
+type PreventRemoveEvent = { data: { action: unknown } };
+
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
@@ -19,6 +21,11 @@ const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
   planId: undefined as string | undefined,
 }));
+const navigationState = vi.hoisted(() => ({
+  callback: null as ((event: PreventRemoveEvent) => void) | null,
+  dispatch: vi.fn(),
+  enabled: false,
+}));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
@@ -27,6 +34,14 @@ vi.mock('../lib/use-api', () => ({
 vi.mock('expo-router', () => ({
   router: routerState,
   useLocalSearchParams: () => paramsState,
+  useNavigation: () => ({ dispatch: navigationState.dispatch }),
+}));
+
+vi.mock('../lib/use-prevent-remove', () => ({
+  usePreventRemove: (enabled: boolean, callback: (event: PreventRemoveEvent) => void) => {
+    navigationState.enabled = enabled;
+    navigationState.callback = callback;
+  },
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
@@ -139,10 +154,47 @@ beforeEach(() => {
   routerState.replace.mockReset();
   paramsState.studentId = STUDENT_ID;
   paramsState.planId = undefined;
+  navigationState.callback = null;
+  navigationState.dispatch.mockReset();
+  navigationState.enabled = false;
   vi.restoreAllMocks();
 });
 
 describe('TrainerWorkoutEditorScreen em criação', () => {
+  it('confirma remoção de rota quando há alterações locais', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const action = { type: 'GO_BACK' };
+
+    renderEditor();
+
+    expect(navigationState.enabled).toBe(false);
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    expect(navigationState.enabled).toBe(true);
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
+    expect(routerState.dismissTo).toHaveBeenCalledWith(
+      `/trainer/students/${STUDENT_ID}/workouts`,
+    );
+
+    act(() => {
+      navigationState.callback?.({ data: { action } });
+    });
+
+    expect(alert).toHaveBeenCalledWith(
+      'Descartar alterações?',
+      'As alterações deste treino serão perdidas.',
+      expect.any(Array),
+    );
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    const actions = alert.mock.calls[0]?.[2];
+    const discardAction = actions?.find((item) => item.style === 'destructive');
+    act(() => discardAction?.onPress?.());
+
+    expect(navigationState.dispatch).toHaveBeenCalledWith(action);
+  });
+
   it('mostra aluno inválido sem fazer POST', async () => {
     paramsState.studentId = undefined;
 
