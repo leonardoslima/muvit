@@ -11,11 +11,13 @@ export type WorkoutPlanListItemProps = {
 
 export function WorkoutPlanListItem({ onPress, plan }: WorkoutPlanListItemProps) {
   const period = formatWorkoutPeriod(plan.startDate, plan.endDate);
+  const periodLabel = period ? `, período: ${period}` : '';
+  const createdAt = formatDate(plan.createdAt);
 
   return (
     <Pressable
       accessible
-      accessibilityLabel={`Abrir ${plan.name}, ${workoutStatusLabel(plan.status)}`}
+      accessibilityLabel={`Abrir ${plan.name}, status: ${workoutStatusLabel(plan.status)}${periodLabel}, criado em ${createdAt}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
@@ -26,7 +28,7 @@ export function WorkoutPlanListItem({ onPress, plan }: WorkoutPlanListItemProps)
           <WorkoutStatusBadge status={plan.status} />
         </View>
         {period ? <Text style={sharedStyles.subtitle}>{period}</Text> : null}
-        <Text style={sharedStyles.subtitle}>{`Criado em ${formatDate(plan.createdAt)}`}</Text>
+        <Text style={sharedStyles.subtitle}>{`Criado em ${createdAt}`}</Text>
       </Card>
     </Pressable>
   );

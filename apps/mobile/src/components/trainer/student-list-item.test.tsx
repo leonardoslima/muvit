@@ -38,7 +38,12 @@ describe('StudentListItem', () => {
     expect(screen.getByText('ana@example.com')).toBeTruthy();
     expect(screen.getByText('Ativo')).toBeTruthy();
 
-    await user.press(screen.getByRole('button', { name: 'Abrir Ana Júlia Souza' }));
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir Ana Júlia Souza, contato: ana@example.com, status: Ativo',
+      }),
+    );
     expect(onPress).toHaveBeenCalledOnce();
   });
 
@@ -76,6 +81,11 @@ describe('StudentListItem', () => {
     );
 
     expect(screen.getByText('Sem contato cadastrado')).toBeTruthy();
+    expect(
+      screen.getByRole('button', {
+        name: 'Abrir Ana Júlia Souza, contato: Sem contato cadastrado, status: Ativo',
+      }),
+    ).toBeTruthy();
   });
 
   it('usa AL quando o nome não possui palavras', () => {

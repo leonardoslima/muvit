@@ -27,7 +27,12 @@ describe('AssessmentListItem', () => {
     expect(screen.getByText('18,4%')).toBeTruthy();
     expect(screen.getByText('Boa evolução')).toBeTruthy();
 
-    await user.press(screen.getByRole('button', { name: 'Abrir avaliação de 03/09/2026' }));
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir avaliação de 03/09/2026, peso: 82,5 kg, gordura corporal: 18,4%, observações: Boa evolução',
+      }),
+    );
     expect(onPress).toHaveBeenCalledOnce();
   });
 
@@ -41,5 +46,10 @@ describe('AssessmentListItem', () => {
 
     expect(screen.getAllByText('Não informado')).toHaveLength(2);
     expect(screen.queryByText('Boa evolução')).toBeNull();
+    expect(
+      screen.getByRole('button', {
+        name: 'Abrir avaliação de 03/09/2026, peso: Não informado, gordura corporal: Não informado',
+      }),
+    ).toBeTruthy();
   });
 });

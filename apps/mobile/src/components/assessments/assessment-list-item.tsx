@@ -10,11 +10,14 @@ export type AssessmentListItemProps = {
 
 export function AssessmentListItem({ assessment, onPress }: AssessmentListItemProps) {
   const date = formatDate(assessment.date);
+  const weight = formatMetric(assessment.weightKg, 'kg');
+  const bodyFat = formatMetric(assessment.bodyFatPct, '%');
+  const notes = assessment.notes ? `, observações: ${assessment.notes}` : '';
 
   return (
     <Pressable
       accessible
-      accessibilityLabel={`Abrir avaliação de ${date}`}
+      accessibilityLabel={`Abrir avaliação de ${date}, peso: ${weight}, gordura corporal: ${bodyFat}${notes}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
@@ -24,11 +27,11 @@ export function AssessmentListItem({ assessment, onPress }: AssessmentListItemPr
         <View style={styles.metrics}>
           <View style={styles.metric}>
             <Text style={sharedStyles.label}>Peso</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.weightKg, 'kg')}</Text>
+            <Text style={sharedStyles.subtitle}>{weight}</Text>
           </View>
           <View style={styles.metric}>
             <Text style={sharedStyles.label}>Gordura</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.bodyFatPct, '%')}</Text>
+            <Text style={sharedStyles.subtitle}>{bodyFat}</Text>
           </View>
         </View>
         {assessment.notes ? (

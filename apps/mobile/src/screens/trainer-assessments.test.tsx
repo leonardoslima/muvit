@@ -82,7 +82,11 @@ describe('TrainerAssessmentsScreen', () => {
       '/students/student-1/assessments?limit=25&offset=0',
       expect.any(Object),
     );
-    await user.press(screen.getByRole('button', { name: 'Abrir avaliação de 03/09/2026' }));
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir avaliação de 03/09/2026, peso: 82,5 kg, gordura corporal: 18,4%, observações: Boa evolução',
+      }),
+    );
 
     expect(routerState.push).toHaveBeenCalledWith({
       pathname: '/trainer/students/[studentId]/assessments/[assessmentId]',

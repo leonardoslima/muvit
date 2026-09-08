@@ -12,6 +12,10 @@ const statusCopy = {
   inactive: 'Inativo',
 } as const satisfies Record<TrainerStudent['status'], string>;
 
+export function studentStatusLabel(status: TrainerStudent['status']): string {
+  return statusCopy[status];
+}
+
 const statusStyles = {
   active: {
     backgroundColor: colors.primarySoft,
@@ -48,7 +52,9 @@ export function StudentStatusBadge({ status }: StudentStatusBadgeProps) {
       ]}
       testID="student-status-badge"
     >
-      <Text style={[styles.text, { color: visualStyle.textColor }]}>{statusCopy[status]}</Text>
+      <Text style={[styles.text, { color: visualStyle.textColor }]}>
+        {studentStatusLabel(status)}
+      </Text>
     </View>
   );
 }

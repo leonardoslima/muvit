@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
 import { Card } from '../ui/card';
-import { StudentStatusBadge } from './student-status-badge';
+import { StudentStatusBadge, studentStatusLabel } from './student-status-badge';
 
 export type StudentListItemProps = {
   student: TrainerStudent;
@@ -10,23 +10,25 @@ export type StudentListItemProps = {
 };
 
 export function StudentListItem({ onPress, student }: StudentListItemProps) {
+  const contact = resolveContact(student);
+
   return (
     <Pressable
       accessible
-      accessibilityLabel={`Abrir ${student.name}`}
+      accessibilityLabel={`Abrir ${student.name}, contato: ${contact}, status: ${studentStatusLabel(student.status)}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
     >
       <Card>
         <View style={styles.row}>
-          <View accessibilityLabel={`Iniciais de ${student.name}`} style={styles.avatar}>
+          <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
           </View>
 
           <View style={styles.copy}>
             <Text style={styles.name}>{student.name}</Text>
-            <Text style={sharedStyles.subtitle}>{resolveContact(student)}</Text>
+            <Text style={sharedStyles.subtitle}>{contact}</Text>
           </View>
 
           <StudentStatusBadge status={student.status} />

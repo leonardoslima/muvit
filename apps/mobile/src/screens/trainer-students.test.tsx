@@ -74,7 +74,11 @@ describe('TrainerStudentsScreen', () => {
     renderTrainerStudents();
 
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Abrir Ana Lima' }));
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir Ana Lima, contato: ana@example.com, status: Ativo',
+      }),
+    );
 
     expect(routerState.push).toHaveBeenCalledWith({
       pathname: '/trainer/students/[studentId]',

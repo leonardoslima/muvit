@@ -85,7 +85,11 @@ describe('TrainerWorkoutsScreen', () => {
       expect.objectContaining({ signal: expect.anything() }),
     );
 
-    await user.press(screen.getByRole('button', { name: 'Abrir Hipertrofia, Rascunho' }));
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir Hipertrofia, status: Rascunho, criado em 06/09/2026',
+      }),
+    );
 
     expect(routerState.push).toHaveBeenCalledWith({
       pathname: '/trainer/students/[studentId]/workouts/[planId]',
