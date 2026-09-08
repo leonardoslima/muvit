@@ -24,6 +24,7 @@ import { uploadAssessmentPhoto } from '../lib/uploads';
 import { useApiClient } from '../lib/use-api';
 
 const MAX_PHOTOS = 3;
+const SUCCESS_FEEDBACK_DURATION_MS = 1_500;
 
 export function TrainerNewAssessmentScreen() {
   const api = useApiClient();
@@ -49,7 +50,7 @@ export function TrainerNewAssessmentScreen() {
 
     const timeout = setTimeout(() => {
       router.dismissTo(`/trainer/students/${studentId}/assessments`);
-    }, 150);
+    }, SUCCESS_FEEDBACK_DURATION_MS);
 
     return () => clearTimeout(timeout);
   }, [studentId, success]);
