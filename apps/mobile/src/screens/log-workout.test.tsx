@@ -2,11 +2,13 @@ import type { workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { mobileRoutes } from '../application/navigation/role-navigation';
 import type { GuidedSession } from '../application/workouts/guided-session';
 import { ApiTransportError } from '../lib/api';
+import { spacing } from '../lib/styles';
 
 let LogWorkoutScreen: typeof import('./log-workout').LogWorkoutScreen;
 let TodayWorkoutScreen: typeof import('./today-workout').TodayWorkoutScreen;
@@ -397,6 +399,56 @@ describe('LogWorkoutScreen', () => {
         `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
       ),
     );
+  });
+
+  it('atualiza o descanso visual sem anunciar cada segundo', async () => {
+    const nowMs = 10_000;
+    const restingSession: GuidedSession = {
+      ...draftSession,
+      currentSetIndex: 0,
+      phase: 'rest',
+      restEndsAtMs: nowMs + 60_000,
+    };
+    mockWorkoutDay();
+    mockDraftStorage(restingSession);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nowMs);
+
+    try {
+      renderWithQueryClient();
+
+      const timer = await screen.findByText('01:00');
+      expect(screen.getByRole('button', { name: '+15 s' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Pular descanso' })).toBeTruthy();
+
+      vi.setSystemTime(nowMs + 1_000);
+      await act(
+        async () =>
+          new Promise<void>((resolve) => {
+            setTimeout(resolve, 1_050);
+          }),
+      );
+
+      expect(screen.getByText('00:59')).toBeTruthy();
+      expect(timer.props.accessibilityLiveRegion).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('empilha os campos da série para preservar conteúdo em largura compacta', async () => {
+    mockWorkoutDay();
+    renderWithQueryClient();
+
+    await screen.findByLabelText('Repetições realizadas');
+    const fieldsContainer = screen.getByTestId('current-set-fields');
+
+    expect(StyleSheet.flatten(fieldsContainer.props.style)).toMatchObject({
+      flexDirection: 'column',
+      gap: spacing.md,
+    });
+    expect(screen.getByText('kg')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Concluir série' })).toBeTruthy();
   });
 
   it('retoma a série e os valores do rascunho particionado por usuário e dia', async () => {

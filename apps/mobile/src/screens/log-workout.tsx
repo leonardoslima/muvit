@@ -271,7 +271,7 @@ function CurrentSetView({
           </Text>
         </Card>
       ) : null}
-      <View style={styles.fieldsRow}>
+      <View style={styles.fieldsRow} testID="current-set-fields">
         <Field
           accessibilityHint="Informe a quantidade de repetições realizadas"
           keyboardType="number-pad"
@@ -324,7 +324,7 @@ function RestView({
       <Card style={styles.restCard}>
         <Text style={styles.restTitle}>Descanso</Text>
         <Text style={styles.restDescription}>Respire e se prepare para a próxima série.</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.timer}>
+        <Text style={styles.timer}>
           {minutes}:{seconds}
         </Text>
         <Text style={styles.restDescription}>Tempo restante</Text>
@@ -499,7 +499,7 @@ const styles = {
     ...typography.bodyStrong,
   },
   fieldsRow: {
-    flexDirection: 'row' as const,
+    flexDirection: 'column' as const,
     gap: spacing.md,
   },
   hint: {
