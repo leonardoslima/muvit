@@ -73,7 +73,6 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
   const [editorDirty, setEditorDirty] = useState(false);
-  const explicitExitRef = useRef(false);
   const editorLocked = submitting || Boolean(createdPlan);
 
   const planQuery = useQuery({
@@ -113,10 +112,6 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   usePreventRemove(editorDirty, ({ data }) => {
-    if (explicitExitRef.current) {
-      explicitExitRef.current = false;
-      return;
-    }
     if (submitting) return;
 
     showDiscardConfirmation(() => navigation.dispatch(data.action));
@@ -152,19 +147,6 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   function returnToWorkouts(): void {
     if (submitting) return;
-    if (editorDirty) {
-      showDiscardConfirmation(() => {
-        explicitExitRef.current = true;
-        setEditorDirty(false);
-        try {
-          dismissToWorkouts();
-        } finally {
-          explicitExitRef.current = false;
-        }
-      });
-      return;
-    }
-
     dismissToWorkouts();
   }
 

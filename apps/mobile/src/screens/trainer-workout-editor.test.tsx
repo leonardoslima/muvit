@@ -205,7 +205,8 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
 
-    expect(routerState.dismissTo).not.toHaveBeenCalled();
+    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
+    expect(routerState.dismissTo).toHaveBeenCalledTimes(1);
     expect(alert).toHaveBeenCalledWith(
       'Descartar alterações?',
       'As alterações deste treino serão perdidas.',
@@ -217,7 +218,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     const discardAction = actions?.find((item) => item.style === 'destructive');
     act(() => discardAction?.onPress?.());
 
-    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
+    expect(navigationState.dispatch).toHaveBeenCalledWith(action);
     expect(routerState.dismissTo).toHaveBeenCalledTimes(1);
     expect(alert).toHaveBeenCalledTimes(1);
   });
