@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Assessment } from '../../application/assessments/assessment-data';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { colors, sharedStyles, spacing, typography } from '../../lib/styles';
+import { PressableCard } from '../ui/pressable-card';
 
 export type AssessmentListItemProps = {
   assessment: Assessment;
@@ -10,25 +10,25 @@ export type AssessmentListItemProps = {
 
 export function AssessmentListItem({ assessment, onPress }: AssessmentListItemProps) {
   const date = formatDate(assessment.date);
+  const weight = formatMetric(assessment.weightKg, 'kg');
+  const bodyFat = formatMetric(assessment.bodyFatPct, '%');
+  const notes = assessment.notes ? `, observações: ${assessment.notes}` : '';
 
   return (
-    <Pressable
-      accessible
-      accessibilityLabel={`Abrir avaliação de ${date}`}
-      accessibilityRole="button"
+    <PressableCard
+      accessibilityLabel={`Abrir avaliação de ${date}, peso: ${weight}, gordura corporal: ${bodyFat}${notes}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
     >
-      <Card>
+      <>
         <Text style={styles.date}>{date}</Text>
         <View style={styles.metrics}>
           <View style={styles.metric}>
             <Text style={sharedStyles.label}>Peso</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.weightKg, 'kg')}</Text>
+            <Text style={sharedStyles.subtitle}>{weight}</Text>
           </View>
           <View style={styles.metric}>
             <Text style={sharedStyles.label}>Gordura</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.bodyFatPct, '%')}</Text>
+            <Text style={sharedStyles.subtitle}>{bodyFat}</Text>
           </View>
         </View>
         {assessment.notes ? (
@@ -36,8 +36,8 @@ export function AssessmentListItem({ assessment, onPress }: AssessmentListItemPr
             {assessment.notes}
           </Text>
         ) : null}
-      </Card>
-    </Pressable>
+      </>
+    </PressableCard>
   );
 }
 
@@ -57,12 +57,6 @@ function formatMetric(value: string | number | null, unit: string): string {
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
   date: {
     color: colors.ink,
     ...typography.cardTitle,

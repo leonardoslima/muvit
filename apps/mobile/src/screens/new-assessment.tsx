@@ -17,6 +17,8 @@ import { spacing } from '../lib/styles';
 import { type AssessmentPhoto, uploadAssessmentPhoto } from '../lib/uploads';
 import { useApiClient } from '../lib/use-api';
 
+const SUCCESS_FEEDBACK_DURATION_MS = 1_500;
+
 export function NewAssessmentScreen() {
   const api = useApiClient();
 
@@ -32,7 +34,7 @@ export function NewAssessmentScreen() {
   useEffect(() => {
     if (!success) return;
 
-    const timeout = setTimeout(() => router.back(), 150);
+    const timeout = setTimeout(() => router.back(), SUCCESS_FEEDBACK_DURATION_MS);
     return () => clearTimeout(timeout);
   }, [success]);
 

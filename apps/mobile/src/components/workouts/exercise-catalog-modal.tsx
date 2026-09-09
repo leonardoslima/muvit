@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   EXERCISE_CATALOG_PAGE_SIZE,
   type Exercise,
@@ -8,8 +8,9 @@ import {
   listExerciseCatalog,
 } from '../../application/exercises/exercise-catalog';
 import { MUSCLE_GROUP_LABEL, type MuscleGroup, muscleGroupLabel } from '../../lib/muscle-groups';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
+import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
 import { useApiClient } from '../../lib/use-api';
+import { BottomSheet } from '../ui/bottom-sheet';
 import { AppButton } from '../ui/button';
 import { Field } from '../ui/field';
 import { InlineMessage } from '../ui/inline-message';
@@ -93,165 +94,151 @@ export function ExerciseCatalogModal({
   }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Adicionar exercício</Text>
-            <AppButton label="Fechar catálogo" onPress={onClose} variant="secondary" />
-          </View>
+    <BottomSheet onClose={onClose} style={styles.sheet} visible={visible}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Adicionar exercício</Text>
+        <AppButton label="Fechar catálogo" onPress={onClose} variant="secondary" />
+      </View>
 
-          <Field
-            editable={!isBusy}
-            label="Buscar exercício"
-            onChangeText={setDraftSearch}
-            onSubmitEditing={applySearch}
-            placeholder="Nome do exercício"
-            returnKeyType="search"
-            value={draftSearch}
-          />
-          <AppButton disabled={isBusy} label="Buscar" onPress={applySearch} />
-          {draftSearch || appliedSearch ? (
-            <AppButton
-              disabled={isBusy}
-              label="Limpar busca"
-              onPress={clearSearch}
-              variant="secondary"
-            />
-          ) : null}
+      <Field
+        editable={!isBusy}
+        label="Buscar exercício"
+        onChangeText={setDraftSearch}
+        onSubmitEditing={applySearch}
+        placeholder="Nome do exercício"
+        returnKeyType="search"
+        value={draftSearch}
+      />
+      <AppButton disabled={isBusy} label="Buscar" onPress={applySearch} />
+      {draftSearch || appliedSearch ? (
+        <AppButton
+          disabled={isBusy}
+          label="Limpar busca"
+          onPress={clearSearch}
+          variant="secondary"
+        />
+      ) : null}
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.filters}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.filters}>
+          <Pressable
+            accessible
+            accessibilityLabel="Todos"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isBusy, selected: !muscleGroup }}
+            disabled={isBusy}
+            onPress={() => selectMuscleGroup(undefined)}
+            style={[
+              styles.filter,
+              !muscleGroup ? styles.selectedFilter : null,
+              isBusy ? styles.disabled : null,
+            ]}
+          >
+            <Text style={styles.filterText}>Todos</Text>
+          </Pressable>
+          {MUSCLE_GROUPS.map((group) => {
+            const selected = muscleGroup === group;
+            return (
               <Pressable
                 accessible
-                accessibilityLabel="Todos"
+                accessibilityLabel={MUSCLE_GROUP_LABEL[group]}
                 accessibilityRole="button"
-                accessibilityState={{ disabled: isBusy, selected: !muscleGroup }}
+                accessibilityState={{ disabled: isBusy, selected }}
                 disabled={isBusy}
-                onPress={() => selectMuscleGroup(undefined)}
+                key={group}
+                onPress={() => selectMuscleGroup(group)}
                 style={[
                   styles.filter,
-                  !muscleGroup ? styles.selectedFilter : null,
+                  selected ? styles.selectedFilter : null,
                   isBusy ? styles.disabled : null,
                 ]}
               >
-                <Text style={styles.filterText}>Todos</Text>
+                <Text style={styles.filterText}>{MUSCLE_GROUP_LABEL[group]}</Text>
               </Pressable>
-              {MUSCLE_GROUPS.map((group) => {
-                const selected = muscleGroup === group;
-                return (
-                  <Pressable
-                    accessible
-                    accessibilityLabel={MUSCLE_GROUP_LABEL[group]}
-                    accessibilityRole="button"
-                    accessibilityState={{ disabled: isBusy, selected }}
-                    disabled={isBusy}
-                    key={group}
-                    onPress={() => selectMuscleGroup(group)}
-                    style={[
-                      styles.filter,
-                      selected ? styles.selectedFilter : null,
-                      isBusy ? styles.disabled : null,
-                    ]}
-                  >
-                    <Text style={styles.filterText}>{MUSCLE_GROUP_LABEL[group]}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </ScrollView>
-
-          <ScrollView contentContainerStyle={styles.list}>
-            {query.isPending ? (
-              <StatePanel
-                description="Estamos buscando exercícios disponíveis para sua conta."
-                title="Carregando exercícios"
-                tone="loading"
-              />
-            ) : null}
-
-            {isInitialError ? (
-              <StatePanel
-                actionDisabled={isBusy}
-                actionLabel="Tentar novamente"
-                description="Verifique sua conexão e tente novamente."
-                onAction={() => void query.refetch()}
-                title="Não foi possível carregar os exercícios"
-                tone="error"
-              />
-            ) : null}
-
-            {isEmpty ? (
-              <StatePanel
-                description="Tente outro nome ou grupo muscular."
-                title="Nenhum exercício encontrado"
-                tone="empty"
-              />
-            ) : null}
-
-            {items.map((exercise) => (
-              <Pressable
-                accessible
-                accessibilityLabel={`Selecionar ${exercise.name}, ${muscleGroupLabel(exercise.muscleGroup)}`}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: isBusy }}
-                disabled={isBusy}
-                key={exercise.id}
-                onPress={() => selectExercise(exercise)}
-                style={styles.exercise}
-              >
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={sharedStyles.subtitle}>{muscleGroupLabel(exercise.muscleGroup)}</Text>
-                {exercise.equipment ? (
-                  <Text style={sharedStyles.subtitle}>{exercise.equipment}</Text>
-                ) : null}
-              </Pressable>
-            ))}
-
-            {hasRefreshError ? (
-              <InlineMessage message="Não foi possível atualizar os exercícios." tone="error" />
-            ) : null}
-
-            {hasPaginationError ? (
-              <>
-                <InlineMessage message="Não foi possível carregar mais exercícios." tone="error" />
-                <AppButton
-                  disabled={isBusy}
-                  label={query.isFetchingNextPage ? 'Carregando mais...' : 'Tentar carregar mais'}
-                  onPress={() => void query.fetchNextPage()}
-                  variant="secondary"
-                />
-              </>
-            ) : null}
-
-            {query.hasNextPage && !hasPaginationError ? (
-              <AppButton
-                disabled={isBusy}
-                label={query.isFetchingNextPage ? 'Carregando mais...' : 'Carregar mais'}
-                onPress={() => void query.fetchNextPage()}
-                variant="secondary"
-              />
-            ) : null}
-          </ScrollView>
+            );
+          })}
         </View>
-      </View>
-    </Modal>
+      </ScrollView>
+
+      <ScrollView contentContainerStyle={styles.list}>
+        {query.isPending ? (
+          <StatePanel
+            description="Estamos buscando exercícios disponíveis para sua conta."
+            title="Carregando exercícios"
+            tone="loading"
+          />
+        ) : null}
+
+        {isInitialError ? (
+          <StatePanel
+            actionDisabled={isBusy}
+            actionLabel="Tentar novamente"
+            description="Verifique sua conexão e tente novamente."
+            onAction={() => void query.refetch()}
+            title="Não foi possível carregar os exercícios"
+            tone="error"
+          />
+        ) : null}
+
+        {isEmpty ? (
+          <StatePanel
+            description="Tente outro nome ou grupo muscular."
+            title="Nenhum exercício encontrado"
+            tone="empty"
+          />
+        ) : null}
+
+        {items.map((exercise) => (
+          <Pressable
+            accessible
+            accessibilityLabel={`Selecionar ${exercise.name}, ${muscleGroupLabel(exercise.muscleGroup)}`}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: isBusy }}
+            disabled={isBusy}
+            key={exercise.id}
+            onPress={() => selectExercise(exercise)}
+            style={styles.exercise}
+          >
+            <Text style={styles.exerciseName}>{exercise.name}</Text>
+            <Text style={sharedStyles.subtitle}>{muscleGroupLabel(exercise.muscleGroup)}</Text>
+            {exercise.equipment ? (
+              <Text style={sharedStyles.subtitle}>{exercise.equipment}</Text>
+            ) : null}
+          </Pressable>
+        ))}
+
+        {hasRefreshError ? (
+          <InlineMessage message="Não foi possível atualizar os exercícios." tone="error" />
+        ) : null}
+
+        {hasPaginationError ? (
+          <>
+            <InlineMessage message="Não foi possível carregar mais exercícios." tone="error" />
+            <AppButton
+              disabled={isBusy}
+              label={query.isFetchingNextPage ? 'Carregando mais...' : 'Tentar carregar mais'}
+              onPress={() => void query.fetchNextPage()}
+              variant="secondary"
+            />
+          </>
+        ) : null}
+
+        {query.hasNextPage && !hasPaginationError ? (
+          <AppButton
+            disabled={isBusy}
+            label={query.isFetchingNextPage ? 'Carregando mais...' : 'Carregar mais'}
+            onPress={() => void query.fetchNextPage()}
+            variant="secondary"
+          />
+        ) : null}
+      </ScrollView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.sheet,
-    borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
     maxHeight: '92%',
-    padding: spacing.xxl,
   },
   header: {
     alignItems: 'center',
@@ -272,6 +259,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     borderRadius: radii.pill,
     borderWidth: 1,
+    minHeight: controlSizes.touchTarget,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },

@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { todayIsoDate } from '../lib/date';
 import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
@@ -69,6 +69,40 @@ beforeEach(() => {
 });
 
 describe('TrainerNewAssessmentScreen', () => {
+  it('mantém o sucesso anunciado por tempo perceptível antes de voltar', async () => {
+    const invalidation = deferred<void>();
+    apiState.request.mockResolvedValueOnce({ id: 'assessment-new' });
+    queryState.invalidateQueries
+      .mockReturnValueOnce(invalidation.promise)
+      .mockResolvedValueOnce(undefined);
+
+    renderTrainerNewAssessment();
+    fireEvent.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledTimes(2));
+
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        invalidation.resolve(undefined);
+      });
+
+      const feedback = screen.getByTestId('inline-message');
+      expect(feedback.props.accessibilityRole).toBe('alert');
+      expect(feedback.props.accessibilityLiveRegion).toBe('polite');
+      expect(screen.getByText('Avaliação salva!')).toBeTruthy();
+      expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(999));
+      expect(screen.getByText('Avaliação salva!')).toBeTruthy();
+      expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(501));
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('inicia com todayIsoDate e não mostra IMC sem peso e altura', () => {
     renderTrainerNewAssessment();
 
@@ -146,9 +180,14 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(JSON.stringify(apiState.request.mock.calls)).not.toContain('bmi');
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
     expect(routerState.dismissTo).not.toHaveBeenCalled();
-    await waitFor(() => {
-      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
-    });
+    await waitFor(
+      () => {
+        expect(routerState.dismissTo).toHaveBeenCalledWith(
+          '/trainer/students/student-1/assessments',
+        );
+      },
+      { timeout: 2_000 },
+    );
   });
 
   it('valida antes de fazer upload ou POST', async () => {
@@ -332,9 +371,14 @@ describe('TrainerNewAssessmentScreen', () => {
 
     request.resolve({ id: 'assessment-new' });
     expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
-    await waitFor(() => {
-      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
-    });
+    await waitFor(
+      () => {
+        expect(routerState.dismissTo).toHaveBeenCalledWith(
+          '/trainer/students/student-1/assessments',
+        );
+      },
+      { timeout: 2_000 },
+    );
   });
 
   it('preserva valores e fotos quando o POST falha', async () => {

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Exercise } from '../application/exercises/exercise-catalog';
@@ -36,6 +36,12 @@ import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day'
 import { ApiError } from '../lib/api';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
+import { usePreventRemove } from '../lib/use-prevent-remove';
+
+type NavigationAction = unknown;
+type Navigation = {
+  dispatch: (action: NavigationAction) => void;
+};
 
 export type TrainerWorkoutEditorScreenProps = {
   mode: 'create' | 'edit';
@@ -44,6 +50,7 @@ export type TrainerWorkoutEditorScreenProps = {
 export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenProps) {
   const api = useApiClient();
   const queryClient = useQueryClient();
+  const navigation = useNavigation<Navigation>();
   const params = useLocalSearchParams<{
     studentId?: string | string[];
     planId?: string | string[];
@@ -65,7 +72,8 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const [error, setError] = useState<string | undefined>();
   const [successMessage, setSuccessMessage] = useState<string | undefined>();
   const [createdPlan, setCreatedPlan] = useState<TrainerWorkoutPlan | undefined>();
-  const editorDirty = useRef(false);
+  const [editorDirty, setEditorDirty] = useState(false);
+  const editorLocked = submitting || Boolean(createdPlan);
 
   const planQuery = useQuery({
     enabled: mode === 'edit' && Boolean(studentId && planId),
@@ -82,7 +90,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       !planQuery.data ||
       planQuery.data.status === 'archived' ||
       planQuery.data.studentId !== studentId ||
-      editorDirty.current
+      editorDirty
     ) {
       return;
     }
@@ -90,7 +98,24 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     const next = hydrateWorkoutEditorState(planQuery.data, createLocalId);
     setEditor(next);
     setActiveDayId(next.days[0]?.localId);
-  }, [createLocalId, mode, planQuery.data, studentId]);
+  }, [createLocalId, editorDirty, mode, planQuery.data, studentId]);
+
+  function showDiscardConfirmation(onDiscard: () => void): void {
+    Alert.alert('Descartar alterações?', 'As alterações deste treino serão perdidas.', [
+      { text: 'Continuar editando', style: 'cancel' },
+      {
+        text: 'Descartar alterações',
+        style: 'destructive',
+        onPress: onDiscard,
+      },
+    ]);
+  }
+
+  usePreventRemove(editorDirty, ({ data }) => {
+    if (submitting) return;
+
+    showDiscardConfirmation(() => navigation.dispatch(data.action));
+  });
 
   function clearFeedback(): void {
     setCreatedPlan(undefined);
@@ -99,25 +124,30 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function commitEditor(next: WorkoutEditorState): void {
-    if (submitting) return;
+    if (editorLocked) return;
     clearFeedback();
     if (next !== editor) {
-      editorDirty.current = true;
+      setEditorDirty(true);
     }
     setEditor(next);
   }
 
   function changeEditor(updater: (current: WorkoutEditorState) => WorkoutEditorState): void {
-    if (submitting) return;
+    if (editorLocked) return;
     commitEditor(updater(editor));
   }
 
-  function returnToWorkouts(): void {
+  function dismissToWorkouts(): void {
     if (!studentId) {
       router.dismissTo('/trainer/students');
       return;
     }
     router.dismissTo(`/trainer/students/${studentId}/workouts`);
+  }
+
+  function returnToWorkouts(): void {
+    if (submitting) return;
+    dismissToWorkouts();
   }
 
   function returnToDetail(): void {
@@ -134,7 +164,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function addDay(): void {
-    if (submitting) return;
+    if (editorLocked) return;
     const next = addWorkoutEditorDay(editor, createLocalId);
     if (next === editor) return;
     commitEditor(next);
@@ -143,7 +173,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   function requestRemoveDay(dayId: string): void {
     const day = editor.days.find((item) => item.localId === dayId);
-    if (!day || editor.days.length <= 1 || submitting) return;
+    if (!day || editor.days.length <= 1 || editorLocked) return;
 
     const remove = () => {
       const next = removeWorkoutEditorDay(editor, dayId);
@@ -170,7 +200,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   function selectExercise(exercise: Exercise): void {
-    if (!activeDayId || submitting) return;
+    if (!activeDayId || editorLocked) return;
     changeEditor((current) =>
       addWorkoutEditorExercise(
         current,
@@ -192,7 +222,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   }
 
   async function submit(): Promise<void> {
-    if (submitting || !studentId) return;
+    if (submitting || createdPlan || !studentId) return;
 
     if (mode === 'create') {
       const result = buildCreateTrainerWorkoutInput(editor, studentId);
@@ -210,6 +240,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
           queryClient.invalidateQueries({ queryKey: ['trainer', 'summary'] }),
         ]);
         queryClient.setQueryData(['trainer', 'workout', created.id], created);
+        setEditorDirty(false);
         setCreatedPlan(created);
         setSuccessMessage('Treino salvo com sucesso.');
       } catch {
@@ -232,7 +263,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
     try {
       const updated = await updateTrainerWorkoutPlan(api, planId, result.body);
       queryClient.setQueryData(['trainer', 'workout', planId], updated);
-      editorDirty.current = false;
+      setEditorDirty(false);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['trainer', 'workouts', studentId] }),
         queryClient.invalidateQueries({ queryKey: ['trainer', 'summary'] }),
@@ -361,7 +392,12 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para treinos" onPress={returnToWorkouts} variant="secondary" />
+      <AppButton
+        disabled={submitting}
+        label="Voltar para treinos"
+        onPress={returnToWorkouts}
+        variant="secondary"
+      />
       <ScreenHeader
         eyebrow={mode === 'create' ? 'Prescrição' : 'Editar prescrição'}
         subtitle="Monte a rotina com os exercícios e parâmetros de cada dia."
@@ -370,7 +406,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
       <Card>
         <Field
-          editable={!submitting}
+          editable={!editorLocked}
           label="Nome do treino"
           onChangeText={(value) =>
             changeEditor((current) => updateWorkoutEditorPlanField(current, 'name', value))
@@ -378,7 +414,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
           value={editor.name}
         />
         <Field
-          editable={!submitting}
+          editable={!editorLocked}
           label="Notas"
           multiline
           onChangeText={(value) =>
@@ -398,8 +434,8 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                   accessible
                   accessibilityLabel={label}
                   accessibilityRole="button"
-                  accessibilityState={{ disabled: submitting, selected }}
-                  disabled={submitting}
+                  accessibilityState={{ disabled: editorLocked, selected }}
+                  disabled={editorLocked}
                   key={status}
                   onPress={() =>
                     changeEditor((current) =>
@@ -419,7 +455,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       <View style={styles.daysHeader}>
         <Text style={styles.sectionTitle}>Dias do treino</Text>
         <AppButton
-          disabled={submitting || editor.days.length >= 7}
+          disabled={editorLocked || editor.days.length >= 7}
           label="Adicionar dia"
           onPress={addDay}
           variant="secondary"
@@ -433,8 +469,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                 accessible
                 accessibilityLabel={`Selecionar ${day.label}`}
                 accessibilityRole="button"
-                accessibilityState={{ disabled: submitting, selected: activeDayId === day.localId }}
-                disabled={submitting}
+                accessibilityState={{
+                  disabled: editorLocked,
+                  selected: activeDayId === day.localId,
+                }}
+                disabled={editorLocked}
                 onPress={() => setActiveDayId(day.localId)}
                 style={[
                   styles.daySelector,
@@ -444,7 +483,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
                 <Text style={styles.daySelectorText}>{day.label}</Text>
               </Pressable>
               <AppButton
-                disabled={submitting || editor.days.length <= 1}
+                disabled={editorLocked || editor.days.length <= 1}
                 label={`Remover ${day.label}`}
                 onPress={() => requestRemoveDay(day.localId)}
                 variant="secondary"
@@ -457,8 +496,10 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       {activeDay ? (
         <WorkoutEditorDayView
           day={activeDay}
-          disabled={submitting}
-          onAddExercise={() => setCatalogOpen(true)}
+          disabled={editorLocked}
+          onAddExercise={() => {
+            if (!editorLocked) setCatalogOpen(true);
+          }}
           onChangeExercise={(exerciseLocalId, field, value) =>
             changeEditor((current) =>
               updateWorkoutEditorExerciseField(
@@ -490,7 +531,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
       {error ? <InlineMessage message={error} tone="error" /> : null}
       {successMessage ? <InlineMessage message={successMessage} tone="success" /> : null}
-      <AppButton disabled={submitting} label={submitButtonLabel()} onPress={() => void submit()} />
+      <AppButton
+        disabled={submitting || Boolean(createdPlan)}
+        label={submitButtonLabel()}
+        onPress={() => void submit()}
+      />
       {createdPlan ? (
         <AppButton label="Ver treino" onPress={openCreatedPlan} variant="secondary" />
       ) : null}
@@ -499,7 +544,7 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
       ) : null}
 
       <ExerciseCatalogModal
-        disabled={submitting}
+        disabled={editorLocked}
         onClose={() => setCatalogOpen(false)}
         onSelect={selectExercise}
         visible={catalogOpen}

@@ -646,12 +646,12 @@ describe('TodayWorkoutScreen', () => {
 
     await user.press(await screen.findByText('Supino'));
 
-    expect(screen.getByText('Grupo: chest')).toBeTruthy();
+    expect(screen.getByText('Grupo muscular: chest')).toBeTruthy();
     expect(screen.getByText('Controlar cadencia')).toBeTruthy();
 
     await user.press(screen.getByText('Fechar'));
 
-    await waitFor(() => expect(screen.queryByText('Grupo: chest')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('Grupo muscular: chest')).toBeNull());
   });
 
   it('closes the exercise modal when the authenticated account changes', async () => {
@@ -698,7 +698,7 @@ describe('TodayWorkoutScreen', () => {
     const queryClient = createQueryClient();
     const firstRender = renderWithQueryClient(queryClient);
     await user.press(await screen.findByText('Supino'));
-    expect(screen.getByText('Grupo: chest')).toBeTruthy();
+    expect(screen.getByText('Grupo muscular: chest')).toBeTruthy();
 
     authState.userId = 'auth-user-b';
     firstRender.rerender(
@@ -708,6 +708,6 @@ describe('TodayWorkoutScreen', () => {
     );
 
     expect(await screen.findByText('Agachamento')).toBeTruthy();
-    expect(screen.queryByText('Grupo: chest')).toBeNull();
+    expect(screen.queryByText('Grupo muscular: chest')).toBeNull();
   });
 });

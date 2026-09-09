@@ -47,7 +47,7 @@ function LoginField({
         style={{
           alignItems: 'center',
           backgroundColor: colors.surface,
-          borderColor: colors.line,
+          borderColor: colors.outline,
           borderRadius: radii.control,
           borderWidth: 1,
           flexDirection: 'row',

@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
-import { StudentStatusBadge } from './student-status-badge';
+import { PressableCard } from '../ui/pressable-card';
+import { StudentStatusBadge, studentStatusLabel } from './student-status-badge';
 
 export type StudentListItemProps = {
   student: TrainerStudent;
@@ -10,29 +10,26 @@ export type StudentListItemProps = {
 };
 
 export function StudentListItem({ onPress, student }: StudentListItemProps) {
+  const contact = resolveContact(student);
+
   return (
-    <Pressable
-      accessible
-      accessibilityLabel={`Abrir ${student.name}`}
-      accessibilityRole="button"
+    <PressableCard
+      accessibilityLabel={`Abrir ${student.name}, contato: ${contact}, status: ${studentStatusLabel(student.status)}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
     >
-      <Card>
-        <View style={styles.row}>
-          <View accessibilityLabel={`Iniciais de ${student.name}`} style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
-          </View>
-
-          <View style={styles.copy}>
-            <Text style={styles.name}>{student.name}</Text>
-            <Text style={sharedStyles.subtitle}>{resolveContact(student)}</Text>
-          </View>
-
-          <StudentStatusBadge status={student.status} />
+      <View style={styles.row}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
         </View>
-      </Card>
-    </Pressable>
+
+        <View style={styles.copy}>
+          <Text style={styles.name}>{student.name}</Text>
+          <Text style={sharedStyles.subtitle}>{contact}</Text>
+        </View>
+
+        <StudentStatusBadge status={student.status} />
+      </View>
+    </PressableCard>
   );
 }
 
@@ -51,12 +48,6 @@ function resolveContact(student: TrainerStudent): string {
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
   row: {
     alignItems: 'center',
     flexDirection: 'row',

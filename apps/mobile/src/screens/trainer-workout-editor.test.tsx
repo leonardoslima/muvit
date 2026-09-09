@@ -7,6 +7,8 @@ import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout
 import { ApiError } from '../lib/api';
 import { TrainerWorkoutEditorScreen } from './trainer-workout-editor';
 
+type PreventRemoveEvent = { data: { action: unknown } };
+
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
@@ -19,6 +21,11 @@ const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
   planId: undefined as string | undefined,
 }));
+const navigationState = vi.hoisted(() => ({
+  callback: null as ((event: PreventRemoveEvent) => void) | null,
+  dispatch: vi.fn(),
+  enabled: false,
+}));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
@@ -27,6 +34,14 @@ vi.mock('../lib/use-api', () => ({
 vi.mock('expo-router', () => ({
   router: routerState,
   useLocalSearchParams: () => paramsState,
+  useNavigation: () => ({ dispatch: navigationState.dispatch }),
+}));
+
+vi.mock('../lib/use-prevent-remove', () => ({
+  usePreventRemove: (enabled: boolean, callback: (event: PreventRemoveEvent) => void) => {
+    navigationState.enabled = enabled;
+    navigationState.callback = callback;
+  },
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
@@ -139,10 +154,75 @@ beforeEach(() => {
   routerState.replace.mockReset();
   paramsState.studentId = STUDENT_ID;
   paramsState.planId = undefined;
+  navigationState.callback = null;
+  navigationState.dispatch.mockReset();
+  navigationState.enabled = false;
   vi.restoreAllMocks();
 });
 
 describe('TrainerWorkoutEditorScreen em criação', () => {
+  it('confirma remoção nativa de rota quando há alterações locais', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const action = { type: 'GO_BACK' };
+
+    renderEditor();
+
+    expect(navigationState.enabled).toBe(false);
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    expect(navigationState.enabled).toBe(true);
+
+    act(() => {
+      navigationState.callback?.({ data: { action } });
+    });
+
+    expect(alert).toHaveBeenCalledWith(
+      'Descartar alterações?',
+      'As alterações deste treino serão perdidas.',
+      expect.any(Array),
+    );
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    const actions = alert.mock.calls[0]?.[2];
+    const discardAction = actions?.find((item) => item.style === 'destructive');
+    act(() => discardAction?.onPress?.());
+
+    expect(navigationState.dispatch).toHaveBeenCalledWith(action);
+  });
+
+  it('confirma antes de sair pelo botão explícito quando há alterações locais', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const action = { type: 'DISMISS_TO_WORKOUTS' };
+    routerState.dismissTo.mockImplementation(() => {
+      act(() => {
+        navigationState.callback?.({ data: { action } });
+      });
+    });
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);
+    expect(routerState.dismissTo).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      'Descartar alterações?',
+      'As alterações deste treino serão perdidas.',
+      expect.any(Array),
+    );
+    expect(alert).toHaveBeenCalledTimes(1);
+
+    const actions = alert.mock.calls[0]?.[2];
+    const discardAction = actions?.find((item) => item.style === 'destructive');
+    act(() => discardAction?.onPress?.());
+
+    expect(navigationState.dispatch).toHaveBeenCalledWith(action);
+    expect(routerState.dismissTo).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledTimes(1);
+  });
+
   it('mostra aluno inválido sem fazer POST', async () => {
     paramsState.studentId = undefined;
 
@@ -314,6 +394,87 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     );
   });
 
+  it('não permite segundo POST após sucesso sem edição e preserva Ver treino', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockResolvedValueOnce(createdPlan);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
+    const saveButton = screen.getByRole('button', { name: 'Salvar treino' });
+    expect(saveButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(navigationState.enabled).toBe(false);
+
+    await user.press(saveButton);
+    expect(
+      apiState.request.mock.calls.filter(
+        ([path, options]) => path === '/workout-plans' && options?.method === 'POST',
+      ),
+    ).toHaveLength(1);
+
+    await user.press(screen.getByRole('button', { name: 'Ver treino' }));
+    expect(routerState.replace).toHaveBeenCalledWith(
+      `/trainer/students/${STUDENT_ID}/workouts/${PLAN_ID}`,
+    );
+  });
+
+  it('congela o editor depois do sucesso e mantém um único POST', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockResolvedValue(createdPlan);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Nome do treino'), 'Alteração indevida');
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    expect(
+      apiState.request.mock.calls.filter(
+        ([path, options]) => path === '/workout-plans' && options?.method === 'POST',
+      ),
+    ).toHaveLength(1);
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
+    expect(screen.getByLabelText('Nome do treino').props.editable).toBe(false);
+    expect(screen.getByLabelText('Nome do dia').props.editable).toBe(false);
+    expect(screen.getByRole('button', { name: 'Rascunho' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(screen.getByRole('button', { name: 'Ativo' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(screen.getByRole('button', { name: 'Adicionar dia' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Selecionar Treino A' }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
+    expect(
+      screen.getByRole('button', { name: 'Adicionar exercício' }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
+    expect(screen.getByText('Treino salvo com sucesso.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ver treino' })).toBeTruthy();
+  });
+
   it('bloqueia submit concorrente, mantém valores no erro e limpa sucesso ao editar', async () => {
     const user = userEvent.setup();
     let rejectPost: (error: Error) => void = () => undefined;
@@ -337,6 +498,36 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await waitFor(() => rejectPost(new Error('offline')));
     expect(await screen.findByText('Não foi possível salvar o treino.')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
+  });
+
+  it('desabilita o retorno para treinos durante POST pendente', async () => {
+    const user = userEvent.setup();
+    const createdPlan = workoutPlanFixture({ name: 'Hipertrofia' });
+    let resolvePost: (plan: TrainerWorkoutPlan) => void = () => undefined;
+    const post = new Promise<TrainerWorkoutPlan>((resolve) => {
+      resolvePost = resolve;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
+      .mockReturnValueOnce(post);
+
+    renderEditor();
+
+    await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
+    await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
+    await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
+
+    const returnButton = screen.getByRole('button', { name: 'Voltar para treinos' });
+    expect(returnButton.props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+    await user.press(returnButton);
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+    await act(async () => resolvePost(createdPlan));
+    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
   });
 });
 

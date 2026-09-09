@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { mobileRoutes } from '../application/navigation/role-navigation';
+import { BottomSheet } from '../components/ui/bottom-sheet';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
@@ -271,7 +272,7 @@ function CurrentSetView({
           </Text>
         </Card>
       ) : null}
-      <View style={styles.fieldsRow}>
+      <View style={styles.fieldsRow} testID="current-set-fields">
         <Field
           accessibilityHint="Informe a quantidade de repetições realizadas"
           keyboardType="number-pad"
@@ -324,7 +325,7 @@ function RestView({
       <Card style={styles.restCard}>
         <Text style={styles.restTitle}>Descanso</Text>
         <Text style={styles.restDescription}>Respire e se prepare para a próxima série.</Text>
-        <Text accessibilityLiveRegion="polite" style={styles.timer}>
+        <Text style={styles.timer}>
           {minutes}:{seconds}
         </Text>
         <Text style={styles.restDescription}>Tempo restante</Text>
@@ -425,45 +426,40 @@ function ExitSessionModal({
   visible: boolean;
 }) {
   return (
-    <Modal
-      animationType="slide"
+    <BottomSheet
+      onClose={onContinue}
       onRequestClose={() => {
         if (!busy) onContinue();
       }}
-      transparent
       visible={visible}
     >
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalSurface}>
-          <ScreenHeader
-            eyebrow="SAÍDA SEGURA"
-            subtitle="Escolha como deseja sair."
-            title="Sair da sessão"
-          />
-          <Card>
-            <Text style={styles.metric}>Treino em andamento</Text>
-            <Text style={sharedStyles.subtitle}>
-              {currentExerciseName ?? 'Exercício atual'} · Série {currentSetNumber}
-            </Text>
-          </Card>
-          {storageError ? <InlineMessage message={storageError} tone="warning" /> : null}
-          <AppButton disabled={busy} label="Continuar treinando" onPress={onContinue} />
-          <AppButton
-            disabled={busy}
-            label="Salvar e sair"
-            onPress={() => void onSave()}
-            variant="secondary"
-          />
-          <AppButton
-            disabled={busy}
-            label="Encerrar treino"
-            onPress={() => void onDiscard()}
-            variant="secondary"
-          />
-          <Text style={styles.hint}>Você poderá retomar depois se escolher salvar e sair.</Text>
-        </View>
-      </View>
-    </Modal>
+      <ScreenHeader
+        eyebrow="SAÍDA SEGURA"
+        subtitle="Escolha como deseja sair."
+        title="Sair da sessão"
+      />
+      <Card>
+        <Text style={styles.metric}>Treino em andamento</Text>
+        <Text style={sharedStyles.subtitle}>
+          {currentExerciseName ?? 'Exercício atual'} · Série {currentSetNumber}
+        </Text>
+      </Card>
+      {storageError ? <InlineMessage message={storageError} tone="warning" /> : null}
+      <AppButton disabled={busy} label="Continuar treinando" onPress={onContinue} />
+      <AppButton
+        disabled={busy}
+        label="Salvar e sair"
+        onPress={() => void onSave()}
+        variant="secondary"
+      />
+      <AppButton
+        disabled={busy}
+        label="Encerrar treino"
+        onPress={() => void onDiscard()}
+        variant="secondary"
+      />
+      <Text style={styles.hint}>Você poderá retomar depois se escolher salvar e sair.</Text>
+    </BottomSheet>
   );
 }
 
@@ -499,7 +495,7 @@ const styles = {
     ...typography.bodyStrong,
   },
   fieldsRow: {
-    flexDirection: 'row' as const,
+    flexDirection: 'column' as const,
     gap: spacing.md,
   },
   hint: {
@@ -552,17 +548,5 @@ const styles = {
   metric: {
     color: colors.ink,
     ...typography.bodyStrong,
-  },
-  modalBackdrop: {
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: 'flex-end' as const,
-  },
-  modalSurface: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.sheet,
-    borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
-    padding: spacing.xxl,
   },
 };

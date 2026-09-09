@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
 import {
@@ -16,6 +16,7 @@ import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
+import { ExerciseDetailsModal } from '../components/workouts/exercise-details-modal';
 import { authClient } from '../lib/auth-client';
 import { isoDateFromTimestamp, todayIsoDate } from '../lib/date';
 import { createWorkoutLogJournal } from '../lib/log-queue';
@@ -26,7 +27,6 @@ import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
 
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type WorkoutDay = WorkoutPlan['days'][number];
-type WorkoutExercise = WorkoutDay['exercises'][number];
 type SelectedExercise = {
   authUserId: string;
   dayId: string;
@@ -226,18 +226,11 @@ export function TodayWorkoutScreen() {
 
       {completedLocal ? null : (
         <Link asChild href={actionHref}>
-          <Pressable
-            accessible
-            accessibilityLabel={actionLabel}
-            accessibilityRole="button"
-            style={sharedStyles.button}
-          >
-            <Text style={sharedStyles.buttonText}>{actionLabel}</Text>
-          </Pressable>
+          <AppButton label={actionLabel} onPress={() => undefined} />
         </Link>
       )}
 
-      <ExerciseModal
+      <ExerciseDetailsModal
         exercise={selectedExercise}
         onClose={() => setSelectedExerciseSelection(undefined)}
       />
@@ -270,32 +263,6 @@ function OfflineBadge() {
     <View style={styles.offlineBadge}>
       <Text style={styles.offlineText}>offline</Text>
     </View>
-  );
-}
-
-function ExerciseModal({
-  exercise,
-  onClose,
-}: {
-  exercise?: WorkoutExercise;
-  onClose: () => void;
-}) {
-  return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={Boolean(exercise)}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalSurface}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>{exercise?.exercise.name}</Text>
-          <Text style={sharedStyles.subtitle}>Grupo: {exercise?.exercise.muscleGroup}</Text>
-          <Text style={sharedStyles.subtitle}>
-            {exercise?.sets} séries de {exercise?.reps} repetições
-          </Text>
-          <Text style={sharedStyles.subtitle}>Descanso: {exercise?.restSeconds ?? 0} s</Text>
-          {exercise?.notes ? <Text style={sharedStyles.subtitle}>{exercise.notes}</Text> : null}
-          <AppButton label="Fechar" onPress={onClose} variant="secondary" />
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -341,28 +308,5 @@ const styles = {
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
     height: controlSizes.progressTrack,
-  },
-  modalBackdrop: {
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: 'flex-end' as const,
-  },
-  modalSurface: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.sheet,
-    borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
-    padding: spacing.xxl,
-  },
-  modalHandle: {
-    alignSelf: 'center' as const,
-    backgroundColor: colors.muted,
-    borderRadius: radii.handle,
-    height: controlSizes.sheetHandleHeight,
-    width: controlSizes.sheetHandleWidth,
-  },
-  modalTitle: {
-    color: colors.ink,
-    ...typography.sheetTitle,
   },
 };

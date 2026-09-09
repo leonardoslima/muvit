@@ -54,9 +54,18 @@ describe('WorkoutPlanListItem', () => {
     expect(screen.getByText('Rascunho')).toBeTruthy();
     expect(screen.getByText('01/09/2026 — 30/09/2026')).toBeTruthy();
     expect(screen.getByText('Criado em 06/09/2026')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Abrir Hipertrofia, Rascunho' })).toBeTruthy();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', {
+        name: 'Abrir Hipertrofia, status: Rascunho, período: 01/09/2026 — 30/09/2026, criado em 06/09/2026',
+      }),
+    ).toBeTruthy();
 
-    await user.press(screen.getByRole('button', { name: 'Abrir Hipertrofia, Rascunho' }));
+    await user.press(
+      screen.getByRole('button', {
+        name: 'Abrir Hipertrofia, status: Rascunho, período: 01/09/2026 — 30/09/2026, criado em 06/09/2026',
+      }),
+    );
 
     expect(onPress).toHaveBeenCalledOnce();
   });
@@ -83,5 +92,10 @@ describe('WorkoutPlanListItem', () => {
     rerender(<WorkoutPlanListItem onPress={() => undefined} plan={planFixture()} />);
 
     expect(screen.queryByText(/A partir de|Até|—/)).toBeNull();
+    expect(
+      screen.getByRole('button', {
+        name: 'Abrir Hipertrofia, status: Rascunho, criado em 06/09/2026',
+      }),
+    ).toBeTruthy();
   });
 });
