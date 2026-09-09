@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
-import { colors, radii, spacing, typography } from '../../lib/styles';
+import { colors } from '../../lib/styles';
+import { StatusBadge } from '../ui/status-badge';
 
 export type StudentStatusBadgeProps = {
   status: TrainerStudent['status'];
@@ -41,32 +41,10 @@ export function StudentStatusBadge({ status }: StudentStatusBadgeProps) {
   const visualStyle = statusStyles[status];
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: visualStyle.backgroundColor,
-          borderColor: visualStyle.borderColor,
-          borderWidth: visualStyle.borderColor ? 1 : 0,
-        },
-      ]}
+    <StatusBadge
+      {...visualStyle}
+      label={studentStatusLabel(status)}
       testID="student-status-badge"
-    >
-      <Text style={[styles.text, { color: visualStyle.textColor }]}>
-        {studentStatusLabel(status)}
-      </Text>
-    </View>
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  text: {
-    ...typography.labelCompact,
-  },
-});

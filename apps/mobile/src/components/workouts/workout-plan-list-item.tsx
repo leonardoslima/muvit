@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerWorkoutPlanSummary } from '../../application/workouts/trainer-workout-data';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { colors, sharedStyles, spacing, typography } from '../../lib/styles';
+import { PressableCard } from '../ui/pressable-card';
 import { WorkoutStatusBadge, workoutStatusLabel } from './workout-status-badge';
 
 export type WorkoutPlanListItemProps = {
@@ -15,22 +15,19 @@ export function WorkoutPlanListItem({ onPress, plan }: WorkoutPlanListItemProps)
   const createdAt = formatDate(plan.createdAt);
 
   return (
-    <Pressable
-      accessible
+    <PressableCard
       accessibilityLabel={`Abrir ${plan.name}, status: ${workoutStatusLabel(plan.status)}${periodLabel}, criado em ${createdAt}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
     >
-      <Card>
+      <>
         <View style={styles.heading}>
           <Text style={styles.name}>{plan.name}</Text>
           <WorkoutStatusBadge status={plan.status} />
         </View>
         {period ? <Text style={sharedStyles.subtitle}>{period}</Text> : null}
         <Text style={sharedStyles.subtitle}>{`Criado em ${createdAt}`}</Text>
-      </Card>
-    </Pressable>
+      </>
+    </PressableCard>
   );
 }
 
@@ -50,12 +47,6 @@ function formatDate(value: string): string {
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
   heading: {
     gap: spacing.sm,
   },

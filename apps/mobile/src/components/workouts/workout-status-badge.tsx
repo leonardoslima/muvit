@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import type { TrainerWorkoutPlanSummary } from '../../application/workouts/trainer-workout-data';
-import { colors, radii, spacing, typography } from '../../lib/styles';
+import { colors } from '../../lib/styles';
+import { StatusBadge } from '../ui/status-badge';
 
 export type WorkoutStatusBadgeProps = {
   status: TrainerWorkoutPlanSummary['status'];
@@ -41,33 +42,17 @@ export function WorkoutStatusBadge({ status }: WorkoutStatusBadgeProps) {
   const visualStyle = statusStyles[status];
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: visualStyle.backgroundColor,
-          borderColor: visualStyle.borderColor,
-          borderWidth: visualStyle.borderColor ? 1 : 0,
-        },
-      ]}
+    <StatusBadge
+      {...visualStyle}
+      label={workoutStatusLabel(status)}
+      style={styles.badge}
       testID="workout-status-badge"
-    >
-      <Text style={[styles.text, { color: visualStyle.textColor }]}>
-        {workoutStatusLabel(status)}
-      </Text>
-    </View>
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
+  badge: {
     alignSelf: 'flex-start',
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  text: {
-    ...typography.labelCompact,
   },
 });

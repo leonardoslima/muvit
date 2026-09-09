@@ -1,13 +1,16 @@
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { render, screen, userEvent } from '@testing-library/react-native';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, spacing, typography } from '../../lib/styles';
+import { colors, radii, spacing, typography } from '../../lib/styles';
+import { BottomSheet } from './bottom-sheet';
 import { AppButton } from './button';
 import { Field } from './field';
 import { InlineMessage } from './inline-message';
+import { PressableCard } from './pressable-card';
 import { Screen } from './screen';
 import { StatePanel } from './state-panel';
+import { StatusBadge } from './status-badge';
 
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 
@@ -86,6 +89,113 @@ describe('componentes visuais mobile', () => {
 
     await user.press(retryButton);
     expect(retry).not.toHaveBeenCalled();
+  });
+
+  it('mantém o shell compartilhado do bottom sheet e permite fechar pelo sistema', () => {
+    const onClose = vi.fn();
+    const onRequestClose = vi.fn();
+
+    render(
+      <BottomSheet onClose={onClose} onRequestClose={onRequestClose} visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    const modal = screen.UNSAFE_getByType(Modal);
+    expect(modal.props).toMatchObject({
+      animationType: 'slide',
+      onRequestClose,
+      transparent: true,
+      visible: true,
+    });
+    expect(screen.getByText('Conteúdo do sheet')).toBeTruthy();
+
+    const surface = modal.props.children.props.children;
+    expect(StyleSheet.flatten(surface.props.style)).toMatchObject({
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.sheet,
+      borderTopRightRadius: radii.sheet,
+      gap: spacing.md,
+      padding: spacing.xxl,
+    });
+  });
+
+  it('não monta o conteúdo do bottom sheet quando está fechado', () => {
+    render(
+      <BottomSheet onClose={() => undefined} visible={false}>
+        <Text>Conteúdo oculto</Text>
+      </BottomSheet>,
+    );
+
+    expect(screen.queryByText('Conteúdo oculto')).toBeNull();
+  });
+
+  it('compõe um card pressionável com acessibilidade e feedback de pressão', async () => {
+    const onPress = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <PressableCard accessibilityLabel="Abrir cartão" onPress={onPress}>
+        <Text>Conteúdo do cartão</Text>
+      </PressableCard>,
+    );
+
+    const card = screen.getByRole('button', { name: 'Abrir cartão' });
+    expect(card.props.accessibilityState).toEqual({ disabled: false });
+    expect(screen.getByText('Conteúdo do cartão')).toBeTruthy();
+
+    const style = card.props.style;
+    expect(typeof style).toBe('function');
+    if (typeof style !== 'function') {
+      throw new Error('O PressableCard deve expor o estado de pressão no estilo.');
+    }
+
+    expect(
+      StyleSheet.flatten(style({ focused: false, hovered: false, pressed: true })),
+    ).toMatchObject({
+      borderRadius: radii.lg,
+      opacity: 0.8,
+    });
+
+    await user.press(card);
+    expect(onPress).toHaveBeenCalledOnce();
+  });
+
+  it('preserva o estado desabilitado do card pressionável', () => {
+    render(
+      <PressableCard accessibilityLabel="Cartão indisponível" disabled onPress={() => undefined}>
+        <Text>Indisponível</Text>
+      </PressableCard>,
+    );
+
+    const card = screen.getByRole('button', { name: 'Cartão indisponível' });
+    expect(card.props.disabled).toBe(true);
+    expect(card.props.accessibilityState).toEqual({ disabled: true });
+  });
+
+  it('renderiza o status badge genérico com tokens semânticos', () => {
+    render(
+      <StatusBadge
+        backgroundColor={colors.primarySoft}
+        label="Ativo"
+        testID="shared-status-badge"
+        textColor={colors.primaryText}
+      />,
+    );
+
+    expect(screen.getByText('Ativo')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('shared-status-badge').props.style)).toMatchObject(
+      {
+        backgroundColor: colors.primarySoft,
+        borderRadius: radii.pill,
+        borderWidth: 0,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+      },
+    );
+    expect(StyleSheet.flatten(screen.getByText('Ativo').props.style)).toMatchObject({
+      color: colors.primaryText,
+    });
   });
 
   it('apresenta feedback inline com semântica e tom visual', () => {

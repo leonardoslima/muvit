@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { PressableCard } from '../ui/pressable-card';
 import { StudentStatusBadge, studentStatusLabel } from './student-status-badge';
 
 export type StudentListItemProps = {
@@ -13,28 +13,23 @@ export function StudentListItem({ onPress, student }: StudentListItemProps) {
   const contact = resolveContact(student);
 
   return (
-    <Pressable
-      accessible
+    <PressableCard
       accessibilityLabel={`Abrir ${student.name}, contato: ${contact}, status: ${studentStatusLabel(student.status)}`}
-      accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
     >
-      <Card>
-        <View style={styles.row}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
-          </View>
-
-          <View style={styles.copy}>
-            <Text style={styles.name}>{student.name}</Text>
-            <Text style={sharedStyles.subtitle}>{contact}</Text>
-          </View>
-
-          <StudentStatusBadge status={student.status} />
+      <View style={styles.row}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
         </View>
-      </Card>
-    </Pressable>
+
+        <View style={styles.copy}>
+          <Text style={styles.name}>{student.name}</Text>
+          <Text style={sharedStyles.subtitle}>{contact}</Text>
+        </View>
+
+        <StudentStatusBadge status={student.status} />
+      </View>
+    </PressableCard>
   );
 }
 
@@ -53,12 +48,6 @@ function resolveContact(student: TrainerStudent): string {
 }
 
 const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
   row: {
     alignItems: 'center',
     flexDirection: 'row',
