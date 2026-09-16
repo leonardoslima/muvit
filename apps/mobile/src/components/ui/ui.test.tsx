@@ -2,7 +2,7 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { Modal, ScrollView, StyleSheet, Text } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, radii, spacing, typography } from '../../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
 import { BottomSheet } from './bottom-sheet';
 import { AppButton } from './button';
 import { Field } from './field';
@@ -56,6 +56,125 @@ describe('componentes visuais mobile', () => {
 
     expect(getContrastRatio(borderColor, colors.surface)).toBeGreaterThanOrEqual(3);
     expect(getContrastRatio(borderColor, colors.background)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('aplica o contrato visual primário do Pencil', () => {
+    render(<AppButton label="Começar" onPress={() => undefined} />);
+
+    const button = screen.getByRole('button', { name: 'Começar' });
+    const style = button.props.style;
+
+    expect(typeof style).toBe('function');
+    if (typeof style !== 'function') {
+      throw new Error('O AppButton deve expor o estado de pressão no estilo.');
+    }
+
+    expect(StyleSheet.flatten(style({ pressed: false }))).toMatchObject({
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      backgroundColor: colors.primary,
+      borderRadius: radii.control,
+      gap: spacing.sm,
+      height: controlSizes.button,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      minHeight: controlSizes.button,
+    });
+    expect(StyleSheet.flatten(screen.getByText('Começar').props.style)).toMatchObject({
+      color: colors.ink,
+      fontFamily: fontFamilies.bodyStrong,
+      fontSize: 14,
+    });
+  });
+
+  it('renderiza um trailingIcon opcional ao lado do label', () => {
+    render(
+      <AppButton
+        label="Tentar novamente"
+        onPress={() => undefined}
+        trailingIcon={<Text testID="button-trailing-icon">→</Text>}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: 'Tentar novamente' });
+    expect(screen.getByTestId('button-trailing-icon')).toBeTruthy();
+    expect(screen.getByText('Tentar novamente')).toBeTruthy();
+
+    const style = button.props.style;
+    expect(typeof style).toBe('function');
+    if (typeof style !== 'function') {
+      throw new Error('O AppButton deve expor o estado de pressão no estilo.');
+    }
+
+    expect(StyleSheet.flatten(style({ pressed: false }))).toMatchObject({
+      flexDirection: 'row',
+      gap: spacing.sm,
+    });
+  });
+
+  it('aplica o contrato visual secundário do Pencil sem ícone', () => {
+    render(<AppButton label="Cancelar" onPress={() => undefined} variant="secondary" />);
+
+    const button = screen.getByRole('button', { name: 'Cancelar' });
+    const style = button.props.style;
+
+    expect(typeof style).toBe('function');
+    if (typeof style !== 'function') {
+      throw new Error('O AppButton deve expor o estado de pressão no estilo.');
+    }
+
+    expect(StyleSheet.flatten(style({ pressed: false }))).toMatchObject({
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      backgroundColor: colors.surface,
+      borderColor: colors.line,
+      borderRadius: radii.control,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      height: controlSizes.button,
+      justifyContent: 'center',
+      minHeight: controlSizes.button,
+    });
+    expect(StyleSheet.flatten(screen.getByText('Cancelar').props.style)).toMatchObject({
+      color: colors.ink,
+      fontFamily: fontFamilies.bodyStrong,
+      fontSize: 14,
+    });
+  });
+
+  it('preserva disabled e pressed como estados acessíveis do AppButton', () => {
+    render(
+      <>
+        <AppButton disabled label="Indisponível" onPress={() => undefined} />
+        <AppButton label="Disponível" onPress={() => undefined} />
+      </>,
+    );
+
+    const disabledButton = screen.getByRole('button', { name: 'Indisponível' });
+    const disabledStyle = disabledButton.props.style;
+    expect(disabledButton.props.accessibilityState).toEqual({ disabled: true });
+    expect(typeof disabledStyle).toBe('function');
+    if (typeof disabledStyle !== 'function') {
+      throw new Error('O AppButton deve expor o estado desabilitado no estilo.');
+    }
+    expect(StyleSheet.flatten(disabledStyle({ pressed: false }))).toMatchObject({
+      borderRadius: radii.control,
+      height: controlSizes.button,
+      opacity: 0.5,
+    });
+
+    const availableButton = screen.getByRole('button', { name: 'Disponível' });
+    const availableStyle = availableButton.props.style;
+    expect(typeof availableStyle).toBe('function');
+    if (typeof availableStyle !== 'function') {
+      throw new Error('O AppButton deve expor o estado pressionado no estilo.');
+    }
+    expect(StyleSheet.flatten(availableStyle({ pressed: true }))).toMatchObject({
+      borderRadius: radii.control,
+      height: controlSizes.button,
+      opacity: 0.8,
+    });
   });
 
   it('impede toque duplicado durante submissão', async () => {

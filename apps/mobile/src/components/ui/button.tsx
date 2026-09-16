@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, Text } from 'react-native';
 import { sharedStyles } from '../../lib/styles';
 
@@ -5,6 +6,7 @@ export type AppButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  trailingIcon?: ReactNode;
   variant?: 'primary' | 'secondary';
 };
 
@@ -12,6 +14,7 @@ export function AppButton({
   label,
   onPress,
   disabled = false,
+  trailingIcon,
   variant = 'primary',
 }: AppButtonProps) {
   const isSecondary = variant === 'secondary';
@@ -33,6 +36,7 @@ export function AppButton({
       <Text style={isSecondary ? sharedStyles.secondaryButtonText : sharedStyles.buttonText}>
         {label}
       </Text>
+      {trailingIcon}
     </Pressable>
   );
 }

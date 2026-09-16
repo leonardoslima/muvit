@@ -407,12 +407,11 @@ function TodayStatePanel({
       ) : null}
       {actionLabel && onAction ? (
         <View style={styles.todayStateAction} testID="today-state-action">
-          <View style={styles.todayStateActionButton}>
-            <AppButton label={actionLabel} onPress={onAction} />
-            <View pointerEvents="none" style={styles.todayStateActionIcon}>
-              <Ionicons color={colors.ink} name="arrow-forward-outline" size={18} />
-            </View>
-          </View>
+          <AppButton
+            label={actionLabel}
+            onPress={onAction}
+            trailingIcon={<Ionicons color={colors.ink} name="arrow-forward-outline" size={18} />}
+          />
         </View>
       ) : null}
     </Card>
@@ -520,16 +519,20 @@ const styles = {
   },
   todayWorkoutAction: {
     alignItems: 'center' as const,
+    alignSelf: 'stretch' as const,
     backgroundColor: colors.surface,
-    borderRadius: radii.md,
+    borderRadius: radii.control,
+    borderWidth: 0,
+    flexDirection: 'row' as const,
+    gap: spacing.sm,
     height: controlSizes.button,
     justifyContent: 'center' as const,
     minHeight: controlSizes.button,
-    width: '100%' as const,
+    paddingHorizontal: spacing.xl,
   },
   todayWorkoutActionText: {
-    color: colors.primaryText,
-    ...typography.bodyStrong,
+    color: colors.ink,
+    ...typography.button,
   },
   pressed: {
     opacity: 0.8,
@@ -640,14 +643,6 @@ const styles = {
   },
   todayStateAction: {
     width: '100%' as const,
-  },
-  todayStateActionButton: {
-    position: 'relative' as const,
-  },
-  todayStateActionIcon: {
-    position: 'absolute' as const,
-    right: spacing.xl,
-    top: (controlSizes.button - 18) / 2,
   },
   exerciseList: {
     gap: spacing.md,

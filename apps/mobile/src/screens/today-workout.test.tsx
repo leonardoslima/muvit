@@ -5,7 +5,7 @@ import { type ReactNode, cloneElement, createElement, isValidElement } from 'rea
 import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiTransportError } from '../lib/api';
-import { colors, controlSizes, radii, spacing } from '../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing } from '../lib/styles';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
@@ -260,9 +260,23 @@ describe('TodayWorkoutScreen', () => {
     });
     const workoutAction = within(workoutCard).getByRole('button', { name: 'Iniciar treino' });
     expect(workoutAction.props.style).toBeTypeOf('function');
-    expect(StyleSheet.flatten(workoutAction.props.style({ pressed: false }))).toMatchObject({
+    const workoutActionStyle = StyleSheet.flatten(workoutAction.props.style({ pressed: false }));
+    expect(workoutActionStyle).toMatchObject({
       backgroundColor: colors.surface,
-      borderRadius: radii.md,
+      borderRadius: radii.control,
+      borderWidth: 0,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      height: controlSizes.button,
+      minHeight: controlSizes.button,
+    });
+    expect(workoutActionStyle.borderColor).toBeUndefined();
+    expect(
+      StyleSheet.flatten(within(workoutCard).getByText('Iniciar treino').props.style),
+    ).toMatchObject({
+      color: colors.ink,
+      fontFamily: fontFamilies.bodyStrong,
+      fontSize: 14,
     });
   });
 
@@ -665,6 +679,29 @@ describe('TodayWorkoutScreen', () => {
     expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(await screen.findByText('Iniciar treino')).toBeTruthy();
+  });
+
+  it('renders the retry arrow inside the AppButton as its trailing icon', async () => {
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
+
+    renderWithQueryClient();
+
+    const retryButton = await screen.findByRole('button', { name: 'Tentar novamente' });
+    const retryChildren = Array.isArray(retryButton.props.children)
+      ? retryButton.props.children
+      : [retryButton.props.children];
+
+    expect(retryChildren).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          props: expect.objectContaining({
+            color: colors.ink,
+            name: 'arrow-forward-outline',
+            size: 18,
+          }),
+        }),
+      ]),
+    );
   });
 
   it('renders stale offline badge from cached workout', async () => {
