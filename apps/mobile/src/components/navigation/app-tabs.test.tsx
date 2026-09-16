@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fontFamilies, typography } from '../../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
 import { AppTabsLayout } from './app-tabs';
 
 vi.mock('../../lib/styles', async (importOriginal) => {
@@ -45,9 +45,26 @@ type TabBarButtonProps = {
 
 type ScreenOptions = {
   tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+  tabBarItemStyle?: {
+    borderRadius?: number;
+    flex?: number;
+  };
   tabBarLabelStyle?: {
     fontFamily: string;
     fontSize: number;
+  };
+  tabBarStyle?: {
+    backgroundColor?: string;
+    borderRadius?: number;
+    borderTopWidth?: number;
+    gap?: number;
+    height?: number;
+    marginHorizontal?: number;
+    paddingBottom?: number;
+    paddingHorizontal?: number;
+    paddingTop?: number;
+    position?: string;
+    transform?: Array<{ translateY: number }>;
   };
 };
 
@@ -140,6 +157,24 @@ describe('AppTabsLayout', () => {
     expect(tabsState.screenOptions?.tabBarLabelStyle).toEqual({
       fontFamily: fontFamilies.bodyStrong,
       fontSize: typography.caption.fontSize,
+    });
+  });
+
+  it('aplica a estrutura de cápsula flutuante definida no layout mobile', () => {
+    render(<AppTabsLayout tabs={[]} />);
+
+    expect(tabsState.screenOptions?.tabBarItemStyle).toMatchObject({
+      borderRadius: radii.pill,
+      flex: 1,
+    });
+    expect(tabsState.screenOptions?.tabBarStyle).toMatchObject({
+      backgroundColor: colors.surface,
+      borderRadius: radii.pill,
+      gap: spacing.sm,
+      height: controlSizes.tabBar,
+      paddingBottom: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      paddingTop: spacing.sm,
     });
   });
 });

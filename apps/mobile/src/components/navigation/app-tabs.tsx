@@ -24,6 +24,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
         tabBarInactiveTintColor: colors.muted,
         tabBarItemStyle: {
           borderRadius: radii.pill,
+          flex: 1,
         },
         tabBarButton: (props) => (
           <PlatformPressable {...props} style={[props.style, { borderRadius: radii.pill }]} />
@@ -39,9 +40,11 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
           height: controlSizes.tabBar,
           borderRadius: radii.pill,
           borderTopWidth: 0,
-          backgroundColor: colors.surfaceTranslucent,
+          backgroundColor: colors.surface,
           paddingBottom: spacing.sm,
+          paddingHorizontal: spacing.sm,
           paddingTop: spacing.sm,
+          gap: spacing.sm,
         },
       }}
     >

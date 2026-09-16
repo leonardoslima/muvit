@@ -1,7 +1,7 @@
 import type { workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
+import { type ReactNode, StrictMode, createElement, useLayoutEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
@@ -59,6 +59,11 @@ vi.mock('../lib/use-prevent-remove', () => ({
 
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: { color: string; name: string; size: number }) =>
+    createElement('Ionicons', props),
 }));
 
 vi.mock('../lib/auth-client', () => ({
@@ -825,8 +830,7 @@ describe('LogWorkoutScreen', () => {
           <TodayWorkoutScreen key="next-cycle" />
         </QueryClientProvider>,
       );
-      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
 
       const remountQueryClient = new QueryClient({

@@ -9,3 +9,13 @@ export function isoDateFromTimestamp(timestampMs: number): string {
 export function todayIsoDate(): string {
   return isoDateFromTimestamp(Date.now());
 }
+
+export function formatTodayDisplayLabel(timestampMs: number = Date.now()): string {
+  const label = new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    weekday: 'long',
+  }).format(new Date(timestampMs));
+
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+}

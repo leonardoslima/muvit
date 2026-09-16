@@ -1,8 +1,11 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { render, screen, userEvent, waitFor, within } from '@testing-library/react-native';
+import { type ReactNode, cloneElement, createElement, isValidElement } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiTransportError } from '../lib/api';
+import { colors, controlSizes, radii, spacing } from '../lib/styles';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
@@ -34,10 +37,18 @@ vi.mock('react-native-safe-area-context', () => ({
 }));
 
 vi.mock('expo-router', () => ({
-  Link: ({ children, href }: { children: ReactNode; href: string }) => {
+  Link: ({ asChild, children, href }: { asChild?: boolean; children: ReactNode; href: string }) => {
     linkState.hrefs.push(href);
+    if (asChild && isValidElement<{ style?: unknown }>(children)) {
+      return cloneElement(children, { style: undefined });
+    }
     return children;
   },
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: { color: string; name: string; size: number; testID?: string }) =>
+    createElement('Ionicons', props),
 }));
 
 function renderWithQueryClient(queryClient = createQueryClient()) {
@@ -50,6 +61,20 @@ function renderWithQueryClient(queryClient = createQueryClient()) {
 
 function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+function legacySessionFor(workoutDayId: string): string {
+  return JSON.stringify({
+    version: 1,
+    workoutDayId,
+    startedAtMs: 1_000,
+    updatedAtMs: 2_000,
+    currentExerciseIndex: 0,
+    currentSetIndex: 0,
+    phase: 'set',
+    restEndsAtMs: null,
+    sets: [],
+  });
 }
 
 const activeWorkout = {
@@ -206,6 +231,99 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByText('Seu professor ainda não publicou um plano de treino.')).toBeTruthy();
   });
 
+  it('renders the loading state with the Hoje skeleton structure', () => {
+    apiState.request.mockImplementation(() => new Promise(() => undefined));
+
+    renderWithQueryClient();
+
+    expect(screen.getByLabelText('Carregando treino')).toBeTruthy();
+    expect(screen.getByTestId('today-loading-exercise-1')).toBeTruthy();
+    expect(screen.getByTestId('today-loading-exercise-2')).toBeTruthy();
+    expect(screen.getByTestId('today-loading-exercise-3')).toBeTruthy();
+  });
+
+  it('renders the available workout as the primary green card', async () => {
+    apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
+    storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino A')).toBeTruthy();
+    expect(screen.getByText('Disponível offline')).toBeTruthy();
+    expect(screen.getByText(/^[^,]+, \d{1,2} de [a-zç]+$/i)).toBeTruthy();
+
+    const workoutCard = screen.getByTestId('today-workout-card');
+    expect(StyleSheet.flatten(workoutCard.props.style)).toMatchObject({
+      backgroundColor: colors.primary,
+      borderRadius: radii.lg,
+      borderWidth: 0,
+    });
+    const workoutAction = within(workoutCard).getByRole('button', { name: 'Iniciar treino' });
+    expect(workoutAction.props.style).toBeTypeOf('function');
+    expect(StyleSheet.flatten(workoutAction.props.style({ pressed: false }))).toMatchObject({
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+    });
+  });
+
+  it('renders the empty state with a surfaced explanation', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByTestId('today-state-panel')).toBeTruthy();
+    expect(screen.getByTestId('today-state-icon')).toBeTruthy();
+    expect(screen.getByText('Quando houver um plano ativo, ele aparecerá aqui.')).toBeTruthy();
+  });
+
+  it('mantém o estado sem plano dentro do shell da tela Hoje e fora da tab bar', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [] });
+
+    render(
+      <BottomTabBarHeightContext.Provider value={controlSizes.tabBar}>
+        <QueryClientProvider client={createQueryClient()}>
+          <TodayWorkoutScreen />
+        </QueryClientProvider>
+      </BottomTabBarHeightContext.Provider>,
+    );
+
+    expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Seu treino de hoje' })).toBeTruthy();
+
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    expect(StyleSheet.flatten(scrollView.props.contentContainerStyle)).toMatchObject({
+      flexGrow: 1,
+      gap: spacing.lg,
+      paddingBottom: controlSizes.tabBar + spacing.lg,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+    });
+  });
+
+  it('aplica 20 px de respiro lateral ao treino disponível', async () => {
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    render(
+      <BottomTabBarHeightContext.Provider value={controlSizes.tabBar}>
+        <QueryClientProvider client={createQueryClient()}>
+          <TodayWorkoutScreen />
+        </QueryClientProvider>
+      </BottomTabBarHeightContext.Provider>,
+    );
+
+    expect(await screen.findByText('Treino A')).toBeTruthy();
+
+    const scrollView = screen.UNSAFE_getByType(ScrollView);
+    expect(StyleSheet.flatten(scrollView.props.contentContainerStyle)).toMatchObject({
+      paddingBottom: controlSizes.tabBar + spacing.lg,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+    });
+  });
+
   it('renders the recovery state when there is no workout today', async () => {
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
@@ -220,7 +338,7 @@ describe('TodayWorkoutScreen', () => {
     ).toBeTruthy();
   });
 
-  it('renders loaded workout', async () => {
+  it('renders the loaded workout without the exercise list in the available state', async () => {
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
@@ -228,10 +346,10 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
-    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
-    expect(screen.getByText('Supino')).toBeTruthy();
+    expect(await screen.findByText('Treino A')).toBeTruthy();
+    expect(screen.queryByText('Supino')).toBeNull();
     expect(screen.getByText('Iniciar treino')).toBeTruthy();
+    expect(screen.getByText('Tudo pronto para você começar com calma.')).toBeTruthy();
     expect(linkState.hrefs).toContain(`/log/${activeWorkout.days[0].id}`);
     expect(storageState.getItem).toHaveBeenCalledWith(
       workoutSessionKey('auth-user-a', activeWorkout.days[0].id),
@@ -260,7 +378,7 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
     expect(screen.queryByText('Supino')).toBeNull();
   });
@@ -287,9 +405,9 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
-    expect(screen.queryByText('offline')).toBeNull();
+    expect(screen.queryByText('Disponível offline')).toBeNull();
     expect(screen.queryByText('Supino')).toBeNull();
     expect(storageState.setItem).not.toHaveBeenCalled();
   });
@@ -302,9 +420,9 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
-    expect(screen.queryByText('offline')).toBeNull();
+    expect(screen.queryByText('Disponível offline')).toBeNull();
     expect(storageState.getItem).not.toHaveBeenCalled();
     expect(storageState.setItem).not.toHaveBeenCalled();
   });
@@ -315,9 +433,9 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
-    expect(screen.queryByText('offline')).toBeNull();
+    expect(screen.queryByText('Disponível offline')).toBeNull();
     expect(storageState.getItem).not.toHaveBeenCalled();
   });
 
@@ -462,7 +580,7 @@ describe('TodayWorkoutScreen', () => {
     try {
       renderWithQueryClient();
 
-      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
+      expect(await screen.findByText('Treino A')).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
       expect(screen.queryByText('Treino concluído')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
@@ -544,7 +662,7 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     await userEvent.setup().press(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(await screen.findByText('Iniciar treino')).toBeTruthy();
   });
@@ -555,9 +673,9 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(await screen.findByText('Disponível offline')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
-    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
+    expect(screen.getByText('Treino A')).toBeTruthy();
   });
 
   it('shows the offline badge for stale empty states', async () => {
@@ -567,7 +685,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
-    expect(screen.getByText('offline')).toBeTruthy();
+    expect(screen.getByText('Disponível offline')).toBeTruthy();
   });
 
   it('shows the offline badge for a stale recovery state', async () => {
@@ -582,7 +700,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Hoje é dia de recuperação')).toBeTruthy();
-    expect(screen.getByText('offline')).toBeTruthy();
+    expect(screen.getByText('Disponível offline')).toBeTruthy();
   });
 
   it('shows retry when stale cache is invalid', async () => {
@@ -591,7 +709,7 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
   });
 
@@ -608,7 +726,7 @@ describe('TodayWorkoutScreen', () => {
     const queryClient = createQueryClient();
     const firstRender = renderWithQueryClient(queryClient);
 
-    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(await screen.findByText('Disponível offline')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-a');
 
     authState.userId = 'auth-user-b';
@@ -618,12 +736,17 @@ describe('TodayWorkoutScreen', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-b');
   });
 
   it('opens and closes the exercise details modal', async () => {
     const user = userEvent.setup();
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === workoutSessionKey('auth-user-a', activeWorkout.days[0].id)
+        ? legacySessionFor(activeWorkout.days[0].id)
+        : null,
+    );
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({
@@ -680,6 +803,15 @@ describe('TodayWorkoutScreen', () => {
         },
       ],
     };
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === workoutSessionKey('auth-user-a', activeWorkout.days[0].id)) {
+        return legacySessionFor(activeWorkout.days[0].id);
+      }
+      if (key === workoutSessionKey('auth-user-b', otherWorkout.days[0].id)) {
+        return legacySessionFor(otherWorkout.days[0].id);
+      }
+      return null;
+    });
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)

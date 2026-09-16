@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { isoDateFromTimestamp, todayIsoDate } from './date';
+import { formatTodayDisplayLabel, isoDateFromTimestamp, todayIsoDate } from './date';
 
 describe('date', () => {
   it.each([
@@ -15,6 +15,17 @@ describe('date', () => {
 
     try {
       expect(todayIsoDate()).toBe('2040-11-09');
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('formata a data de hoje para o cabeçalho em pt-BR', () => {
+    const timestampMs = new Date(2026, 8, 16, 12, 0).getTime();
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(timestampMs);
+
+    try {
+      expect(formatTodayDisplayLabel()).toBe('Quarta-feira, 16 de setembro');
     } finally {
       nowSpy.mockRestore();
     }
