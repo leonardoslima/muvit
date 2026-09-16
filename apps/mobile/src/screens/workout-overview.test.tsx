@@ -134,8 +134,12 @@ describe('WorkoutOverviewScreen', () => {
     await user.press(await screen.findByText('Supino'));
 
     expect(screen.getByText('Grupo muscular: Peito')).toBeTruthy();
-    expect(screen.getByText('3 séries de 10 repetições')).toBeTruthy();
-    expect(screen.getByText('Descanso: 60 s')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getByText('Séries')).toBeTruthy();
+    expect(screen.getByText('10')).toBeTruthy();
+    expect(screen.getByText('Repetições')).toBeTruthy();
+    expect(screen.getByText('60 s')).toBeTruthy();
+    expect(screen.getByText('Descanso')).toBeTruthy();
     expect(screen.getByText('Controle a descida.')).toBeTruthy();
   });
 

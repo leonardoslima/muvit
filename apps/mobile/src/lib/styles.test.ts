@@ -7,6 +7,7 @@ describe('foundation visual mobile', () => {
     expect(colors).toMatchObject({
       background: '#F5F3EF',
       surface: '#FFFFFF',
+      surfaceMuted: '#E8E4DC',
       ink: '#1A1A1A',
       line: '#D1CCC4',
       primary: '#2ECC71',

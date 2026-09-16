@@ -1,5 +1,5 @@
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { Modal, ScrollView, StyleSheet, Text } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
@@ -234,8 +234,91 @@ describe('componentes visuais mobile', () => {
       backgroundColor: colors.surface,
       borderTopLeftRadius: radii.sheet,
       borderTopRightRadius: radii.sheet,
-      gap: spacing.md,
-      padding: spacing.xxl,
+      gap: spacing.lg,
+      paddingBottom: spacing.xxl,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+    });
+  });
+
+  it('estende o Modal transparente até a barra de navegação do Android', () => {
+    render(
+      <BottomSheet onClose={() => undefined} visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    const modal = screen.UNSAFE_getByType(Modal);
+
+    expect(modal.props).toMatchObject({
+      navigationBarTranslucent: true,
+      statusBarTranslucent: true,
+    });
+  });
+
+  it('mantém o conteúdo do painel dentro da safe area inferior', () => {
+    render(
+      <BottomSheet onClose={() => undefined} showHandle visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    const modal = screen.UNSAFE_getByType(Modal);
+    const surface = modal.props.children.props.children;
+
+    expect(surface.props.children).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          props: expect.objectContaining({ edges: ['bottom'] }),
+        }),
+      ]),
+    );
+  });
+
+  it('fecha o bottom sheet ao tocar no scrim externo', () => {
+    const onClose = vi.fn();
+
+    render(
+      <BottomSheet onClose={onClose} visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    fireEvent.press(screen.getByTestId('bottom-sheet-backdrop'));
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('impede que o toque da superfície propague para o scrim', () => {
+    const onClose = vi.fn();
+    const stopPropagation = vi.fn();
+
+    render(
+      <BottomSheet onClose={onClose} visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    fireEvent.press(screen.getByText('Conteúdo do sheet'), { stopPropagation });
+
+    expect(stopPropagation).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('mantém a alça de 44x4 centralizada no painel', () => {
+    render(
+      <BottomSheet onClose={() => undefined} showHandle visible>
+        <Text>Conteúdo do sheet</Text>
+      </BottomSheet>,
+    );
+
+    const handle = screen.getByTestId('bottom-sheet-handle');
+
+    expect(StyleSheet.flatten(handle.props.style)).toMatchObject({
+      alignSelf: 'center',
+      borderRadius: radii.handle,
+      height: controlSizes.sheetHandleHeight,
+      width: controlSizes.sheetHandleWidth,
     });
   });
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Modal, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Modal, Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, controlSizes, radii, spacing } from '../../lib/styles';
 
 export type BottomSheetProps = {
@@ -22,16 +23,22 @@ export function BottomSheet({
   return (
     <Modal
       animationType="slide"
+      navigationBarTranslucent
       onRequestClose={onRequestClose ?? onClose}
+      statusBarTranslucent
       transparent
       visible={visible}
     >
-      <View style={styles.backdrop}>
-        <View style={[styles.surface, style]}>
+      <Pressable onPress={onClose} style={styles.backdrop} testID="bottom-sheet-backdrop">
+        <Pressable
+          onPress={(event) => event?.stopPropagation()}
+          style={[styles.surface, style]}
+          testID="bottom-sheet-surface"
+        >
           {showHandle ? <View style={styles.handle} testID="bottom-sheet-handle" /> : null}
-          {children}
-        </View>
-      </View>
+          <SafeAreaView edges={['bottom']}>{children}</SafeAreaView>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -53,7 +60,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.sheet,
     borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
-    padding: spacing.xxl,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
   },
 });

@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 export const colors = {
   background: '#F5F3EF',
   surface: '#FFFFFF',
+  surfaceMuted: '#E8E4DC',
   ink: '#1A1A1A',
   muted: '#666666',
   line: '#D1CCC4',
