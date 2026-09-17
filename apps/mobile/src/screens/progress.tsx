@@ -1,14 +1,22 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { assessmentSchema } from '@muvit/validators';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, type PressableProps, StyleSheet, Text, View } from 'react-native';
 import type { z } from 'zod';
 
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
-import { colors, fontFamilies, sharedStyles, spacing, typography } from '../lib/styles';
+import {
+  colors,
+  controlSizes,
+  fontFamilies,
+  radii,
+  sharedStyles,
+  spacing,
+  typography,
+} from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 type Assessment = z.infer<typeof assessmentSchema>;
@@ -30,17 +38,18 @@ export function ProgressScreen() {
       <View style={styles.headerRow}>
         <View style={styles.headerCopy}>
           <ScreenHeader
-            subtitle="Acompanhe suas medidas e perceba sua evolução."
+            eyebrow="PROGRESSO"
+            subtitle="Sua evolução, avaliação por avaliação."
             title="Progresso"
           />
         </View>
         <Link asChild href="/new-assessment">
-          <AppButton label="Nova avaliação" onPress={() => undefined} variant="secondary" />
+          <NewAssessmentAction />
         </Link>
       </View>
 
       {query.isLoading ? (
-        <StatePanel
+        <ProgressStatePanel
           description="Estamos buscando suas avaliações mais recentes."
           title="Carregando progresso"
           tone="loading"
@@ -48,7 +57,7 @@ export function ProgressScreen() {
       ) : null}
 
       {query.isError ? (
-        <StatePanel
+        <ProgressStatePanel
           actionLabel="Tentar novamente"
           description="Verifique sua conexão e tente novamente."
           onAction={() => void query.refetch()}
@@ -58,7 +67,7 @@ export function ProgressScreen() {
       ) : null}
 
       {query.data?.items.length === 0 ? (
-        <StatePanel
+        <ProgressStatePanel
           description="Registre uma avaliação para acompanhar sua evolução."
           title="Nenhuma avaliação registrada"
           tone="empty"
@@ -68,6 +77,7 @@ export function ProgressScreen() {
       {query.data?.items.map((assessment: Assessment, index: number) => (
         <AssessmentCard
           assessment={assessment}
+          isCurrent={index === 0}
           key={assessment.id}
           previousAssessment={query.data?.items[index + 1]}
         />
@@ -76,47 +86,128 @@ export function ProgressScreen() {
   );
 }
 
+function NewAssessmentAction({ onPress }: { onPress?: PressableProps['onPress'] }) {
+  return (
+    <Pressable
+      accessible
+      accessibilityLabel="Nova avaliação"
+      accessibilityRole="button"
+      accessibilityState={{ disabled: false }}
+      onPress={onPress}
+      style={({ pressed }) => [styles.newAssessmentAction, pressed ? styles.pressed : null]}
+      testID="new-assessment-action"
+    >
+      <Ionicons color={colors.surface} name="add" size={22} />
+    </Pressable>
+  );
+}
+
 function AssessmentCard({
   assessment,
+  isCurrent,
   previousAssessment,
 }: {
   assessment: Assessment;
+  isCurrent: boolean;
   previousAssessment?: Assessment;
 }) {
   const weight = toNumber(assessment.weightKg);
   const bodyFat = toNumber(assessment.bodyFatPct);
   const previousWeight = toNumber(previousAssessment?.weightKg);
   const previousBodyFat = toNumber(previousAssessment?.bodyFatPct);
+  const comparison = [
+    weight !== null && previousWeight !== null ? formatDelta(weight - previousWeight, 'kg') : null,
+    bodyFat !== null && previousBodyFat !== null
+      ? formatDelta(bodyFat - previousBodyFat, 'p.p.')
+      : null,
+  ]
+    .filter((value): value is string => value !== null)
+    .join(' · ');
+  const evolutionLabel = isCurrent
+    ? 'Referência atual'
+    : comparison || (previousAssessment ? undefined : 'Início do acompanhamento');
 
   return (
-    <Card testID={`assessment-card-${assessment.id}`}>
-      <Text style={styles.date}>{formatDate(assessment.date)}</Text>
-      <View style={styles.metrics}>
-        <Metric label="Peso" value={formatMetric(weight, 'kg')} />
-        <Metric label="Gordura corporal" value={formatBodyFat(bodyFat)} />
+    <Card style={styles.assessmentCard} testID={`assessment-card-${assessment.id}`}>
+      <View style={styles.assessmentHeader}>
+        <View style={styles.assessmentIcon} testID={`assessment-icon-${assessment.id}`}>
+          <Ionicons color={colors.primaryText} name="stats-chart-outline" size={18} />
+        </View>
+        <View style={styles.assessmentIdentity}>
+          <Text style={styles.assessmentTitle}>Avaliação física</Text>
+          <Text style={styles.assessmentDate}>{formatDate(assessment.date)}</Text>
+        </View>
       </View>
-      {weight !== null && previousWeight !== null ? (
-        <Comparison label={formatDelta(weight - previousWeight, 'kg')} />
-      ) : null}
-      {bodyFat !== null && previousBodyFat !== null ? (
-        <Comparison label={formatDelta(bodyFat - previousBodyFat, 'p.p.')} />
-      ) : null}
+
+      <View
+        accessible
+        accessibilityLabel={`Peso: ${formatMetric(weight, 'kg')}; Gordura corporal: ${formatBodyFat(bodyFat)}`}
+        style={styles.metricSummary}
+      >
+        <View style={styles.metricLabels}>
+          <Text style={styles.metricLabel}>Peso</Text>
+          <Text style={styles.metricSeparator}> · </Text>
+          <Text style={styles.metricLabel}>Gordura corporal</Text>
+        </View>
+        <View style={styles.metricValues}>
+          <Text style={styles.metricValue}>{formatMetric(weight, 'kg')}</Text>
+          <Text style={styles.metricSeparator}> · </Text>
+          <Text style={styles.metricValue}>{formatBodyFat(bodyFat)}</Text>
+        </View>
+      </View>
+      {evolutionLabel ? <Text style={styles.comparison}>{evolutionLabel}</Text> : null}
       {assessment.notes ? <Text style={sharedStyles.subtitle}>{assessment.notes}</Text> : null}
     </Card>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metric}>
-      <Text style={sharedStyles.label}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-    </View>
-  );
-}
+function ProgressStatePanel({
+  actionLabel,
+  description,
+  onAction,
+  title,
+  tone,
+}: {
+  actionLabel?: string;
+  description: string;
+  onAction?: () => void;
+  title: string;
+  tone: 'loading' | 'empty' | 'error';
+}) {
+  const isError = tone === 'error';
+  const iconName =
+    tone === 'loading'
+      ? 'refresh-outline'
+      : tone === 'empty'
+        ? 'clipboard-outline'
+        : 'warning-outline';
 
-function Comparison({ label }: { label: string }) {
-  return <Text style={styles.comparison}>{label}</Text>;
+  return (
+    <Card style={styles.stateCard} testID={`progress-state-${tone}`}>
+      <View
+        accessibilityLabel={tone === 'loading' ? 'Carregando' : undefined}
+        accessibilityRole={tone === 'loading' ? 'progressbar' : undefined}
+        style={[styles.stateIcon, isError ? styles.stateIconError : null]}
+      >
+        <Ionicons
+          color={isError ? colors.dangerText : colors.primaryText}
+          name={iconName}
+          size={20}
+        />
+      </View>
+      <Text style={styles.stateTitle}>{title}</Text>
+      <Text style={styles.stateDescription}>{description}</Text>
+      {actionLabel && onAction ? (
+        <View style={styles.stateAction}>
+          <AppButton
+            label={actionLabel}
+            onPress={onAction}
+            trailingIcon={<Ionicons color={colors.ink} name="refresh-outline" size={18} />}
+          />
+        </View>
+      ) : null}
+    </Card>
+  );
 }
 
 function formatDate(value: string): string {
@@ -136,7 +227,7 @@ function formatMetric(value: number | null, unit: string): string {
 }
 
 function formatBodyFat(value: number | null): string {
-  return value === null ? '—% de gordura' : `${formatNumber(value)}% de gordura`;
+  return value === null ? '—' : `${formatNumber(value)}%`;
 }
 
 function formatNumber(value: number): string {
@@ -145,8 +236,8 @@ function formatNumber(value: number): string {
 
 function formatDelta(delta: number, unit: string): string {
   if (delta === 0) return `Sem alteração em ${unit}`;
-  const direction = delta < 0 ? 'a menos' : 'a mais';
-  return `${formatNumber(Math.abs(delta))} ${unit} ${direction}`;
+  const direction = delta < 0 ? '−' : '+';
+  return `${direction}${formatNumber(Math.abs(delta))} ${unit}`;
 }
 
 const styles = StyleSheet.create({
@@ -162,27 +253,110 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
   },
-  date: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 20,
+  newAssessmentAction: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    height: controlSizes.touchTarget,
+    justifyContent: 'center',
+    marginTop: spacing.md,
+    width: controlSizes.touchTarget,
   },
-  metrics: {
+  pressed: {
+    opacity: 0.8,
+  },
+  assessmentCard: {
+    gap: spacing.sm,
+  },
+  assessmentHeader: {
+    alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
-  metric: {
-    flexGrow: 1,
-    minWidth: 120,
+  assessmentIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    height: spacing.xxxl + spacing.xs,
+    justifyContent: 'center',
+    width: spacing.xxxl + spacing.xs,
+  },
+  assessmentIdentity: {
+    flex: 1,
+    gap: 2,
+  },
+  assessmentTitle: {
+    color: colors.ink,
+    ...typography.cardTitle,
+    fontFamily: fontFamilies.heading,
+  },
+  assessmentDate: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  metricSummary: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+    minHeight: spacing.xxxl + spacing.xs,
+  },
+  metricLabels: {
+    flexDirection: 'row',
+    flexShrink: 1,
+  },
+  metricLabel: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  metricSeparator: {
+    color: colors.muted,
+    ...typography.caption,
+  },
+  metricValues: {
+    flexDirection: 'row',
+    flexShrink: 1,
+    justifyContent: 'flex-end',
   },
   metricValue: {
     color: colors.ink,
-    ...typography.cardTitle,
-    fontSize: 18,
+    fontFamily: fontFamilies.heading,
+    fontSize: typography.exerciseTitle.fontSize,
   },
   comparison: {
     color: colors.primaryText,
     ...typography.bodyStrong,
+    fontSize: typography.caption.fontSize,
+  },
+  stateCard: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  stateIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    height: spacing.xxxl + spacing.xs,
+    justifyContent: 'center',
+    width: spacing.xxxl + spacing.xs,
+  },
+  stateIconError: {
+    backgroundColor: colors.dangerSoft,
+  },
+  stateTitle: {
+    color: colors.ink,
+    ...typography.cardTitle,
+    fontFamily: fontFamilies.heading,
+    textAlign: 'center',
+  },
+  stateDescription: {
+    color: colors.muted,
+    ...typography.caption,
+    textAlign: 'center',
+  },
+  stateAction: {
+    alignSelf: 'stretch',
+    marginTop: spacing.sm,
   },
 });

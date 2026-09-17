@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, within } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { type ReactNode, createElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProgressScreen } from './progress';
 
@@ -18,6 +18,11 @@ vi.mock('expo-router', () => ({
   Link: ({ children }: { children: ReactNode }) => children,
 }));
 
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: { color: string; name: string; size: number }) =>
+    createElement('Ionicons', props),
+}));
+
 function renderWithQueryClient() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -28,6 +33,45 @@ function renderWithQueryClient() {
 }
 
 describe('ProgressScreen', () => {
+  it('segue a hierarquia visual do progresso e oferece uma ação compacta', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [], total: 0 });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('PROGRESSO')).toBeTruthy();
+    expect(screen.getByText('Sua evolução, avaliação por avaliação.')).toBeTruthy();
+
+    const action = screen.getByRole('button', { name: 'Nova avaliação' });
+    expect(action.props.accessibilityRole).toBe('button');
+    expect(action.props.accessibilityLabel).toBe('Nova avaliação');
+  });
+
+  it('apresenta avaliações com identidade, métrica agrupada e status de evolução', async () => {
+    apiState.request.mockResolvedValueOnce({
+      total: 1,
+      items: [
+        {
+          id: 'assessment-preview',
+          date: '2026-06-12',
+          weightKg: 80,
+          bodyFatPct: 19,
+          notes: null,
+        },
+      ],
+    });
+
+    renderWithQueryClient();
+
+    const card = await screen.findByTestId('assessment-card-assessment-preview');
+    expect(within(card).getByTestId('assessment-icon-assessment-preview')).toBeTruthy();
+    expect(within(card).getByText('Avaliação física')).toBeTruthy();
+    expect(within(card).getByText('Peso')).toBeTruthy();
+    expect(within(card).getByText('Gordura corporal')).toBeTruthy();
+    expect(within(card).getByText('80 kg')).toBeTruthy();
+    expect(within(card).getByText('19%')).toBeTruthy();
+    expect(within(card).getByText('Referência atual')).toBeTruthy();
+  });
+
   it('exibe carregamento enquanto busca as avaliações', () => {
     apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
 
@@ -66,7 +110,7 @@ describe('ProgressScreen', () => {
 
   it('formata a data, agrupa peso e gordura e compara com a avaliação anterior', async () => {
     apiState.request.mockResolvedValueOnce({
-      total: 2,
+      total: 3,
       items: [
         {
           id: 'assessment-new',
@@ -82,6 +126,13 @@ describe('ProgressScreen', () => {
           bodyFatPct: 21,
           notes: null,
         },
+        {
+          id: 'assessment-start',
+          date: '2026-04-12',
+          weightKg: 84,
+          bodyFatPct: 23,
+          notes: null,
+        },
       ],
     });
 
@@ -90,17 +141,25 @@ describe('ProgressScreen', () => {
     const card = await screen.findByTestId('assessment-card-assessment-new');
     expect(within(card).getByText('12/06/2026')).toBeTruthy();
     expect(within(card).getByText('80 kg')).toBeTruthy();
-    expect(within(card).getByText('19% de gordura')).toBeTruthy();
-    expect(within(card).getByText('2 kg a menos')).toBeTruthy();
-    expect(within(card).getByText('2 p.p. a menos')).toBeTruthy();
+    expect(within(card).getByText('19%')).toBeTruthy();
+    expect(within(card).getByText('Referência atual')).toBeTruthy();
     expect(within(card).getByText('Evoluiu')).toBeTruthy();
-    expect(await screen.findByText('12/05/2026')).toBeTruthy();
+    const previousCard = await screen.findByTestId('assessment-card-assessment-previous');
+    expect(within(previousCard).getByText('12/05/2026')).toBeTruthy();
+    expect(within(previousCard).getByText('−2 kg · −2 p.p.')).toBeTruthy();
   });
 
-  it('exibe ganhos de peso e gordura como a mais', async () => {
+  it('exibe ganhos de peso e gordura com sinal positivo', async () => {
     apiState.request.mockResolvedValueOnce({
-      total: 2,
+      total: 3,
       items: [
+        {
+          id: 'assessment-gain-current',
+          date: '2026-07-12',
+          weightKg: 84,
+          bodyFatPct: 25,
+          notes: null,
+        },
         {
           id: 'assessment-gain',
           date: '2026-06-12',
@@ -121,8 +180,7 @@ describe('ProgressScreen', () => {
     renderWithQueryClient();
 
     const card = await screen.findByTestId('assessment-card-assessment-gain');
-    expect(within(card).getByText('2 kg a mais')).toBeTruthy();
-    expect(within(card).getByText('2 p.p. a mais')).toBeTruthy();
+    expect(within(card).getByText('+2 kg · +2 p.p.')).toBeTruthy();
   });
 
   it('preserva os valores neutros quando uma avaliação não tem medidas', async () => {
@@ -144,6 +202,6 @@ describe('ProgressScreen', () => {
     const card = await screen.findByTestId('assessment-card-assessment-without-measures');
     expect(within(card).getByText('data não informada')).toBeTruthy();
     expect(within(card).getByText('— kg')).toBeTruthy();
-    expect(within(card).getByText('—% de gordura')).toBeTruthy();
+    expect(within(card).getByText('—')).toBeTruthy();
   });
 });
