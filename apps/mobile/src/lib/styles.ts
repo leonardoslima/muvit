@@ -194,6 +194,7 @@ export const sharedStyles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: colors.surface,
     color: colors.ink,
+    flex: 1,
     minHeight: controlSizes.input,
     paddingHorizontal: spacing.lg,
   },
@@ -233,12 +234,30 @@ export const sharedStyles = StyleSheet.create({
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.xl,
   },
+  dangerButton: {
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderColor: colors.danger,
+    borderRadius: radii.control,
+    borderWidth: 1,
+    gap: spacing.sm,
+    height: controlSizes.button,
+    minHeight: controlSizes.button,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.xl,
+  },
   buttonText: {
     color: colors.ink,
     ...typography.button,
   },
   secondaryButtonText: {
     color: colors.ink,
+    ...typography.button,
+  },
+  dangerButtonText: {
+    color: colors.dangerText,
     ...typography.button,
   },
   error: {

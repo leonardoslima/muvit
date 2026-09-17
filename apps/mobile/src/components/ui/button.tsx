@@ -7,7 +7,7 @@ export type AppButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   trailingIcon?: ReactNode;
-  variant?: 'primary' | 'secondary';
+  variant?: 'danger' | 'primary' | 'secondary';
 };
 
 export function AppButton({
@@ -17,7 +17,18 @@ export function AppButton({
   trailingIcon,
   variant = 'primary',
 }: AppButtonProps) {
+  const isDanger = variant === 'danger';
   const isSecondary = variant === 'secondary';
+  const buttonStyle = isDanger
+    ? sharedStyles.dangerButton
+    : isSecondary
+      ? sharedStyles.secondaryButton
+      : sharedStyles.button;
+  const buttonTextStyle = isDanger
+    ? sharedStyles.dangerButtonText
+    : isSecondary
+      ? sharedStyles.secondaryButtonText
+      : sharedStyles.buttonText;
 
   return (
     <Pressable
@@ -28,14 +39,12 @@ export function AppButton({
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
-        isSecondary ? sharedStyles.secondaryButton : sharedStyles.button,
+        buttonStyle,
         disabled ? { opacity: 0.5 } : null,
         pressed && !disabled ? { opacity: 0.8 } : null,
       ]}
     >
-      <Text style={isSecondary ? sharedStyles.secondaryButtonText : sharedStyles.buttonText}>
-        {label}
-      </Text>
+      <Text style={buttonTextStyle}>{label}</Text>
       {trailingIcon}
     </Pressable>
   );

@@ -120,6 +120,16 @@ export function updateCurrentSet(
   };
 }
 
+export function adjustSetValue(value: string, delta: number): string {
+  if (!value.trim()) return delta > 0 ? String(delta) : '';
+
+  const parsed = Number(value.replace(',', '.'));
+  if (!Number.isFinite(parsed)) return delta > 0 ? String(delta) : '';
+
+  const next = Math.max(0, parsed + delta);
+  return Number.isInteger(next) ? String(next) : String(Number(next.toFixed(1)));
+}
+
 export function completeCurrentSet(
   session: GuidedSession,
   day: GuidedSessionDay,

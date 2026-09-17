@@ -68,11 +68,15 @@ describe('ExerciseDetailsModal', () => {
       backgroundColor: colors.surface,
       borderTopLeftRadius: radii.sheet,
       borderTopRightRadius: radii.sheet,
-      gap: spacing.lg,
       height: 614,
       paddingBottom: spacing.xxl,
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.md,
+    });
+    const content = surface.props.children[1];
+    expect(StyleSheet.flatten(content.props.style)).toMatchObject({
+      alignSelf: 'stretch',
+      gap: spacing.md,
     });
   });
 

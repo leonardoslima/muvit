@@ -58,6 +58,14 @@ describe('componentes visuais mobile', () => {
     expect(getContrastRatio(borderColor, colors.background)).toBeGreaterThanOrEqual(3);
   });
 
+  it('faz o input do Field ocupar o espaço disponível sem unidade', () => {
+    render(<Field label="Repetições" onChangeText={() => undefined} value="" />);
+
+    expect(StyleSheet.flatten(screen.getByLabelText('Repetições').props.style)).toMatchObject({
+      flex: 1,
+    });
+  });
+
   it('aplica o contrato visual primário do Pencil', () => {
     render(<AppButton label="Começar" onPress={() => undefined} />);
 
@@ -138,6 +146,30 @@ describe('componentes visuais mobile', () => {
     });
     expect(StyleSheet.flatten(screen.getByText('Cancelar').props.style)).toMatchObject({
       color: colors.ink,
+      fontFamily: fontFamilies.bodyStrong,
+      fontSize: 14,
+    });
+  });
+
+  it('aplica o contrato de ação destrutiva do Pencil', () => {
+    render(<AppButton label="Pular descanso" onPress={() => undefined} variant="danger" />);
+
+    const button = screen.getByRole('button', { name: 'Pular descanso' });
+    const style = button.props.style;
+
+    expect(typeof style).toBe('function');
+    if (typeof style !== 'function') {
+      throw new Error('O AppButton deve expor o estado de pressão no estilo.');
+    }
+
+    expect(StyleSheet.flatten(style({ pressed: false }))).toMatchObject({
+      backgroundColor: colors.surface,
+      borderColor: colors.danger,
+      borderRadius: radii.control,
+      borderWidth: 1,
+    });
+    expect(StyleSheet.flatten(screen.getByText('Pular descanso').props.style)).toMatchObject({
+      color: colors.dangerText,
       fontFamily: fontFamilies.bodyStrong,
       fontSize: 14,
     });
@@ -234,10 +266,14 @@ describe('componentes visuais mobile', () => {
       backgroundColor: colors.surface,
       borderTopLeftRadius: radii.sheet,
       borderTopRightRadius: radii.sheet,
-      gap: spacing.lg,
       paddingBottom: spacing.xxl,
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.md,
+    });
+    const content = surface.props.children[1];
+    expect(StyleSheet.flatten(content.props.style)).toMatchObject({
+      alignSelf: 'stretch',
+      gap: spacing.md,
     });
   });
 

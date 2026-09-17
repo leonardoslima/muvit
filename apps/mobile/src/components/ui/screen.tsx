@@ -44,19 +44,32 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
 }
 
 export type ScreenHeaderProps = {
+  centered?: boolean;
   eyebrow?: string;
   title: string;
   subtitle?: string;
 };
 
-export function ScreenHeader({ eyebrow, subtitle, title }: ScreenHeaderProps) {
+export function ScreenHeader({ centered = false, eyebrow, subtitle, title }: ScreenHeaderProps) {
+  const centeredTextStyle = centered ? styles.centeredHeaderText : null;
+
   return (
-    <View style={sharedStyles.header}>
-      {eyebrow ? <Text style={sharedStyles.eyebrow}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={sharedStyles.title}>
+    <View style={[sharedStyles.header, centered ? styles.centeredHeader : null]}>
+      {eyebrow ? <Text style={[sharedStyles.eyebrow, centeredTextStyle]}>{eyebrow}</Text> : null}
+      <Text accessibilityRole="header" style={[sharedStyles.title, centeredTextStyle]}>
         {title}
       </Text>
-      {subtitle ? <Text style={sharedStyles.subtitle}>{subtitle}</Text> : null}
+      {subtitle ? <Text style={[sharedStyles.subtitle, centeredTextStyle]}>{subtitle}</Text> : null}
     </View>
   );
 }
+
+const styles = {
+  centeredHeader: {
+    alignItems: 'center' as const,
+  },
+  centeredHeaderText: {
+    alignSelf: 'stretch' as const,
+    textAlign: 'center' as const,
+  },
+};

@@ -36,7 +36,9 @@ export function BottomSheet({
           testID="bottom-sheet-surface"
         >
           {showHandle ? <View style={styles.handle} testID="bottom-sheet-handle" /> : null}
-          <SafeAreaView edges={['bottom']}>{children}</SafeAreaView>
+          <SafeAreaView edges={['bottom']} style={styles.content}>
+            {children}
+          </SafeAreaView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -60,9 +62,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.sheet,
     borderTopRightRadius: radii.sheet,
-    gap: spacing.lg,
     paddingBottom: spacing.xxl,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
+  },
+  content: {
+    alignSelf: 'stretch',
+    gap: spacing.md,
   },
 });

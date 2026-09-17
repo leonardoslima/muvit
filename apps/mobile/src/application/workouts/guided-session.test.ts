@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adjustSetValue,
   buildSessionSummary,
   completeCurrentSet,
   continueAfterExercise,
@@ -22,6 +23,13 @@ const day = {
 };
 
 describe('sessão guiada', () => {
+  it('ajusta valores numéricos sem aceitar valores negativos', () => {
+    expect(adjustSetValue('27.7', -1)).toBe('26.7');
+    expect(adjustSetValue('', 1)).toBe('1');
+    expect(adjustSetValue('', -1)).toBe('');
+    expect(adjustSetValue('0', -1)).toBe('0');
+  });
+
   it('soma somente os intervalos ativos separados por salvar e retomar', () => {
     const created = createGuidedSession(day, 1_000);
     const paused = pauseGuidedSession(created, 61_000);

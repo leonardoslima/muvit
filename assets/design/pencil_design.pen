@@ -4948,7 +4948,10 @@
                     {
                       "type": "frame",
                       "id": "45DI2",
+                      "x": 461,
+                      "y": 0.5,
                       "name": "moreBtn",
+                      "enabled": false,
                       "width": 40,
                       "height": 40,
                       "cornerRadius": 8,
@@ -56178,7 +56181,7 @@
                       "content": "Treino A"
                     },
                     "lyqHg": {
-                      "enabled": true
+                      "enabled": false
                     }
                   }
                 },
@@ -62528,7 +62531,7 @@
                       "content": "Treino A"
                     },
                     "lyqHg": {
-                      "enabled": true
+                      "enabled": false
                     }
                   }
                 },
@@ -63109,7 +63112,7 @@
                       "content": "Treino A"
                     },
                     "lyqHg": {
-                      "enabled": true
+                      "enabled": false
                     }
                   }
                 },
