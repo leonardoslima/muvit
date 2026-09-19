@@ -28,6 +28,13 @@ const studentSnapshot: DemoIdentitySnapshot = {
   },
 };
 
+const managedStudentIdentities = Array.from({ length: 10 }, (_, index) => ({
+  authUserId: `auth-managed-${index + 1}`,
+  profileId: `profile-managed-${index + 1}`,
+  email: `aluno${String(index + 1).padStart(2, '0')}@muvit.dev`,
+  name: `Aluno Gerenciado ${String(index + 1).padStart(2, '0')}`,
+}));
+
 function createAuth(): MuvitAuth {
   return {
     handler: async () => new Response(),
@@ -43,9 +50,23 @@ function createAuth(): MuvitAuth {
 describe('orquestração do seed demo', () => {
   it('usa a porta injetada para resolver identidades e executar o seed de domínio', async () => {
     const identityRepository = {
-      findByEmail: vi.fn(async (email: string) =>
-        email === demoCredentials.trainer.email ? trainerSnapshot : studentSnapshot,
-      ),
+      findByEmail: vi.fn(async (email: string) => {
+        if (email === demoCredentials.trainer.email) return trainerSnapshot;
+        if (email === demoCredentials.independentStudent.email) return studentSnapshot;
+
+        const managedStudent = managedStudentIdentities.find((item) => item.email === email);
+        if (managedStudent === undefined) throw new Error(`email inesperado: ${email}`);
+
+        return {
+          ...studentSnapshot,
+          authUserId: managedStudent.authUserId,
+          studentProfile: {
+            profileId: managedStudent.profileId,
+            isIndependent: true,
+            trainerId: null,
+          },
+        };
+      }),
       findByAuthUserId: vi.fn(async () => undefined),
     };
     const seedData = vi.fn(async () => undefined);
@@ -54,7 +75,7 @@ describe('orquestração do seed demo', () => {
 
     await seedDemo(createAuth(), referenceDate, dependencies);
 
-    expect(identityRepository.findByEmail).toHaveBeenCalledTimes(2);
+    expect(identityRepository.findByEmail).toHaveBeenCalledTimes(12);
     expect(identityRepository.findByAuthUserId).not.toHaveBeenCalled();
     expect(seedData).toHaveBeenCalledWith(
       {
@@ -70,6 +91,7 @@ describe('orquestração do seed demo', () => {
           email: demoCredentials.independentStudent.email,
           name: demoCredentials.independentStudent.name,
         },
+        managedStudents: managedStudentIdentities,
       },
       referenceDate,
     );
@@ -82,6 +104,7 @@ describe('orquestração do seed demo', () => {
 
     expect(messages).toEqual([
       `Professor demo: ${demoCredentials.trainer.email}`,
+      ...managedStudentIdentities.map((identity) => `Aluno do professor demo: ${identity.email}`),
       `Aluno independente demo: ${demoCredentials.independentStudent.email}`,
       'Senha e instruções: consulte o README.md.',
     ]);

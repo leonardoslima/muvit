@@ -17,6 +17,7 @@ export type DemoIdentity = {
 
 export type DemoIdentities = {
   trainer: DemoIdentity;
+  managedStudents: DemoIdentity[];
   independentStudent: DemoIdentity;
 };
 
@@ -199,15 +200,17 @@ const buildStudents = (identities: DemoIdentities, referenceDate: Date): DemoStu
   const managedStudents = studentStatuses.map((status, studentIndex): DemoStudent => {
     const createdOffset = createdOffsets[studentIndex];
     const gender = studentGenders[studentIndex];
-    if (createdOffset === undefined || gender === undefined) {
+    const identity = identities.managedStudents[studentIndex];
+    if (createdOffset === undefined || gender === undefined || identity === undefined) {
       throw new Error(`missing demo student distribution at index ${studentIndex}`);
     }
 
     return {
-      authUserId: null,
+      id: identity.profileId,
+      authUserId: identity.authUserId,
       isIndependent: false,
-      name: fakerPT_BR.person.fullName(),
-      email: `aluno${String(studentIndex + 1).padStart(2, '0')}@muvit.dev`,
+      name: identity.name,
+      email: identity.email,
       phone: fakerPT_BR.phone.number().slice(0, 20),
       birthDate: toDateString(fakerPT_BR.date.birthdate({ min: 18, max: 55, mode: 'age' })),
       gender,

@@ -12,17 +12,27 @@ import {
   createDrizzleDemoIdentityRepository,
 } from './modules/auth/repositories/drizzle-demo-identity-repository.js';
 
+const managedStudentCredentials = Array.from({ length: 10 }, (_, index) => ({
+  email: `aluno${String(index + 1).padStart(2, '0')}@muvit.dev`,
+  name: `Aluno Gerenciado ${String(index + 1).padStart(2, '0')}`,
+  role: 'student' as const,
+  profileKind: 'managedStudent' as const,
+}));
+
 export const demoCredentials = {
   password: '12345678',
   trainer: {
     email: 'trainer@muvit.dev',
     name: 'Professor Demo',
     role: 'trainer',
+    profileKind: 'trainer',
   },
+  managedStudents: managedStudentCredentials,
   independentStudent: {
     email: 'aluno.independente@muvit.dev',
     name: 'Aluno Independente Demo',
     role: 'student',
+    profileKind: 'independentStudent',
   },
 } as const;
 
@@ -30,6 +40,7 @@ type DemoCredential = {
   email: string;
   name: string;
   role: 'trainer' | 'student';
+  profileKind: 'trainer' | 'managedStudent' | 'independentStudent';
 };
 
 export type SeedDemoDependencies = {
@@ -91,7 +102,13 @@ function resolveProfileId(identity: DemoIdentitySnapshot, credential: DemoCreden
   }
 
   const profile = identity.studentProfile;
-  if (profile === null || !profile.isIndependent || profile.trainerId !== null) {
+  if (profile === null) {
+    throw new Error(`Identidade demo sem perfil de aluno: ${credential.email}`);
+  }
+  if (
+    credential.profileKind === 'independentStudent' &&
+    (!profile.isIndependent || profile.trainerId !== null)
+  ) {
     throw new Error(`Identidade demo sem perfil independente válido: ${credential.email}`);
   }
   return profile.profileId;
@@ -107,13 +124,18 @@ export async function seedDemo(
     dependencies.identityRepository,
     demoCredentials.trainer,
   );
+  const managedStudents = await Promise.all(
+    demoCredentials.managedStudents.map((credential) =>
+      ensureDemoIdentity(auth, dependencies.identityRepository, credential),
+    ),
+  );
   const independentStudent = await ensureDemoIdentity(
     auth,
     dependencies.identityRepository,
     demoCredentials.independentStudent,
   );
 
-  await dependencies.seedData({ trainer, independentStudent }, referenceDate);
+  await dependencies.seedData({ trainer, managedStudents, independentStudent }, referenceDate);
 }
 
 function createSeedAuth(): MuvitAuth {
@@ -126,6 +148,9 @@ function createSeedAuth(): MuvitAuth {
 
 export function printSeedSummary(write: (message: string) => void = console.log): void {
   write(`Professor demo: ${demoCredentials.trainer.email}`);
+  for (const credential of demoCredentials.managedStudents) {
+    write(`Aluno do professor demo: ${credential.email}`);
+  }
   write(`Aluno independente demo: ${demoCredentials.independentStudent.email}`);
   write('Senha e instruções: consulte o README.md.');
 }

@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { type DemoIdentities, buildDemoScenario } from './demo.js';
 
 const referenceDate = new Date('2026-07-16T12:00:00.000Z');
+const managedStudentIdentities = Array.from({ length: 10 }, (_, index) => ({
+  authUserId: `10000000-0000-4000-8000-${String(index + 3).padStart(12, '0')}`,
+  profileId: `20000000-0000-4000-8000-${String(index + 3).padStart(12, '0')}`,
+  email: `aluno${String(index + 1).padStart(2, '0')}@muvit.dev`,
+  name: `Aluno Demo ${index + 1}`,
+}));
+
 const identities: DemoIdentities = {
   trainer: {
     authUserId: '10000000-0000-4000-8000-000000000001',
@@ -9,6 +16,7 @@ const identities: DemoIdentities = {
     email: 'trainer@muvit.dev',
     name: 'Professor Demo',
   },
+  managedStudents: managedStudentIdentities,
   independentStudent: {
     authUserId: '10000000-0000-4000-8000-000000000002',
     profileId: '20000000-0000-4000-8000-000000000002',
@@ -35,7 +43,10 @@ describe('buildDemoScenario', () => {
     expect(managedStudents.filter((student) => student.status === 'active')).toHaveLength(6);
     expect(managedStudents.filter((student) => student.status === 'paused')).toHaveLength(2);
     expect(managedStudents.filter((student) => student.status === 'inactive')).toHaveLength(2);
-    expect(managedStudents.every((student) => student.authUserId === null)).toBe(true);
+    expect(managedStudents.every((student) => student.authUserId !== null)).toBe(true);
+    expect(managedStudents.map((student) => student.authUserId)).toEqual(
+      identities.managedStudents.map((identity) => identity.authUserId),
+    );
     expect(independentStudent).toMatchObject({
       id: identities.independentStudent.profileId,
       authUserId: identities.independentStudent.authUserId,
@@ -98,7 +109,7 @@ describe('buildDemoScenario', () => {
     ).toHaveLength(8);
   });
 
-  it('inclui somente dois perfis autenticáveis e os volumes completos', () => {
+  it('inclui perfis autenticáveis para os três tipos de usuário e os volumes completos', () => {
     const scenario = buildDemoScenario(identities, referenceDate);
     const managedStudents = scenario.students.filter((student) => !student.isIndependent);
     const independentStudent = scenario.students.find((student) => student.isIndependent);
@@ -106,7 +117,7 @@ describe('buildDemoScenario', () => {
     expect(scenario.trainer).toEqual(identities.trainer);
     expect(scenario.students).toHaveLength(11);
     expect(managedStudents).toHaveLength(10);
-    expect(managedStudents.every((student) => student.authUserId === null)).toBe(true);
+    expect(managedStudents.every((student) => student.authUserId !== null)).toBe(true);
     expect(independentStudent).toMatchObject({
       id: identities.independentStudent.profileId,
       authUserId: identities.independentStudent.authUserId,

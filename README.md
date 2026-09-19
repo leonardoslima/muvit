@@ -90,9 +90,10 @@ O Better Auth é a única fonte de senha, sessão e cookies. A API converte a se
 
 ### Dados de demonstração
 
-Depois de aplicar as migrations, execute `pnpm db:seed`. O comando cria um professor autenticável, dez alunos gerenciados sem login, um aluno independente autenticável, exercícios globais, avaliações, planos de treino e histórico para teste manual. Todos os dados são fictícios e gerados de forma reproduzível com Faker.
+Depois de aplicar as migrations, execute `pnpm db:seed`. O comando cria um professor autenticável, dez alunos do professor autenticáveis, um aluno independente autenticável, exercícios globais, avaliações, planos de treino e histórico para teste manual. Todos os dados são fictícios e gerados de forma reproduzível com Faker.
 
 - Dashboard — professor: `trainer@muvit.dev` / `12345678`
+- Mobile — alunos do professor: `aluno01@muvit.dev` até `aluno10@muvit.dev` / `12345678`
 - Mobile — aluno independente: `aluno.independente@muvit.dev` / `12345678`
 
-Os dez alunos gerenciados não possuem conta ou senha. O seed não preserva autenticação anterior à migração e deve ser executado somente contra um banco descartável.
+O seed não preserva autenticação anterior à migração e deve ser executado somente contra um banco descartável.

@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import { db, schema } from './index.js';
 import { type DemoIdentities, buildDemoScenario } from './seeds/demo.js';
 import { globalExercises } from './seeds/exercises.js';
@@ -24,14 +24,18 @@ async function clearDemoData(
   transaction: SeedTransaction,
   identities: DemoIdentities,
 ): Promise<void> {
-  await transaction
-    .delete(schema.students)
-    .where(
+  await transaction.delete(schema.students).where(
+    or(
       and(
         eq(schema.students.trainerId, identities.trainer.profileId),
         eq(schema.students.isIndependent, false),
       ),
-    );
+      inArray(
+        schema.students.authUserId,
+        identities.managedStudents.map((student) => student.authUserId),
+      ),
+    ),
+  );
   await transaction
     .delete(schema.assessments)
     .where(eq(schema.assessments.studentId, identities.independentStudent.profileId));

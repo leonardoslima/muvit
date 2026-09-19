@@ -171,14 +171,14 @@ O `AGENTS.md` específico de autenticação será atualizado no mesmo diff para 
 
 - Schema e migration das tabelas Better Auth e vínculos de perfil.
 - Cadastro de treinador e aluno independente com perfil correto.
-- Criação de aluno gerenciado sem `authUserId`.
+- Criação de aluno gerenciado autenticável com `authUserId` e vínculo ao treinador.
 - Rejeição de e-mail duplicado entre papéis.
 - Login, sessão, logout, expiração e renovação deslizante.
 - Bloqueio por papel e resolução correta de `profileId`.
 - Falha de provisionamento sem identidade órfã.
 - Sessão válida com perfil ausente retornando `401`.
 - Rotas de negócio autenticadas por cookie.
-- Seed determinístico e idempotente, com dez alunos gerenciados sem login e um aluno independente autenticável.
+- Seed determinístico e idempotente, com dez alunos do professor autenticáveis e um aluno independente autenticável.
 
 ### Web
 

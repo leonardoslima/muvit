@@ -1,5 +1,5 @@
 import { db, schema } from '@muvit/db';
-import { and, count, eq, isNull } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cookieHeaderFromSetCookie } from '../test/helpers/auth.js';
@@ -40,6 +40,21 @@ async function readStableIds() {
   const independentStudent = await db.query.students.findFirst({
     where: eq(schema.students.authUserId, independentIdentity.id),
   });
+  const managedStudents = await Promise.all(
+    demoCredentials.managedStudents.map(async (credential) => {
+      const identity = await db.query.authUsers.findFirst({
+        where: eq(schema.authUsers.email, credential.email),
+      });
+      if (identity === undefined) throw new Error(`Identidade ausente: ${credential.email}`);
+
+      const profile = await db.query.students.findFirst({
+        where: eq(schema.students.authUserId, identity.id),
+      });
+      if (profile === undefined) throw new Error(`Perfil ausente: ${credential.email}`);
+
+      return { authUserId: identity.id, profileId: profile.id };
+    }),
+  );
   if (trainer === undefined || independentStudent === undefined) {
     throw new Error('Perfis demo ausentes');
   }
@@ -49,6 +64,8 @@ async function readStableIds() {
     trainerProfileId: trainer.id,
     independentAuthUserId: independentIdentity.id,
     independentProfileId: independentStudent.id,
+    managedAuthUserIds: managedStudents.map((student) => student.authUserId),
+    managedProfileIds: managedStudents.map((student) => student.profileId),
   };
 }
 
@@ -89,7 +106,7 @@ async function readDatabaseSnapshot() {
   };
 }
 describe('demo seed', () => {
-  it('cria duas identidades Better Auth e preserva domínio e IDs no rerun', async () => {
+  it('cria os três tipos de identidade e preserva domínio e IDs no rerun', async () => {
     await seedDemo(app.auth, referenceDate);
 
     const trainerLogin = await app.inject({
@@ -134,8 +151,8 @@ describe('demo seed', () => {
     });
 
     const expectedTotals = {
-      authUsers: 2,
-      authAccounts: 2,
+      authUsers: 12,
+      authAccounts: 12,
       trainers: 1,
       students: 11,
       assessments: 24,
@@ -147,12 +164,7 @@ describe('demo seed', () => {
     const managedStudents = await db
       .select()
       .from(schema.students)
-      .where(
-        and(
-          eq(schema.students.trainerId, firstIds.trainerProfileId),
-          isNull(schema.students.authUserId),
-        ),
-      );
+      .where(eq(schema.students.trainerId, firstIds.trainerProfileId));
     const independentStudent = await db.query.students.findFirst({
       where: eq(schema.students.id, firstIds.independentProfileId),
     });
@@ -162,6 +174,7 @@ describe('demo seed', () => {
     expect(managedStudents.filter((student) => student.status === 'paused')).toHaveLength(2);
     expect(managedStudents.filter((student) => student.status === 'inactive')).toHaveLength(2);
     expect(managedStudents.every((student) => !student.isIndependent)).toBe(true);
+    expect(managedStudents.every((student) => student.authUserId !== null)).toBe(true);
     expect(independentStudent).toMatchObject({
       authUserId: firstIds.independentAuthUserId,
       trainerId: null,
@@ -182,9 +195,12 @@ describe('demo seed', () => {
     const managedLogin = await app.inject({
       method: 'POST',
       url: '/api/auth/sign-in/email',
-      payload: { email: 'aluno01@muvit.dev', password: demoCredentials.password },
+      payload: {
+        email: demoCredentials.managedStudents[0]?.email ?? '',
+        password: demoCredentials.password,
+      },
     });
-    expect(managedLogin.statusCode).toBeGreaterThanOrEqual(400);
+    expect(managedLogin.statusCode).toBe(200);
 
     await seedDemo(app.auth, referenceDate);
 
@@ -196,8 +212,12 @@ describe('demo seed', () => {
     await seedDemo(app.auth, referenceDate);
     await db
       .update(schema.students)
-      .set({ trainerId: null })
+      .set({ email: 'aluno05@seed-conflict.muvit.dev' })
       .where(eq(schema.students.email, 'aluno05@muvit.dev'));
+    await db.insert(schema.students).values({
+      name: 'Aluno conflitante',
+      email: 'aluno05@muvit.dev',
+    });
     const beforeFailure = await readDatabaseSnapshot();
 
     let failure: unknown;
