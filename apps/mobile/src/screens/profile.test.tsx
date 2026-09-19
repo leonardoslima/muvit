@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
+import { type ReactNode, createElement } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
+import { colors, controlSizes, radii } from '../lib/styles';
 import { ProfileScreen } from './profile';
 
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -40,13 +42,17 @@ vi.mock('expo-router', () => ({
   router: routerState,
 }));
 
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
+}));
+
 function renderWithQueryClient(children: ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}>{children}</QueryClientProvider>);
 }
 
 describe('ProfileScreen', () => {
-  it('renderiza iniciais, contexto de aluno independente e evolução', async () => {
+  it('apresenta a hierarquia visual e os detalhes do perfil do aluno', async () => {
     authState.session.data = {
       user: {
         id: 'auth-user-id',
@@ -58,10 +64,55 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(<ProfileScreen />);
 
+    expect(await screen.findByText('PERFIL')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Meu perfil' })).toBeTruthy();
+    expect(screen.getByText('Seus dados e preferências de conta.')).toBeTruthy();
     expect(await screen.findByText('MC')).toBeTruthy();
     expect(screen.getByText('Maria Clara Silva')).toBeTruthy();
-    expect(screen.getByText('Aluno independente')).toBeTruthy();
+    expect(screen.getAllByText('Aluno independente')).toHaveLength(2);
+    expect(screen.getByText('Tipo de conta')).toBeTruthy();
+    expect(screen.getByText('Acesso')).toBeTruthy();
     expect(screen.getByText('Treinos e evolução')).toBeTruthy();
+    expect(screen.getByTestId('profile-account-icon')).toBeTruthy();
+    expect(screen.getByTestId('profile-access-icon')).toBeTruthy();
+
+    expect(StyleSheet.flatten(screen.getByTestId('profile-avatar').props.style)).toMatchObject({
+      backgroundColor: colors.primary,
+      borderRadius: radii.pill,
+      height: controlSizes.profileAvatar,
+      width: controlSizes.profileAvatar,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('profile-identity-card').props.style),
+    ).toMatchObject({
+      borderRadius: radii.control,
+      padding: 20,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('profile-details-card').props.style),
+    ).toMatchObject({
+      borderRadius: radii.control,
+      paddingHorizontal: 16,
+      paddingVertical: 4,
+    });
+    expect(
+      StyleSheet.flatten(screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle),
+    ).toMatchObject({
+      flexGrow: 1,
+      justifyContent: 'space-between',
+    });
+  });
+
+  it('mantém o estado de carregamento da sessão', () => {
+    authState.session.data = null;
+    authState.session.isPending = true;
+
+    renderWithQueryClient(<ProfileScreen />);
+
+    expect(screen.getByText('Carregando perfil')).toBeTruthy();
+    expect(screen.getByText('Estamos carregando seus dados.')).toBeTruthy();
+
+    authState.session.isPending = false;
   });
 
   it('encerra a autenticação Better Auth e limpa o cache no sucesso', async () => {
@@ -81,7 +132,7 @@ describe('ProfileScreen', () => {
     expect(await screen.findByText('Ana Aluna')).toBeTruthy();
     expect(screen.getByText('AA')).toBeTruthy();
     expect(screen.getByText('ana@example.com')).toBeTruthy();
-    expect(screen.getByText('Aluno independente')).toBeTruthy();
+    expect(screen.getAllByText('Aluno independente')).toHaveLength(2);
 
     await user.press(screen.getByRole('button', { name: 'Sair' }));
 
@@ -118,7 +169,7 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(<ProfileScreen />);
 
-    expect(await screen.findByText('Aluno independente')).toBeTruthy();
+    expect(await screen.findAllByText('Aluno independente')).toHaveLength(2);
     expect(screen.getByText('AL')).toBeTruthy();
     expect(screen.getByText('Sem email cadastrado')).toBeTruthy();
   });
@@ -128,15 +179,17 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(
       <ProfileScreen
+        accessDescription="Alunos e treinos"
         accountType="Treinador"
         fallbackInitials="TR"
         fallbackName="Treinador"
-        journeyDescription="Acompanhe seus alunos no Muvit."
+        subtitle="Sua conta e visão de treinador."
       />,
     );
 
-    expect(screen.getAllByText('Treinador')).toHaveLength(2);
+    expect(screen.getAllByText('Treinador')).toHaveLength(3);
     expect(screen.getByText('TR')).toBeTruthy();
-    expect(screen.getByText('Acompanhe seus alunos no Muvit.')).toBeTruthy();
+    expect(screen.getByText('Sua conta e visão de treinador.')).toBeTruthy();
+    expect(screen.getByText('Alunos e treinos')).toBeTruthy();
   });
 });

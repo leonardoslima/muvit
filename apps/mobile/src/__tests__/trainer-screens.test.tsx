@@ -29,6 +29,10 @@ vi.mock('expo-router', () => ({
   },
 }));
 
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => React.createElement('Ionicons', props),
+}));
+
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
 }));
@@ -37,8 +41,11 @@ describe('superfícies trainer', () => {
   it('apresenta o perfil com contexto de treinador', () => {
     render(<TrainerProfileScreen />);
 
-    expect(screen.getAllByText('Treinador')).toHaveLength(2);
+    expect(screen.getAllByText('Treinador')).toHaveLength(3);
     expect(screen.getByText('TR')).toBeTruthy();
-    expect(screen.getByText('Acompanhe seus alunos no Muvit.')).toBeTruthy();
+    expect(screen.getByText('Sua conta e visão de treinador.')).toBeTruthy();
+    expect(screen.getByText('Tipo de conta')).toBeTruthy();
+    expect(screen.getByText('Acesso')).toBeTruthy();
+    expect(screen.getByText('Alunos e treinos')).toBeTruthy();
   });
 });

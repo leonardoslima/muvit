@@ -59,6 +59,8 @@ export const controlSizes = {
   sheetHandleHeight: 4,
   brandMark: 42,
   avatar: 72,
+  profileAvatar: 88,
+  profileDetailRow: 52,
 };
 
 export const typography = {
