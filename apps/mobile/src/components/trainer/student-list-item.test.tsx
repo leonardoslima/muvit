@@ -1,10 +1,15 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { createElement } from 'react';
 import { StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
 import { colors } from '../../lib/styles';
 import { StudentListItem } from './student-list-item';
 import { StudentStatusBadge } from './student-status-badge';
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
+}));
 
 function studentFixture(overrides: Partial<TrainerStudent> = {}): TrainerStudent {
   return {
@@ -37,14 +42,49 @@ describe('StudentListItem', () => {
     expect(screen.getByText('Ana Júlia Souza')).toBeTruthy();
     expect(screen.getByText('ana@example.com')).toBeTruthy();
     expect(screen.getByText('Ativo')).toBeTruthy();
+    expect(screen.getByTestId('student-list-item-chevron')).toBeTruthy();
 
     expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', {
+        name: 'Abrir Ana Júlia Souza, contato: ana@example.com, status: Ativo',
+      }).props.accessibilityHint,
+    ).toBe('Abre os detalhes do aluno');
     await user.press(
       screen.getByRole('button', {
         name: 'Abrir Ana Júlia Souza, contato: ana@example.com, status: Ativo',
       }),
     );
     expect(onPress).toHaveBeenCalledOnce();
+  });
+
+  it('mantém a linha compacta com avatar e espaçamento do Pencil', () => {
+    render(<StudentListItem onPress={() => undefined} student={studentFixture()} />);
+
+    const cardStyle = StyleSheet.flatten(
+      screen
+        .getByRole('button', {
+          name: 'Abrir Ana Júlia Souza, contato: ana@example.com, status: Ativo',
+        })
+        .props.style({ pressed: false }),
+    );
+    const rowStyle = StyleSheet.flatten(screen.getByTestId('student-list-item-row').props.style);
+    const avatarStyle = StyleSheet.flatten(
+      screen.getByTestId('student-list-item-avatar').props.style,
+    );
+
+    expect(cardStyle.borderRadius).toBe(8);
+    expect(cardStyle.minHeight).toBe(72);
+    expect(cardStyle.paddingHorizontal).toBe(16);
+    expect(cardStyle.paddingVertical).toBe(12);
+    expect(rowStyle.gap).toBe(12);
+    expect(avatarStyle.height).toBe(40);
+    expect(avatarStyle.width).toBe(40);
+
+    const statusStyle = StyleSheet.flatten(
+      screen.getByTestId('student-list-item-status').props.style,
+    );
+    expect(statusStyle.transform).toEqual([{ scale: 0.6 }]);
   });
 
   it.each([

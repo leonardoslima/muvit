@@ -1,8 +1,14 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import type { TrainerWorkoutPlanSummary } from '../../application/workouts/trainer-workout-data';
 import { WorkoutPlanListItem } from './workout-plan-list-item';
 import { WorkoutStatusBadge } from './workout-status-badge';
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
+}));
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
@@ -52,6 +58,25 @@ describe('WorkoutPlanListItem', () => {
 
     expect(screen.getByText('Hipertrofia')).toBeTruthy();
     expect(screen.getByText('Rascunho')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('workout-plan-card').props.style)).toMatchObject({
+      borderRadius: 10,
+      gap: 8,
+      justifyContent: 'space-between',
+      minHeight: 118,
+      padding: 16,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('workout-plan-icon-bubble').props.style),
+    ).toMatchObject({
+      height: 36,
+      width: 36,
+    });
+    expect(screen.getByTestId('workout-plan-icon').props.size).toBe(18);
+    expect(screen.getByText('Hipertrofia').props.style).toMatchObject({
+      fontSize: 16,
+      lineHeight: 20,
+    });
+    expect(screen.getByTestId('workout-plan-chevron')).toBeTruthy();
     expect(screen.getByText('01/09/2026 — 30/09/2026')).toBeTruthy();
     expect(screen.getByText('Criado em 06/09/2026')).toBeTruthy();
     expect(screen.getAllByRole('button')).toHaveLength(1);

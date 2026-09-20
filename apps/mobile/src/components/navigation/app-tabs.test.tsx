@@ -57,6 +57,7 @@ type ScreenOptions = {
     backgroundColor?: string;
     borderRadius?: number;
     borderTopWidth?: number;
+    display?: string;
     gap?: number;
     height?: number;
     marginHorizontal?: number;
@@ -69,6 +70,7 @@ type ScreenOptions = {
 };
 
 const tabsState = vi.hoisted(() => ({
+  segments: ['(trainer)', 'trainer', 'students'] as string[],
   screenOptions: null as ScreenOptions | null,
   screens: [] as TabScreen[],
 }));
@@ -98,7 +100,7 @@ vi.mock('expo-router', () => {
     },
   );
 
-  return { Tabs };
+  return { Tabs, useSegments: () => tabsState.segments };
 });
 
 vi.mock('@react-navigation/elements', () => ({
@@ -176,5 +178,21 @@ describe('AppTabsLayout', () => {
       paddingHorizontal: spacing.sm,
       paddingTop: spacing.sm,
     });
+  });
+
+  it('mantém a tab bar visível na raiz de Alunos', () => {
+    tabsState.segments = ['(trainer)', 'trainer', 'students'];
+
+    render(<AppTabsLayout tabs={[]} />);
+
+    expect(tabsState.screenOptions?.tabBarStyle?.display).not.toBe('none');
+  });
+
+  it('oculta a tab bar nas rotas aninhadas de Alunos', () => {
+    tabsState.segments = ['(trainer)', 'trainer', 'students', '[studentId]'];
+
+    render(<AppTabsLayout hideTabBarOnNestedRoute="students" tabs={[]} />);
+
+    expect(tabsState.screenOptions?.tabBarStyle).toMatchObject({ display: 'none' });
   });
 });

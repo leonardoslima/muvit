@@ -3,7 +3,7 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import { type ReactNode, createElement } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, controlSizes, radii } from '../lib/styles';
+import { colors, controlSizes, fontFamilies, radii } from '../lib/styles';
 import { ProfileScreen } from './profile';
 
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -175,7 +175,14 @@ describe('ProfileScreen', () => {
   });
 
   it('aceita contexto de apresentação de treinador sem duplicar o fluxo de logout', async () => {
-    authState.session.data = null;
+    authState.session.data = {
+      user: {
+        id: 'auth-user-id',
+        name: 'João Silva',
+        email: 'joao@example.com',
+        role: 'trainer',
+      },
+    };
 
     renderWithQueryClient(
       <ProfileScreen
@@ -187,9 +194,59 @@ describe('ProfileScreen', () => {
       />,
     );
 
-    expect(screen.getAllByText('Treinador')).toHaveLength(3);
-    expect(screen.getByText('TR')).toBeTruthy();
+    expect(screen.getAllByText('Treinador')).toHaveLength(2);
+    expect(screen.getByText('João Silva')).toBeTruthy();
+    expect(screen.getByText('JS')).toBeTruthy();
+    expect(screen.getByText('joao@example.com')).toBeTruthy();
     expect(screen.getByText('Sua conta e visão de treinador.')).toBeTruthy();
     expect(screen.getByText('Alunos e treinos')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByText('PERFIL').props.style)).toMatchObject({
+      color: colors.primary,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'Meu perfil' }).props.style),
+    ).toMatchObject({
+      fontFamily: fontFamilies.heading,
+      fontSize: 26,
+      fontWeight: '700',
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('profile-identity-card').props.style),
+    ).toMatchObject({
+      borderRadius: radii.md,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('profile-details-card').props.style),
+    ).toMatchObject({
+      borderRadius: radii.md,
+    });
+    expect(StyleSheet.flatten(screen.getByTestId('profile-role-badge').props.style)).toMatchObject({
+      backgroundColor: '#EBF5FB',
+    });
+    expect(StyleSheet.flatten(screen.getByTestId('profile-role-dot').props.style)).toMatchObject({
+      backgroundColor: '#3498DB',
+    });
+    expect(StyleSheet.flatten(screen.getAllByText('Treinador')[0].props.style)).toMatchObject({
+      color: '#3498DB',
+    });
+    expect(screen.getByTestId('profile-account-icon').props.name).toBe('person-outline');
+    expect(screen.getByTestId('profile-access-icon').props.name).toBe('people-outline');
+    expect(StyleSheet.flatten(screen.getByText('Tipo de conta').props.style)).toMatchObject({
+      color: colors.muted,
+      fontFamily: fontFamilies.body,
+      fontSize: 11,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('profile-avatar').props.children.props.style),
+    ).toMatchObject({
+      fontFamily: fontFamilies.heading,
+      fontSize: 28,
+      fontWeight: '700',
+    });
+    expect(StyleSheet.flatten(screen.getByText('João Silva').props.style)).toMatchObject({
+      fontFamily: fontFamilies.heading,
+      fontSize: 22,
+      fontWeight: '700',
+    });
   });
 });

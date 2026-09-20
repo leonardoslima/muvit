@@ -105,7 +105,7 @@ vi.mock('expo-router', () => {
     },
   );
 
-  return { Tabs };
+  return { Tabs, useSegments: () => ['(student)', '(tabs)'] };
 });
 
 vi.mock('@react-navigation/elements', () => ({

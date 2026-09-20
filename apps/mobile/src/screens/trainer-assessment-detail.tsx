@@ -1,28 +1,34 @@
-import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import type { ComponentProps } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Assessment } from '../application/assessments/assessment-data';
 import { getAssessment } from '../application/assessments/assessment-data';
+import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { AssessmentMeasurementsCard } from '../components/assessments/assessment-measurements-card';
-import { AssessmentMetric } from '../components/assessments/assessment-metric';
 import { AssessmentPhotoList } from '../components/assessments/assessment-photo-list';
-import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import { Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ApiError } from '../lib/api';
-import { colors, sharedStyles, spacing, typography } from '../lib/styles';
+import { colors, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 export function TrainerAssessmentDetailScreen() {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
     studentId?: string | string[];
     assessmentId?: string | string[];
   }>();
   const studentId = firstParam(params.studentId);
   const assessmentId = firstParam(params.assessmentId);
+  const student = studentId
+    ? queryClient.getQueryData<Pick<TrainerStudent, 'name'>>(['trainer', 'student', studentId])
+    : undefined;
+  const studentName = student?.name.trim() || 'Aluno';
   const query = useQuery({
     enabled: Boolean(studentId && assessmentId),
     queryKey: ['trainer', 'assessment', assessmentId],
@@ -118,55 +124,145 @@ export function TrainerAssessmentDetailScreen() {
   }
 
   const dateLabel = formatDate(assessment.date);
+  const readableDate = formatReadableDate(assessment.date);
+  const fullReadableDate = formatFullReadableDate(assessment.date);
   const photos = assessment.photos?.filter((photo) => photo.trim().length > 0) ?? [];
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para avaliações" onPress={returnToAssessments} variant="secondary" />
-      <ScreenHeader eyebrow="Avaliação" title={dateLabel} />
+      <AssessmentDetailHeader
+        actionDisabled={query.isRefetching}
+        actionLabel={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
+        onAction={() => void query.refetch()}
+        onBack={returnToAssessments}
+        testID="trainer-assessment-detail-header"
+      />
+      <View style={styles.identification}>
+        <Text style={styles.detailTitle}>Avaliação de {readableDate}</Text>
+        <Text style={styles.detailSubtitle}>{`${fullReadableDate} • ${studentName}`}</Text>
+      </View>
 
-      <Card>
-        <Text style={styles.sectionTitle}>Métricas principais</Text>
-        <View style={styles.metrics}>
-          <AssessmentMetric label="Peso" value={formatMetric(assessment.weightKg, 'kg')} />
-          <AssessmentMetric label="Altura" value={formatMetric(assessment.heightCm, 'cm')} />
-          <AssessmentMetric
-            label="Gordura corporal"
-            value={formatMetric(assessment.bodyFatPct, '%')}
-          />
+      <View style={styles.metrics} testID="trainer-assessment-metrics">
+        <AssessmentSummaryCard
+          iconName="scale-outline"
+          label="Peso"
+          support="Medida atual"
+          testID="trainer-assessment-summary-card-weight"
+          value={formatMetric(assessment.weightKg, 'kg')}
+        />
+        <AssessmentSummaryCard
+          iconName="pie-chart-outline"
+          label="Gordura corporal"
+          support="Composição corporal"
+          testID="trainer-assessment-summary-card-body-fat"
+          value={formatMetric(assessment.bodyFatPct, '%')}
+        />
+      </View>
+
+      <Card style={styles.notesCard}>
+        <View style={styles.notesHeader}>
+          <Ionicons color="#3498DB" name="document-text-outline" size={18} />
+          <Text style={styles.sectionTitle}>Notas do acompanhamento</Text>
         </View>
+        <Text style={styles.noteText}>{formatNotes(assessment.notes)}</Text>
       </Card>
 
-      <AssessmentMeasurementsCard measurements={assessment.measurements} />
-
-      {photos.length > 0 ? (
-        <Card>
-          <Text style={styles.sectionTitle}>Fotos</Text>
-          <AssessmentPhotoList dateLabel={dateLabel} photos={photos} />
-        </Card>
+      {hasMeasurements(assessment.measurements) ? (
+        <AssessmentMeasurementsCard measurements={assessment.measurements} />
       ) : null}
 
-      <Card>
-        <Text style={styles.sectionTitle}>Observações</Text>
-        <Text style={sharedStyles.subtitle}>{formatNotes(assessment.notes)}</Text>
-      </Card>
+      {photos.length > 0 ? (
+        <View style={styles.photos} testID="trainer-assessment-photos">
+          <AssessmentPhotoList dateLabel={dateLabel} photos={photos} />
+        </View>
+      ) : null}
 
       {query.isRefetchError ? (
         <InlineMessage message="Não foi possível atualizar a avaliação." tone="error" />
       ) : null}
-
-      <AppButton
-        disabled={query.isRefetching}
-        label={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
-        onPress={() => void query.refetch()}
-        variant="secondary"
-      />
     </Screen>
+  );
+}
+
+type AssessmentDetailHeaderProps = {
+  actionDisabled: boolean;
+  actionLabel: string;
+  onAction: () => void;
+  onBack: () => void;
+  testID: string;
+};
+
+function AssessmentDetailHeader({
+  actionDisabled,
+  actionLabel,
+  onAction,
+  onBack,
+  testID,
+}: AssessmentDetailHeaderProps) {
+  return (
+    <View style={styles.header} testID={testID}>
+      <View style={styles.headerLead}>
+        <Pressable
+          accessible
+          accessibilityLabel="Voltar para avaliações"
+          accessibilityRole="button"
+          onPress={onBack}
+          style={styles.backButton}
+        >
+          <Ionicons color={colors.ink} name="arrow-back" size={20} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Avaliação</Text>
+      </View>
+      <Pressable
+        accessible
+        accessibilityLabel={actionLabel}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: actionDisabled }}
+        disabled={actionDisabled}
+        onPress={onAction}
+        style={styles.headerAction}
+      >
+        <Ionicons color={colors.muted} name="ellipsis-horizontal" size={20} />
+      </Pressable>
+    </View>
+  );
+}
+
+type AssessmentSummaryCardProps = {
+  iconName: ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  support: string;
+  testID: string;
+  value: string;
+};
+
+function AssessmentSummaryCard({
+  iconName,
+  label,
+  support,
+  testID,
+  value,
+}: AssessmentSummaryCardProps) {
+  return (
+    <Card style={styles.summaryCard} testID={testID}>
+      <View style={styles.summaryHeader}>
+        <View style={styles.summaryIcon}>
+          <Ionicons color="#3498DB" name={iconName} size={16} />
+        </View>
+        <Text style={styles.summaryLabel}>{label}</Text>
+      </View>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summarySupport}>{support}</Text>
+    </Card>
   );
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function hasMeasurements(value: Assessment['measurements']): boolean {
+  return value ? Object.values(value).some((measurement) => Number.isFinite(measurement)) : false;
 }
 
 function formatDate(value: string): string {
@@ -177,6 +273,57 @@ function formatDate(value: string): string {
   }
 
   return `${day}/${month}/${year}`;
+}
+
+const MONTHS = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+function formatReadableDate(value: string): string {
+  const parsed = parseDate(value);
+
+  if (!parsed) {
+    return value;
+  }
+
+  return `${parsed.day} de ${MONTHS[parsed.month - 1]}`;
+}
+
+function formatFullReadableDate(value: string): string {
+  const parsed = parseDate(value);
+
+  if (!parsed) {
+    return value;
+  }
+
+  return `${parsed.day} de ${MONTHS[parsed.month - 1]} de ${parsed.year}`;
+}
+
+function parseDate(value: string): { day: number; month: number; year: string } | null {
+  const [year, month, day] = value.split('-');
+  const monthNumber = Number(month);
+  const dayNumber = Number(day);
+
+  if (!year || !month || !day || !Number.isInteger(monthNumber) || !Number.isInteger(dayNumber)) {
+    return null;
+  }
+
+  if (!MONTHS[monthNumber - 1] || dayNumber < 1 || dayNumber > 31) {
+    return null;
+  }
+
+  return { day: dayNumber, month: monthNumber, year };
 }
 
 function formatMetric(value: Assessment['weightKg'], unit: string): string {
@@ -199,17 +346,127 @@ function formatNotes(value: string | null): string {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
   centeredState: {
     justifyContent: 'center',
   },
   content: {
-    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
+    padding: 20,
+    paddingBottom: spacing.xxl,
+  },
+  detailSubtitle: {
+    color: colors.muted,
+    fontFamily: typography.body.fontFamily,
+    fontSize: 13,
+    lineHeight: 16,
+  },
+  detailTitle: {
+    color: colors.ink,
+    fontFamily: typography.exerciseTitle.fontFamily,
+    fontSize: 25,
+    fontWeight: '700',
+    lineHeight: 32,
+  },
+  header: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  headerAction: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  headerLead: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  headerTitle: {
+    color: colors.ink,
+    fontFamily: typography.exerciseTitle.fontFamily,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  identification: {
+    gap: 5,
   },
   metrics: {
+    flexDirection: 'row',
     gap: spacing.md,
+  },
+  noteText: {
+    color: colors.muted,
+    fontFamily: typography.body.fontFamily,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  notesCard: {
+    borderRadius: 8,
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  notesHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  photos: {
+    width: '100%',
+  },
+  summaryCard: {
+    borderRadius: 8,
+    flex: 1,
+    gap: spacing.sm,
+    minHeight: 118,
+    padding: spacing.lg,
+  },
+  summaryHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  summaryIcon: {
+    alignItems: 'center',
+    backgroundColor: '#EBF5FB',
+    borderRadius: 999,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  summaryLabel: {
+    color: colors.muted,
+    flex: 1,
+    fontFamily: typography.bodyStrong.fontFamily,
+    fontSize: 11,
+  },
+  summarySupport: {
+    color: '#1B7A3D',
+    fontFamily: typography.bodyStrong.fontFamily,
+    fontSize: 10,
+  },
+  summaryValue: {
+    color: colors.ink,
+    fontFamily: typography.exerciseTitle.fontFamily,
+    fontSize: 22,
+    fontWeight: '700',
   },
   sectionTitle: {
     color: colors.ink,
-    ...typography.cardTitle,
+    fontFamily: typography.exerciseTitle.fontFamily,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

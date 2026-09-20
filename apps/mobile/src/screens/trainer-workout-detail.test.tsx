@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
@@ -11,6 +13,7 @@ const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const DAY_ID = '00000000-0000-0000-0000-000000000201';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
 const EXERCISE_ROW_ID = '00000000-0000-0000-0000-000000000401';
+const STUDENT_NAME = 'Mariana Costa';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const routerState = vi.hoisted(() => ({
@@ -24,6 +27,10 @@ const paramsState = vi.hoisted(() => ({
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('expo-router', () => ({
@@ -79,6 +86,7 @@ function planFixture(overrides: Partial<TrainerWorkoutPlan> = {}): TrainerWorkou
 
 function renderDetail() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(['trainer', 'student', STUDENT_ID], { name: STUDENT_NAME });
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -101,17 +109,40 @@ describe('TrainerWorkoutDetailScreen', () => {
 
     renderDetail();
 
-    expect(await screen.findByText('Hipertrofia')).toBeTruthy();
+    expect((await screen.findAllByText('Hipertrofia')).length).toBe(2);
+    expect(screen.getByText(`Plano atual de ${STUDENT_NAME} · consulta do treinador`)).toBeTruthy();
+    expect(screen.getByTestId('trainer-workout-detail-back-icon')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-workout-detail-back-control').props.style),
+    ).toMatchObject({
+      borderRadius: 999,
+      height: 44,
+      width: 44,
+    });
+    expect(screen.getByTestId('trainer-workout-detail-back-title').props.children).toBe(
+      'Hipertrofia',
+    );
+    expect(screen.getByTestId('trainer-workout-detail-header-action')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workout-detail-header-action').props).toEqual(
+      expect.objectContaining({ name: 'ellipsis-horizontal', size: 20 }),
+    );
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-workout-detail-plan-intro').props.style),
+    ).toMatchObject({ gap: 6 });
+    expect(StyleSheet.flatten(screen.getAllByText('Hipertrofia')[1].props.style)).toMatchObject({
+      fontSize: 25,
+      lineHeight: 32,
+    });
     expect(screen.getByText('Ativo')).toBeTruthy();
+    expect(screen.getByText('1 exercício')).toBeTruthy();
     expect(screen.getByText('01/09/2026 — 30/09/2026')).toBeTruthy();
     expect(screen.getByText('Priorizar técnica')).toBeTruthy();
     expect(screen.getByText('Treino A')).toBeTruthy();
     expect(screen.getByText('Supino reto')).toBeTruthy();
-    expect(screen.getByText('Peito')).toBeTruthy();
-    expect(screen.getByText('4 séries · 8-10 reps')).toBeTruthy();
-    expect(screen.getByText('Carga: 82,5 kg')).toBeTruthy();
-    expect(screen.getByText('Descanso: 90s')).toBeTruthy();
-    expect(screen.getByText('Sem falhar')).toBeTruthy();
+    expect(screen.getByText('4 séries • 8-10 repetições • 82,5 kg')).toBeTruthy();
+    expect(screen.getByText('Descanso: 90 s')).toBeTruthy();
+    expect(screen.queryByText('Peito')).toBeNull();
+    expect(screen.getByText('Notas: Sem falhar')).toBeTruthy();
     expect(screen.queryByText('3010')).toBeNull();
   });
 
@@ -144,6 +175,7 @@ describe('TrainerWorkoutDetailScreen', () => {
     renderDetail();
 
     expect(await screen.findByText('Treino não encontrado')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workout-detail-error-state')).toBeTruthy();
     expect(screen.getByText('Este treino não está disponível para sua conta.')).toBeTruthy();
   });
 
@@ -158,7 +190,7 @@ describe('TrainerWorkoutDetailScreen', () => {
     expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await screen.findByText('Hipertrofia')).toBeTruthy();
+    await screen.findAllByText('Hipertrofia');
     expect(apiState.request).toHaveBeenCalledTimes(2);
   });
 
@@ -181,7 +213,7 @@ describe('TrainerWorkoutDetailScreen', () => {
     apiState.request.mockResolvedValueOnce(planFixture({ status }));
 
     renderDetail();
-    await screen.findByText('Hipertrofia');
+    await screen.findAllByText('Hipertrofia');
 
     const editButton = screen.queryByRole('button', { name: 'Editar treino' });
     expect(Boolean(editButton)).toBe(canEdit);
@@ -202,7 +234,7 @@ describe('TrainerWorkoutDetailScreen', () => {
       .mockRejectedValueOnce(new Error('offline'));
 
     renderDetail();
-    expect(await screen.findByText('Hipertrofia')).toBeTruthy();
+    await screen.findAllByText('Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Não foi possível atualizar o treino.')).toBeTruthy();
@@ -216,7 +248,7 @@ describe('TrainerWorkoutDetailScreen', () => {
       .mockRejectedValueOnce(new ApiError('not found', 404));
 
     renderDetail();
-    expect(await screen.findByText('Hipertrofia')).toBeTruthy();
+    await screen.findAllByText('Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Treino não encontrado')).toBeTruthy();
@@ -228,7 +260,7 @@ describe('TrainerWorkoutDetailScreen', () => {
     apiState.request.mockResolvedValueOnce(planFixture());
 
     renderDetail();
-    await screen.findByText('Hipertrofia');
+    await screen.findAllByText('Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Voltar para treinos' }));
 
     expect(routerState.dismissTo).toHaveBeenCalledWith(`/trainer/students/${STUDENT_ID}/workouts`);

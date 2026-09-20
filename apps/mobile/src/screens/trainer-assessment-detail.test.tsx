@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assessment } from '../application/assessments/assessment-data';
 import { ApiError } from '../lib/api';
@@ -18,6 +20,10 @@ const paramsState = vi.hoisted(() => ({
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('expo-router', () => ({
@@ -45,8 +51,12 @@ function assessmentFixture(overrides: Partial<Assessment> = {}): Assessment {
   };
 }
 
-function renderTrainerAssessmentDetail() {
+function renderTrainerAssessmentDetail(options: { studentName?: string } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+  if (options.studentName) {
+    queryClient.setQueryData(['trainer', 'student', STUDENT_ID], { name: options.studentName });
+  }
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -84,6 +94,68 @@ beforeEach(() => {
 });
 
 describe('TrainerAssessmentDetailScreen', () => {
+  it('alinha métricas e títulos ao detalhe do Pencil sem remover a atualização', async () => {
+    apiState.request.mockResolvedValueOnce(assessmentFixture());
+
+    renderTrainerAssessmentDetail();
+
+    expect(await screen.findByText('Avaliação de 3 de setembro')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-assessment-metrics').props.style),
+    ).toMatchObject({ gap: 12 });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-assessment-summary-card-weight').props.style),
+    ).toMatchObject({
+      borderRadius: 8,
+      minHeight: 118,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByText('Avaliação de 3 de setembro').props.style),
+    ).toMatchObject({
+      fontSize: 25,
+      fontWeight: '700',
+      lineHeight: 32,
+    });
+    expect(StyleSheet.flatten(screen.getByText('3 de setembro de 2026 • Aluno').props.style)).toMatchObject({
+      fontSize: 13,
+      lineHeight: 16,
+    });
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toBeTruthy();
+  });
+
+  it('organiza identificação, métricas principais, notas e foto de evolução', async () => {
+    apiState.request.mockResolvedValueOnce(
+      assessmentFixture({
+        photos: ['https://cdn.test/front.jpg'],
+        notes: 'Boa evolução',
+      }),
+    );
+
+    renderTrainerAssessmentDetail({ studentName: 'Mariana Costa' });
+
+    expect(await screen.findByText('Avaliação de 3 de setembro')).toBeTruthy();
+    expect(screen.getByText('3 de setembro de 2026 • Mariana Costa')).toBeTruthy();
+    expect(screen.getByText('Medida atual')).toBeTruthy();
+    expect(screen.getByText('Composição corporal')).toBeTruthy();
+    expect(screen.getByText('Notas do acompanhamento')).toBeTruthy();
+    expect(screen.getByText('Foto de evolução')).toBeTruthy();
+    expect(screen.getByText('Vista frontal • registrada nesta avaliação')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessment-detail-header')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessment-metrics')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessment-photos')).toBeTruthy();
+  });
+
+  it('não ocupa espaço com medidas quando a avaliação não as informa', async () => {
+    apiState.request.mockResolvedValueOnce(assessmentFixture());
+
+    renderTrainerAssessmentDetail();
+
+    await screen.findByText('Avaliação de 3 de setembro');
+
+    expect(screen.queryByText('Medidas de circunferência')).toBeNull();
+    expect(screen.queryByText('Altura')).toBeNull();
+  });
+
   it('renderiza métricas, medidas, fotos e observações', async () => {
     apiState.request.mockResolvedValueOnce(
       assessmentFixture({
@@ -101,9 +173,10 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     renderTrainerAssessmentDetail();
 
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('Avaliação de 3 de setembro')).toBeTruthy();
     expect(screen.getByText('82,5 kg')).toBeTruthy();
-    expect(screen.getByText('178 cm')).toBeTruthy();
+    expect(screen.queryByText('Altura')).toBeNull();
+    expect(screen.queryByText('178 cm')).toBeNull();
     expect(screen.getByText('18,4%')).toBeTruthy();
     expect(screen.getByText('101,5 cm')).toBeTruthy();
     expect(screen.getByText('84 cm')).toBeTruthy();
@@ -169,7 +242,7 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     renderTrainerAssessmentDetail();
 
-    await screen.findByText('03/09/2026');
+    await screen.findByText('Avaliação de 3 de setembro');
     expect(screen.queryByRole('button', { name: 'Editar avaliação' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Excluir avaliação' })).toBeNull();
   });
@@ -234,7 +307,7 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(await screen.findByText('Não foi possível carregar a avaliação')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('Avaliação de 3 de setembro')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
   });
 
@@ -252,9 +325,10 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     renderTrainerAssessmentDetail();
 
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
-    expect(screen.getAllByText('Não informado')).toHaveLength(5);
+    expect(await screen.findByText('Avaliação de 3 de setembro')).toBeTruthy();
+    expect(screen.getAllByText('Não informado')).toHaveLength(3);
     expect(screen.queryByText('82,5 kg')).toBeNull();
+    expect(screen.queryByText('Medidas de circunferência')).toBeNull();
     expect(screen.queryByText('Fotos')).toBeNull();
   });
 
@@ -335,7 +409,7 @@ describe('TrainerAssessmentDetailScreen', () => {
     apiState.request.mockResolvedValueOnce(assessmentFixture());
 
     renderTrainerAssessmentDetail();
-    await screen.findByText('03/09/2026');
+    await screen.findByText('Avaliação de 3 de setembro');
 
     await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
 

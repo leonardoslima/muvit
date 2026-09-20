@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerWorkoutPlanSummary } from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
@@ -7,6 +9,7 @@ import { TrainerWorkoutsScreen } from './trainer-workouts';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
+const STUDENT_NAME = 'Mariana Costa';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const routerState = vi.hoisted(() => ({
@@ -19,6 +22,10 @@ const paramsState = vi.hoisted(() => ({
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('expo-router', () => ({
@@ -48,6 +55,7 @@ function planFixture(
 
 function renderTrainerWorkouts() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(['trainer', 'student', STUDENT_ID], { name: STUDENT_NAME });
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -80,6 +88,21 @@ describe('TrainerWorkoutsScreen', () => {
     renderTrainerWorkouts();
 
     expect(await screen.findByText('Hipertrofia')).toBeTruthy();
+    expect(screen.getByText(STUDENT_NAME)).toBeTruthy();
+    expect(
+      screen.getByText(`Planos de ${STUDENT_NAME} para consulta e acompanhamento.`),
+    ).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-back-icon')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-header-action')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-header-action').props).toEqual(
+      expect.objectContaining({ name: 'ellipsis-horizontal', size: 20 }),
+    );
+    const createAction = screen.getByRole('button', { name: 'Novo treino' });
+    expect(StyleSheet.flatten(createAction.props.style({ pressed: false }))).toMatchObject({
+      borderRadius: 8,
+      height: 48,
+      minHeight: 48,
+    });
     expect(apiState.request).toHaveBeenCalledWith(
       `/students/${STUDENT_ID}/workout-plans`,
       expect.objectContaining({ signal: expect.anything() }),
@@ -138,9 +161,28 @@ describe('TrainerWorkoutsScreen', () => {
     renderTrainerWorkouts();
 
     expect(await screen.findByText('Não foi possível carregar os treinos')).toBeTruthy();
+    const errorState = screen.getByTestId('trainer-workouts-error-state');
+    expect(errorState).toBeTruthy();
+    expect(StyleSheet.flatten(errorState.props.style)).toMatchObject({
+      borderRadius: 10,
+      gap: 12,
+      padding: 24,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-workouts-error-icon-surface').props.style),
+    ).toMatchObject({
+      height: 48,
+      width: 48,
+    });
+    expect(screen.getByTestId('trainer-workouts-error-icon')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-error-icon').props.size).toBe(24);
+    expect(screen.getByTestId('trainer-workouts-error-state-action')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-error-icon-retry-icon').props).toEqual(
+      expect.objectContaining({ name: 'refresh-outline', size: 18 }),
+    );
     await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await screen.findByText('Nenhum treino cadastrado')).toBeTruthy();
+    expect(await screen.findByText('Nenhum treino disponível para este aluno.')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
   });
 
@@ -150,13 +192,49 @@ describe('TrainerWorkoutsScreen', () => {
 
     renderTrainerWorkouts();
 
-    expect(await screen.findByText('Nenhum treino cadastrado')).toBeTruthy();
+    expect(await screen.findByText('Nenhum treino disponível para este aluno.')).toBeTruthy();
+    expect(
+      screen.getByText('Os planos atribuídos aparecerão aqui quando estiverem disponíveis.'),
+    ).toBeTruthy();
+    expect(screen.getByText('Treinos')).toBeTruthy();
+    expect(
+      screen.queryByText(`Planos de ${STUDENT_NAME} para consulta e acompanhamento.`),
+    ).toBeNull();
+    const emptyState = screen.getByTestId('trainer-workouts-empty-state');
+    expect(emptyState).toBeTruthy();
+    expect(StyleSheet.flatten(emptyState.props.style)).toMatchObject({
+      borderRadius: 10,
+      gap: 12,
+      padding: 24,
+    });
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-workouts-empty-icon-surface').props.style),
+    ).toMatchObject({
+      height: 48,
+      width: 48,
+    });
     await user.press(screen.getByRole('button', { name: 'Novo treino' }));
 
     expect(routerState.push).toHaveBeenCalledWith({
       pathname: '/trainer/students/[studentId]/workouts/new',
       params: { studentId: STUDENT_ID },
     });
+  });
+
+  it('preserva atualizar e informa falha de atualização no vazio', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ items: [] })
+      .mockRejectedValueOnce(new Error('offline'));
+
+    renderTrainerWorkouts();
+    expect(await screen.findByText('Nenhum treino disponível para este aluno.')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+
+    expect(await screen.findByText('Não foi possível atualizar os treinos.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Novo treino' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toBeTruthy();
   });
 
   it('renderiza os três status e volta para o aluno', async () => {

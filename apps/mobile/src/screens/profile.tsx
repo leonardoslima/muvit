@@ -10,7 +10,7 @@ import { StatePanel } from '../components/ui/state-panel';
 import { StatusBadge } from '../components/ui/status-badge';
 import { authClient } from '../lib/auth-client';
 import { queryClient } from '../lib/query-client';
-import { colors, controlSizes, radii, spacing, typography } from '../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../lib/styles';
 
 export type ProfileScreenProps = {
   accessDescription?: string;
@@ -29,6 +29,7 @@ export function ProfileScreen({
 }: ProfileScreenProps = {}) {
   const session = authClient.useSession();
   const user = session.data?.user;
+  const isTrainerProfile = accountType === 'Treinador';
   const [logoutError, setLogoutError] = useState<string>();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -64,39 +65,82 @@ export function ProfileScreen({
   const initials = getInitials(user?.name, fallbackInitials);
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <ScreenHeader eyebrow="PERFIL" subtitle={subtitle} title="Meu perfil" />
+    <Screen
+      scroll
+      contentContainerStyle={[styles.content, isTrainerProfile ? styles.trainerContent : null]}
+    >
+      {isTrainerProfile ? (
+        <ProfileHeader subtitle={subtitle} />
+      ) : (
+        <ScreenHeader eyebrow="PERFIL" subtitle={subtitle} title="Meu perfil" />
+      )}
 
-      <Card style={styles.identityCard} testID="profile-identity-card">
+      <Card
+        style={[styles.identityCard, isTrainerProfile ? styles.trainerIdentityCard : null]}
+        testID="profile-identity-card"
+      >
         <View
           accessibilityLabel={`Iniciais de ${displayName}`}
           style={styles.avatar}
           testID="profile-avatar"
         >
-          <Text style={styles.avatarText}>{initials}</Text>
+          <Text style={[styles.avatarText, isTrainerProfile ? styles.trainerAvatarText : null]}>
+            {initials}
+          </Text>
         </View>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={styles.email}>{user?.email ?? 'Sem email cadastrado'}</Text>
-        <StatusBadge
-          backgroundColor={colors.primarySoft}
-          label={accountType}
-          style={styles.roleBadge}
-          testID="profile-role-badge"
-          textColor={colors.primaryText}
-        />
+        {isTrainerProfile ? (
+          <View style={styles.identityCopy} testID="profile-identity-copy">
+            <Text style={[styles.name, styles.trainerName]}>{displayName}</Text>
+            <Text style={styles.trainerEmail}>{user?.email ?? 'Sem email cadastrado'}</Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.name}>{displayName}</Text>
+            <Text style={styles.email}>{user?.email ?? 'Sem email cadastrado'}</Text>
+          </>
+        )}
+        {isTrainerProfile ? (
+          <View
+            accessibilityLabel={`Papel da conta: ${accountType}`}
+            style={styles.trainerRoleBadge}
+            testID="profile-role-badge"
+          >
+            <View
+              accessibilityLabel="Papel da conta"
+              style={styles.trainerRoleDot}
+              testID="profile-role-dot"
+            />
+            <Text style={styles.trainerRoleBadgeText}>{accountType}</Text>
+          </View>
+        ) : (
+          <StatusBadge
+            backgroundColor={colors.primarySoft}
+            label={accountType}
+            style={styles.roleBadge}
+            testID="profile-role-badge"
+            textColor={colors.primaryText}
+          />
+        )}
       </Card>
 
-      <Card style={styles.detailsCard} testID="profile-details-card">
+      <Card
+        style={[styles.detailsCard, isTrainerProfile ? styles.trainerDetailsCard : null]}
+        testID="profile-details-card"
+      >
         <ProfileDetailRow
           icon="person-circle-outline"
           iconTestID="profile-account-icon"
+          isTrainerProfile={isTrainerProfile}
           label="Tipo de conta"
+          trainerIcon={isTrainerProfile ? 'person-outline' : undefined}
           value={accountType}
         />
         <ProfileDetailRow
           icon="barbell-outline"
           iconTestID="profile-access-icon"
+          isTrainerProfile={isTrainerProfile}
           label="Acesso"
+          trainerIcon={isTrainerProfile ? 'people-outline' : undefined}
           value={accessDescription}
         />
       </Card>
@@ -115,24 +159,47 @@ export function ProfileScreen({
 type ProfileDetailRowProps = {
   icon: ComponentProps<typeof Ionicons>['name'];
   iconTestID: string;
+  isTrainerProfile?: boolean;
   label: string;
+  trainerIcon?: ComponentProps<typeof Ionicons>['name'];
   value: string;
 };
 
-function ProfileDetailRow({ icon, iconTestID, label, value }: ProfileDetailRowProps) {
+function ProfileDetailRow({
+  icon,
+  iconTestID,
+  isTrainerProfile = false,
+  label,
+  trainerIcon,
+  value,
+}: ProfileDetailRowProps) {
   return (
     <View style={styles.detailRow}>
       <Ionicons
         accessible={false}
-        color={colors.primaryText}
-        name={icon}
+        color={isTrainerProfile ? colors.primary : colors.primaryText}
+        name={isTrainerProfile && trainerIcon ? trainerIcon : icon}
         size={18}
         testID={iconTestID}
       />
       <View style={styles.detailCopy}>
-        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={[styles.detailLabel, isTrainerProfile ? styles.trainerDetailLabel : null]}>
+          {label}
+        </Text>
         <Text style={styles.detailValue}>{value}</Text>
       </View>
+    </View>
+  );
+}
+
+function ProfileHeader({ subtitle }: { subtitle: string }) {
+  return (
+    <View style={styles.header} testID="profile-header">
+      <Text style={styles.eyebrow}>PERFIL</Text>
+      <Text accessibilityRole="header" style={styles.title}>
+        Meu perfil
+      </Text>
+      <Text style={styles.subtitle}>{subtitle}</Text>
     </View>
   );
 }
@@ -153,10 +220,40 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     paddingHorizontal: spacing.xl,
   },
+  trainerContent: {
+    gap: 18,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.xxl,
+  },
+  header: {
+    gap: 6,
+  },
+  eyebrow: {
+    color: colors.primary,
+    fontFamily: fontFamilies.bodyStrong,
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  title: {
+    color: colors.ink,
+    fontFamily: fontFamilies.heading,
+    fontSize: 26,
+    fontWeight: '700',
+  },
+  subtitle: {
+    color: colors.muted,
+    fontFamily: fontFamilies.body,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   identityCard: {
     alignItems: 'center',
     borderRadius: radii.control,
     padding: spacing.xl,
+  },
+  trainerIdentityCard: {
+    borderRadius: radii.md,
+    padding: 22,
   },
   avatar: {
     alignItems: 'center',
@@ -170,24 +267,63 @@ const styles = StyleSheet.create({
     color: colors.ink,
     ...typography.headline,
   },
+  trainerAvatarText: {
+    fontWeight: '700',
+  },
   name: {
     color: colors.ink,
     ...typography.title,
     textAlign: 'center',
+  },
+  trainerName: {
+    fontWeight: '700',
   },
   email: {
     color: colors.muted,
     ...typography.labelCompact,
     textAlign: 'center',
   },
+  identityCopy: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  trainerEmail: {
+    color: colors.muted,
+    fontFamily: fontFamilies.body,
+    fontSize: 13,
+    textAlign: 'center',
+  },
   roleBadge: {
     alignSelf: 'center',
+  },
+  trainerRoleBadge: {
+    alignItems: 'center',
+    backgroundColor: '#EBF5FB',
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  trainerRoleBadgeText: {
+    color: '#3498DB',
+    fontFamily: fontFamilies.bodyStrong,
+    fontSize: 11,
+  },
+  trainerRoleDot: {
+    backgroundColor: '#3498DB',
+    borderRadius: radii.pill,
+    height: 6,
+    width: 6,
   },
   detailsCard: {
     borderRadius: radii.control,
     gap: 0,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.xs,
+  },
+  trainerDetailsCard: {
+    borderRadius: radii.md,
   },
   detailRow: {
     alignItems: 'center',
@@ -203,6 +339,10 @@ const styles = StyleSheet.create({
   detailLabel: {
     color: colors.muted,
     ...typography.caption,
+  },
+  trainerDetailLabel: {
+    fontFamily: fontFamilies.body,
+    fontSize: 11,
   },
   detailValue: {
     color: colors.ink,

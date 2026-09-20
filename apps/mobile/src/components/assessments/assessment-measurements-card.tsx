@@ -1,6 +1,6 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Assessment } from '../../application/assessments/assessment-data';
-import { colors, sharedStyles, typography } from '../../lib/styles';
+import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
 import { Card } from '../ui/card';
 import { AssessmentMetric } from './assessment-metric';
 
@@ -30,18 +30,21 @@ export function AssessmentMeasurementsCard({ measurements }: AssessmentMeasureme
   );
 
   return (
-    <Card>
+    <Card style={styles.card}>
       <Text style={styles.sectionTitle}>Medidas de circunferência</Text>
       {availableMeasurements.length === 0 ? (
         <Text style={sharedStyles.subtitle}>Não informado</Text>
       ) : (
-        availableMeasurements.map(([label, key]) => (
-          <AssessmentMetric
-            key={key}
-            label={label}
-            value={formatMeasurement(normalizedMeasurements, key)}
-          />
-        ))
+        <View style={styles.grid}>
+          {availableMeasurements.map(([label, key]) => (
+            <View key={key} style={styles.measurement}>
+              <AssessmentMetric
+                label={label}
+                value={formatMeasurement(normalizedMeasurements, key)}
+              />
+            </View>
+          ))}
+        </View>
       )}
     </Card>
   );
@@ -58,6 +61,19 @@ function formatMeasurement(measurements: AssessmentMeasurements, key: Measuremen
 }
 
 const styles = StyleSheet.create({
+  card: {
+    borderRadius: 8,
+    gap: spacing.sm,
+    padding: spacing.lg,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.lg,
+  },
+  measurement: {
+    width: '48%',
+  },
   sectionTitle: {
     color: colors.ink,
     ...typography.cardTitle,

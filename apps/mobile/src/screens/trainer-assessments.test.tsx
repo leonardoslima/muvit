@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assessment, AssessmentsPage } from '../application/assessments/assessment-data';
 import { ApiError } from '../lib/api';
+import { colors } from '../lib/styles';
 import { TrainerAssessmentsScreen } from './trainer-assessments';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -14,6 +17,10 @@ const paramsState = vi.hoisted(() => ({ studentId: 'student-1' as string | undef
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('expo-router', () => ({
@@ -41,8 +48,12 @@ function assessmentFixture(overrides: Partial<Assessment> = {}): Assessment {
   };
 }
 
-function renderTrainerAssessments() {
+function renderTrainerAssessments(options: { studentName?: string } = {}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+  if (options.studentName) {
+    queryClient.setQueryData(['trainer', 'student', 'student-1'], { name: options.studentName });
+  }
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -68,6 +79,44 @@ beforeEach(() => {
 });
 
 describe('TrainerAssessmentsScreen', () => {
+  it('mantém o espaçamento compacto entre os cards do histórico', async () => {
+    apiState.request.mockResolvedValueOnce({
+      items: [assessmentFixture(), assessmentFixture({ id: 'assessment-2' })],
+      total: 2,
+    });
+
+    renderTrainerAssessments();
+
+    const list = await screen.findByTestId('trainer-assessments-list');
+
+    expect(StyleSheet.flatten(list.props.style)).toMatchObject({ gap: 12 });
+  });
+
+  it('mostra o aluno em cache e o histórico em ordem cronológica', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [assessmentFixture()], total: 1 });
+
+    renderTrainerAssessments({ studentName: 'Mariana Costa' });
+
+    expect(await screen.findByText('Mariana Costa')).toBeTruthy();
+    expect(screen.getByText('Histórico de Mariana Costa em ordem cronológica.')).toBeTruthy();
+    expect(screen.getByText('Avaliação de 3 de setembro')).toBeTruthy();
+    expect(screen.getByText('3 set 2026')).toBeTruthy();
+    expect(screen.getByText('82,5 kg')).toBeTruthy();
+    expect(screen.getByText(/Boa evolução/)).toBeTruthy();
+  });
+
+  it('mantém a navegação compacta no cabeçalho da lista', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [assessmentFixture()], total: 1 });
+
+    renderTrainerAssessments({ studentName: 'Mariana Costa' });
+
+    expect(await screen.findByTestId('trainer-assessments-header')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessments-refresh')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessments-refresh').props.children.props).toEqual(
+      expect.objectContaining({ color: colors.muted, name: 'refresh-outline', size: 20 }),
+    );
+  });
+
   it('carrega a primeira página e abre uma avaliação', async () => {
     const user = userEvent.setup();
     apiState.request.mockResolvedValueOnce({
@@ -77,7 +126,7 @@ describe('TrainerAssessmentsScreen', () => {
 
     renderTrainerAssessments();
 
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledWith(
       '/students/student-1/assessments?limit=25&offset=0',
       expect.any(Object),
@@ -97,19 +146,33 @@ describe('TrainerAssessmentsScreen', () => {
     });
   });
 
-  it('mostra vazio e abre nova avaliação', async () => {
-    const user = userEvent.setup();
+  it('mostra vazio sem CTA de criação', async () => {
     apiState.request.mockResolvedValueOnce({ items: [], total: 0 });
 
     renderTrainerAssessments();
 
-    expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Nova avaliação' }));
+    expect(await screen.findByText('Nenhuma avaliação registrada.')).toBeTruthy();
+    expect(
+      screen.queryByText('Consulte o histórico de medidas e avaliações deste aluno.'),
+    ).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Nova avaliação' })).toBeNull();
+  });
 
-    expect(routerState.push).toHaveBeenCalledWith({
-      pathname: '/trainer/students/[studentId]/assessments/new',
-      params: { studentId: 'student-1' },
-    });
+  it('mantém o estado vazio sem CTA adicional e usa ícone de avaliações', async () => {
+    apiState.request.mockResolvedValueOnce({ items: [], total: 0 });
+
+    renderTrainerAssessments();
+
+    await screen.findByText('Nenhuma avaliação registrada.');
+
+    expect(screen.queryByRole('button', { name: 'Nova avaliação' })).toBeNull();
+    expect(screen.getByTestId('trainer-assessments-empty-icon').props.children.props).toEqual(
+      expect.objectContaining({
+        color: '#3498DB',
+        name: 'clipboard-outline',
+        size: 24,
+      }),
+    );
   });
 
   it('carrega mais sem perder a primeira página', async () => {
@@ -130,8 +193,8 @@ describe('TrainerAssessmentsScreen', () => {
     await screen.findByRole('button', { name: 'Carregar mais' });
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
-    expect(await screen.findByText('01/08/2026')).toBeTruthy();
-    expect(screen.getAllByText('03/09/2026')).toHaveLength(25);
+    expect(await screen.findByText('1 ago 2026')).toBeTruthy();
+    expect(screen.getAllByText('3 set 2026')).toHaveLength(25);
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/students/student-1/assessments?limit=25&offset=25',
       expect.any(Object),
@@ -154,7 +217,7 @@ describe('TrainerAssessmentsScreen', () => {
     await screen.findByRole('button', { name: 'Carregar mais' });
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
-    expect(await screen.findByText('01/08/2026')).toBeTruthy();
+    expect(await screen.findByText('1 ago 2026')).toBeTruthy();
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/students/student-1/assessments?limit=25&offset=2',
       expect.any(Object),
@@ -192,10 +255,18 @@ describe('TrainerAssessmentsScreen', () => {
 
     renderTrainerAssessments();
 
-    expect(await screen.findByText('Não foi possível carregar as avaliações')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar as avaliações.')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessments-error-icon').props.children.props).toEqual(
+      expect.objectContaining({
+        color: '#3498DB',
+        name: 'cloud-offline-outline',
+        size: 24,
+      }),
+    );
+    expect(screen.getByTestId('trainer-assessments-error-retry-icon')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
+    expect(await screen.findByText('Nenhuma avaliação registrada.')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
   });
 
@@ -206,12 +277,12 @@ describe('TrainerAssessmentsScreen', () => {
       .mockRejectedValueOnce(new Error('offline'));
 
     renderTrainerAssessments();
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Não foi possível atualizar as avaliações.')).toBeTruthy();
-    expect(screen.getByText('03/09/2026')).toBeTruthy();
+    expect(screen.getByText('3 set 2026')).toBeTruthy();
   });
 
   it('oculta o cache e mostra indisponibilidade quando a atualização retorna 404', async () => {
@@ -221,14 +292,14 @@ describe('TrainerAssessmentsScreen', () => {
       .mockRejectedValueOnce(new ApiError('not found', 404));
 
     renderTrainerAssessments();
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
     expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voltar para aluno' })).toBeTruthy();
-    expect(screen.queryByText('03/09/2026')).toBeNull();
+    expect(screen.queryByText('3 set 2026')).toBeNull();
     expect(screen.queryByText('Não foi possível atualizar as avaliações.')).toBeNull();
   });
 
@@ -239,13 +310,13 @@ describe('TrainerAssessmentsScreen', () => {
       .mockRejectedValueOnce(new ApiError('not found', 404));
 
     renderTrainerAssessments();
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
     expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
     expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
-    expect(screen.queryByText('03/09/2026')).toBeNull();
+    expect(screen.queryByText('3 set 2026')).toBeNull();
     expect(screen.queryByText('Não foi possível carregar mais avaliações.')).toBeNull();
   });
 
@@ -260,15 +331,15 @@ describe('TrainerAssessmentsScreen', () => {
       });
 
     renderTrainerAssessments();
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
     expect(await screen.findByText('Não foi possível carregar mais avaliações.')).toBeTruthy();
-    expect(screen.getByText('03/09/2026')).toBeTruthy();
+    expect(screen.getByText('3 set 2026')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Tentar carregar mais' }));
 
-    expect(await screen.findByText('01/08/2026')).toBeTruthy();
+    expect(await screen.findByText('1 ago 2026')).toBeTruthy();
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/students/student-1/assessments?limit=25&offset=1',
       expect.any(Object),
@@ -283,7 +354,7 @@ describe('TrainerAssessmentsScreen', () => {
       .mockReturnValueOnce(refreshRequest.promise);
 
     renderTrainerAssessments();
-    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    expect(await screen.findByText('3 set 2026')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
@@ -310,7 +381,7 @@ describe('TrainerAssessmentsScreen', () => {
     apiState.request.mockResolvedValueOnce({ items: [], total: 0 });
 
     renderTrainerAssessments();
-    await screen.findByText('Nenhuma avaliação registrada');
+    await screen.findByText('Nenhuma avaliação registrada.');
 
     await user.press(screen.getByRole('button', { name: 'Voltar para aluno' }));
 

@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { TrainerStudentsScreen } from './trainer-students';
@@ -9,6 +11,10 @@ const routerState = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('expo-router', () => ({
@@ -86,6 +92,52 @@ describe('TrainerStudentsScreen', () => {
     });
   });
 
+  it('mantém busca e ação com alvo tocável de 48 px', async () => {
+    apiState.request.mockResolvedValueOnce({ total: 0, items: [] });
+
+    renderTrainerStudents();
+    await screen.findByText('Nenhum aluno vinculado');
+
+    const searchFieldStyle = StyleSheet.flatten(screen.getByLabelText('Buscar aluno').props.style);
+    const searchButton = screen.getByRole('button', { name: 'Buscar' });
+    const searchButtonStyle = StyleSheet.flatten(searchButton.props.style({ pressed: false }));
+    const refreshButton = screen.getByRole('button', { name: 'Atualizar' });
+    const refreshButtonStyle = StyleSheet.flatten(refreshButton.props.style({ pressed: false }));
+
+    expect(searchFieldStyle.height).toBe(48);
+    expect(searchButtonStyle.height).toBe(48);
+    expect(refreshButtonStyle.height).toBe(40);
+  });
+
+  it('mantém a coluna compacta sem remover busca ou atualização acessíveis', async () => {
+    apiState.request.mockResolvedValueOnce({ total: 0, items: [] });
+
+    renderTrainerStudents();
+    await screen.findByText('Nenhum aluno vinculado');
+
+    const contentStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-students-content').props.style,
+    );
+
+    expect(contentStyle.gap).toBe(24);
+    expect(contentStyle.paddingHorizontal).toBe(20);
+    expect(screen.getByLabelText('Buscar aluno')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Atualizar' })).toBeTruthy();
+  });
+
+  it('mantém o ritmo vertical compacto entre as linhas de alunos', async () => {
+    apiState.request.mockResolvedValueOnce({ total: 1, items: [studentFixture()] });
+
+    renderTrainerStudents();
+    await screen.findByText('Ana Lima');
+
+    const studentListStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-students-list').props.style,
+    );
+
+    expect(studentListStyle.gap).toBe(10);
+  });
+
   it('só aplica a busca quando o usuário submete', async () => {
     const user = userEvent.setup();
     apiState.request
@@ -133,8 +185,39 @@ describe('TrainerStudentsScreen', () => {
 
     renderTrainerStudents();
 
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
     expect(screen.getByText('Carregando alunos')).toBeTruthy();
     expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    const statePanelStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-students-state-panel').props.style,
+    );
+    expect(statePanelStyle.minHeight).toBe(117);
+    expect(statePanelStyle.padding).toBe(14);
+    expect(statePanelStyle.gap).toBe(6);
+    const stateIconStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-students-state-icon').props.style,
+    );
+    expect(stateIconStyle.height).toBe(34);
+    expect(stateIconStyle.width).toBe(34);
+  });
+
+  it('mantém o cabeçalho da carteira no erro inicial', async () => {
+    apiState.request.mockRejectedValueOnce(new Error('offline'));
+
+    renderTrainerStudents();
+
+    expect(await screen.findByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar seus alunos')).toBeTruthy();
+    const stateIconStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-students-state-icon').props.style,
+    );
+    const retryButton = screen.getByRole('button', { name: 'Tentar novamente' });
+    const retryButtonStyle = StyleSheet.flatten(retryButton.props.style({ pressed: false }));
+    expect(stateIconStyle.backgroundColor).toBe('#E74C3C18');
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-students-state-panel').props.style).minHeight,
+    ).toBe(152);
+    expect(retryButtonStyle.height).toBe(36);
   });
 
   it('permite retry depois de erro inicial', async () => {

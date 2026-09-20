@@ -1,26 +1,32 @@
-import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { getTrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import { Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { WorkoutDayCard } from '../components/workouts/workout-day-card';
 import { WorkoutStatusBadge } from '../components/workouts/workout-status-badge';
 import { ApiError } from '../lib/api';
-import { sharedStyles, spacing } from '../lib/styles';
+import { colors, radii, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 export function TrainerWorkoutDetailScreen() {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
     studentId?: string | string[];
     planId?: string | string[];
   }>();
   const studentId = Array.isArray(params.studentId) ? params.studentId[0] : params.studentId;
   const planId = Array.isArray(params.planId) ? params.planId[0] : params.planId;
+  const student = studentId
+    ? queryClient.getQueryData<Pick<TrainerStudent, 'name'>>(['trainer', 'student', studentId])
+    : undefined;
+  const studentName = student?.name.trim() || undefined;
   const query = useQuery({
     enabled: Boolean(studentId && planId),
     queryKey: ['trainer', 'workout', planId],
@@ -76,13 +82,15 @@ export function TrainerWorkoutDetailScreen() {
   if (isNotFound) {
     return (
       <Screen style={styles.centeredState}>
-        <StatePanel
-          actionLabel="Voltar para treinos"
-          description="Este treino não está disponível para sua conta."
-          onAction={returnToWorkouts}
-          title="Treino não encontrado"
-          tone="error"
-        />
+        <View testID="trainer-workout-detail-error-state">
+          <StatePanel
+            actionLabel="Voltar para treinos"
+            description="Este treino não está disponível para sua conta."
+            onAction={returnToWorkouts}
+            title="Treino não encontrado"
+            tone="error"
+          />
+        </View>
       </Screen>
     );
   }
@@ -136,14 +144,50 @@ export function TrainerWorkoutDetailScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para treinos" onPress={returnToWorkouts} variant="secondary" />
-      <ScreenHeader eyebrow="Treino" title={plan.name} />
-
-      <Card>
-        <WorkoutStatusBadge status={plan.status} />
-        {period ? <Text style={sharedStyles.subtitle}>{period}</Text> : null}
-        {notes ? <Text style={sharedStyles.subtitle}>{notes}</Text> : null}
-      </Card>
+      <View style={styles.backHeader}>
+        <Pressable
+          accessible
+          accessibilityLabel="Voltar para treinos"
+          accessibilityRole="button"
+          onPress={returnToWorkouts}
+          style={styles.backButton}
+        >
+          <View style={styles.backControl} testID="trainer-workout-detail-back-control">
+            <Ionicons
+              accessible={false}
+              color={colors.ink}
+              name="arrow-back"
+              size={20}
+              testID="trainer-workout-detail-back-icon"
+            />
+          </View>
+          <Text testID="trainer-workout-detail-back-title" style={styles.backTitle}>
+            {plan.name}
+          </Text>
+        </Pressable>
+        <View style={styles.headerAction}>
+          <Ionicons
+            accessible={false}
+            color={colors.muted}
+            name="ellipsis-horizontal"
+            size={20}
+            testID="trainer-workout-detail-header-action"
+          />
+        </View>
+      </View>
+      <View style={styles.planIntro} testID="trainer-workout-detail-plan-intro">
+        <View style={styles.planHeading} testID="trainer-workout-detail-plan-heading">
+          <Text style={styles.planTitle}>{plan.name}</Text>
+          <WorkoutStatusBadge status={plan.status} />
+        </View>
+        <Text style={styles.planSubtitle}>
+          {studentName
+            ? `Plano atual de ${studentName} · consulta do treinador`
+            : 'Plano de treino para consulta do treinador.'}
+        </Text>
+        {period ? <Text style={styles.planMeta}>{period}</Text> : null}
+        {notes ? <Text style={styles.planMeta}>{notes}</Text> : null}
+      </View>
 
       {plan.days.map((day) => (
         <WorkoutDayCard day={day} key={day.id} />
@@ -182,10 +226,76 @@ function formatDate(value: string): string {
 }
 
 const styles = StyleSheet.create({
+  backHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  backButton: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 44,
+  },
+  backControl: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  backTitle: {
+    color: colors.ink,
+    fontFamily: typography.title.fontFamily,
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
+  headerAction: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
   centeredState: {
     justifyContent: 'center',
   },
   content: {
-    paddingBottom: spacing.xxxl,
+    gap: spacing.md,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+  },
+  planHeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  planIntro: {
+    gap: 6,
+  },
+  planMeta: {
+    ...sharedStyles.subtitle,
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  planSubtitle: {
+    color: colors.muted,
+    fontFamily: typography.subtitle.fontFamily,
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  planTitle: {
+    color: colors.ink,
+    flex: 1,
+    fontFamily: typography.title.fontFamily,
+    fontSize: 25,
+    fontWeight: '700',
+    lineHeight: 32,
   },
 });

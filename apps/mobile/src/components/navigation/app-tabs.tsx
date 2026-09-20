@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
-import { Tabs } from 'expo-router';
+import { Tabs, useSegments } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
 
@@ -11,10 +11,17 @@ export type AppTab = {
 };
 
 export type AppTabsLayoutProps = {
+  hideTabBarOnNestedRoute?: string;
   tabs: readonly AppTab[];
 };
 
-export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
+export function AppTabsLayout({ hideTabBarOnNestedRoute, tabs }: AppTabsLayoutProps) {
+  const segments = useSegments();
+  const nestedRouteSegmentIndex = hideTabBarOnNestedRoute
+    ? segments.lastIndexOf(hideTabBarOnNestedRoute)
+    : -1;
+  const hideTabBar = nestedRouteSegmentIndex >= 0 && nestedRouteSegmentIndex < segments.length - 1;
+
   return (
     <Tabs
       screenOptions={{
@@ -45,6 +52,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
           paddingHorizontal: spacing.sm,
           paddingTop: spacing.sm,
           gap: spacing.sm,
+          ...(hideTabBar ? { display: 'none' as const } : {}),
         },
       }}
     >
