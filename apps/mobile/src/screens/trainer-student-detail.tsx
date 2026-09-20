@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { type TrainerStudent, getTrainerStudent } from '../application/trainer/trainer-data';
-import { StudentStatusBadge, studentStatusLabel } from '../components/trainer/student-status-badge';
+import { getTrainerStudent } from '../application/trainer/trainer-data';
 import { InlineMessage } from '../components/ui/inline-message';
 import { Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
@@ -93,7 +92,11 @@ export function TrainerStudentDetailScreen() {
   return (
     <Screen scroll contentContainerStyle={styles.scrollContent}>
       <View style={styles.content}>
-        <DetailHeader title={student.name} />
+        <DetailHeader
+          onRefresh={() => void query.refetch()}
+          refreshing={query.isRefetching}
+          title={student.name}
+        />
 
         <View style={styles.identityCard} testID="trainer-student-detail-identity-card">
           <View accessibilityLabel={`Iniciais de ${student.name}`} style={styles.avatar}>
@@ -116,123 +119,183 @@ export function TrainerStudentDetailScreen() {
             </Text>
             <Text style={styles.identityGoal}>{student.goals ?? 'Sem objetivo cadastrado'}</Text>
           </View>
-          <View
-            accessible
-            accessibilityLabel={`Status: ${studentStatusLabel(student.status)}`}
-            style={styles.identityStatus}
-          >
-            <StudentStatusBadge status={student.status} />
-          </View>
         </View>
 
-        <View style={styles.factsCard}>
-          <Text style={styles.sectionTitle}>Informações</Text>
-          <View style={styles.factsGrid}>
-            {student.email || student.phone ? (
-              <View style={styles.detailRowPair}>
-                <DetailRow label="E-mail" value={student.email ?? 'Não informado'} />
-                <DetailRow label="Telefone" value={student.phone ?? 'Não informado'} />
-              </View>
-            ) : null}
-            <View style={styles.detailRowPair}>
-              <DetailRow label="Nascimento" value={formatBirthDate(student.birthDate)} />
-              <DetailRow label="Gênero" value={formatGender(student.gender)} />
-            </View>
-          </View>
-          <DetailRow
-            label="Restrições"
-            value={student.restrictions ?? 'Sem restrições cadastradas'}
+        <View style={styles.summaryRow} testID="trainer-student-detail-summary-row">
+          <SummaryCard
+            icon="stats-chart-outline"
+            label="Avaliações"
+            support="Consulte os registros"
+            testID="trainer-student-detail-assessment-summary"
+            value="Histórico"
+          />
+          <SummaryCard
+            icon="barbell-outline"
+            label="Treinos"
+            support="Planos do aluno"
+            testID="trainer-student-detail-workout-summary"
+            value="Planos"
           />
         </View>
 
-        <View style={styles.navigationCard}>
-          <View style={styles.navigationHeading}>
-            <Text style={styles.sectionTitle}>Avaliações</Text>
-            <Text style={styles.navigationMeta}>Histórico e evolução</Text>
-          </View>
-          <Text style={styles.navigationDescription}>
-            Consulte o histórico ou registre uma nova avaliação deste aluno.
-          </Text>
-          <View style={styles.actionRow}>
-            <DetailAction
-              label="Ver histórico"
-              onPress={() =>
-                router.push({
-                  pathname: '/trainer/students/[studentId]/assessments',
-                  params: { studentId },
-                })
-              }
-              size="compact"
-              variant="secondary"
-            />
-            <DetailAction
-              label="Nova avaliação"
-              onPress={() =>
-                router.push({
-                  pathname: '/trainer/students/[studentId]/assessments/new',
-                  params: { studentId },
-                })
-              }
-              size="compact"
-            />
-          </View>
-        </View>
-
-        <View style={styles.navigationCard}>
-          <View style={styles.navigationHeading}>
-            <Text style={styles.sectionTitle}>Treinos</Text>
-            <Text style={styles.navigationMeta}>Planos do aluno</Text>
-          </View>
-          <Text style={styles.navigationDescription}>
-            Consulte ou monte a prescrição de treino deste aluno.
-          </Text>
-          <View style={styles.actionRow}>
-            <DetailAction
-              label="Ver treinos"
-              onPress={() =>
-                router.push({
-                  pathname: '/trainer/students/[studentId]/workouts',
-                  params: { studentId },
-                })
-              }
-              size="compact"
-              variant="secondary"
-            />
-            <DetailAction
-              label="Novo treino"
-              onPress={() =>
-                router.push({
-                  pathname: '/trainer/students/[studentId]/workouts/new',
-                  params: { studentId },
-                })
-              }
-              size="compact"
-            />
-          </View>
+        <View style={styles.previewGroup}>
+          <PreviewCard
+            actions={
+              <View style={styles.actionRow}>
+                <DetailLink
+                  label="Ver histórico"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/trainer/students/[studentId]/assessments',
+                      params: { studentId },
+                    })
+                  }
+                />
+                <DetailLink
+                  label="Nova avaliação"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/trainer/students/[studentId]/assessments/new',
+                      params: { studentId },
+                    })
+                  }
+                />
+              </View>
+            }
+            description="Consulte o histórico ou registre uma nova avaliação deste aluno."
+            icon="stats-chart-outline"
+            meta="Histórico e evolução"
+            testID="trainer-student-detail-assessment-preview-card"
+            title="Avaliações"
+            titleTestID="trainer-student-detail-assessment-preview-title"
+          />
+          <PreviewCard
+            actions={
+              <View style={styles.actionRow}>
+                <DetailLink
+                  label="Ver treinos"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/trainer/students/[studentId]/workouts',
+                      params: { studentId },
+                    })
+                  }
+                />
+                <DetailLink
+                  label="Novo treino"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/trainer/students/[studentId]/workouts/new',
+                      params: { studentId },
+                    })
+                  }
+                />
+              </View>
+            }
+            description="Consulte ou monte a prescrição de treino deste aluno."
+            icon="barbell-outline"
+            meta="Planos do aluno"
+            testID="trainer-student-detail-workout-preview-card"
+            title="Treinos"
+            titleTestID="trainer-student-detail-workout-preview-title"
+          />
         </View>
 
         {query.isRefetchError ? (
           <InlineMessage message="Não foi possível atualizar o aluno." tone="error" />
         ) : null}
-
-        <DetailAction
-          disabled={query.isRefetching}
-          label={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
-          onPress={() => void query.refetch()}
-          size="compact"
-          variant="secondary"
-        />
       </View>
     </Screen>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }): React.JSX.Element {
+type SummaryCardProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  support: string;
+  testID: string;
+  value: string;
+};
+
+function SummaryCard({ icon, label, support, testID, value }: SummaryCardProps) {
   return (
-    <View style={styles.detailRow}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+    <View style={styles.summaryCard} testID={testID}>
+      <View style={styles.summaryHeader}>
+        <View style={styles.summaryIcon}>
+          <Ionicons accessible={false} color="#3498DB" name={icon} size={16} />
+        </View>
+        <Text numberOfLines={1} style={styles.summaryLabel}>
+          {label}
+        </Text>
+      </View>
+      <Text numberOfLines={1} style={styles.summaryValue}>
+        {value}
+      </Text>
+      <Text numberOfLines={1} style={styles.summarySupport}>
+        {support}
+      </Text>
     </View>
+  );
+}
+
+type PreviewCardProps = {
+  actions: React.ReactNode;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  meta: string;
+  testID: string;
+  title: string;
+  titleTestID?: string;
+};
+
+function PreviewCard({
+  actions,
+  description,
+  icon,
+  meta,
+  testID,
+  title,
+  titleTestID,
+}: PreviewCardProps) {
+  return (
+    <View style={styles.previewCard} testID={testID}>
+      <View style={styles.previewHeader}>
+        <View style={styles.previewTitleGroup}>
+          <View style={styles.previewIcon}>
+            <Ionicons accessible={false} color="#3498DB" name={icon} size={18} />
+          </View>
+          <View style={styles.previewTitleCopy}>
+            <Text style={styles.previewTitle} testID={titleTestID}>
+              {title}
+            </Text>
+            <Text style={styles.previewMeta}>{meta}</Text>
+          </View>
+        </View>
+      </View>
+      <Text style={styles.previewDescription}>{description}</Text>
+      {actions}
+    </View>
+  );
+}
+
+type DetailLinkProps = {
+  label: string;
+  onPress: () => void;
+};
+
+function DetailLink({ label, onPress }: DetailLinkProps) {
+  return (
+    <Pressable
+      accessible
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      hitSlop={4}
+      onPress={onPress}
+      style={({ pressed }) => [styles.detailLink, pressed ? styles.pressedAction : null]}
+    >
+      <Text style={styles.detailLinkText}>{label}</Text>
+      <Ionicons accessible={false} color={colors.primaryText} name="chevron-forward" size={16} />
+    </Pressable>
   );
 }
 
@@ -242,19 +305,9 @@ type DetailActionProps = {
   iconTestID?: string;
   label: string;
   onPress: () => void;
-  size?: 'compact' | 'default';
-  variant?: 'primary' | 'secondary';
 };
 
-function DetailAction({
-  disabled = false,
-  icon,
-  iconTestID,
-  label,
-  onPress,
-  size = 'default',
-  variant = 'primary',
-}: DetailActionProps) {
+function DetailAction({ disabled = false, icon, iconTestID, label, onPress }: DetailActionProps) {
   return (
     <Pressable
       accessible
@@ -262,12 +315,10 @@ function DetailAction({
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
-      hitSlop={size === 'compact' ? 8 : 2}
+      hitSlop={2}
       onPress={disabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.detailAction,
-        size === 'compact' ? styles.detailActionCompact : null,
-        variant === 'secondary' ? styles.detailActionSecondary : null,
         disabled ? styles.disabledAction : null,
         pressed && !disabled ? styles.pressedAction : null,
       ]}
@@ -280,7 +331,13 @@ function DetailAction({
   );
 }
 
-function DetailHeader({ title }: { title: string }) {
+type DetailHeaderProps = {
+  onRefresh: () => void;
+  refreshing: boolean;
+  title: string;
+};
+
+function DetailHeader({ onRefresh, refreshing, title }: DetailHeaderProps) {
   return (
     <View style={styles.detailHeader}>
       <Pressable
@@ -303,7 +360,22 @@ function DetailHeader({ title }: { title: string }) {
       <Text accessibilityRole="header" style={styles.detailTitle}>
         {title}
       </Text>
-      <View style={styles.headerSpacer} />
+      <Pressable
+        accessible
+        accessibilityLabel={refreshing ? 'Atualizando...' : 'Atualizar'}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: refreshing }}
+        disabled={refreshing}
+        hitSlop={4}
+        onPress={refreshing ? undefined : onRefresh}
+        style={({ pressed }) => [
+          styles.headerAction,
+          refreshing ? styles.disabledAction : null,
+          pressed && !refreshing ? styles.pressedAction : null,
+        ]}
+      >
+        <Ionicons accessible={false} color={colors.primaryText} name="refresh-outline" size={18} />
+      </Pressable>
     </View>
   );
 }
@@ -346,7 +418,6 @@ function DetailStatePanel({
           iconTestID="trainer-student-detail-error-retry-icon"
           label={actionLabel}
           onPress={onAction}
-          size="default"
         />
       ) : null}
     </View>
@@ -365,40 +436,14 @@ function DetailLoadingSkeleton() {
           <View style={styles.skeletonGoal} />
         </View>
       </View>
-      <View style={styles.skeletonSummary} testID="trainer-student-detail-skeleton-summary-a" />
-      <View style={styles.skeletonSummary} testID="trainer-student-detail-skeleton-summary-b" />
+      <View style={styles.skeletonSummaryRow} testID="trainer-student-detail-skeleton-summary-row">
+        <View style={styles.skeletonSummary} testID="trainer-student-detail-skeleton-summary-a" />
+        <View style={styles.skeletonSummary} testID="trainer-student-detail-skeleton-summary-b" />
+      </View>
+      <View style={styles.skeletonPreview} />
+      <View style={styles.skeletonPreview} />
     </View>
   );
-}
-
-function formatBirthDate(value: string | null): string {
-  if (!value) {
-    return 'Não informado';
-  }
-
-  const [year, month, day] = value.split('-');
-
-  if (!year || !month || !day) {
-    return value;
-  }
-
-  return `${day}/${month}/${year}`;
-}
-
-function formatGender(value: TrainerStudent['gender']): string {
-  if (value === 'male') {
-    return 'Masculino';
-  }
-
-  if (value === 'female') {
-    return 'Feminino';
-  }
-
-  if (value === 'other') {
-    return 'Outro';
-  }
-
-  return 'Não informado';
 }
 
 function getInitials(name: string): string {
@@ -467,7 +512,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: spacing.xs,
   },
-  headerSpacer: {
+  headerAction: {
+    alignItems: 'center',
+    height: 44,
+    justifyContent: 'center',
     width: 44,
   },
   centeredState: {
@@ -515,21 +563,54 @@ const styles = StyleSheet.create({
     fontFamily: fontFamilies.bodyStrong,
     fontSize: 12,
   },
-  identityStatus: {
-    transform: [{ scale: 0.55 }],
+  summaryRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  factsCard: {
+  summaryCard: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: radii.control,
     borderWidth: 1,
+    flex: 1,
+    gap: spacing.sm,
+    minHeight: 112,
+    padding: spacing.md,
+  },
+  summaryHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  summaryIcon: {
+    alignItems: 'center',
+    backgroundColor: '#EBF5FB',
+    borderRadius: radii.pill,
+    height: 30,
+    justifyContent: 'center',
+    width: 30,
+  },
+  summaryLabel: {
+    color: colors.muted,
+    flex: 1,
+    fontFamily: fontFamilies.bodyStrong,
+    fontSize: 10,
+  },
+  summaryValue: {
+    color: colors.ink,
+    fontFamily: fontFamilies.heading,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  summarySupport: {
+    color: colors.primaryText,
+    fontFamily: fontFamilies.bodyStrong,
+    fontSize: 10,
+  },
+  previewGroup: {
     gap: spacing.md,
-    padding: spacing.lg,
   },
-  factsGrid: {
-    gap: spacing.xs,
-  },
-  navigationCard: {
+  previewCard: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: radii.control,
@@ -537,23 +618,46 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
   },
-  navigationHeading: {
+  previewHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  navigationMeta: {
-    color: colors.primaryText,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 12,
+  previewTitleGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  navigationDescription: {
+  previewIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  previewTitleCopy: {
+    gap: 2,
+  },
+  previewTitle: {
+    color: colors.ink,
+    fontFamily: fontFamilies.heading,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  previewMeta: {
     color: colors.muted,
     fontFamily: fontFamilies.body,
-    fontSize: 13,
+    fontSize: 11,
+  },
+  previewDescription: {
+    color: colors.muted,
+    fontFamily: fontFamilies.body,
+    fontSize: 12,
     lineHeight: 18,
   },
   actionRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
   },
@@ -571,35 +675,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
   },
+  detailLink: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.xs,
+  },
+  detailLinkText: {
+    color: colors.primaryText,
+    fontFamily: fontFamilies.bodyStrong,
+    fontSize: 12,
+    textAlign: 'center',
+  },
   identityCopy: {
     flex: 1,
     gap: spacing.xs,
     minWidth: 0,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 16,
-  },
-  detailRow: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  detailRowPair: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  label: {
-    color: colors.ink,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 12,
-  },
-  detailValue: {
-    color: colors.muted,
-    fontFamily: fontFamilies.body,
-    fontSize: 12,
-    lineHeight: 18,
   },
   detailAction: {
     alignItems: 'center',
@@ -611,14 +705,6 @@ const styles = StyleSheet.create({
     height: 48,
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
-  },
-  detailActionCompact: {
-    height: 32,
-  },
-  detailActionSecondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderWidth: 1,
   },
   detailActionText: {
     color: colors.ink,
@@ -715,10 +801,20 @@ const styles = StyleSheet.create({
     height: 12,
     width: 126,
   },
+  skeletonSummaryRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
   skeletonSummary: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: radii.control,
-    height: 78,
+    flex: 1,
+    height: 112,
+  },
+  skeletonPreview: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.control,
+    height: 148,
   },
 });
 

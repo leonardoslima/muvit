@@ -88,7 +88,6 @@ describe('TrainerStudentDetailScreen', () => {
     expect(screen.getAllByText('Ana Lima')).toHaveLength(2);
     expect(screen.getByTestId('trainer-student-detail-identity-name')).toBeTruthy();
     expect(screen.getByText('AL')).toBeTruthy();
-    expect(screen.getByText('Pausado')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-back-icon')).toBeTruthy();
     const identityCardStyle = StyleSheet.flatten(
       screen.getByTestId('trainer-student-detail-identity-card').props.style,
@@ -102,11 +101,19 @@ describe('TrainerStudentDetailScreen', () => {
     );
     expect(backSurfaceStyle.height).toBe(44);
     expect(backSurfaceStyle.width).toBe(44);
-    expect(screen.getByText('27999999999')).toBeTruthy();
-    expect(screen.getByText('12/10/1994')).toBeTruthy();
-    expect(screen.getByText('Feminino')).toBeTruthy();
     expect(screen.getByText('Ganhar força')).toBeTruthy();
-    expect(screen.getByText('Evitar impacto no joelho')).toBeTruthy();
+
+    const summaryRowStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-student-detail-summary-row').props.style,
+    );
+    expect(summaryRowStyle.flexDirection).toBe('row');
+    expect(summaryRowStyle.gap).toBe(12);
+    expect(screen.getByTestId('trainer-student-detail-assessment-summary')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-workout-summary')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-assessment-preview-card')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-workout-preview-card')).toBeTruthy();
+    expect(screen.queryByText('Informações')).toBeNull();
+    expect(screen.queryByText('Nascimento')).toBeNull();
   });
 
   it('não diferencia aluno ausente de aluno fora do escopo', async () => {
@@ -131,6 +138,7 @@ describe('TrainerStudentDetailScreen', () => {
     );
     expect(screen.getByTestId('trainer-student-detail-skeleton-header')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-profile')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-skeleton-summary-row')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-summary-a')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-summary-b')).toBeTruthy();
 
@@ -144,6 +152,11 @@ describe('TrainerStudentDetailScreen', () => {
       StyleSheet.flatten(screen.getByTestId('trainer-student-detail-skeleton-header').props.style)
         .height,
     ).toBe(24);
+    const skeletonSummaryRowStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-student-detail-skeleton-summary-row').props.style,
+    );
+    expect(skeletonSummaryRowStyle.flexDirection).toBe('row');
+    expect(skeletonSummaryRowStyle.gap).toBe(12);
   });
 
   it('usa Space Grotesk na hierarquia dos cartões consultivos', async () => {
@@ -152,7 +165,9 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(await screen.findByTestId('trainer-student-detail-identity-name')).toBeTruthy();
-    const sectionTitleStyle = StyleSheet.flatten(screen.getByText('Avaliações').props.style);
+    const sectionTitleStyle = StyleSheet.flatten(
+      screen.getByTestId('trainer-student-detail-assessment-preview-title').props.style,
+    );
 
     expect(sectionTitleStyle.fontFamily).toBe('SpaceGrotesk_600SemiBold');
     expect(sectionTitleStyle.fontSize).toBe(16);
@@ -203,9 +218,9 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(await screen.findByText('Sem contato cadastrado')).toBeTruthy();
-    expect(screen.getAllByText('Não informado')).toHaveLength(2);
     expect(screen.getByText('Sem objetivo cadastrado')).toBeTruthy();
-    expect(screen.getByText('Sem restrições cadastradas')).toBeTruthy();
+    expect(screen.queryByText('Não informado')).toBeNull();
+    expect(screen.queryByText('Sem restrições cadastradas')).toBeNull();
   });
 
   it('atualiza o detalhe mantendo o conteúdo', async () => {
@@ -215,11 +230,11 @@ describe('TrainerStudentDetailScreen', () => {
       .mockResolvedValueOnce(studentFixture({ status: 'paused' }));
 
     renderTrainerStudentDetail();
-    expect(await screen.findByText('Ativo')).toBeTruthy();
+    expect(await screen.findByTestId('trainer-student-detail-identity-name')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
-    expect(await screen.findByText('Pausado')).toBeTruthy();
+    expect(await screen.findByTestId('trainer-student-detail-identity-name')).toBeTruthy();
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(screen.getByTestId('trainer-student-detail-identity-name')).toBeTruthy();
   });
@@ -237,7 +252,6 @@ describe('TrainerStudentDetailScreen', () => {
 
     expect(await screen.findByText('Não foi possível atualizar o aluno.')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-identity-name')).toBeTruthy();
-    expect(screen.getByText('Ativo')).toBeTruthy();
   });
 
   it('abre histórico e nova avaliação sem fazer query adicional', async () => {
@@ -247,10 +261,10 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
     expect(await screen.findByTestId('trainer-student-detail-identity-name')).toBeTruthy();
 
-    expect(screen.getByText('Avaliações')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-assessment-preview-title')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ver histórico' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Nova avaliação' })).toBeTruthy();
-    expect(screen.getByText('Treinos')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-workout-preview-title')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ver treinos' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Novo treino' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Editar' })).toBeNull();
@@ -258,7 +272,7 @@ describe('TrainerStudentDetailScreen', () => {
     const historyButtonStyle = StyleSheet.flatten(
       screen.getByRole('button', { name: 'Ver histórico' }).props.style({ pressed: false }),
     );
-    expect(historyButtonStyle.height).toBe(32);
+    expect(historyButtonStyle.minHeight).toBe(44);
     expect(apiState.request).toHaveBeenCalledTimes(1);
     expect(apiState.request).toHaveBeenCalledWith('/students/student-1', expect.any(Object));
 
