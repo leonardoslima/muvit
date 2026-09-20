@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { getTrainerStudent } from '../application/trainer/trainer-data';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, HeaderAction, PageHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ApiError } from '../lib/api';
 import { colors, fontFamilies, radii, spacing } from '../lib/styles';
@@ -29,6 +29,7 @@ export function TrainerStudentDetailScreen() {
   if (!studentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="ALUNO" testID="trainer-student-detail-state-header" title="Aluno" />
         <StatePanel
           actionLabel="Voltar para alunos"
           description="Não foi possível identificar o aluno solicitado."
@@ -43,8 +44,11 @@ export function TrainerStudentDetailScreen() {
   if (query.isPending) {
     return (
       <Screen scroll contentContainerStyle={styles.scrollContent}>
-        <View accessibilityLabel="Carregando aluno" accessible style={styles.stateContent}>
-          <DetailLoadingSkeleton />
+        <View style={styles.stateContent} testID="trainer-student-detail-state-content">
+          <PageHeader eyebrow="ALUNO" testID="trainer-student-detail-state-header" title="Aluno" />
+          <View accessibilityLabel="Carregando aluno" accessible>
+            <DetailLoadingSkeleton />
+          </View>
         </View>
       </Screen>
     );
@@ -56,7 +60,7 @@ export function TrainerStudentDetailScreen() {
     return (
       <Screen scroll contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
-          <StudentDetailStateHeader />
+          <PageHeader eyebrow="ALUNO" testID="trainer-student-detail-state-header" title="Aluno" />
           <DetailStatePanel
             actionLabel="Voltar para alunos"
             description="Este aluno não está disponível para sua conta."
@@ -73,6 +77,7 @@ export function TrainerStudentDetailScreen() {
     return (
       <Screen scroll contentContainerStyle={styles.scrollContent}>
         <View style={styles.errorContent}>
+          <PageHeader eyebrow="ALUNO" testID="trainer-student-detail-state-header" title="Aluno" />
           <DetailLoadingSkeleton />
           <DetailStatePanel
             actionDisabled={query.isRefetching}
@@ -339,44 +344,37 @@ type DetailHeaderProps = {
 
 function DetailHeader({ onRefresh, refreshing, title }: DetailHeaderProps) {
   return (
-    <View style={styles.detailHeader}>
-      <Pressable
-        accessible
-        accessibilityLabel="Voltar para alunos"
-        accessibilityRole="button"
-        onPress={returnToStudents}
-        style={({ pressed }) => [styles.backButton, pressed ? styles.backButtonPressed : null]}
-      >
-        <View style={styles.backSurface} testID="trainer-student-detail-back-surface">
+    <ContextualHeader
+      action={
+        <HeaderAction
+          accessibilityLabel={refreshing ? 'Atualizando...' : 'Atualizar'}
+          disabled={refreshing}
+          onPress={onRefresh}
+          testID="trainer-student-detail-header-action"
+        >
           <Ionicons
             accessible={false}
-            color={colors.ink}
-            name="arrow-back"
-            size={14}
-            testID="trainer-student-detail-back-icon"
+            color={colors.primaryText}
+            name="refresh-outline"
+            size={18}
           />
-        </View>
-      </Pressable>
-      <Text accessibilityRole="header" style={styles.detailTitle}>
-        {title}
-      </Text>
-      <Pressable
-        accessible
-        accessibilityLabel={refreshing ? 'Atualizando...' : 'Atualizar'}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: refreshing }}
-        disabled={refreshing}
-        hitSlop={4}
-        onPress={refreshing ? undefined : onRefresh}
-        style={({ pressed }) => [
-          styles.headerAction,
-          refreshing ? styles.disabledAction : null,
-          pressed && !refreshing ? styles.pressedAction : null,
-        ]}
-      >
-        <Ionicons accessible={false} color={colors.primaryText} name="refresh-outline" size={18} />
-      </Pressable>
-    </View>
+        </HeaderAction>
+      }
+      backAccessibilityLabel="Voltar para alunos"
+      backIcon={
+        <Ionicons
+          accessible={false}
+          color={colors.ink}
+          name="arrow-back"
+          size={14}
+          testID="trainer-student-detail-back-icon"
+        />
+      }
+      backTestID="trainer-student-detail-header-back"
+      onBack={returnToStudents}
+      testID="trainer-student-detail-header"
+      title={title}
+    />
   );
 }
 
@@ -427,7 +425,6 @@ function DetailStatePanel({
 function DetailLoadingSkeleton() {
   return (
     <View style={styles.skeletonContent}>
-      <View style={styles.skeletonHeader} testID="trainer-student-detail-skeleton-header" />
       <View style={styles.skeletonProfile} testID="trainer-student-detail-skeleton-profile">
         <View style={styles.skeletonAvatar} />
         <View style={styles.skeletonCopy}>
@@ -472,6 +469,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
   },
   stateContent: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xxl,
   },
@@ -480,61 +479,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xxl,
   },
-  detailHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    height: 44,
-  },
-  backButton: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  backSurface: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  backButtonPressed: {
-    opacity: 0.7,
-  },
-  detailTitle: {
-    color: colors.ink,
-    flex: 1,
-    fontFamily: fontFamilies.heading,
-    fontSize: 20,
-    fontWeight: '700',
-    marginLeft: spacing.xs,
-  },
-  headerAction: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   centeredState: {
     justifyContent: 'center',
-  },
-  stateHeader: {
-    gap: spacing.xs,
-  },
-  stateEyebrow: {
-    color: colors.primaryText,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 11,
-    letterSpacing: 1,
-  },
-  stateHeaderTitle: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 26,
-    fontWeight: '700',
   },
   identityCard: {
     alignItems: 'center',
@@ -756,12 +702,6 @@ const styles = StyleSheet.create({
   skeletonContent: {
     gap: spacing.md,
   },
-  skeletonHeader: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.pill,
-    height: 24,
-    width: 210,
-  },
   skeletonProfile: {
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -817,14 +757,3 @@ const styles = StyleSheet.create({
     height: 148,
   },
 });
-
-function StudentDetailStateHeader() {
-  return (
-    <View style={styles.stateHeader}>
-      <Text style={styles.stateEyebrow}>ALUNO</Text>
-      <Text accessibilityRole="header" style={styles.stateHeaderTitle}>
-        Aluno
-      </Text>
-    </View>
-  );
-}

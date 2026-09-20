@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assessment, AssessmentsPage } from '../application/assessments/assessment-data';
 import { ApiError } from '../lib/api';
-import { colors } from '../lib/styles';
+import { colors, controlSizes } from '../lib/styles';
 import { TrainerAssessmentsScreen } from './trainer-assessments';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -111,6 +111,10 @@ describe('TrainerAssessmentsScreen', () => {
     renderTrainerAssessments({ studentName: 'Mariana Costa' });
 
     expect(await screen.findByTestId('trainer-assessments-header')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessments-header-back')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-assessments-header').props.style),
+    ).toMatchObject({ minHeight: controlSizes.touchTarget });
     expect(screen.getByTestId('trainer-assessments-refresh')).toBeTruthy();
     expect(screen.getByTestId('trainer-assessments-refresh').props.children.props).toEqual(
       expect.objectContaining({ color: colors.muted, name: 'refresh-outline', size: 20 }),

@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { createElement } from 'react';
+import { Alert, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '../application/exercises/exercise-catalog';
 import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
+import { controlSizes } from '../lib/styles';
 import { TrainerWorkoutEditorScreen } from './trainer-workout-editor';
 
 type PreventRemoveEvent = { data: { action: unknown } };
@@ -35,6 +37,10 @@ vi.mock('expo-router', () => ({
   router: routerState,
   useLocalSearchParams: () => paramsState,
   useNavigation: () => ({ dispatch: navigationState.dispatch }),
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 vi.mock('../lib/use-prevent-remove', () => ({
@@ -168,6 +174,10 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
 
     renderEditor();
 
+    expect(screen.getByTestId('trainer-workout-editor-header')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-workout-editor-header').props.style),
+    ).toMatchObject({ minHeight: controlSizes.touchTarget });
     expect(navigationState.enabled).toBe(false);
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
     expect(navigationState.enabled).toBe(true);
@@ -560,6 +570,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
   it('mostra loading durante a carga inicial', () => {
     apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
     renderEditor('edit');
+    expect(screen.getByTestId('trainer-workout-editor-state-header')).toBeTruthy();
     expect(screen.getByText('Carregando treino')).toBeTruthy();
   });
 

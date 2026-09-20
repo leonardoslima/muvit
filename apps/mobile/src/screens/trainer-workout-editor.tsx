@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -29,7 +30,7 @@ import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import { ContextualHeader, PageHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ExerciseCatalogModal } from '../components/workouts/exercise-catalog-modal';
 import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day';
@@ -279,6 +280,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'create' && !studentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Novo treino"
+        />
         <StatePanel
           actionLabel="Voltar para alunos"
           description="Não foi possível identificar o aluno solicitado."
@@ -293,6 +299,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'edit' && (!studentId || !planId)) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Não foi possível identificar o treino solicitado."
@@ -307,6 +318,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'edit' && planQuery.isPending) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           description="Estamos carregando a estrutura deste treino."
           title="Carregando treino"
@@ -319,6 +335,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'edit' && planQuery.error instanceof ApiError && planQuery.error.status === 404) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Este treino não está disponível para sua conta."
@@ -333,6 +354,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'edit' && planQuery.isError && !planQuery.data) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionDisabled={planQuery.isFetching}
           actionLabel="Tentar novamente"
@@ -349,6 +375,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (mode === 'edit' && !plan) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Este treino não está disponível para sua conta."
@@ -363,6 +394,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (plan && plan.studentId !== studentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Este treino não pertence ao aluno aberto neste contexto."
@@ -377,6 +413,11 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   if (plan?.status === 'archived') {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="EDITAR PRESCRIÇÃO"
+          testID="trainer-workout-editor-state-header"
+          title="Editar treino"
+        />
         <StatePanel
           actionLabel="Voltar para treino"
           description="Planos arquivados são somente leitura no mobile."
@@ -392,16 +433,15 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton
-        disabled={submitting}
-        label="Voltar para treinos"
-        onPress={returnToWorkouts}
-        variant="secondary"
-      />
-      <ScreenHeader
+      <ContextualHeader
+        backAccessibilityLabel="Voltar para treinos"
+        backDisabled={submitting}
+        backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+        onBack={returnToWorkouts}
+        testID="trainer-workout-editor-header"
+        title={mode === 'create' ? 'Novo treino' : 'Editar treino'}
         eyebrow={mode === 'create' ? 'Prescrição' : 'Editar prescrição'}
         subtitle="Monte a rotina com os exercícios e parâmetros de cada dia."
-        title={mode === 'create' ? 'Novo treino' : 'Editar treino'}
       />
 
       <Card>

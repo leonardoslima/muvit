@@ -4,6 +4,7 @@ import { createElement } from 'react';
 import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
+import { sharedStyles } from '../lib/styles';
 import { TrainerStudentsScreen } from './trainer-students';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -186,6 +187,9 @@ describe('TrainerStudentsScreen', () => {
     renderTrainerStudents();
 
     expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'Alunos' }).props.style),
+    ).toMatchObject(sharedStyles.title);
     expect(screen.getByText('Carregando alunos')).toBeTruthy();
     expect(screen.getByLabelText('Carregando')).toBeTruthy();
     const statePanelStyle = StyleSheet.flatten(

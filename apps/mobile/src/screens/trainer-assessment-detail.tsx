@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { Assessment } from '../application/assessments/assessment-data';
 import { getAssessment } from '../application/assessments/assessment-data';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
@@ -10,7 +10,7 @@ import { AssessmentMeasurementsCard } from '../components/assessments/assessment
 import { AssessmentPhotoList } from '../components/assessments/assessment-photo-list';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, HeaderAction, PageHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ApiError } from '../lib/api';
 import { colors, spacing, typography } from '../lib/styles';
@@ -53,6 +53,11 @@ export function TrainerAssessmentDetailScreen() {
   if (!studentId || !assessmentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="AVALIAÇÕES"
+          testID="trainer-assessment-detail-state-header"
+          title="Avaliação"
+        />
         <StatePanel
           actionLabel="Voltar para avaliações"
           description="Não foi possível identificar a avaliação solicitada."
@@ -67,6 +72,11 @@ export function TrainerAssessmentDetailScreen() {
   if (query.isPending) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="AVALIAÇÕES"
+          testID="trainer-assessment-detail-state-header"
+          title="Avaliação"
+        />
         <StatePanel
           description="Estamos carregando os dados desta avaliação."
           title="Carregando avaliação"
@@ -81,6 +91,11 @@ export function TrainerAssessmentDetailScreen() {
   if (isNotFound) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="AVALIAÇÕES"
+          testID="trainer-assessment-detail-state-header"
+          title="Avaliação"
+        />
         <StatePanel
           actionLabel="Voltar para avaliações"
           description="Esta avaliação não está disponível para sua conta."
@@ -95,6 +110,11 @@ export function TrainerAssessmentDetailScreen() {
   if (query.isError && !query.data) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="AVALIAÇÕES"
+          testID="trainer-assessment-detail-state-header"
+          title="Avaliação"
+        />
         <StatePanel
           actionDisabled={query.isRefetching}
           actionLabel="Tentar novamente"
@@ -112,6 +132,11 @@ export function TrainerAssessmentDetailScreen() {
   if (assessment.studentId !== studentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader
+          eyebrow="AVALIAÇÕES"
+          testID="trainer-assessment-detail-state-header"
+          title="Avaliação"
+        />
         <StatePanel
           actionLabel="Voltar para avaliações"
           description="Esta avaliação não pertence ao aluno aberto neste contexto."
@@ -200,31 +225,24 @@ function AssessmentDetailHeader({
   testID,
 }: AssessmentDetailHeaderProps) {
   return (
-    <View style={styles.header} testID={testID}>
-      <View style={styles.headerLead}>
-        <Pressable
-          accessible
-          accessibilityLabel="Voltar para avaliações"
-          accessibilityRole="button"
-          onPress={onBack}
-          style={styles.backButton}
+    <ContextualHeader
+      action={
+        <HeaderAction
+          accessibilityLabel={actionLabel}
+          disabled={actionDisabled}
+          onPress={onAction}
+          testID={`${testID}-action`}
         >
-          <Ionicons color={colors.ink} name="arrow-back" size={20} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Avaliação</Text>
-      </View>
-      <Pressable
-        accessible
-        accessibilityLabel={actionLabel}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: actionDisabled }}
-        disabled={actionDisabled}
-        onPress={onAction}
-        style={styles.headerAction}
-      >
-        <Ionicons color={colors.muted} name="ellipsis-horizontal" size={20} />
-      </Pressable>
-    </View>
+          <Ionicons color={colors.muted} name="refresh-outline" size={20} />
+        </HeaderAction>
+      }
+      backAccessibilityLabel="Voltar para avaliações"
+      backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+      backTestID={`${testID}-back`}
+      onBack={onBack}
+      testID={testID}
+      title="Avaliação"
+    />
   );
 }
 
@@ -346,16 +364,6 @@ function formatNotes(value: string | null): string {
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   centeredState: {
     justifyContent: 'center',
   },
@@ -376,29 +384,6 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: '700',
     lineHeight: 32,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  headerAction: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  headerLead: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerTitle: {
-    color: colors.ink,
-    fontFamily: typography.exerciseTitle.fontFamily,
-    fontSize: 20,
-    fontWeight: '700',
   },
   identification: {
     gap: 5,

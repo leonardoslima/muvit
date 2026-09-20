@@ -625,7 +625,7 @@ describe('LogWorkoutScreen', () => {
     expect(screen.queryByTestId('session-header-menu')).toBeNull();
     expect(screen.getByTestId('session-header-title')).toHaveProp('children', 'Treino A');
     expect(StyleSheet.flatten(screen.getByTestId('session-header').props.style)).toMatchObject({
-      height: 44,
+      minHeight: controlSizes.touchTarget,
       justifyContent: 'center',
     });
     expect(
@@ -635,10 +635,10 @@ describe('LogWorkoutScreen', () => {
       StyleSheet.flatten(screen.getByTestId('session-header-back').props.style({ pressed: false })),
     ).toMatchObject({
       borderRadius: radii.pill,
-      height: 44,
+      height: controlSizes.touchTarget,
       left: 0,
       position: 'absolute',
-      width: 44,
+      width: controlSizes.touchTarget,
     });
     expect(screen.queryByText('SESSÃO GUIADA')).toBeNull();
   });

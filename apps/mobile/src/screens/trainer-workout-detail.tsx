@@ -1,17 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { getTrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { AppButton } from '../components/ui/button';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, PageHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { WorkoutDayCard } from '../components/workouts/workout-day-card';
 import { WorkoutStatusBadge } from '../components/workouts/workout-status-badge';
 import { ApiError } from '../lib/api';
-import { colors, radii, sharedStyles, spacing, typography } from '../lib/styles';
+import { colors, sharedStyles, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
 export function TrainerWorkoutDetailScreen() {
@@ -55,6 +55,7 @@ export function TrainerWorkoutDetailScreen() {
   if (!studentId || !planId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Não foi possível identificar o treino solicitado."
@@ -69,6 +70,7 @@ export function TrainerWorkoutDetailScreen() {
   if (query.isPending) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <StatePanel
           description="Estamos carregando a estrutura deste treino."
           title="Carregando treino"
@@ -82,6 +84,7 @@ export function TrainerWorkoutDetailScreen() {
   if (isNotFound) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <View testID="trainer-workout-detail-error-state">
           <StatePanel
             actionLabel="Voltar para treinos"
@@ -98,6 +101,7 @@ export function TrainerWorkoutDetailScreen() {
   if (query.isError && !query.data) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <StatePanel
           actionDisabled={query.isFetching}
           actionLabel="Tentar novamente"
@@ -114,6 +118,7 @@ export function TrainerWorkoutDetailScreen() {
   if (!plan) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Este treino não está disponível para sua conta."
@@ -128,6 +133,7 @@ export function TrainerWorkoutDetailScreen() {
   if (plan.studentId !== studentId) {
     return (
       <Screen style={styles.centeredState}>
+        <PageHeader eyebrow="TREINOS" testID="trainer-workout-detail-state-header" title="Treino" />
         <StatePanel
           actionLabel="Voltar para treinos"
           description="Este treino não pertence ao aluno aberto neste contexto."
@@ -144,15 +150,21 @@ export function TrainerWorkoutDetailScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <View style={styles.backHeader}>
-        <Pressable
-          accessible
-          accessibilityLabel="Voltar para treinos"
-          accessibilityRole="button"
-          onPress={returnToWorkouts}
-          style={styles.backButton}
-        >
-          <View style={styles.backControl} testID="trainer-workout-detail-back-control">
+      <ContextualHeader
+        action={
+          <View>
+            <Ionicons
+              accessible={false}
+              color={colors.muted}
+              name="ellipsis-horizontal"
+              size={20}
+              testID="trainer-workout-detail-header-action"
+            />
+          </View>
+        }
+        backAccessibilityLabel="Voltar para treinos"
+        backIcon={
+          <View testID="trainer-workout-detail-back-control">
             <Ionicons
               accessible={false}
               color={colors.ink}
@@ -161,20 +173,13 @@ export function TrainerWorkoutDetailScreen() {
               testID="trainer-workout-detail-back-icon"
             />
           </View>
-          <Text testID="trainer-workout-detail-back-title" style={styles.backTitle}>
-            {plan.name}
-          </Text>
-        </Pressable>
-        <View style={styles.headerAction}>
-          <Ionicons
-            accessible={false}
-            color={colors.muted}
-            name="ellipsis-horizontal"
-            size={20}
-            testID="trainer-workout-detail-header-action"
-          />
-        </View>
-      </View>
+        }
+        backTestID="trainer-workout-detail-back-button"
+        onBack={returnToWorkouts}
+        testID="trainer-workout-detail-header"
+        title={plan.name}
+        titleTestID="trainer-workout-detail-back-title"
+      />
       <View style={styles.planIntro} testID="trainer-workout-detail-plan-intro">
         <View style={styles.planHeading} testID="trainer-workout-detail-plan-heading">
           <Text style={styles.planTitle}>{plan.name}</Text>
@@ -226,41 +231,6 @@ function formatDate(value: string): string {
 }
 
 const styles = StyleSheet.create({
-  backHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  backButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 44,
-  },
-  backControl: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  backTitle: {
-    color: colors.ink,
-    fontFamily: typography.title.fontFamily,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 26,
-  },
-  headerAction: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   centeredState: {
     justifyContent: 'center',
   },

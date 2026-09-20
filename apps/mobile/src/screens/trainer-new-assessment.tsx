@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Field } from '../components/ui/field';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import { ContextualHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
@@ -197,15 +198,14 @@ export function TrainerNewAssessmentScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton
-        disabled={formDisabled}
-        label="Voltar para avaliações"
-        onPress={returnToAssessments}
-        variant="secondary"
-      />
-      <ScreenHeader
-        subtitle="Registre medidas e fotos para acompanhar a evolução deste aluno."
+      <ContextualHeader
+        backAccessibilityLabel="Voltar para avaliações"
+        backDisabled={formDisabled}
+        backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+        onBack={returnToAssessments}
+        testID="trainer-new-assessment-header"
         title="Nova avaliação"
+        subtitle="Registre medidas e fotos para acompanhar a evolução deste aluno."
       />
 
       <Card>

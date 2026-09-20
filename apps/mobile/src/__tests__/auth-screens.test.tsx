@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from '../../app/(auth)/login';
 import SignupScreen from '../../app/(auth)/signup';
 import { mobileRoutes } from '../application/navigation/role-navigation';
-import { colors } from '../lib/styles';
+import { colors, sharedStyles } from '../lib/styles';
 
 vi.mock('react-native', async (importOriginal) => {
   const ReactModule = await import('react');
@@ -109,6 +109,10 @@ describe('telas de autenticação mobile', () => {
     });
     expect(screen.getByText('Muvit')).toBeTruthy();
     expect(screen.getByText('SEU TREINO, NO SEU RITMO')).toBeTruthy();
+    expect(screen.getByTestId('login-header')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'Entrar' }).props.style),
+    ).toMatchObject(sharedStyles.title);
     expect(screen.getByTestId('login-email-icon').props.name).toBe('mail-outline');
     expect(screen.getByTestId('login-password-icon').props.name).toBe('lock-closed-outline');
     expect(screen.getByTestId('login-submit-icon').props.name).toBe('log-in-outline');

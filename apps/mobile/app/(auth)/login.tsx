@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
 import { InlineMessage } from '../../src/components/ui/inline-message';
-import { Screen } from '../../src/components/ui/screen';
+import { Screen, ScreenHeader } from '../../src/components/ui/screen';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
 import {
@@ -161,12 +161,11 @@ export default function LoginScreen() {
           </View>
         </View>
 
-        <View style={{ gap: spacing.sm }}>
-          <Text accessibilityRole="header" style={sharedStyles.title}>
-            Entrar
-          </Text>
-          <Text style={sharedStyles.subtitle}>Acesse seus treinos e registre sua evolução.</Text>
-        </View>
+        <ScreenHeader
+          subtitle="Acesse seus treinos e registre sua evolução."
+          testID="login-header"
+          title="Entrar"
+        />
 
         <View style={{ gap: spacing.md }}>
           <LoginField

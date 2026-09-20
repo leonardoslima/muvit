@@ -3,7 +3,7 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import { type ReactNode, createElement } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, controlSizes, fontFamilies, radii } from '../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, sharedStyles } from '../lib/styles';
 import { ProfileScreen } from './profile';
 
 const routerState = vi.hoisted(() => ({ replace: vi.fn() }));
@@ -200,16 +200,15 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('joao@example.com')).toBeTruthy();
     expect(screen.getByText('Sua conta e visão de treinador.')).toBeTruthy();
     expect(screen.getByText('Alunos e treinos')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('profile-header').props.style)).toMatchObject(
+      sharedStyles.header,
+    );
     expect(StyleSheet.flatten(screen.getByText('PERFIL').props.style)).toMatchObject({
-      color: colors.primary,
+      color: colors.primaryText,
     });
     expect(
       StyleSheet.flatten(screen.getByRole('header', { name: 'Meu perfil' }).props.style),
-    ).toMatchObject({
-      fontFamily: fontFamilies.heading,
-      fontSize: 26,
-      fontWeight: '700',
-    });
+    ).toMatchObject(sharedStyles.title);
     expect(
       StyleSheet.flatten(screen.getByTestId('profile-identity-card').props.style),
     ).toMatchObject({

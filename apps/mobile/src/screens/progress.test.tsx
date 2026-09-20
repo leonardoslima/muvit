@@ -39,6 +39,7 @@ describe('ProgressScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('PROGRESSO')).toBeTruthy();
+    expect(screen.getByTestId('progress-header')).toBeTruthy();
     expect(screen.getByText('Sua evolução, avaliação por avaliação.')).toBeTruthy();
 
     const action = screen.getByRole('button', { name: 'Nova avaliação' });

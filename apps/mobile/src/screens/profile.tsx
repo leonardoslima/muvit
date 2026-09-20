@@ -69,11 +69,12 @@ export function ProfileScreen({
       scroll
       contentContainerStyle={[styles.content, isTrainerProfile ? styles.trainerContent : null]}
     >
-      {isTrainerProfile ? (
-        <ProfileHeader subtitle={subtitle} />
-      ) : (
-        <ScreenHeader eyebrow="PERFIL" subtitle={subtitle} title="Meu perfil" />
-      )}
+      <ScreenHeader
+        eyebrow="PERFIL"
+        subtitle={subtitle}
+        testID="profile-header"
+        title="Meu perfil"
+      />
 
       <Card
         style={[styles.identityCard, isTrainerProfile ? styles.trainerIdentityCard : null]}
@@ -192,18 +193,6 @@ function ProfileDetailRow({
   );
 }
 
-function ProfileHeader({ subtitle }: { subtitle: string }) {
-  return (
-    <View style={styles.header} testID="profile-header">
-      <Text style={styles.eyebrow}>PERFIL</Text>
-      <Text accessibilityRole="header" style={styles.title}>
-        Meu perfil
-      </Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-    </View>
-  );
-}
-
 function getInitials(name: string | undefined, fallbackInitials: string): string {
   const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
   const initials = parts
@@ -224,27 +213,6 @@ const styles = StyleSheet.create({
     gap: 18,
     paddingBottom: spacing.lg,
     paddingTop: spacing.xxl,
-  },
-  header: {
-    gap: 6,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 11,
-    letterSpacing: 1,
-  },
-  title: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.muted,
-    fontFamily: fontFamilies.body,
-    fontSize: 14,
-    lineHeight: 20,
   },
   identityCard: {
     alignItems: 'center',

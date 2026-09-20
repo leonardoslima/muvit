@@ -13,7 +13,7 @@ import { TrainerMetricCard } from '../components/trainer/trainer-metric-card';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { Screen, ScreenHeader } from '../components/ui/screen';
 import { authClient } from '../lib/auth-client';
 import { colors, fontFamilies, radii, spacing } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
@@ -38,11 +38,18 @@ export function TrainerHomeScreen() {
     },
     enabled: Boolean(query.data?.students.total),
   });
+  const firstName = getFirstName(session.data?.user.name);
+  const greetingTitle = firstName ? `Bom dia, ${firstName}` : 'Bom dia';
 
   if (query.isPending) {
     return (
       <Screen scroll contentContainerStyle={styles.content}>
-        <TrainerHomeHeader firstName={getFirstName(session.data?.user.name)} />
+        <ScreenHeader
+          eyebrow="INÍCIO"
+          subtitle="Acompanhe seus alunos de onde estiver."
+          testID="trainer-home-header"
+          title={greetingTitle}
+        />
         <TrainerHomeLoadingState />
       </Screen>
     );
@@ -51,7 +58,12 @@ export function TrainerHomeScreen() {
   if (!query.data) {
     return (
       <Screen scroll contentContainerStyle={styles.content}>
-        <TrainerHomeHeader firstName={getFirstName(session.data?.user.name)} />
+        <ScreenHeader
+          eyebrow="INÍCIO"
+          subtitle="Acompanhe seus alunos de onde estiver."
+          testID="trainer-home-header"
+          title={greetingTitle}
+        />
         <TrainerHomeErrorState
           actionDisabled={query.isRefetching}
           onAction={() => void query.refetch()}
@@ -65,7 +77,12 @@ export function TrainerHomeScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <TrainerHomeHeader firstName={getFirstName(session.data?.user.name)} />
+      <ScreenHeader
+        eyebrow="INÍCIO"
+        subtitle="Acompanhe seus alunos de onde estiver."
+        testID="trainer-home-header"
+        title={greetingTitle}
+      />
 
       {summary.students.total === 0 ? (
         <>
@@ -203,18 +220,6 @@ function TrainerHomeErrorState({ actionDisabled, onAction }: TrainerHomeErrorSta
         />
       </View>
     </Card>
-  );
-}
-
-function TrainerHomeHeader({ firstName }: { firstName?: string }) {
-  return (
-    <View style={styles.header} testID="trainer-home-header">
-      <Text style={styles.eyebrow}>INÍCIO</Text>
-      <Text accessibilityRole="header" style={styles.title}>
-        Bom dia{firstName ? `, ${firstName}` : ''}
-      </Text>
-      <Text style={styles.subtitle}>Acompanhe seus alunos de onde estiver.</Text>
-    </View>
   );
 }
 
@@ -368,27 +373,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     height: 12,
     width: 28,
-  },
-  header: {
-    gap: 6,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 11,
-    letterSpacing: 1,
-  },
-  title: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.muted,
-    fontFamily: fontFamilies.body,
-    fontSize: 14,
-    lineHeight: 20,
   },
   dashboard: {
     gap: spacing.md,

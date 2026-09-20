@@ -4,12 +4,21 @@ import {
   ScrollView,
   type ScrollViewProps,
   type StyleProp,
-  Text,
   View,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { sharedStyles, spacing } from '../../lib/styles';
+
+export { ContextualHeader, HeaderAction, PageHeader, SessionHeader } from './header';
+export type {
+  ContextualHeaderProps,
+  HeaderActionProps,
+  PageHeaderProps,
+  SessionHeaderProps,
+} from './header';
+export { PageHeader as ScreenHeader } from './header';
+export type { PageHeaderProps as ScreenHeaderProps } from './header';
 
 export type ScreenProps = {
   children: React.ReactNode;
@@ -42,34 +51,3 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
     </SafeAreaView>
   );
 }
-
-export type ScreenHeaderProps = {
-  centered?: boolean;
-  eyebrow?: string;
-  title: string;
-  subtitle?: string;
-};
-
-export function ScreenHeader({ centered = false, eyebrow, subtitle, title }: ScreenHeaderProps) {
-  const centeredTextStyle = centered ? styles.centeredHeaderText : null;
-
-  return (
-    <View style={[sharedStyles.header, centered ? styles.centeredHeader : null]}>
-      {eyebrow ? <Text style={[sharedStyles.eyebrow, centeredTextStyle]}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={[sharedStyles.title, centeredTextStyle]}>
-        {title}
-      </Text>
-      {subtitle ? <Text style={[sharedStyles.subtitle, centeredTextStyle]}>{subtitle}</Text> : null}
-    </View>
-  );
-}
-
-const styles = {
-  centeredHeader: {
-    alignItems: 'center' as const,
-  },
-  centeredHeaderText: {
-    alignSelf: 'stretch' as const,
-    textAlign: 'center' as const,
-  },
-};

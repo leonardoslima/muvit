@@ -9,7 +9,7 @@ import {
 } from '../application/trainer/trainer-data';
 import { StudentListItem } from '../components/trainer/student-list-item';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { Screen, ScreenHeader } from '../components/ui/screen';
 import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../lib/styles';
 import { useApiClient } from '../lib/use-api';
 
@@ -62,7 +62,11 @@ export function TrainerStudentsScreen() {
     return (
       <Screen scroll contentContainerStyle={styles.scrollContent}>
         <View style={styles.content} testID="trainer-students-content">
-          <TrainerStudentsHeader />
+          <ScreenHeader
+            eyebrow="ALUNOS"
+            subtitle="Acompanhe a atividade recente de cada aluno."
+            title="Alunos"
+          />
           <StudentStatePanel
             description="Estamos carregando os alunos vinculados à sua conta."
             title="Carregando alunos"
@@ -77,7 +81,11 @@ export function TrainerStudentsScreen() {
     return (
       <Screen scroll contentContainerStyle={styles.scrollContent}>
         <View style={styles.content} testID="trainer-students-content">
-          <TrainerStudentsHeader />
+          <ScreenHeader
+            eyebrow="ALUNOS"
+            subtitle="Acompanhe a atividade recente de cada aluno."
+            title="Alunos"
+          />
           <StudentStatePanel
             actionDisabled={query.isFetching}
             actionLabel="Tentar novamente"
@@ -94,7 +102,11 @@ export function TrainerStudentsScreen() {
   return (
     <Screen scroll contentContainerStyle={styles.scrollContent}>
       <View style={styles.content} testID="trainer-students-content">
-        <TrainerStudentsHeader />
+        <ScreenHeader
+          eyebrow="ALUNOS"
+          subtitle="Acompanhe a atividade recente de cada aluno."
+          title="Alunos"
+        />
         <View style={styles.listContent}>
           <CompactAction
             disabled={query.isFetching}
@@ -192,27 +204,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: 0,
     padding: 0,
-  },
-  header: {
-    gap: spacing.xs,
-  },
-  eyebrow: {
-    color: colors.primary,
-    fontFamily: fontFamilies.bodyStrong,
-    fontSize: 11,
-    letterSpacing: 1,
-  },
-  title: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 26,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: colors.muted,
-    fontFamily: fontFamilies.body,
-    fontSize: 14,
-    lineHeight: 20,
   },
   content: {
     gap: spacing.xxl,
@@ -335,18 +326,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
 });
-
-function TrainerStudentsHeader() {
-  return (
-    <View style={styles.header}>
-      <Text style={styles.eyebrow}>ALUNOS</Text>
-      <Text accessibilityRole="header" style={styles.title}>
-        Alunos
-      </Text>
-      <Text style={styles.subtitle}>Acompanhe a atividade recente de cada aluno.</Text>
-    </View>
-  );
-}
 
 type CompactActionProps = {
   accessibilityLabel?: string;

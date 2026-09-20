@@ -8,7 +8,11 @@ import { BottomSheet } from '../components/ui/bottom-sheet';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import {
+  Screen,
+  ScreenHeader,
+  SessionHeader as SharedSessionHeader,
+} from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { authClient } from '../lib/auth-client';
 import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
@@ -116,13 +120,17 @@ export function LogWorkoutScreen() {
   return (
     <>
       <Screen scroll contentContainerStyle={styles.content}>
-        <SessionHeader
+        <SharedSessionHeader
+          backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+          backTestID="session-header-back"
           disabled={controller.busy}
           onBack={() => router.back()}
           showBack={session.phase !== 'rest'}
+          testID="session-header"
           title={
             session.phase === 'summary' || !isResumedSession ? day.label : 'Treino em andamento'
           }
+          titleTestID="session-header-title"
         />
 
         {session.phase === 'set' || session.phase === 'ready-to-finish' ? (
@@ -240,52 +248,6 @@ export function LogWorkoutScreen() {
         visible={exitVisible}
       />
     </>
-  );
-}
-
-function SessionHeader({
-  disabled,
-  onBack,
-  showBack,
-  title,
-}: {
-  disabled: boolean;
-  onBack: () => void;
-  showBack: boolean;
-  title: string;
-}) {
-  return (
-    <View style={styles.sessionHeader} testID="session-header">
-      <View style={styles.sessionHeaderLead}>
-        {showBack ? (
-          <Pressable
-            accessible
-            accessibilityLabel="Voltar"
-            accessibilityRole="button"
-            accessibilityState={{ disabled }}
-            disabled={disabled}
-            onPress={disabled ? undefined : onBack}
-            style={({ pressed }) => [
-              styles.sessionHeaderBack,
-              disabled ? { opacity: 0.5 } : null,
-              pressed && !disabled ? { opacity: 0.8 } : null,
-            ]}
-            testID="session-header-back"
-          >
-            <Ionicons color={colors.ink} name="arrow-back" size={20} />
-          </Pressable>
-        ) : null}
-        <Text
-          accessibilityRole="header"
-          ellipsizeMode="tail"
-          numberOfLines={1}
-          style={styles.sessionHeaderTitle}
-          testID="session-header-title"
-        >
-          {title}
-        </Text>
-      </View>
-    </View>
   );
 }
 
@@ -882,40 +844,6 @@ const styles = {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xxxl,
-  },
-  sessionHeader: {
-    alignItems: 'center' as const,
-    flexDirection: 'row' as const,
-    height: 44,
-    justifyContent: 'center' as const,
-    position: 'relative' as const,
-  },
-  sessionHeaderLead: {
-    alignItems: 'center' as const,
-    flex: 1,
-    flexDirection: 'row' as const,
-    justifyContent: 'center' as const,
-    minWidth: 0,
-  },
-  sessionHeaderBack: {
-    alignItems: 'center' as const,
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center' as const,
-    left: 0,
-    position: 'absolute' as const,
-    width: 44,
-  },
-  sessionHeaderTitle: {
-    color: colors.ink,
-    flexShrink: 1,
-    fontFamily: typography.sessionTitle.fontFamily,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    textAlign: 'center' as const,
   },
   section: {
     gap: spacing.md,

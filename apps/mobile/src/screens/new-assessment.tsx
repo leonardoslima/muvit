@@ -19,7 +19,7 @@ import {
 } from '../application/assessments/new-assessment';
 import { AppButton } from '../components/ui/button';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, Screen } from '../components/ui/screen';
 import { todayIsoDate } from '../lib/date';
 import { queryClient } from '../lib/query-client';
 import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../lib/styles';
@@ -135,26 +135,15 @@ export function NewAssessmentScreen() {
           showsVerticalScrollIndicator={false}
           style={styles.scroll}
         >
-          <View style={styles.header}>
-            <Pressable
-              accessible
-              accessibilityLabel="Voltar"
-              accessibilityRole="button"
-              accessibilityState={{ disabled: formDisabled }}
-              disabled={formDisabled}
-              onPress={returnToPrevious}
-              style={({ pressed }) => [
-                styles.backButton,
-                formDisabled ? styles.disabledControl : null,
-                pressed && !formDisabled ? styles.pressedControl : null,
-              ]}
-            >
-              <Ionicons color={colors.ink} name="arrow-back" size={20} />
-            </Pressable>
-            <Text accessibilityRole="header" style={styles.headerTitle}>
-              Nova avaliação
-            </Text>
-          </View>
+          <ContextualHeader
+            backDisabled={formDisabled}
+            backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+            backTestID="new-assessment-header-back"
+            onBack={returnToPrevious}
+            testID="new-assessment-header"
+            title="Nova avaliação"
+            titleTestID="new-assessment-header-title"
+          />
 
           <View style={styles.form}>
             <Text style={styles.helper}>Registre suas medidas e observações.</Text>
@@ -260,28 +249,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xxl,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    height: 44,
-  },
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  headerTitle: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 20,
-    fontWeight: '700',
   },
   form: {
     gap: spacing.md,

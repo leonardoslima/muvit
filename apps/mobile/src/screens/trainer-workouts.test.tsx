@@ -89,6 +89,7 @@ describe('TrainerWorkoutsScreen', () => {
 
     expect(await screen.findByText('Hipertrofia')).toBeTruthy();
     expect(screen.getByText(STUDENT_NAME)).toBeTruthy();
+    expect(screen.getByTestId('trainer-workouts-header')).toBeTruthy();
     expect(
       screen.getByText(`Planos de ${STUDENT_NAME} para consulta e acompanhamento.`),
     ).toBeTruthy();

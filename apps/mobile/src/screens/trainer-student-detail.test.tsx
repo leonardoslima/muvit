@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { ApiError } from '../lib/api';
+import { controlSizes } from '../lib/styles';
 import { TrainerStudentDetailScreen } from './trainer-student-detail';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -89,6 +90,7 @@ describe('TrainerStudentDetailScreen', () => {
     expect(screen.getByTestId('trainer-student-detail-identity-name')).toBeTruthy();
     expect(screen.getByText('AL')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-back-icon')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-header')).toBeTruthy();
     const identityCardStyle = StyleSheet.flatten(
       screen.getByTestId('trainer-student-detail-identity-card').props.style,
     );
@@ -96,11 +98,11 @@ describe('TrainerStudentDetailScreen', () => {
     expect(identityCardStyle.padding).toBe(14);
     expect(identityCardStyle.gap).toBe(14);
     expect(screen.getByTestId('trainer-student-detail-identity-contact')).toBeTruthy();
-    const backSurfaceStyle = StyleSheet.flatten(
-      screen.getByTestId('trainer-student-detail-back-surface').props.style,
-    );
-    expect(backSurfaceStyle.height).toBe(44);
-    expect(backSurfaceStyle.width).toBe(44);
+    const backButton = screen.getByTestId('trainer-student-detail-header-back');
+    expect(StyleSheet.flatten(backButton.props.style({ pressed: false }))).toMatchObject({
+      height: controlSizes.touchTarget,
+      width: controlSizes.touchTarget,
+    });
     expect(screen.getByText('Ganhar força')).toBeTruthy();
 
     const summaryRowStyle = StyleSheet.flatten(
@@ -122,6 +124,7 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(await screen.findByText('Aluno não encontrado')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-state-header')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Aluno' })).toBeTruthy();
     expect(screen.getByText('Este aluno não está disponível para sua conta.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voltar para alunos' })).toBeTruthy();
@@ -133,10 +136,10 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(screen.getByLabelText('Carregando aluno')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-state-header')).toBeTruthy();
     const loadingContentStyle = StyleSheet.flatten(
-      screen.getByLabelText('Carregando aluno').props.style,
+      screen.getByTestId('trainer-student-detail-state-content').props.style,
     );
-    expect(screen.getByTestId('trainer-student-detail-skeleton-header')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-profile')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-summary-row')).toBeTruthy();
     expect(screen.getByTestId('trainer-student-detail-skeleton-summary-a')).toBeTruthy();
@@ -148,10 +151,6 @@ describe('TrainerStudentDetailScreen', () => {
     expect(loadingContentStyle.paddingTop).toBe(24);
     expect(loadingContentStyle.paddingHorizontal).toBe(20);
     expect(skeletonProfileStyle.height).toBe(92);
-    expect(
-      StyleSheet.flatten(screen.getByTestId('trainer-student-detail-skeleton-header').props.style)
-        .height,
-    ).toBe(24);
     const skeletonSummaryRowStyle = StyleSheet.flatten(
       screen.getByTestId('trainer-student-detail-skeleton-summary-row').props.style,
     );
@@ -182,7 +181,7 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(await screen.findByTestId('trainer-student-detail-error-retry-icon')).toBeTruthy();
-    expect(screen.getByTestId('trainer-student-detail-skeleton-header')).toBeTruthy();
+    expect(screen.getByTestId('trainer-student-detail-state-header')).toBeTruthy();
     const statePanelStyle = StyleSheet.flatten(
       screen.getByTestId('trainer-student-detail-state-panel').props.style,
     );

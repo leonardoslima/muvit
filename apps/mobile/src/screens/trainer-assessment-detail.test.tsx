@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Assessment } from '../application/assessments/assessment-data';
 import { ApiError } from '../lib/api';
+import { controlSizes } from '../lib/styles';
 import { TrainerAssessmentDetailScreen } from './trainer-assessment-detail';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
@@ -116,11 +117,20 @@ describe('TrainerAssessmentDetailScreen', () => {
       fontWeight: '700',
       lineHeight: 32,
     });
-    expect(StyleSheet.flatten(screen.getByText('3 de setembro de 2026 • Aluno').props.style)).toMatchObject({
+    expect(
+      StyleSheet.flatten(screen.getByText('3 de setembro de 2026 • Aluno').props.style),
+    ).toMatchObject({
       fontSize: 13,
       lineHeight: 16,
     });
     expect(screen.getByRole('button', { name: 'Atualizar' })).toBeTruthy();
+    expect(
+      screen.getByTestId('trainer-assessment-detail-header-action').props.children.props.name,
+    ).toBe('refresh-outline');
+    expect(screen.getByTestId('trainer-assessment-detail-header-back')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-assessment-detail-header').props.style),
+    ).toMatchObject({ minHeight: controlSizes.touchTarget });
   });
 
   it('organiza identificação, métricas principais, notas e foto de evolução', async () => {
@@ -283,6 +293,7 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     expect(screen.getByText('Carregando avaliação')).toBeTruthy();
     expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByTestId('trainer-assessment-detail-state-header')).toBeTruthy();
   });
 
   it('mostra 404 como avaliação não encontrada sem revelar escopo', async () => {

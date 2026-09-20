@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import type { workoutPlanFullSchema } from '@muvit/validators';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -7,7 +8,7 @@ import type { z } from 'zod';
 import { estimateWorkoutDuration, loadWorkoutDay } from '../application/workouts/today-workout';
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
-import { Screen, ScreenHeader } from '../components/ui/screen';
+import { ContextualHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ExerciseDetailsModal } from '../components/workouts/exercise-details-modal';
 import { authClient } from '../lib/auth-client';
@@ -41,6 +42,14 @@ export function WorkoutOverviewScreen() {
   if (query.isLoading) {
     return (
       <Screen style={styles.centeredState}>
+        <ContextualHeader
+          backAccessibilityLabel="Voltar"
+          backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+          onBack={() => router.back()}
+          testID="workout-overview-state-header"
+          eyebrow="VISÃO GERAL"
+          title="Treino"
+        />
         <StatePanel
           description="Estamos buscando os exercícios do treino."
           title="Carregando treino"
@@ -53,6 +62,14 @@ export function WorkoutOverviewScreen() {
   if (query.isError || !query.data) {
     return (
       <Screen style={styles.centeredState}>
+        <ContextualHeader
+          backAccessibilityLabel="Voltar"
+          backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+          onBack={() => router.back()}
+          testID="workout-overview-state-header"
+          eyebrow="VISÃO GERAL"
+          title="Treino"
+        />
         <StatePanel
           actionLabel="Tentar novamente"
           description="Verifique sua conexão e tente novamente."
@@ -75,8 +92,11 @@ export function WorkoutOverviewScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar" onPress={() => router.back()} variant="secondary" />
-      <ScreenHeader
+      <ContextualHeader
+        backAccessibilityLabel="Voltar"
+        backIcon={<Ionicons color={colors.ink} name="arrow-back" size={20} />}
+        onBack={() => router.back()}
+        testID="workout-overview-header"
         eyebrow="VISÃO GERAL"
         subtitle={`${day.exercises.length} exercícios · ~${estimateWorkoutDuration(day)} min`}
         title={day.label}

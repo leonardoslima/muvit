@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
 import {
   type TrainerWorkoutPlanSummary,
@@ -11,7 +11,7 @@ import {
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { WorkoutPlanListItem } from '../components/workouts/workout-plan-list-item';
 import { ApiError } from '../lib/api';
@@ -63,7 +63,12 @@ export function TrainerWorkoutsScreen() {
   if (!studentId) {
     return (
       <Screen scroll contentContainerStyle={styles.stateContent}>
-        <WorkoutBackLink label="Alunos" onPress={returnToStudent} title="Alunos" />
+        <WorkoutBackLink
+          headerTestID="trainer-workouts-header"
+          label="Alunos"
+          onPress={returnToStudent}
+          title="Alunos"
+        />
         <WorkoutStateCard
           actionLabel="Voltar para alunos"
           description="Não foi possível identificar o aluno solicitado."
@@ -80,7 +85,12 @@ export function TrainerWorkoutsScreen() {
   if (query.isPending) {
     return (
       <Screen scroll contentContainerStyle={styles.stateContent}>
-        <WorkoutBackLink label="Voltar para aluno" onPress={returnToStudent} title="Treinos" />
+        <WorkoutBackLink
+          headerTestID="trainer-workouts-header"
+          label="Voltar para aluno"
+          onPress={returnToStudent}
+          title="Treinos"
+        />
         <StatePanel
           description="Estamos carregando os treinos deste aluno."
           title="Carregando treinos"
@@ -94,7 +104,12 @@ export function TrainerWorkoutsScreen() {
   if (isNotFound) {
     return (
       <Screen scroll contentContainerStyle={styles.stateContent}>
-        <WorkoutBackLink label="Voltar para aluno" onPress={returnToStudent} title="Treinos" />
+        <WorkoutBackLink
+          headerTestID="trainer-workouts-header"
+          label="Voltar para aluno"
+          onPress={returnToStudent}
+          title="Treinos"
+        />
         <WorkoutStateCard
           actionLabel="Voltar para aluno"
           description="Estes treinos não estão disponíveis para sua conta."
@@ -112,7 +127,12 @@ export function TrainerWorkoutsScreen() {
   if (query.isError && !hasData) {
     return (
       <Screen scroll contentContainerStyle={styles.stateContent}>
-        <WorkoutBackLink label="Voltar para aluno" onPress={returnToStudent} title="Treinos" />
+        <WorkoutBackLink
+          headerTestID="trainer-workouts-header"
+          label="Voltar para aluno"
+          onPress={returnToStudent}
+          title="Treinos"
+        />
         <WorkoutStateCard
           actionDisabled={query.isFetching}
           actionLabel="Tentar novamente"
@@ -137,6 +157,7 @@ export function TrainerWorkoutsScreen() {
       <Screen scroll contentContainerStyle={styles.stateContent}>
         <WorkoutBackLink
           actionTestID="trainer-workouts-header-action"
+          headerTestID="trainer-workouts-header"
           label="Voltar para aluno"
           onPress={returnToStudent}
           testID="trainer-workouts-back-icon"
@@ -167,6 +188,7 @@ export function TrainerWorkoutsScreen() {
     <Screen scroll contentContainerStyle={styles.content}>
       <WorkoutBackLink
         actionTestID="trainer-workouts-header-action"
+        headerTestID="trainer-workouts-header"
         label="Voltar para aluno"
         onPress={returnToStudent}
         testID="trainer-workouts-back-icon"
@@ -216,23 +238,39 @@ type WorkoutStateCardProps = {
 
 type WorkoutBackLinkProps = {
   actionTestID?: string;
+  headerTestID?: string;
   label: string;
   onPress: () => void;
   testID?: string;
+  titleTestID?: string;
   title: string;
 };
 
-function WorkoutBackLink({ actionTestID, label, onPress, testID, title }: WorkoutBackLinkProps) {
+function WorkoutBackLink({
+  actionTestID,
+  headerTestID,
+  label,
+  onPress,
+  testID,
+  title,
+  titleTestID,
+}: WorkoutBackLinkProps) {
   return (
-    <View style={styles.backHeader}>
-      <Pressable
-        accessible
-        accessibilityLabel={label}
-        accessibilityRole="button"
-        onPress={onPress}
-        style={styles.backButton}
-      >
-        <View style={styles.backControl} testID={testID ? `${testID}-control` : undefined}>
+    <ContextualHeader
+      action={
+        <View>
+          <Ionicons
+            accessible={false}
+            color={colors.muted}
+            name="ellipsis-horizontal"
+            size={20}
+            testID={actionTestID}
+          />
+        </View>
+      }
+      backAccessibilityLabel={label}
+      backIcon={
+        <View testID={testID ? `${testID}-control` : undefined}>
           <Ionicons
             accessible={false}
             color={colors.ink}
@@ -241,18 +279,13 @@ function WorkoutBackLink({ actionTestID, label, onPress, testID, title }: Workou
             testID={testID}
           />
         </View>
-        <Text style={styles.backTitle}>{title}</Text>
-      </Pressable>
-      <View style={styles.headerAction}>
-        <Ionicons
-          accessible={false}
-          color={colors.muted}
-          name="ellipsis-horizontal"
-          size={20}
-          testID={actionTestID}
-        />
-      </View>
-    </View>
+      }
+      backTestID={testID ? `${testID}-button` : undefined}
+      onBack={onPress}
+      testID={headerTestID}
+      title={title}
+      titleTestID={titleTestID}
+    />
   );
 }
 
@@ -300,41 +333,6 @@ function WorkoutStateCard({
 }
 
 const styles = StyleSheet.create({
-  backHeader: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  backButton: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 44,
-  },
-  backControl: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  backTitle: {
-    color: colors.ink,
-    fontFamily: typography.title.fontFamily,
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 26,
-  },
-  headerAction: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   content: {
     gap: 18,
     paddingBottom: spacing.xxl,

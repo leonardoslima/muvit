@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   type AssessmentsPage,
   TRAINER_ASSESSMENTS_PAGE_SIZE,
@@ -13,7 +13,7 @@ import { AssessmentListItem } from '../components/assessments/assessment-list-it
 import { AppButton } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { InlineMessage } from '../components/ui/inline-message';
-import { Screen } from '../components/ui/screen';
+import { ContextualHeader, HeaderAction, Screen } from '../components/ui/screen';
 import { StatePanel } from '../components/ui/state-panel';
 import { ApiError } from '../lib/api';
 import { colors, radii, spacing, typography } from '../lib/styles';
@@ -258,39 +258,33 @@ function AssessmentHeader({
   title,
 }: AssessmentHeaderProps) {
   return (
-    <View style={styles.header} testID={testID}>
-      <View style={styles.headerLead}>
-        <Pressable
-          accessible
-          accessibilityLabel={backLabel}
-          accessibilityRole="button"
-          onPress={onBack}
-          style={styles.backButton}
-        >
-          <Ionicons
-            color={colors.ink}
-            name="arrow-back"
-            size={20}
-            testID="trainer-assessments-back-icon"
-          />
-        </Pressable>
-        <Text style={styles.headerTitle}>{eyebrow ?? title}</Text>
-      </View>
-      {actionLabel && actionOnPress && actionName ? (
-        <Pressable
-          accessible
-          accessibilityLabel={actionLabel}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: actionDisabled }}
-          disabled={actionDisabled}
-          onPress={actionOnPress}
-          style={styles.headerAction}
-          testID={actionTestID}
-        >
-          <Ionicons color={colors.muted} name={actionName} size={20} />
-        </Pressable>
-      ) : null}
-    </View>
+    <ContextualHeader
+      action={
+        actionLabel && actionOnPress && actionName ? (
+          <HeaderAction
+            accessibilityLabel={actionLabel}
+            disabled={actionDisabled}
+            onPress={actionOnPress}
+            testID={actionTestID}
+          >
+            <Ionicons color={colors.muted} name={actionName} size={20} />
+          </HeaderAction>
+        ) : undefined
+      }
+      backAccessibilityLabel={backLabel}
+      backIcon={
+        <Ionicons
+          color={colors.ink}
+          name="arrow-back"
+          size={20}
+          testID="trainer-assessments-back-icon"
+        />
+      }
+      backTestID="trainer-assessments-header-back"
+      onBack={onBack}
+      testID={testID}
+      title={eyebrow ?? title}
+    />
   );
 }
 
@@ -353,16 +347,6 @@ function AssessmentStateCard({
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
   assessmentList: {
     gap: spacing.md,
   },
@@ -370,29 +354,6 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: 20,
     paddingBottom: spacing.xxl,
-  },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 44,
-  },
-  headerAction: {
-    alignItems: 'center',
-    height: 44,
-    justifyContent: 'center',
-    width: 44,
-  },
-  headerLead: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  headerTitle: {
-    color: colors.ink,
-    fontFamily: typography.exerciseTitle.fontFamily,
-    fontSize: 20,
-    fontWeight: '700',
   },
   intro: {
     gap: spacing.xs,

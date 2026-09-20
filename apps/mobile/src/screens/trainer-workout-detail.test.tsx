@@ -5,6 +5,7 @@ import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
+import { controlSizes } from '../lib/styles';
 import { TrainerWorkoutDetailScreen } from './trainer-workout-detail';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
@@ -111,13 +112,16 @@ describe('TrainerWorkoutDetailScreen', () => {
 
     expect((await screen.findAllByText('Hipertrofia')).length).toBe(2);
     expect(screen.getByText(`Plano atual de ${STUDENT_NAME} · consulta do treinador`)).toBeTruthy();
+    expect(screen.getByTestId('trainer-workout-detail-header')).toBeTruthy();
     expect(screen.getByTestId('trainer-workout-detail-back-icon')).toBeTruthy();
     expect(
-      StyleSheet.flatten(screen.getByTestId('trainer-workout-detail-back-control').props.style),
+      StyleSheet.flatten(
+        screen.getByTestId('trainer-workout-detail-back-button').props.style({ pressed: false }),
+      ),
     ).toMatchObject({
       borderRadius: 999,
-      height: 44,
-      width: 44,
+      height: controlSizes.touchTarget,
+      width: controlSizes.touchTarget,
     });
     expect(screen.getByTestId('trainer-workout-detail-back-title').props.children).toBe(
       'Hipertrofia',
@@ -167,6 +171,7 @@ describe('TrainerWorkoutDetailScreen', () => {
 
     expect(screen.getByText('Carregando treino')).toBeTruthy();
     expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByTestId('trainer-workout-detail-state-header')).toBeTruthy();
   });
 
   it('mostra 404 genérico sem revelar escopo', async () => {

@@ -5,7 +5,7 @@ import { type ReactNode, cloneElement, createElement, isValidElement } from 'rea
 import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiTransportError } from '../lib/api';
-import { colors, controlSizes, fontFamilies, radii, spacing } from '../lib/styles';
+import { colors, controlSizes, fontFamilies, radii, sharedStyles, spacing } from '../lib/styles';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
@@ -303,6 +303,11 @@ describe('TodayWorkoutScreen', () => {
 
     expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Seu treino de hoje' })).toBeTruthy();
+    expect(screen.getByTestId('today-empty-header')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Notificações' })).toBeNull();
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'Seu treino de hoje' }).props.style),
+    ).toMatchObject(sharedStyles.title);
 
     const scrollView = screen.UNSAFE_getByType(ScrollView);
     expect(StyleSheet.flatten(scrollView.props.contentContainerStyle)).toMatchObject({

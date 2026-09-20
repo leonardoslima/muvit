@@ -11,7 +11,7 @@ import { type ReactNode, createElement } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import { Card } from '../components/ui/card';
-import { spacing } from '../lib/styles';
+import { controlSizes, spacing } from '../lib/styles';
 import { NewAssessmentScreen } from './new-assessment';
 
 const routerState = vi.hoisted(() => ({ back: vi.fn() }));
@@ -84,6 +84,12 @@ describe('NewAssessmentScreen', () => {
     render(<NewAssessmentScreen />);
 
     const backButton = screen.getByRole('button', { name: 'Voltar' });
+    expect(screen.getByTestId('new-assessment-header')).toBeTruthy();
+    expect(screen.getByTestId('new-assessment-header-back')).toBeTruthy();
+    expect(screen.getByTestId('new-assessment-header-title')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('new-assessment-header').props.style),
+    ).toMatchObject({ minHeight: controlSizes.touchTarget });
     expect(backButton.props.accessibilityLabel).toBe('Voltar');
     expect(backButton.props.accessibilityState).toEqual({ disabled: false });
     expect(screen.queryByLabelText('Mais opções')).toBeNull();

@@ -35,18 +35,17 @@ export function ProgressScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <View style={styles.headerCopy}>
-          <ScreenHeader
-            eyebrow="PROGRESSO"
-            subtitle="Sua evolução, avaliação por avaliação."
-            title="Progresso"
-          />
-        </View>
-        <Link asChild href="/new-assessment">
-          <NewAssessmentAction />
-        </Link>
-      </View>
+      <ScreenHeader
+        action={
+          <Link asChild href="/new-assessment">
+            <NewAssessmentAction />
+          </Link>
+        }
+        eyebrow="PROGRESSO"
+        subtitle="Sua evolução, avaliação por avaliação."
+        testID="progress-header"
+        title="Progresso"
+      />
 
       {query.isLoading ? (
         <ProgressStatePanel
@@ -244,22 +243,12 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xxxl,
   },
-  headerRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'space-between',
-  },
-  headerCopy: {
-    flex: 1,
-  },
   newAssessmentAction: {
     alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
     height: controlSizes.touchTarget,
     justifyContent: 'center',
-    marginTop: spacing.md,
     width: controlSizes.touchTarget,
   },
   pressed: {

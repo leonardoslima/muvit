@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { todayIsoDate } from '../lib/date';
+import { controlSizes } from '../lib/styles';
 import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
@@ -23,6 +26,10 @@ vi.mock('../lib/uploads', () => ({
 }));
 
 vi.mock('expo-image-picker', () => pickerState);
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
+}));
 
 vi.mock('expo-router', () => ({
   router: routerState,
@@ -77,6 +84,11 @@ describe('TrainerNewAssessmentScreen', () => {
       .mockResolvedValueOnce(undefined);
 
     renderTrainerNewAssessment();
+
+    expect(screen.getByTestId('trainer-new-assessment-header')).toBeTruthy();
+    expect(
+      StyleSheet.flatten(screen.getByTestId('trainer-new-assessment-header').props.style),
+    ).toMatchObject({ minHeight: controlSizes.touchTarget });
     fireEvent.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
     await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledTimes(2));
 

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkoutOverviewScreen } from './workout-overview';
 
@@ -25,6 +26,10 @@ vi.mock('react-native-safe-area-context', () => ({
 vi.mock('expo-router', () => ({
   router: routerState,
   useLocalSearchParams: () => ({ dayId: routeState.dayId }),
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: Record<string, unknown>) => createElement('Ionicons', props),
 }));
 
 const workoutPlan = {
@@ -104,6 +109,14 @@ describe('WorkoutOverviewScreen', () => {
     expect(apiState.request).not.toHaveBeenCalled();
   });
 
+  it('mantem o header compartilhado durante o carregamento', () => {
+    apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
+
+    renderWithQueryClient();
+
+    expect(screen.getByTestId('workout-overview-state-header')).toBeTruthy();
+  });
+
   it('renders the workout content and starts the guided session', async () => {
     const user = userEvent.setup();
     apiState.request
@@ -113,6 +126,7 @@ describe('WorkoutOverviewScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Treino A')).toBeTruthy();
+    expect(screen.getByTestId('workout-overview-header')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.getByText('Peito')).toBeTruthy();
     expect(screen.getByText('1 exercícios · ~6 min')).toBeTruthy();

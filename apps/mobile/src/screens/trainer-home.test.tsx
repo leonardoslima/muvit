@@ -3,7 +3,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { colors, radii } from '../lib/styles';
+import { colors, radii, sharedStyles } from '../lib/styles';
 import { TrainerHomeScreen } from './trainer-home';
 
 type LinkProps = {
@@ -114,6 +114,12 @@ describe('TrainerHomeScreen', () => {
     renderTrainerHome();
 
     expect(await screen.findByRole('header', { name: 'Bom dia, Mariana' })).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('trainer-home-header').props.style)).toMatchObject(
+      sharedStyles.header,
+    );
+    expect(
+      StyleSheet.flatten(screen.getByRole('header', { name: 'Bom dia, Mariana' }).props.style),
+    ).toMatchObject(sharedStyles.title);
     expect(screen.queryByText('Bom dia, João')).toBeNull();
   });
 
@@ -309,7 +315,9 @@ describe('TrainerHomeScreen', () => {
     expect(
       StyleSheet.flatten(screen.getByTestId('trainer-metric-assessments-icon').props.style),
     ).toMatchObject({ backgroundColor: '#EBF5FB' });
-    expect(screen.getByText('INÍCIO').props.style).toMatchObject({ color: colors.primary });
+    expect(StyleSheet.flatten(screen.getByText('INÍCIO').props.style)).toMatchObject({
+      color: colors.primaryText,
+    });
     const sectionAction = screen.getByRole('button', { name: 'Ver todos os alunos' });
     expect(StyleSheet.flatten(sectionAction.props.style)).toMatchObject({
       minHeight: 22,

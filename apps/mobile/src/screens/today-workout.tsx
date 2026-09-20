@@ -282,22 +282,17 @@ function TodayStateLayout({
 
 function TodayEmptyHeader() {
   return (
-    <View style={styles.emptyHeader}>
-      <View style={styles.emptyHeaderTopRow}>
-        <Text style={sharedStyles.eyebrow}>SEM PLANO</Text>
-        <Pressable
-          accessibilityLabel="Notificações"
-          accessibilityRole="button"
-          style={styles.emptyHeaderNotification}
-        >
+    <ScreenHeader
+      action={
+        <View accessible={false} style={styles.notificationAction}>
           <Ionicons color={colors.ink} name="notifications-outline" size={22} />
-        </Pressable>
-      </View>
-      <Text accessibilityRole="header" style={sharedStyles.title}>
-        Seu treino de hoje
-      </Text>
-      <Text style={sharedStyles.subtitle}>{formatTodayDisplayLabel()}</Text>
-    </View>
+        </View>
+      }
+      eyebrow="SEM PLANO"
+      subtitle={formatTodayDisplayLabel()}
+      testID="today-empty-header"
+      title="Seu treino de hoje"
+    />
   );
 }
 
@@ -448,6 +443,12 @@ function OfflineBadge() {
 }
 
 const styles = {
+  notificationAction: {
+    alignItems: 'center' as const,
+    height: controlSizes.touchTarget,
+    justifyContent: 'center' as const,
+    width: controlSizes.touchTarget,
+  },
   content: {
     gap: spacing.lg,
     paddingBottom: spacing.xxxl,
@@ -465,21 +466,6 @@ const styles = {
     flexGrow: 1,
     justifyContent: 'center' as const,
     width: '100%' as const,
-  },
-  emptyHeader: {
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  emptyHeaderTopRow: {
-    alignItems: 'center' as const,
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-  },
-  emptyHeaderNotification: {
-    alignItems: 'center' as const,
-    height: controlSizes.touchTarget,
-    justifyContent: 'center' as const,
-    width: controlSizes.touchTarget,
   },
   todayWorkoutCard: {
     backgroundColor: colors.primary,
