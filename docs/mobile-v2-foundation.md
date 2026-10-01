@@ -7,7 +7,7 @@ A fonte visual desta entrega é `assets/design/mobile.pen`, editada pelo MCP pen
 | Quadro | Node ID | Conteúdo |
 | --- | --- | --- |
 | Foundation | `ZXCPO` | Cor, DM Sans, escalas, radius e elevação |
-| Componentes extraídos | `i9KQa` | 23 símbolos extraídos das telas aprovadas |
+| Componentes extraídos | `i9KQa` | 23 símbolos extraídos das telas aprovadas e 2 extensões da MUV-25 |
 | Ações e estados | `ApsEA` | Primário, secundário, destrutivo, texto e imersivo; default, pressed, focus, disabled e loading |
 | Campos e seleção | `Az8Bq` | Labels, conteúdo, foco, erro, senha, busca, carga e tabs internas |
 | Feedback e estados | `Ps0kl` | Mensagens, badges, loading, vazio, erro, sucesso, sheet de saída e skeleton |
@@ -21,6 +21,8 @@ A fonte visual desta entrega é `assets/design/mobile.pen`, editada pelo MCP pen
 Os quadros da biblioteca começam em y=9500; as reconstruções ficam em y=14400. O histórico MUV-22, a decisão visual e os originais MUV-23 foram preservados.
 
 ## Contratos de reutilização
+
+Os símbolos `Q4dha` (`List/Exercício/Detalhado`) e `RL1fy` (`Media/Exercício/Demonstração`) pertencem ao quadro `i9KQa`, junto aos demais componentes da foundation. Foram acrescentados na MUV-25 para apresentar prescrição, descanso e acesso ao vídeo na lista, e a demonstração na tela própria de exercício. As telas usam instâncias conectadas. A mídia tem estados de carregamento, erro com retry, offline e ausência de URL; sua indisponibilidade preserva a prescrição. Reprodução não modifica o progresso do treino.
 
 - Usar instâncias conectadas dos símbolos. Alterar conteúdo por overrides de Label, Value, Title, Description e Icon; preservar tokens e vínculos.
 - Tokens usam `color/papel/variante`, `font/size/valor`, `font/weight/valor`, `space/valor`, `radius/valor`, `size/papel` e `layout/papel`. Componentes usam `Família/Variante/Estado`.
