@@ -55,6 +55,8 @@ As transições estão descritas no guia `OncCJ` do canvas e nesta documentaçã
 
 Loading, sem plano, dia sem treino e erro sem dados usam StatePanel na área principal, centralizado e sem superfície de card. Header e navegação continuam visíveis. Sem plano e recuperação não ganham ações inexistentes. Os textos de loading/erro da visão geral não presumem nome de plano ainda não carregado.
 
+Nos retries sem dados `M6SGyl` e `kHbic`, o StatePanel de loading é o único indicador da consulta. Os botões Tentar novamente ficam ocultos somente nessa apresentação em andamento e reaparecem no erro recuperável. A recuperação usa a mesma consulta e bloqueia reentrada; não altera navegação ou outras ações.
+
 Quando já existe conteúdo, falha de atualização usa Message/Error com retry textual centralizado dentro do aviso, conforme a foundation. Durante o retry, a ação passa a **Atualizando…**, bloqueia reentrada e mantém treino e exercícios disponíveis. Isso especifica a apresentação v2 para MUV-35; a MUV-25 não modifica o comportamento atual de renderização do Expo.
 
 Offline é informação contextual sobre a origem dos dados. Hoje admite cache válido de treino, sem plano e dia sem treino. Sem cache válido, falha é erro com retry. Rascunho continua particionado por usuário e dia. A conclusão local offline conserva a informação de salvamento e não abre nova sessão.

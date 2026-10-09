@@ -37,9 +37,9 @@ Os quadros começam em y=62863 e as telas em y=63429, com 180 dp entre o fim do 
 
 - A lista usa cabeçalho contextual com retorno ao aluno e atualização, título Avaliações, contexto e uma ação principal Nova avaliação. Cada linha inteira abre seu registro; não há botão Abrir separado ou atualização duplicada no rodapé.
 - O detalhe retorna às avaliações e apresenta data, métricas principais, circunferências disponíveis, fotos e observações. A atualização fica no cabeçalho. O formulário retorna às avaliações e agrupa métricas, circunferências, fotos e observações, com Salvar avaliação ao final.
-- Loading e erro inicial preservam o cabeçalho contextual e a navegação. A atualização fica oculta sem dados; Tentar novamente pertence somente ao erro inicial. Em 404 e identificador inválido, a recuperação usa o retorno contextual, sem repetir um botão de voltar na área de estado.
+- Loading e erro inicial preservam o cabeçalho contextual e a navegação. Lista e detalhe mantêm reload visível em todos os estados: acionável no erro recuperável e estático/desativado durante a consulta, paginação, 404, identificador inválido ou avaliação de outro aluno. Tentar novamente não aparece no corpo; o erro orienta a recuperação pelo cabeçalho. O StatePanel ou indicador dedicado é o único progresso da consulta. Em contexto indisponível, a recuperação usa o retorno contextual, sem repetir um botão de voltar na área de estado. Formulários mantêm apenas o retorno, sem reload de consulta.
 - As telas reutilizam instâncias conectadas de `Header/Contextual/Aluno`, tabs do professor, campos, botões, mensagens e StatePanel da foundation. As extensões `List/Avaliação/Professor` (`gwq9N`) e `Metric/Avaliação/Leitura` (`NtjQg`) ficam no catálogo `foWU5` e usam tokens existentes.
-- Os oito formulários com fotos selecionadas reutilizam `Photos/Avaliação/Selecionadas` (`FVzOO`), já usado na MUV-27: contagem, miniaturas em duas colunas, rótulo Foto N e remoção por ícone de 48 dp. Não há botões largos Remover foto N.
+- Os oito formulários com fotos selecionadas seguem a seção `Photos/Avaliação/Selecionadas` (`FVzOO`) da MUV-27, composta por instâncias do componente de imagem `CfWyw`: contagem, miniaturas em duas colunas, rótulo Foto N e remoção por ícone de 48 dp. Não há botões largos Remover foto N.
 - A linha de avaliação apresenta data, peso, gordura e observações resumidas. Ela não herda as comparações do card do aluno da MUV-27: essas comparações não existem no fluxo atual do professor.
 - A composição conserva DM Sans, papel, verde profundo, lima, gutter de 16 dp, botões de 58 dp, campos de 52 dp e alvos contextuais de 48 dp. Títulos usam 30 dp em 390/430 dp e 26 dp em 320 dp. Labels e unidades permanecem visíveis.
 
@@ -53,7 +53,7 @@ Os quadros começam em y=62863 e as telas em y=63429, com 180 dp entre o fim do 
 | Lista / retorno contextual Aluno | Dismiss to `/trainer/students/[studentId]` |
 | Detalhe ou formulário / retorno contextual Avaliações | Dismiss to `/trainer/students/[studentId]/assessments` |
 | Contexto sem `studentId` / retorno contextual Alunos | Dismiss to `/trainer/students` |
-| Consulta / atualizar ou retry inicial | Refetch do recurso existente |
+| Consulta / reload do cabeçalho, inclusive no erro inicial | Refetch do recurso existente |
 | Lista / Carregar mais ou Tentar carregar mais | Próxima página, preservando os itens anteriores |
 | Formulário / sucesso | Retorno automático às avaliações após o feedback existente |
 
@@ -65,7 +65,7 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-assessments.tsx` e `src/appl
 
 - A consulta usa `GET /students/:studentId/assessments?limit=25&offset=...`. O próximo offset corresponde à quantidade de itens já carregados. Preservar a ordem retornada e a condição de existência de próxima página.
 - Datas aparecem em DD/MM/AAAA; valores usam apresentação pt-BR, com kg e %. Valores ausentes ou inválidos usam Não informado, sem transformar ausência em zero. Observações da lista mantêm o resumo em até duas linhas definido no componente atual.
-- Loading e erro sem dados usam StatePanel na área principal, sem superfície própria de card. O retry inicial muda para a apresentação de loading.
+- Loading e erro sem dados usam StatePanel na área principal, sem superfície própria de card ou botão de recuperação. O reload do cabeçalho recupera o erro inicial e fica estático/desativado durante a nova tentativa, com StatePanel de loading como único progresso.
 - Vazio mantém Nova avaliação como única ação de criação; o estado explica a ausência do histórico sem repetir a mesma ação.
 - Durante atualização com dados, o feedback de progresso acompanha o viewport, preservando o conteúdo anterior ao fundo, como na composição da MUV-29. É feedback, sem botão. A geometria expandida do canvas não define o tamanho do overlay no runtime.
 - Falha de atualização mantém a lista e apresenta mensagem contextual. Falha da próxima página mantém os itens e oferece Tentar carregar mais. A atualização e as ações de paginação ficam desabilitadas enquanto `isFetching`.
@@ -84,7 +84,7 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-assessment-detail.tsx`, `ass
 - Sem fotos válidas, a seção Fotos não aparece. Com fotos, mostrar todas as URLs não vazias retornadas, sem limitar a leitura às três permitidas na seleção do professor. O layout cresce com o conjunto recebido.
 - Fotos preservam a referência de 4:3. As imagens de amostra do canvas reutilizam `assets/design/assessment-photo-samples/assessment-views.png`; não são fotos de um aluno real nem especificam poses obrigatórias.
 - Observações ausentes ou em branco usam Não informado. Texto extenso cresce e permite rolagem.
-- Loading, erro inicial com retry, 404 e identificador inválido preservam o contexto de retorno. Falha de atualização conserva a avaliação com mensagem contextual; o 404 tem prioridade sobre conteúdo anterior.
+- Loading, erro inicial, 404 e identificador inválido preservam o contexto de retorno e o reload visível no header. O erro inicial recuperável usa somente esse reload; consulta em andamento ou contexto indisponível mantém o controle estático/desativado. Falha de atualização conserva a avaliação com mensagem contextual; o 404 tem prioridade sobre conteúdo anterior.
 
 Não criar visor de fotos, carousel, remoção de anexos registrados, compartilhamento, edição ou exclusão.
 
@@ -94,6 +94,7 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-new-assessment.tsx`, `src/ap
 
 - Data inicia com a data local atual e usa entrada AAAA-MM-DD. Somente a data é obrigatória. Peso, altura, gordura corporal, nove circunferências, fotos e observações permanecem opcionais.
 - Campos numéricos usam teclado decimal e continuam aceitando vírgula pela normalização existente. IMC é somente leitura: calculado com peso e altura positivos, com uma casa decimal; sem valores válidos, exibir Informe peso e altura. Não criar um campo novo no payload.
+- O formulário vazio `yFUlq` mostra placeholders nos 12 campos numéricos e em Observações, em `color/text/secondary`. Os exemplos numéricos usam Ex.: e vírgula decimal quando aplicável; Observações usa Adicione observações sobre a avaliação. São dicas de campos vazios, não valores preenchidos ou dados enviados. Labels e unidades continuam visíveis, e a data inicial permanece preenchida.
 - Preservar os limites atuais: peso positivo até 500 kg; altura positiva até 300 cm; gordura de 0 a 80%; circunferências positivas; observações até 2000 caracteres.
 - A validação atual apresenta uma mensagem global, referente à primeira falha. Os quadros de data/número inválidos preservam os campos e apresentam essa mensagem antes de salvar; não introduzem erros por campo, validação a cada digitação ou novos requisitos.
 - Observações usam entrada multiline. O conteúdo extenso permanece visível no quadro de 320 dp; no runtime, a entrada pode rolar conforme o comportamento nativo existente.
@@ -102,7 +103,9 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-new-assessment.tsx`, `src/ap
 
 Adicionar foto abre a biblioteca nativa, com seleção de uma imagem por vez, edição habilitada e qualidade atual de 0,7. Cancelar preserva a seleção anterior. O suporte atual é JPEG ou PNG; formato inválido produz Selecione uma imagem JPEG ou PNG.
 
-O formulário do professor aceita até três fotos selecionadas. Com nenhuma foto, exibir Adicionar foto; com uma ou duas, Adicionar outra foto; ao atingir três, ocultar a ação de adicionar. A seleção reutiliza o componente `FVzOO` da MUV-27, com contagem e miniaturas em duas colunas. Uma foto ocupa toda a largura de sua coluna, sem se expandir por toda a seção; sua altura acompanha a proporção real, sem faixas laterais ou corte do corpo. A terceira inicia uma nova linha. A amostra do canvas tem proporção 1:2 por foto: 173 × 346 dp em 390 dp, 138 × 276 dp em 320 dp e 193 × 386 dp em 430 dp; outras imagens devem preservar suas próprias proporções.
+O formulário do professor aceita até três fotos selecionadas. A ação Adicionar foto usa o componente de upload `S8jXyf`: com nenhuma foto, ocupa a primeira posição da grade; com uma ou duas, aparece logo após a última foto; ao atingir três, fica oculta. O label permanece no singular, o texto de apoio se refere à evolução do aluno e a biblioteca mantém a seleção de uma imagem por vez. A seleção segue o frame `FVzOO` da MUV-27, com contagem e miniaturas em duas colunas; cada imagem reutiliza o componente `CfWyw`. Uma foto ocupa toda a largura de sua coluna, sem se expandir por toda a seção; sua altura acompanha a proporção real, sem faixas laterais ou corte do corpo. A terceira inicia uma nova linha. A amostra do canvas tem proporção 1:2 por foto: 173 × 346 dp em 390 dp, 138 × 276 dp em 320 dp e 193 × 386 dp em 430 dp; outras imagens devem preservar suas próprias proporções.
+
+As 13 telas do professor com upload são `yFUlq`, `bCfoT`, `iKraZ`, `UN17U`, `iRPXB`, `veT0i`, `FrRS5`, `AxLAp`, `SK17R`, `eKD5z`, `o6D0v`, `l18Mce` e `xou7B`. As adaptações de 320 e 430 dp redimensionam também a borda tracejada do componente. `SK17R` e `eKD5z` mantêm o upload visível e desabilitado; `EZXQt`, com três fotos, permanece sem upload. Histórico, detalhes e visores de leitura não recebem a ação.
 
 Cada miniatura tem o rótulo Foto N abaixo da imagem e o X de remoção dentro dela, no canto superior direito, com círculo verde sólido de 28 dp e ícone branco de 16 dp, sem transparência. A área de toque de 48 dp é transparente e não aumenta o círculo visível. O label acessível Remover foto N identifica a ação sem criar um botão largo. A remoção atua somente antes do envio; retirar a última foto volta à apresentação sem fotos. Durante envio e sucesso, o ícone e a ação de adicionar ficam desabilitados; o X permanece legível em verde escuro sobre fundo de ação desabilitada, sem redução de opacidade. A orientação de toque para conferir, presente no símbolo do aluno, fica oculta nesta instância porque este card não introduz um visor de fotos.
 
@@ -117,6 +120,8 @@ Durante envio e sucesso, os campos, as ações de fotos, o retorno contextual e 
 Falha de formato, upload ou salvamento mantém valores e fotos. As mensagens atuais são específicas para formato e upload, e genéricas para salvamento; o design não infere outras causas. Não prometer que nenhum registro foi criado quando a operação falha: uma falha de invalidação após a criação também pode cair no erro de salvamento. Não adicionar garantia de idempotência, fila offline, rascunho persistente ou confirmação de saída.
 
 ## Ergonomia e verificação
+
+Em 08/10/2026, a verificação dos 25 quadros de lista/detalhe identificou 12 estados com reload oculto ou sem apresentação desativada durante a consulta. Os headers foram ajustados em `BYEGy`, `w11Iq`, `OWLNM`, `NKmVg`, `KceG0`, `F0pc1F`, `W1qNOs`, `kqQcX`, `kThhD`, `HV4GL`, `d3nI8` e `ABuvm`. Os dois erros iniciais perderam Tentar novamente no corpo e passaram a orientar recuperação pelo header. Seis capturas de loading, erro e contexto indisponível foram conferidas; a leitura final confirmou os 25 headers visíveis, nenhum retry duplicado e preservação de Tentar carregar mais na paginação. O guia `ggVdz` acompanha a composição. Este ajuste é de design; implementação nativa e salvamento do Pen permanecem separados.
 
 Referências de 320/390/430 dp mantêm navegação, labels e unidades. Texto pode quebrar e componentes crescem verticalmente; os quadros expandidos não definem altura de dispositivo. Safe areas e inset da tab bar devem ser consumidos uma única vez pelo shell.
 

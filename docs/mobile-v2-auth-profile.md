@@ -6,7 +6,7 @@ Fonte visual: `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta entrega
 
 Modo de uso: operação. Entrada compartilhada e perfis reconhecíveis por papel, com a direção v2: DM Sans, fundo papel, verde profundo, ações em lima e superfícies brancas. Base de 390 dp, gutter de 16 dp, ações de 58 dp, campos com labels persistentes e controles de 58 dp. Conteúdo cresce e permite rolagem; safe areas e tab bar devem ser reservadas uma única vez no runtime.
 
-O perfil compartilha identidade e composição. O papel e o texto de contexto diferenciam aluno e professor, mantendo o rótulo existente “Treinador” para a conta do professor. A navegação permanece Hoje/Progresso/Perfil para aluno e Início/Alunos/Perfil para professor. As amostras contêm nomes e emails ilustrativos.
+O perfil compartilha identidade e composição. O papel diferencia aluno e professor, mantendo o rótulo existente “Treinador” para a conta do professor. O cabeçalho apresenta “Perfil” e “Informações da sua conta.”; o conteúdo concentra iniciais, nome, email, papel e Sair. A navegação permanece Hoje/Progresso/Perfil para aluno e Início/Alunos/Perfil para professor. As amostras contêm nomes e emails ilustrativos.
 
 ## Mapa de quadros
 
@@ -43,7 +43,7 @@ As fontes atuais são `apps/mobile/app/(auth)/login.tsx`, `apps/mobile/app/(auth
 - Senha permanece oculta. A instância `Field/Password` oculta a ação de revelar senha da foundation, pois ela não existe nessas telas hoje.
 - Login usa “Credenciais inválidas. Verifique os dados e tente novamente.”, “Muitas tentativas. Aguarde um momento e tente novamente.”, “Não foi possível concluir a solicitação. Tente novamente.” e “Não foi possível identificar o perfil desta conta.”.
 - Cadastro usa “Não foi possível criar a conta com os dados informados.”, além das mensagens atuais de limite de tentativas e falha geral. Não revelar conta já cadastrada nem acrescentar uma contagem regressiva.
-- Perfis apresentam nome, email, iniciais, papel, contexto da jornada e Sair. Não introduzir edição, upload de avatar, configurações ou dados de domínio adicionais.
+- Perfis apresentam nome, email, iniciais, papel e Sair. O bloco “Treinos e evolução” e os textos de acompanhamento da jornada foram removidos do layout; treinos, progresso e alunos permanecem nos destinos existentes. Não introduzir edição, upload de avatar, configurações ou dados de domínio adicionais.
 - Fallbacks atuais: Aluno/AL ou Treinador/TR; “Sem email cadastrado” quando o email não está disponível. O estado pendente da sessão usa StatePanel sem superfície de card.
 - Saída mostra “Saindo...” e desabilita nova saída. Em falha, mantém o perfil com “Não foi possível sair agora.”; o próprio botão permite tentar novamente. Sucesso retorna ao login, sem confirmação intermediária. Limpeza de cache e sessão continuam no fluxo existente.
 
@@ -60,6 +60,8 @@ Os quadros de teclado mostram conteúdo estendido com foco visível, não uma ca
 Preservar labels acessíveis, estado desabilitado no CTA, anúncio de erros e progresso de operação. Fonte ampliada exige crescimento da identidade e rolagem; o exemplo de 125% não substitui ensaio de todas as escalas nativas. Tabs têm três áreas amplas com ícone e texto, e seleção não depende apenas de cor.
 
 ## Verificação e limites
+
+A simplificação do perfil em 08/10/2026 foi aplicada aos 13 quadros com dados: perfis base, saída em andamento, erro ao sair, fallbacks, adaptações 320/430 dp e nome longo. Os dois estados de carregamento permanecem sem identidade ou ações enquanto a sessão carrega. Capturas dos perfis de aluno e professor, 320/430 dp, erro ao sair e nome longo confirmaram a composição sem o bloco de jornada. A implementação Expo ainda contém esse bloco e deverá acompanhar o layout na implementação nativa; este ajuste modifica apenas o design e o handoff.
 
 A inspeção do MCP confirmou 34 telas, 169 instâncias diretas, ausência de placeholders, escapes Unicode e sobreposição de quadros. Os 32 quadros sem teclado não apresentaram problemas de bounds. A revisão independente analisou 20 capturas, incluindo as quatro superfícies em 390/320/430 dp, nome longo, envio, erro, carregamento e foco/teclado, sem encontrar defeito material que impeça a entrega do design.
 

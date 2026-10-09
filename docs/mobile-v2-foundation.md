@@ -46,6 +46,7 @@ Os símbolos `Q4dha` (`List/Exercício/Detalhado`) e `RL1fy` (`Media/Exercício/
 
 - **Sem dados disponíveis:** o `StatePanel` ocupa a área principal disponível e apresenta ícone, título, descrição e ação aplicável centralizados, sem superfície própria de card. Header e navegação permanecem visíveis conforme o shell da tela; não é um overlay que cobre toda a tela.
 - **Com dados já carregados:** preservar o conteúdo. Uma falha de atualização usa `Message/Error` próximo ao conteúdo afetado, em vez de substituí-lo por um `StatePanel`. Offline e sincronização pendente também usam mensagens contextuais.
+- **Carregamento da mesma operação:** quando um StatePanel ou indicador dedicado já comunica o andamento, não acrescentar outro progresso no botão de retry ou no reload. O retry do erro sai temporariamente dessa apresentação; o reload do header permanece visível, estático e desativado, com alvo e posição preservados. Quando o botão é o único feedback de progresso, seu estado Loading continua válido. Navegação, outras ações e conteúdo já carregado seguem o contrato do fluxo.
 - **Erro de campo:** mostrar a mensagem abaixo do campo correspondente, preservando label e valor; não usar um estado global.
 
 A área cresce e permite rolagem quando texto, escala de fonte ou teclado exigirem. As dimensões das amostras não devem virar uma altura fixa no runtime. O estado de sucesso aparece apenas no contexto em que o fluxo existente confirma a operação; não substitui todas as telas por uma confirmação genérica.

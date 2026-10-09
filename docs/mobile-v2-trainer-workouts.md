@@ -20,7 +20,7 @@ Os novos símbolos são `RTkQU` (lista de treino), `JPjJ2` (prescrição em leit
 | Detalhe / Editar treino | Push `/trainer/students/[studentId]/workouts/[planId]/edit` |
 | Lista / Aluno | Dismiss to detalhe do aluno |
 | Editor ou detalhe / Treinos | Dismiss to lista de treinos |
-| Criação confirmada / Ver treino | Replace pelo detalhe do plano criado |
+| Criação confirmada | Feedback no editor; navegação pelo header Treinos |
 | Edição confirmada ou editor arquivado / header Treino | Dismiss to detalhe |
 | Contexto sem aluno | Dismiss to `/trainer/students` |
 | Catálogo / exercício | Adiciona ao dia ativo e fecha o modal |
@@ -42,7 +42,7 @@ Lista apresenta nome, status, período quando disponível e data de criação. D
 
 Loading, erro inicial com retry e vazio preservam contexto. StatePanel ocupa a área principal, sem superfície própria de card. Com dados anteriores, falha de atualização mantém o conteúdo e apresenta mensagem contextual. 404 prevalece sobre dados anteriores; treino de outro aluno não expõe conteúdo. Planos arquivados são somente leitura e não oferecem Editar treino. O editor também bloqueia acesso direto ao plano arquivado.
 
-Durante consulta em andamento, abrir/criar/editar e seleção do catálogo obedecem aos bloqueios existentes. Recarregar fica somente no ícone do header, sem botão adicional no conteúdo, inclusive no erro inicial da lista, do detalhe e do carregamento da edição. O controle permanece visível nos 45 headers: normal em consulta recuperável, carregando e desabilitado durante fetch, desabilitado em contexto inválido ou edição local. O vazio também permite recarregar. A apresentação desativada usa o token de texto desativado; `enabled: false` do Pen oculta o elemento e não deve representar esse estado. Tentar carregar mais recupera somente a paginação do catálogo.
+Durante consulta em andamento, abrir/criar/editar e seleção do catálogo obedecem aos bloqueios existentes. Recarregar fica somente no ícone do header, sem botão adicional no conteúdo, inclusive no erro inicial da lista, do detalhe e do carregamento da edição. O controle permanece visível nos 45 headers: normal em consulta recuperável e desabilitado durante fetch, contexto inválido ou edição local. Quando não há outro indicador de progresso para a consulta, o reload usa Loading durante fetch. Em `K1Dv9W`, `ibKMR` e `z5yoK`, o StatePanel já comunica o loading; o reload fica estático e desativado, preservando seu alvo de 48 dp e posição. O vazio também permite recarregar. A apresentação desativada usa o token de texto desativado; `enabled: false` do Pen oculta o elemento e não deve representar esse estado. Tentar carregar mais recupera somente a paginação do catálogo.
 
 A foundation possui `IconButton/Refresh/Default` (`fQXup`), `Disabled` (`nqQdX`) e `Loading` (`VLGa4`), além de Pressed e Focus. O header `B32I3H` contém o alvo e o ícone de reload diretamente; os estados do MUV-31 são overrides das instâncias desse header, sem alterar a foundation compartilhada. Na implementação, desativado deve impedir o acionamento e informar o estado ao leitor de tela; os metadados do canvas não implementam interação nativa.
 
@@ -50,11 +50,19 @@ A foundation possui `IconButton/Refresh/Default` (`fQXup`), `Disabled` (`nqQdX`)
 
 Fontes: `trainer-workout-editor.tsx`, `workout-editor-day.tsx`, `workout-editor.ts` e `packages/validators/src/workouts.ts`.
 
+Revisão do dia de treino em 08/10/2026: os 16 formulários completos e a amostra de valores iniciais `pRl06` usam um cartão do dia selecionado, com superfície branca, raio de 24 dp, padding e gap de 16 dp. O cabeçalho reúne nome editável, contagem de exercícios, lápis e lixeira. O lápis direciona o foco ao campo de nome existente. Dias do treino e Adicionar dia ficam na mesma linha, acima das abas. Dados do plano, orientação, header e navegação permanecem fora desse cartão. A referência enviada define a organização; as cores continuam sendo os tokens claros da foundation.
+
+As ações de adição reutilizam `D0UIi`: Adicionar dia usa ícone de mais e texto verde, sem superfície ou borda, com alvo de 128 × 48 dp; Adicionar exercício encerra o cartão do dia, com 58 dp, ícone de mais, texto verde e contorno tracejado no token de borda padrão. Salvar conserva o botão primário lima existente, inclusive `Bn8Zy` e seu indicador durante envio. Estados desativados usam o token de texto desativado. Os valores de campos e a ordem dos exercícios são preservados.
+
 Criação inicia sem nome/notas, com um dia Treino A vazio. O formulário não possui seletor Rascunho/Ativo nem ação para salvar em rascunho. Salvar treino valida e conclui como ativo; Salvar alterações conclui a edição. Nome do plano e dos dias são editáveis; datas são somente consultadas. Um exercício selecionado entra com 3 séries, 10 repetições e carga, descanso e observação vazios, como no quadro `pRl06`.
 
-Adicionar dia seleciona o novo dia e fica desabilitado em sete dias. As abas formam um seletor segmentado dedicado somente à seleção, com o dia selecionado em verde profundo. Remover dia fica junto ao label Nome do dia e atua sobre o dia selecionado; para remover outro dia, selecione sua aba primeiro. A ação textual usa os componentes existentes `H9Vr3J` / `mF1GK`, com alvo de 128 × 48 dp, sem lixeira isolada abaixo de cada aba. Remover o último dia e remover durante envio ficam bloqueados. Dia vazio é removido diretamente; dia com exercícios abre Remover dia? com Cancelar e Remover dia. Remover dia ativo seleciona o primeiro restante. As amostras de sete dias distribuem a faixa em linhas para expor todos os controles no canvas; no runtime, a faixa horizontal existente permite rolagem sem truncar nomes ou reduzir os alvos.
+Adicionar dia seleciona o novo dia e fica desabilitado em sete dias. As abas formam um seletor segmentado dedicado somente à seleção, com o dia selecionado em verde profundo. Uma única lixeira no cabeçalho do cartão remove o dia selecionado; para remover outro dia, selecione sua aba primeiro. Lápis e lixeira reutilizam `WpCw0`, com alvo de 48 × 48 dp. Remover o último dia e remover durante envio ficam bloqueados. Dia vazio é removido diretamente; dia com exercícios abre Remover dia? com Cancelar e Remover dia. Remover dia ativo seleciona o primeiro restante. As amostras de sete dias distribuem a faixa em linhas para expor todos os controles no canvas; no runtime, a faixa horizontal existente permite rolagem sem truncar nomes ou reduzir os alvos.
 
-Exercícios usam ações de mover acima/abaixo, com extremos desabilitados, e remoção direta do estado local. A lixeira identifica Remover exercício por nome no leitor de tela. Não criar drag-and-drop, confirmação de remoção de exercício ou exclusão do catálogo.
+O componente `Gaaoc` usa superfície de fundo clara, borda padrão e raio de 20 dp dentro do cartão branco do dia. Seu cabeçalho reúne halter, nome e grupo muscular com posição do exercício. Séries/repetições e carga/descanso permanecem em duas colunas, com os campos editáveis conectados à foundation; observação continua editável. As ações ficam alinhadas à direita: mover acima/abaixo, lápis para focar a prescrição existente e remoção direta do estado local. Extremos de reordenação ficam desabilitados. A lixeira identifica Remover exercício por nome no leitor de tela. Não criar drag-and-drop, modal de edição adicional, confirmação de remoção de exercício ou exclusão do catálogo.
+
+Estados visuais do exercício: padrão usa borda neutra e não mostra indicação local; clicar no lápis ativa edição inline, borda de 2 dp em `color/text/brand`, ícone de lápis e Editando exercício entre identificação e campos. Alterar qualquer valor ou a posição do exercício ativa borda de 2 dp em `color/feedback/warning`, ícone circular e Alterações não salvas no mesmo local. Esse estado tem prioridade sobre o foco e permanece durante envio e falha; limpa após salvamento confirmado ou restauração dos valores originais, voltando ao padrão quando não há edição ativa. O indicador local não representa alterações nos dados gerais do plano. Não abrir modal nem introduzir salvamento individual de exercício. As amostras conectadas no catálogo são `SAWcO` (edição) e `W2E7p` (alterado); os formulários de prescrição, edição pendente, reordenação, erro, envio, rascunho retomado e 320 dp representam o estado correspondente.
+
+Verificação dos estados: capturas conferiram edição, alteração, foco com teclado, envio e versões de 320/390/430 dp. Verde e atenção têm contraste de 5,76:1 e 6,25:1 sobre o fundo do cartão; ícone e texto complementam a borda. Os 330 quadros raiz continuam sem interseções. O visitor de bounds atribui deslocamento vertical de 50 dp às referências de amostra e reporta clipping, embora as capturas mostrem os cartões completos; esse diagnóstico não comprova clipping visual. O salvamento do Pen permanece com o usuário.
 
 Cada dia precisa de ao menos um exercício para concluir o treino pelo salvamento normal. Nome do plano até 200 caracteres, dia até 50; repetições texto obrigatório até 20; séries inteiras entre 1 e 20; carga opcional entre 0 e 1000 kg, com vírgula aceita; descanso inteiro opcional entre 0 e 600 s. Notas do plano até 2000 e do exercício até 500. Campo tempo não é editado; seu valor recebido é preservado no update. A primeira falha aparece em mensagem global, sem acrescentar validação por campo ou em cada digitação. Essas exigências de completude não devem impedir a conservação de um rascunho no fluxo de saída.
 
@@ -74,7 +82,7 @@ A confirmação de remoção de dia continua independente: Cancelar conserva o e
 
 Validar → create/update → atualizar cache e invalidar consultas de treinos/resumo → feedback. Durante envio, campos, dias, prescrição, reordenação e adição ficam desabilitados; botão mantém largura e bloqueia reentrada. A revisão determina bloqueio de saída durante gravação; após falha, a edição continua preservada e a proteção de saída volta a ficar disponível.
 
-Erro preserva os valores. Criação confirma Treino salvo com sucesso. e oferece Ver treino. Edição confirma Treino atualizado com sucesso. e permite retornar ao detalhe pelo header Treino. Não há retorno automático. Após sucesso, controles voltam a estar disponíveis e novas edições limpam o feedback; a entrega não acrescenta bloqueio de criação duplicada ou idempotência. Uma falha de invalidação pode acontecer depois da gravação: não prometer que nenhum registro foi salvo.
+Erro preserva os valores. Criação confirma Treino salvo com sucesso., sem botão Ver treino no corpo do editor; a navegação permanece no header Treinos. Edição confirma Treino atualizado com sucesso. e permite retornar ao detalhe pelo header Treino. Não há retorno automático. Após sucesso, controles voltam a estar disponíveis e novas edições limpam o feedback; a entrega não acrescenta bloqueio de criação duplicada ou idempotência. Uma falha de invalidação pode acontecer depois da gravação: não prometer que nenhum registro foi salvo.
 
 ## Bottom sheet · Catálogo
 
@@ -88,13 +96,13 @@ Loading inicial, erro com retry, ausência de resultados, paginação, erro de p
 
 ## Foco e acessibilidade
 
-`EFk9m` é um recorte com carga em foco e teclado decimal ilustrativo. Aparência e altura do teclado são do sistema; não implementar as teclas desenhadas como teclado próprio. Campo e unidade permanecem visíveis; controles seguintes são acessíveis por rolagem. Confirmar teclado, leitor de tela, estados selected/disabled, fonte ampliada e gestos na implementação MUV-40.
+Edição e foco acontecem no próprio formulário, sem uma tela separada de teclado. Aparência e altura do teclado são do sistema. Campo e unidade devem permanecer visíveis; controles seguintes são acessíveis por rolagem. Confirmar teclado, leitor de tela, estados selected/disabled, fonte ampliada e gestos na implementação MUV-40.
 
 ## Localização no canvas
 
 O catálogo começa em y=77142. As telas ficam abaixo, com sete colunas e pelo menos 180 dp após a maior tela de cada linha. O contrato está à direita em `p3lVhN`.
 
-As quatro páginas de bottom sheet de saída ficam após o recorte de teclado, com a retomada do rascunho à direita. Elas usam instâncias conectadas ao componente existente `A571l` (`Sheet/SaídaSegura/Default`): texto, envio e erro são overrides, e os botões usam os estados da foundation. Todos os bottom sheets têm esse tipo explícito no nome do quadro. Não há componente de sheet paralelo para o MUV-31.
+As quatro páginas de bottom sheet de saída ficam na mesma linha, com a retomada do rascunho à direita. Elas usam instâncias conectadas ao componente existente `A571l` (`Sheet/SaídaSegura/Default`): texto, envio e erro são overrides, e os botões usam os estados da foundation. Todos os bottom sheets têm esse tipo explícito no nome do quadro. Não há componente de sheet paralelo para o MUV-31.
 
 | Quadro | Node ID |
 | --- | --- |
@@ -132,7 +140,7 @@ As quatro páginas de bottom sheet de saída ficam após o recorte de teclado, c
 | Editor · erro ao editar | `wwy1B` |
 | Editor · salvando criação | `r0vXqL` |
 | Editor · salvando alterações | `FFpKu` |
-| Editor · criado · Ver treino | `RZSo3` |
+| Editor · criado · confirmação de sucesso | `RZSo3` |
 | Editor · atualizado · retorno | `serqN` |
 | Editor · 320 dp · nome extenso | `aybsK` |
 | Editor · 430 dp | `GrgI2` |
@@ -156,7 +164,6 @@ As quatro páginas de bottom sheet de saída ficam após o recorte de teclado, c
 | Editor · exercício selecionado · valores iniciais | `pRl06` |
 | Confirmação · remover dia · 390 dp | `P9njzq` |
 | Confirmação · remover dia · 320 dp | `t7zTwC` |
-| Editor · foco e teclado · recorte | `EFk9m` |
 | Fluxo e contrato de implementação | `p3lVhN` |
 | Bottom sheet · Sair do editor · confirmação · 390 dp | `UFwPa` |
 | Bottom sheet · Sair do editor · confirmação · 320 dp | `rRk8K` |
@@ -165,6 +172,10 @@ As quatro páginas de bottom sheet de saída ficam após o recorte de teclado, c
 | Editor · retomada do rascunho na conta | `CacGB` |
 
 ## Verificação
+
+Revisão visual de 08/10/2026: a comparação estrutural dos 16 formulários confirmou headers, menus, títulos/contextos e referências de campos/prescrição idênticos antes e depois da reorganização. Capturas conferiram 320/390/430 dp, vazio, limite de sete dias, envio, validação global, valores iniciais e foco com teclado. Todos os botões substituídos estão em pais flex, com largura válida e altura de 58 dp; avisos emitidos durante `Replace` apontavam IDs antigos, ausentes na árvore final. Os 330 quadros raiz não se intersectam. A correção posterior de 44 botões restaurou as cores primárias/secundárias da foundation, incluindo loading/disabled, sem alterar headers ou menus; capturas adicionais conferiram 390/320 dp e envio. O salvamento do Pen permanece com o usuário.
+
+A revisão posterior do dia de treino substitui especificamente a organização e as ações de adição descritas acima. A leitura MCP confirmou um cartão do dia, um cabeçalho contextual e uma adição de exercício por variante nos 16 formulários e em `pRl06`, com contagens correspondentes a zero, um ou dois exercícios. Capturas conferiram 320/390/430 dp, vazio, dois exercícios, sete dias, envio e valores iniciais. Foram preservados os overrides de carga 42 kg, os valores iniciais 3 séries/10 repetições e os bloqueios de remoção do único dia e durante envio. A comparação global continuou com 330 quadros raiz e zero interseções; o catálogo de componentes não reportou clipping. `git diff --check` não apontou erros e a busca de escapes Unicode no documento não encontrou ocorrências. O Pen continua aberto para salvamento pelo usuário.
 
 Leitura MCP contou 60 quadros raiz e 510 referências, sem placeholders ou escapes Unicode no escopo novo. A comparação dos retângulos globais dos 325 quadros raiz retornou zero interseções. Capturas inspecionadas cobrem lista/detalhe, editor em 390/320 dp, catálogo em 390/320 dp, envio, confirmação destrutiva em 320 dp, valores iniciais, foco, validação global, erro de paginação, vazio, erro inicial, plano arquivado e limite de dias. Diagnósticos de bounds e warnings de elementos desabilitados em instâncias precisam ser confrontados com capturas; não equivalem a geometria interna automaticamente limpa.
 
