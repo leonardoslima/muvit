@@ -149,6 +149,15 @@ describe('ações v2', () => {
     expect(onPress).toHaveBeenCalledOnce();
   });
 
+  it('preserva padding interno de 16 dp no Card', () => {
+    render(
+      <Card testID="foundation-card">
+        <Text>Dados</Text>
+      </Card>,
+    );
+    expect(screen.getByTestId('foundation-card').props.className).toContain('p-4');
+  });
+
   it('Header de sessão preserva título extenso e ações acessíveis', () => {
     const close = vi.fn();
     render(

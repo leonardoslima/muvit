@@ -21,7 +21,7 @@ export const Card = forwardRef<View, CardProps>(function Card(
     action?.loading,
   );
   const classes = cn(
-    'gap-2 border p-5',
+    'gap-2 border p-4',
     variant === 'immersive'
       ? 'rounded-v2-session bg-v2-sessionSurface border-v2-sessionBorder'
       : 'rounded-v2-card bg-v2-surface border-v2-border',
