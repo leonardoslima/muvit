@@ -8,6 +8,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: [
+          'src/lib/design-system/**/*.ts',
           'src/application/**/*.ts',
           'src/lib/api.ts',
           'src/lib/config-url.ts',

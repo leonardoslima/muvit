@@ -11,6 +11,7 @@ const routerState = vi.hoisted(() => ({
 
 const fontState = vi.hoisted(() => ({
   loaded: true,
+  useFonts: vi.fn(),
 }));
 
 const authState = vi.hoisted(() => ({
@@ -27,7 +28,15 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 vi.mock('expo-font', () => ({
-  useFonts: () => [fontState.loaded],
+  useFonts: fontState.useFonts,
+}));
+
+vi.mock('@expo-google-fonts/dm-sans', () => ({
+  DMSans_400Regular: 'DMSans_400Regular',
+  DMSans_500Medium: 'DMSans_500Medium',
+  DMSans_600SemiBold: 'DMSans_600SemiBold',
+  DMSans_700Bold: 'DMSans_700Bold',
+  DMSans_800ExtraBold: 'DMSans_800ExtraBold',
 }));
 
 vi.mock('@expo-google-fonts/inter', () => ({
@@ -78,6 +87,7 @@ vi.mock('../components/push-token-registration', () => ({
 
 describe('RootLayout', () => {
   beforeEach(() => {
+    fontState.useFonts.mockImplementation(() => [fontState.loaded]);
     routerState.useSegments.mockReset();
     routerState.useSegments.mockImplementation(() => routerState.segments);
     authState.useSession.mockReset();
@@ -86,6 +96,21 @@ describe('RootLayout', () => {
     authState.session.data = null;
     authState.session.isPending = false;
     fontState.loaded = true;
+  });
+
+  it('disponibiliza os pesos v2 junto às fontes dos consumidores existentes', () => {
+    render(<RootLayout />);
+
+    expect(fontState.useFonts).toHaveBeenCalledWith({
+      Inter_400Regular: 'Inter_400Regular',
+      Inter_600SemiBold: 'Inter_600SemiBold',
+      SpaceGrotesk_600SemiBold: 'SpaceGrotesk_600SemiBold',
+      DMSans_400Regular: 'DMSans_400Regular',
+      DMSans_500Medium: 'DMSans_500Medium',
+      DMSans_600SemiBold: 'DMSans_600SemiBold',
+      DMSans_700Bold: 'DMSans_700Bold',
+      DMSans_800ExtraBold: 'DMSans_800ExtraBold',
+    });
   });
 
   it('aguarda as fontes antes de montar a árvore autenticada', () => {

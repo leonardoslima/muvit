@@ -1,0 +1,49 @@
+appId: host.exp.exponent
+name: Foundation mobile v2
+---
+- stopApp
+- openLink: exp://127.0.0.1:8093
+- extendedWaitUntil:
+    visible: Foundation v2
+    timeout: 60000
+- assertVisible: 'Ações executadas: 0'
+- takeScreenshot: controls
+- tapOn: Validar ação
+- assertVisible: 'Ações executadas: 1'
+- tapOn: Ação secundária
+- assertVisible: 'Ações executadas: 2'
+- tapOn:
+    id: preview-name
+- inputText: Teste
+- hideKeyboard
+- assertVisible: 'Valor digitado: Teste'
+- scrollUntilVisible:
+    element: Aumentar Repetições
+    direction: DOWN
+- tapOn: Aumentar Repetições
+- assertVisible: '9'
+- tapOn: Diminuir Repetições
+- assertVisible: '8'
+- scrollUntilVisible:
+    element: Estados
+    direction: UP
+- tapOn: Estados
+- assertVisible: Informação acessível
+- takeScreenshot: states
+- scrollUntilVisible:
+    element: Tentar novamente
+    direction: DOWN
+- tapOn: Tentar novamente
+- scrollUntilVisible:
+    element: 'Ações executadas: 3'
+    direction: UP
+- assertVisible: 'Ações executadas: 3'
+- scrollUntilVisible:
+    element: Continuar exemplo
+    direction: DOWN
+- takeScreenshot: immersive
+- scrollUntilVisible:
+    element: Fim do catálogo de teste
+    direction: DOWN
+- assertVisible: Superfície de confirmação
+- takeScreenshot: surfaces
