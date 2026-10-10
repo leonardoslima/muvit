@@ -76,4 +76,4 @@ Task 2 consome exatamente os exports de Task 1. Prefixos `v2-*` e namespace pres
 
 ## Registro final da execução — 10/10/2026
 
-Os itens executáveis do plano foram concluídos e registrados em `docs/muv-32-result-capsule.md`. O revisor independente encontrou o padding incorreto de Card; a correção foi commitada no SHA `9a5b61d9d91a241ba41700269cb404492fd80e54` e a revisão incremental foi solicitada ao coordenador. A PR #20 permanece draft até a confirmação do coordenador; esta execução não faz merge nem altera o status de MUV-32.
+Os itens executáveis do plano foram concluídos e registrados em `docs/muv-32-result-capsule.md`. O revisor independente encontrou o padding incorreto de Card; a correção foi commitada no SHA `9a5b61d9d91a241ba41700269cb404492fd80e54` e a revisão incremental confirmou a correção sem outros achados materiais (cápsulas Orca `msg_f0468d77e71d` e `msg_45a4f63f8ede`). A PR #20 permanece draft até a confirmação do coordenador; esta execução não faz merge nem altera o status de MUV-32.

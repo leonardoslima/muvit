@@ -34,7 +34,7 @@
 
 ## Revisão independente e limites
 
-- O revisor independente encontrou o padding do Card incompatível com o spec; a falha foi demonstrada antes da correção pelo novo teste (1 falha esperada, 19 restantes passaram), corrigida, e o grupo focado passou. O commit `9a5b61d9d91a241ba41700269cb404492fd80e54` foi enviado ao Pai para revisão incremental; aguardando essa resposta antes de retirar o draft da PR.
+- O revisor independente encontrou o padding do Card incompatível com o spec; a falha foi demonstrada antes da correção pelo novo teste (1 falha esperada, 19 restantes passaram), corrigida, e o grupo focado passou. A revisão incremental confirmou o commit `9a5b61d9d91a241ba41700269cb404492fd80e54`, sem outros achados materiais (cápsulas Orca `msg_f0468d77e71d` e `msg_45a4f63f8ede`). A PR permanece draft para o gate nativo e revisão final do coordenador.
 - Maestro 2.10.0 executou no emulador Android. Ambas as tentativas falharam antes de inspecionar o harness; a segunda teve erro `Expo Go: Failed to download remote update` apesar de reverse TCP ativo e HTTP local 200. O bundling real de Expo passou, mas não se afirma validação visual em runtime.
 - No MCP Pen, nesta retomada `read_skill`/`get_app_state` retornaram `transport not connected to app: desktop`; nenhum conteúdo do `.pen` foi lido agora e não houve comparação visual nova. O ledger/handoff conserva os IDs/snapshot aprovados consultados anteriormente por leitura MCP histórica.
 - `expo-doctor` continua com 1 check de incompatibilidade de versões, reportado sem alteração fora do escopo.
