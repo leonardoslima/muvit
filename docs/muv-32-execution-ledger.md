@@ -47,3 +47,4 @@ Plano: `docs/superpowers/plans/2026-10-09-muv-32-foundation-mobile-v2.md`.
 ## Atualização após re-revisão — 10/10/2026
 
 O revisor independente confirmou a correção de `Card` no SHA `9a5b61d9d91a241ba41700269cb404492fd80e54` sem outros achados materiais (cápsulas Orca `msg_f0468d77e71d` e `msg_45a4f63f8ede`). Os bundles e checks de cobertura/typecheck seguem passando; Maestro não concluiu a validação nativa porque Expo Go falhou ao baixar o update. A PR draft #20 aguarda o gate nativo e a revisão final do coordenador.
+- Os exports deixaram bundles/assets não rastreados em `apps/mobile/test/foundation/test/foundation/{dist,dist-js}`; confirmei que o diretório contém somente os resultados gerados. Remoção por `Remove-Item` foi bloqueada pela política do terminal; nada disso entrou nos commits/PR e o coordenador pode limpar pelo ambiente gerenciado.

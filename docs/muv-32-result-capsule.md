@@ -44,3 +44,4 @@
 
 - Revisar incrementalmente o commit Card, converter PR #20 de draft quando satisfeito e fazer revisão/integrar segundo o fluxo do pai.
 - Não fazer merge nesta Dispatch, nem mudar MUV-32 para Done; aguardar merge confirmado sob responsabilidade do coordenador.
+- Saída local dos exports Expo permanece não rastreada em `apps/mobile/test/foundation/test/foundation/{dist,dist-js}`. Verifiquei que contém apenas bundles/assets gerados; tentativas de remoção via PowerShell foram bloqueadas pela política de execução, então esses arquivos ficaram fora de commits e da PR para limpeza pelo coordenador.
