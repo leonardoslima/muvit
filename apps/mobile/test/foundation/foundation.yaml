@@ -2,6 +2,7 @@ appId: host.exp.exponent
 name: Foundation mobile v2
 ---
 - stopApp
+- launchApp
 - openLink: exp://127.0.0.1:8093
 - extendedWaitUntil:
     visible: Foundation v2
@@ -12,11 +13,37 @@ name: Foundation mobile v2
 - assertVisible: 'Ações executadas: 1'
 - tapOn: Ação secundária
 - assertVisible: 'Ações executadas: 2'
+- scrollUntilVisible:
+    element: Campo somente leitura
+    direction: DOWN
+- assertVisible: Campo somente leitura
+- assertVisible: 'Teclado: fechado'
+- takeScreenshot: readonly
+- tapOn:
+    id: preview-readonly
+- assertVisible: 'Teclado: fechado'
+- takeScreenshot: readonly-focused
+- scrollUntilVisible:
+    element: 'Valor somente leitura: Não editar'
+    direction: DOWN
+- assertVisible: 'Valor somente leitura: Não editar'
+- scrollUntilVisible:
+    element: Digite seu nome
+    direction: UP
 - tapOn:
     id: preview-name
 - inputText: Teste
+- assertVisible: 'Teclado: aberto'
 - hideKeyboard
 - assertVisible: 'Valor digitado: Teste'
+- assertVisible: 'Teclado: fechado'
+- scrollUntilVisible:
+    element: Campo somente leitura
+    direction: DOWN
+- tapOn:
+    id: preview-readonly
+- assertVisible: 'Teclado: fechado'
+- assertVisible: 'Valor somente leitura: Não editar'
 - scrollUntilVisible:
     element: Aumentar Repetições
     direction: DOWN
@@ -24,6 +51,14 @@ name: Foundation mobile v2
 - assertVisible: '9'
 - tapOn: Diminuir Repetições
 - assertVisible: '8'
+- scrollUntilVisible:
+    element: Favoritar exemplo
+    direction: DOWN
+- assertVisible: Favoritar exemplo
+- takeScreenshot: svg
+- scrollUntilVisible:
+    element: 'Ações executadas: 2'
+    direction: UP
 - scrollUntilVisible:
     element: Estados
     direction: UP
@@ -41,6 +76,7 @@ name: Foundation mobile v2
 - scrollUntilVisible:
     element: Continuar exemplo
     direction: DOWN
+    timeout: 40000
 - takeScreenshot: immersive
 - scrollUntilVisible:
     element: Fim do catálogo de teste

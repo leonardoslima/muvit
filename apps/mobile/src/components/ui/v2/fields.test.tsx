@@ -182,4 +182,16 @@ describe('campos v2', () => {
     expect(decrement).not.toHaveBeenCalled();
     expect(change).not.toHaveBeenCalled();
   });
+
+  it('Field readOnly mantém input acessível, sem teclado e sem alterações', () => {
+    const change = vi.fn();
+    render(<Field label="Somente leitura" value="Não editar" onChangeText={change} readOnly />);
+    const input = screen.getByLabelText('Somente leitura');
+    expect(input.props.editable).toBe(false);
+    expect(input.props.showSoftInputOnFocus).toBe(false);
+    expect(input.props.accessibilityState.disabled).toBe(false);
+    expect(input.props['aria-disabled']).toBe(false);
+    fireEvent.changeText(input, 'Alterar');
+    expect(change).not.toHaveBeenCalled();
+  });
 });

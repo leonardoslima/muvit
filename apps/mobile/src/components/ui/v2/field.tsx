@@ -49,6 +49,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
     onFocus,
     onBlur,
     onChange,
+    showSoftInputOnFocus = true,
     testID,
     accessibilityState,
     ...props
@@ -102,8 +103,9 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           ref={ref}
           testID={testID}
           value={value}
-          editable={!blocked}
+          editable={!blocked && !readOnly}
           readOnly={readOnly || blocked}
+          showSoftInputOnFocus={readOnly || blocked ? false : showSoftInputOnFocus}
           aria-disabled={blocked}
           aria-busy={loading || accessibilityState?.busy || props['aria-busy']}
           accessibilityLabel={props.accessibilityLabel ?? label}
