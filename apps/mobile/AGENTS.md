@@ -43,6 +43,8 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
 - O componente `Screen` deve consumir `BottomTabBarHeightContext` e adicionar `tabBarHeight + spacing.lg` ao inset somente quando estiver dentro das tabs; telas nao devem duplicar esse espacamento.
 - Use `src/lib/styles.ts` como fonte executavel dos tokens descritos em `PRODUCT.md` e `DESIGN.md`; prefira `colors`, `spacing`, `radii`, `controlSizes` e `typography` a valores visuais locais.
+- A foundation v2 usa `src/lib/design-system/tokens.ts` e `src/components/ui/v2`, com NativeWind e bases locais adaptadas do React Native Reusables; consulte `docs/mobile-v2-foundation.md` e `docs/mobile-v2-design-gate.md` para contratos aprovados. Os imports legacy de `styles.ts` e `components/ui` permanecem compatíveis até migração explícita do fluxo no card responsável.
+- NativeWind é configurado por Babel/Metro/Tailwind no app e `global.css` é importado uma vez pelo root layout; classes v2 usam tokens `v2-*`. DM Sans é carregada adicionalmente às fontes legacy. A paleta imersiva é contextual, sem dark mode global.
 - Reutilize `InlineMessage` para feedback de erro, sucesso e aviso de operacoes ja existentes, sem mover a regra de estado para o componente visual.
 
 ## Verificacao

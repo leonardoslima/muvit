@@ -1,0 +1,5 @@
+{
+  "name": "muvit-foundation-preview",
+  "private": true,
+  "main": "./entry.tsx"
+}

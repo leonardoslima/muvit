@@ -1,3 +1,11 @@
+import '../global.css';
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+  DMSans_800ExtraBold,
+} from '@expo-google-fonts/dm-sans';
 import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -56,6 +64,11 @@ export function RootLayout() {
     Inter_400Regular,
     Inter_600SemiBold,
     SpaceGrotesk_600SemiBold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    DMSans_800ExtraBold,
   });
 
   if (!fontsLoaded) {

@@ -8,6 +8,7 @@ export default mergeConfig(
       coverage: {
         provider: 'v8',
         include: [
+          'src/components/ui/v2/**/*.{ts,tsx}',
           'src/screens/today-workout.tsx',
           'src/screens/progress.tsx',
           'src/screens/profile.tsx',
