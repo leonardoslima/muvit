@@ -8,6 +8,7 @@ describe('registerPushToken', () => {
     };
 
     await registerPushToken({
+      enabled: true,
       api,
       getPermissions: async () => ({ status: 'undetermined' }),
       requestPermissions: async () => ({ status: 'granted' }),
@@ -27,6 +28,7 @@ describe('registerPushToken', () => {
     const requestPermissions = vi.fn();
 
     await registerPushToken({
+      enabled: true,
       api,
       getPermissions: async () => ({ status: 'granted' }),
       requestPermissions,
@@ -46,12 +48,34 @@ describe('registerPushToken', () => {
     };
 
     await registerPushToken({
+      enabled: true,
       api,
       getPermissions: async () => ({ status: 'undetermined' }),
       requestPermissions: async () => ({ status: 'denied' }),
       getExpoPushToken: async () => ({ data: 'ExponentPushToken[denied]' }),
     });
 
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('não solicita permissão nem token quando o registro push está desativado', async () => {
+    const api = {
+      request: vi.fn<PushTokenApiClient['request']>().mockResolvedValue(undefined),
+    };
+    const getPermissions = vi.fn(async () => ({ status: 'granted' as const }));
+    const requestPermissions = vi.fn(async () => ({ status: 'granted' as const }));
+    const getExpoPushToken = vi.fn(async () => ({ data: 'ExponentPushToken[disabled]' }));
+
+    await registerPushToken({
+      api,
+      getPermissions,
+      requestPermissions,
+      getExpoPushToken,
+    });
+
+    expect(getPermissions).not.toHaveBeenCalled();
+    expect(requestPermissions).not.toHaveBeenCalled();
+    expect(getExpoPushToken).not.toHaveBeenCalled();
     expect(api.request).not.toHaveBeenCalled();
   });
 });
