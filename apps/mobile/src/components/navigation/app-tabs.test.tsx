@@ -1,23 +1,19 @@
 import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fontFamilies, typography } from '../../lib/styles';
+import {
+  penTokens,
+  v2Colors,
+  v2ControlSizes,
+  v2FontFamilies,
+  v2Spacing,
+  v2Typography,
+} from '../../lib/design-system/tokens';
 import { AppTabsLayout } from './app-tabs';
 
-vi.mock('../../lib/styles', async (importOriginal) => {
-  const styles = await importOriginal<typeof import('../../lib/styles')>();
-
-  return {
-    ...styles,
-    typography: {
-      ...styles.typography,
-      caption: {
-        ...styles.typography.caption,
-        fontSize: 11,
-      },
-    },
-  };
-});
+const safeAreaState = vi.hoisted(() => ({
+  insets: { top: 0, right: 0, bottom: 0, left: 0 },
+}));
 
 type TabIconProps = {
   color: string;
@@ -44,11 +40,16 @@ type TabBarButtonProps = {
 };
 
 type ScreenOptions = {
+  tabBarActiveBackgroundColor?: string;
+  tabBarActiveTintColor?: string;
   tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+  tabBarInactiveTintColor?: string;
+  tabBarItemStyle?: Record<string, unknown>;
   tabBarLabelStyle?: {
     fontFamily: string;
     fontSize: number;
   };
+  tabBarStyle?: Record<string, unknown>;
 };
 
 const tabsState = vi.hoisted(() => ({
@@ -89,6 +90,10 @@ vi.mock('@react-navigation/elements', () => ({
     React.createElement('PlatformPressable', props, children),
 }));
 
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => safeAreaState.insets,
+}));
+
 vi.mock('@expo/vector-icons', () => ({
   Ionicons: (props: { color: string; name: string; size: number }) =>
     React.createElement('Ionicons', props),
@@ -98,6 +103,7 @@ describe('AppTabsLayout', () => {
   beforeEach(() => {
     tabsState.screenOptions = null;
     tabsState.screens.length = 0;
+    safeAreaState.insets = { top: 0, right: 0, bottom: 0, left: 0 };
   });
 
   it('renderiza labels, ícones, destinos e estado acessível das abas', () => {
@@ -138,8 +144,34 @@ describe('AppTabsLayout', () => {
     render(<AppTabsLayout tabs={[]} />);
 
     expect(tabsState.screenOptions?.tabBarLabelStyle).toEqual({
-      fontFamily: fontFamilies.bodyStrong,
-      fontSize: typography.caption.fontSize,
+      fontFamily: v2FontFamilies.semibold,
+      fontSize: v2Typography.caption.fontSize,
     });
+  });
+
+  it('aplica seleção v2, alvo mínimo e safe area inferior dinâmica à tab bar', () => {
+    safeAreaState.insets.bottom = 34;
+
+    render(<AppTabsLayout tabs={[]} />);
+
+    expect(tabsState.screenOptions).toEqual(
+      expect.objectContaining({
+        tabBarActiveBackgroundColor: v2Colors.subtle,
+        tabBarActiveTintColor: v2Colors.brand,
+        tabBarInactiveTintColor: v2Colors.inactiveIcon,
+        tabBarItemStyle: {
+          borderRadius: penTokens['radius/29'],
+          minHeight: v2ControlSizes.touch,
+        },
+        tabBarStyle: expect.objectContaining({
+          backgroundColor: v2Colors.surface,
+          borderRadius: penTokens['radius/33'],
+          height: v2ControlSizes.tabBar + 34,
+          paddingBottom: v2Spacing.sm + 34,
+          paddingTop: v2Spacing.sm,
+          transform: [{ translateY: -v2Spacing.lg }],
+        }),
+      }),
+    );
   });
 });

@@ -120,6 +120,10 @@ vi.mock('@expo/vector-icons', () => ({
     React.createElement('Ionicons', props),
 }));
 
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0 }),
+}));
+
 describe('TabsLayout', () => {
   beforeEach(() => {
     tabsState.buttonCases.length = 0;

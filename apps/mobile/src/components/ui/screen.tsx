@@ -4,12 +4,14 @@ import {
   ScrollView,
   type ScrollViewProps,
   type StyleProp,
-  Text,
   View,
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { sharedStyles, spacing } from '../../lib/styles';
+import { v2Colors, v2Spacing } from '../../lib/design-system/tokens';
+import { sharedStyles } from '../../lib/styles';
+import { Header as V2Header } from './v2/header';
+import { Text as V2Text } from './v2/text';
 
 export type ScreenProps = {
   children: React.ReactNode;
@@ -20,18 +22,43 @@ export type ScreenProps = {
 
 export function Screen({ children, contentContainerStyle, scroll = false, style }: ScreenProps) {
   const tabBarHeight = useContext(BottomTabBarHeightContext);
-  const tabBarInset =
-    typeof tabBarHeight === 'number' ? { paddingBottom: tabBarHeight + spacing.lg } : undefined;
+  const inTabs = typeof tabBarHeight === 'number';
+  const safeAreaEdges: ('top' | 'right' | 'bottom' | 'left')[] = inTabs
+    ? ['top', 'left', 'right']
+    : ['top', 'right', 'bottom', 'left'];
+  const tabBarInset = inTabs ? { paddingBottom: tabBarHeight + v2Spacing.lg } : undefined;
 
   if (!scroll) {
-    return <SafeAreaView style={[sharedStyles.screen, style]}>{children}</SafeAreaView>;
+    return (
+      <SafeAreaView
+        edges={safeAreaEdges}
+        style={[
+          sharedStyles.screen,
+          {
+            backgroundColor: v2Colors.background,
+            paddingHorizontal: v2Spacing.lg,
+          },
+          style,
+          tabBarInset,
+        ]}
+      >
+        {children}
+      </SafeAreaView>
+    );
   }
 
   return (
-    <SafeAreaView style={sharedStyles.safeArea}>
+    <SafeAreaView
+      edges={safeAreaEdges}
+      style={[sharedStyles.safeArea, { backgroundColor: v2Colors.background }]}
+    >
       <ScrollView
         contentContainerStyle={[
-          { gap: spacing.lg, padding: spacing.xxl },
+          {
+            gap: v2Spacing.lg,
+            paddingHorizontal: v2Spacing.lg,
+            paddingVertical: v2Spacing.xxl,
+          },
           contentContainerStyle,
           tabBarInset,
         ]}
@@ -52,11 +79,17 @@ export type ScreenHeaderProps = {
 export function ScreenHeader({ eyebrow, subtitle, title }: ScreenHeaderProps) {
   return (
     <View style={sharedStyles.header}>
-      {eyebrow ? <Text style={sharedStyles.eyebrow}>{eyebrow}</Text> : null}
-      <Text accessibilityRole="header" style={sharedStyles.title}>
-        {title}
-      </Text>
-      {subtitle ? <Text style={sharedStyles.subtitle}>{subtitle}</Text> : null}
+      {eyebrow ? (
+        <V2Text className="text-v2-brand uppercase tracking-[1px]" variant="caption">
+          {eyebrow}
+        </V2Text>
+      ) : null}
+      <V2Header title={title} />
+      {subtitle ? (
+        <V2Text className="text-v2-secondary" variant="body">
+          {subtitle}
+        </V2Text>
+      ) : null}
     </View>
   );
 }

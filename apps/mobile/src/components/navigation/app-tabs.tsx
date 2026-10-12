@@ -2,7 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
-import { colors, controlSizes, fontFamilies, radii, spacing, typography } from '../../lib/styles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  penTokens,
+  v2Colors,
+  v2ControlSizes,
+  v2FontFamilies,
+  v2Spacing,
+  v2Typography,
+} from '../../lib/design-system/tokens';
 
 export type AppTab = {
   name: string;
@@ -15,33 +23,42 @@ export type AppTabsLayoutProps = {
 };
 
 export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primaryText,
-        tabBarActiveBackgroundColor: colors.primarySoft,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarActiveTintColor: v2Colors.brand,
+        tabBarActiveBackgroundColor: v2Colors.subtle,
+        tabBarInactiveTintColor: v2Colors.inactiveIcon,
         tabBarItemStyle: {
-          borderRadius: radii.pill,
+          borderRadius: penTokens['radius/29'],
+          minHeight: v2ControlSizes.touch,
         },
         tabBarButton: (props) => (
-          <PlatformPressable {...props} style={[props.style, { borderRadius: radii.pill }]} />
+          <PlatformPressable
+            {...props}
+            style={[
+              props.style,
+              { borderRadius: penTokens['radius/29'], minHeight: v2ControlSizes.touch },
+            ]}
+          />
         ),
         tabBarLabelStyle: {
-          fontFamily: fontFamilies.bodyStrong,
-          fontSize: typography.caption.fontSize,
+          fontFamily: v2FontFamilies.semibold,
+          fontSize: v2Typography.caption.fontSize,
         },
         tabBarStyle: {
           position: 'absolute',
-          marginHorizontal: spacing.lg,
-          transform: [{ translateY: -spacing.lg }],
-          height: controlSizes.tabBar,
-          borderRadius: radii.pill,
+          marginHorizontal: v2Spacing.lg,
+          transform: [{ translateY: -v2Spacing.lg }],
+          height: v2ControlSizes.tabBar + insets.bottom,
+          borderRadius: penTokens['radius/33'],
           borderTopWidth: 0,
-          backgroundColor: colors.surfaceTranslucent,
-          paddingBottom: spacing.sm,
-          paddingTop: spacing.sm,
+          backgroundColor: v2Colors.surface,
+          paddingBottom: v2Spacing.sm + insets.bottom,
+          paddingTop: v2Spacing.sm,
         },
       }}
     >

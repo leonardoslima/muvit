@@ -47,6 +47,10 @@ vi.mock('@expo/vector-icons', () => ({
     React.createElement('Ionicons', props),
 }));
 
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0 }),
+}));
+
 describe('TrainerTabsLayout', () => {
   beforeEach(() => {
     tabsState.screens.length = 0;
