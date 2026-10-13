@@ -773,8 +773,7 @@ describe('LogWorkoutScreen', () => {
           <TodayWorkoutScreen key="next-cycle" />
         </QueryClientProvider>,
       );
-      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
 
       const remountQueryClient = new QueryClient({

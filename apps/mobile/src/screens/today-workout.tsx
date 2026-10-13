@@ -1,368 +1,286 @@
-import type { workoutPlanFullSchema } from '@muvit/validators';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'expo-router';
-import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
-import type { z } from 'zod';
+import { Link, router } from 'expo-router';
+import { useRef } from 'react';
+import { View } from 'react-native';
 import type { GuidedSession } from '../application/workouts/guided-session';
+import type { WorkoutDay } from '../application/workouts/today-workout';
 import {
-  type TodayWorkoutResult,
   estimateWorkoutDuration,
   getWorkoutDraftProgress,
-  loadTodayWorkoutWithOfflineFallback,
 } from '../application/workouts/today-workout';
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
+import { Screen } from '../components/ui/screen';
+import { Button } from '../components/ui/v2/button';
+import { Card } from '../components/ui/v2/card';
+import { Message } from '../components/ui/v2/message';
+import { StatePanel } from '../components/ui/v2/state-panel';
+import { Text } from '../components/ui/v2/text';
+import { StudentExerciseList } from '../components/workouts/student-exercise-list';
 import { authClient } from '../lib/auth-client';
-import { isoDateFromTimestamp, todayIsoDate } from '../lib/date';
-import { createWorkoutLogJournal } from '../lib/log-queue';
-import type { CacheResult } from '../lib/offline-cache';
-import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
-import { useApiClient } from '../lib/use-api';
-import { createWorkoutSessionStorage } from '../lib/workout-session-storage';
-
-type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
-type WorkoutDay = WorkoutPlan['days'][number];
-type WorkoutExercise = WorkoutDay['exercises'][number];
-type SelectedExercise = {
-  authUserId: string;
-  dayId: string;
-  exerciseId: string;
-};
-type TodayWorkoutQueryData = CacheResult<TodayWorkoutResult> & {
-  completedLocal: boolean;
-  draft: GuidedSession | null;
-};
+import { colors, controlSizes, spacing } from '../lib/design-system/tokens';
+import { muscleGroupLabel } from '../lib/muscle-groups';
+import { useTodayWorkout } from '../lib/use-today-workout';
 
 export function TodayWorkoutScreen() {
-  const api = useApiClient();
-  const authUserId = authClient.useSession().data?.user.id;
-  const [selectedExerciseSelection, setSelectedExerciseSelection] = useState<SelectedExercise>();
+  const user = authClient.useSession().data?.user;
+  const query = useTodayWorkout();
+  const retrying = useRef(false);
+  const nameParts = user?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const firstInitial = nameParts[0]?.[0] ?? '';
+  const secondInitial =
+    nameParts.length > 1 ? (nameParts[nameParts.length - 1]?.[0] ?? '') : (nameParts[0]?.[1] ?? '');
+  const initials = `${firstInitial}${secondInitial}`.toLocaleUpperCase('pt-BR') || 'MV';
+  const retry = () => {
+    if (query.isFetching || retrying.current) return;
+    retrying.current = true;
+    void query.refetch().finally(() => {
+      retrying.current = false;
+    });
+  };
 
-  const query = useQuery<TodayWorkoutQueryData>({
-    enabled: Boolean(authUserId),
-    queryKey: ['today-workout', authUserId],
-    queryFn: async ({ signal }) => {
-      if (!authUserId) {
-        throw new Error('Sessão não autenticada.');
-      }
-
-      const cached = await loadTodayWorkoutWithOfflineFallback({
-        api,
-        authUserId,
-        storage: AsyncStorage,
-      });
-      const { data } = cached;
-
-      if (data.status !== 'available') {
-        return { ...cached, completedLocal: false, data, draft: null };
-      }
-
-      const sessionStorage = createWorkoutSessionStorage(AsyncStorage);
-      let stored = await sessionStorage.load(authUserId, data.day.id);
-      const journal = createWorkoutLogJournal(AsyncStorage);
-      const currentDate = todayIsoDate();
-      let operationDate = stored ? isoDateFromTimestamp(stored.session.startedAtMs) : currentDate;
-      let hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
-      if (stored?.kind === 'active' && hasJournalCompletion && operationDate < currentDate) {
-        try {
-          if (signal.aborted) throw new Error('Consulta do treino cancelada.');
-          const removed = await sessionStorage.removeIfUnchanged(
-            authUserId,
-            data.day.id,
-            stored.session.startedAtMs,
-          );
-          if (signal.aborted) throw new Error('Consulta do treino cancelada.');
-          if (removed) {
-            await journal.removeTerminal(authUserId, operationDate, data.day.id);
-            if (signal.aborted) throw new Error('Consulta do treino cancelada.');
-            stored = null;
-            hasJournalCompletion = false;
-          } else {
-            stored = await sessionStorage.load(authUserId, data.day.id);
-            operationDate = stored ? isoDateFromTimestamp(stored.session.startedAtMs) : currentDate;
-            hasJournalCompletion = await journal.hasForDay(authUserId, operationDate, data.day.id);
-          }
-        } catch (error) {
-          if (signal.aborted) throw error;
-          // O terminal antigo continua protegendo o ciclo encerrado e a próxima montagem tenta limpar.
-          stored = null;
-          hasJournalCompletion = false;
-        }
-      }
-      const completedLocal = hasJournalCompletion || stored?.session.phase === 'summary';
-      if (completedLocal) return { ...cached, completedLocal, data, draft: null };
-
-      return { ...cached, completedLocal: false, data, draft: stored?.session ?? null };
-    },
-  });
-
-  if (query.isLoading) {
+  if (!query.data && (query.isLoading || query.isFetching || query.isPending)) {
     return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          description="Estamos buscando seu treino de hoje."
-          title="Carregando treino"
-          tone="loading"
-        />
+      <Screen scroll contentContainerStyle={styles.content}>
+        <StudentTodayHeader initials={initials} />
+        <View style={styles.stateArea}>
+          <StatePanel
+            description="Estamos buscando seu treino de hoje."
+            kind="loading"
+            title="Carregando treino"
+          />
+        </View>
       </Screen>
     );
   }
 
-  if (query.isError || !query.data) {
+  if (!query.data) {
     return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          actionLabel="Tentar novamente"
-          description="Verifique sua conexão e tente novamente."
-          onAction={() => void query.refetch()}
-          title="Não foi possível carregar seu treino"
-          tone="error"
-        />
+      <Screen scroll contentContainerStyle={styles.content}>
+        <StudentTodayHeader initials={initials} />
+        <View style={styles.stateArea}>
+          <StatePanel
+            action={{ label: 'Tentar novamente', onPress: retry }}
+            description="Verifique sua conexão e tente novamente."
+            kind="error"
+            title="Não foi possível carregar seu treino"
+          />
+        </View>
       </Screen>
     );
   }
 
   const { completedLocal, data, draft, stale } = query.data;
+  const hasRefreshError = Boolean(query.error && query.data);
 
-  if (data.status === 'no-active-plan') {
+  if (data.status === 'no-active-plan' || data.status === 'no-workout-today') {
+    const hasNoPlan = data.status === 'no-active-plan';
     return (
-      <Screen style={styles.centeredState}>
-        {stale ? <OfflineBadge /> : null}
-        <StatePanel
-          description="Seu professor ainda não publicou um plano de treino."
-          title="Sem plano ativo"
-          tone="empty"
-        />
-      </Screen>
-    );
-  }
-
-  if (data.status === 'no-workout-today') {
-    return (
-      <Screen style={styles.centeredState}>
-        {stale ? <OfflineBadge /> : null}
-        <StatePanel
-          description="Aproveite para descansar e se preparar para o próximo treino."
-          title="Hoje é dia de recuperação"
-          tone="empty"
-        />
+      <Screen scroll contentContainerStyle={styles.content}>
+        <StudentTodayHeader initials={initials} />
+        {stale ? <OfflineMessage /> : null}
+        {hasRefreshError ? (
+          <Message
+            action={{
+              label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
+              onPress: retry,
+              disabled: query.isFetching,
+              loading: query.isFetching,
+            }}
+            description="O estado de hoje foi mantido. Tente atualizar novamente."
+            title="Não foi possível atualizar"
+            variant="error"
+          />
+        ) : null}
+        <View style={styles.stateArea}>
+          <StatePanel
+            description={
+              hasNoPlan
+                ? 'Seu professor ainda não publicou um plano de treino.'
+                : 'Aproveite para descansar e se preparar para o próximo treino.'
+            }
+            kind="empty"
+            title={hasNoPlan ? 'Sem plano ativo' : 'Hoje é dia de recuperação'}
+          />
+        </View>
       </Screen>
     );
   }
 
   const { day, plan } = data;
-  const selectedExercise =
-    selectedExerciseSelection &&
-    selectedExerciseSelection.authUserId === authUserId &&
-    selectedExerciseSelection.dayId === day.id
-      ? day.exercises.find((exercise) => exercise.id === selectedExerciseSelection.exerciseId)
-      : undefined;
   const actionLabel = draft ? 'Continuar treino' : 'Iniciar treino';
   const actionHref = draft ? `/session/${day.id}` : `/log/${day.id}`;
+  const muscleGroups = [
+    ...new Set(day.exercises.map((item) => muscleGroupLabel(item.exercise.muscleGroup))),
+  ].join(' · ');
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <ScreenHeader
-        eyebrow={completedLocal ? 'CONCLUÍDO' : draft ? 'RETOMAR' : 'HOJE'}
-        subtitle={
-          completedLocal
-            ? `${plan.name} · ${day.label}`
+      <StudentTodayHeader initials={initials} />
+      {stale ? <OfflineMessage /> : null}
+      {hasRefreshError ? (
+        <Message
+          action={{
+            label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
+            onPress: retry,
+            disabled: query.isFetching,
+            loading: query.isFetching,
+          }}
+          description="Seu treino continua disponível. Tente atualizar novamente."
+          title="Não foi possível atualizar"
+          variant="error"
+        />
+      ) : null}
+
+      <Card className="gap-4 p-5" variant="highlight">
+        <Text className="text-v2-sessionSecondary uppercase" variant="caption">
+          {completedLocal ? 'CONCLUÍDO' : draft ? 'RETOMAR' : 'HOJE'} · {day.label}
+        </Text>
+        <Text className="text-v2-sessionText" variant="sectionTitle">
+          {completedLocal
+            ? 'Treino concluído'
             : draft
-              ? 'Seu progresso foi salvo'
-              : `${plan.name} · ${day.label}`
-        }
-        title={
-          completedLocal ? 'Treino concluído' : draft ? 'Treino em andamento' : 'Seu treino de hoje'
-        }
-      />
-
-      {stale ? <OfflineBadge /> : null}
-
-      <Card>
-        <Text style={sharedStyles.stateTitle}>{day.label}</Text>
-        <Text style={sharedStyles.subtitle}>
+              ? 'Treino em andamento'
+              : `${plan.name} · ${day.label}`}
+        </Text>
+        <Text className="text-v2-sessionSecondary" variant="body">
+          {muscleGroups}
+        </Text>
+        <Text className="text-v2-sessionSecondary" variant="support">
           {day.exercises.length} exercícios · {estimateWorkoutDuration(day)} min estimados
         </Text>
+        {draft ? <ResumeProgress day={day} session={draft} /> : null}
+        {!completedLocal ? (
+          <Link asChild href={actionHref}>
+            <Button label={actionLabel} />
+          </Link>
+        ) : null}
       </Card>
 
       {completedLocal ? (
-        <Card>
-          <Text style={sharedStyles.subtitle}>
-            A conclusão deste treino está salva e será sincronizada quando necessário.
-          </Text>
-        </Card>
-      ) : draft ? (
-        <ResumeProgressCard day={day} session={draft} />
+        <Message
+          description="A conclusão está salva neste dispositivo e será sincronizada quando necessário."
+          title="Conclusão salva"
+          variant="success"
+        />
       ) : null}
 
-      <View style={styles.exerciseList}>
-        <Text style={styles.sectionTitle}>Exercícios</Text>
-        {day.exercises.map((exercise) => (
-          <Pressable
-            accessibilityRole="button"
-            key={exercise.id}
-            onPress={() => {
-              if (!authUserId) return;
-              setSelectedExerciseSelection({
-                authUserId,
-                dayId: day.id,
-                exerciseId: exercise.id,
-              });
-            }}
-            style={sharedStyles.card}
-          >
-            <Text style={styles.exerciseTitle}>{exercise.exercise.name}</Text>
-            <Text style={sharedStyles.subtitle}>
-              {exercise.sets} séries · {exercise.reps} repetições · descanso{' '}
-              {exercise.restSeconds ?? 0} s
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.exerciseSection}>
+        <Text variant="sectionTitle">Exercícios</Text>
+        <StudentExerciseList
+          day={day}
+          onExercisePress={(exerciseId) => {
+            router.push({
+              pathname: '/exercise/[dayId]/[exerciseId]',
+              params: { dayId: day.id, exerciseId, source: 'today' },
+            });
+          }}
+          variant="preview"
+        />
       </View>
-
-      {completedLocal ? null : (
-        <Link asChild href={actionHref}>
-          <Pressable
-            accessible
-            accessibilityLabel={actionLabel}
-            accessibilityRole="button"
-            style={sharedStyles.button}
-          >
-            <Text style={sharedStyles.buttonText}>{actionLabel}</Text>
-          </Pressable>
-        </Link>
-      )}
-
-      <ExerciseModal
-        exercise={selectedExercise}
-        onClose={() => setSelectedExerciseSelection(undefined)}
-      />
     </Screen>
   );
 }
 
-function ResumeProgressCard({ day, session }: { day: WorkoutDay; session: GuidedSession }) {
-  const progress = getWorkoutDraftProgress(day, session);
-
+function StudentTodayHeader({ initials }: { initials: string }) {
   return (
-    <Card>
-      <Text style={sharedStyles.stateTitle}>
-        {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
-      </Text>
-      <View testID="workout-progress" style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress.progressPercent}%` }]} />
+    <View style={styles.header}>
+      <View style={styles.brandRow}>
+        <Text className="text-v2-brand" variant="sectionTitle">
+          muvit
+        </Text>
+        <View accessibilityLabel={`Perfil do aluno, ${initials}`} style={styles.avatar}>
+          <Text className="text-v2-brand" variant="caption">
+            {initials}
+          </Text>
+        </View>
       </View>
-      <Text style={sharedStyles.subtitle}>
-        {progress.next
-          ? `Próximo: ${progress.next.exerciseName} · Série ${progress.next.setNumber} de ${progress.next.totalSets}`
-          : 'Treino pronto para concluir'}
+      <Text variant="screenTitle">Seu treino de hoje</Text>
+      <Text className="text-v2-secondary" variant="body">
+        Encontre seu próximo movimento.
       </Text>
-    </Card>
-  );
-}
-
-function OfflineBadge() {
-  return (
-    <View style={styles.offlineBadge}>
-      <Text style={styles.offlineText}>offline</Text>
     </View>
   );
 }
 
-function ExerciseModal({
-  exercise,
-  onClose,
-}: {
-  exercise?: WorkoutExercise;
-  onClose: () => void;
-}) {
+function OfflineMessage() {
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={Boolean(exercise)}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalSurface}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>{exercise?.exercise.name}</Text>
-          <Text style={sharedStyles.subtitle}>Grupo: {exercise?.exercise.muscleGroup}</Text>
-          <Text style={sharedStyles.subtitle}>
-            {exercise?.sets} séries de {exercise?.reps} repetições
-          </Text>
-          <Text style={sharedStyles.subtitle}>Descanso: {exercise?.restSeconds ?? 0} s</Text>
-          {exercise?.notes ? <Text style={sharedStyles.subtitle}>{exercise.notes}</Text> : null}
-          <AppButton label="Fechar" onPress={onClose} variant="secondary" />
-        </View>
+    <Message
+      description="Mostrando os dados salvos neste dispositivo."
+      title="Treino carregado offline"
+      variant="info"
+    />
+  );
+}
+
+function ResumeProgress({ day, session }: { day: WorkoutDay; session: GuidedSession }) {
+  const progress = getWorkoutDraftProgress(day, session);
+
+  return (
+    <View style={styles.progressContent}>
+      <Text className="text-v2-sessionText" variant="label">
+        {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
+      </Text>
+      <View
+        accessibilityLabel="Progresso do treino"
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: progress.progressPercent }}
+        style={styles.progressTrack}
+        testID="workout-progress"
+      >
+        <View style={[styles.progressFill, { width: `${progress.progressPercent}%` }]} />
       </View>
-    </Modal>
+      <Text className="text-v2-sessionSecondary" variant="body">
+        {progress.next
+          ? `Próximo: ${progress.next.exerciseName} · Série ${progress.next.setNumber} de ${progress.next.totalSets}`
+          : 'Treino pronto para concluir'}
+      </Text>
+    </View>
   );
 }
 
 const styles = {
-  centeredState: {
-    justifyContent: 'center' as const,
-    padding: spacing.lg,
-  },
   content: {
-    gap: spacing.lg,
+    flexGrow: 1,
+    gap: spacing.xxl,
     paddingBottom: spacing.xxxl,
+    paddingTop: spacing.xxl,
   },
-  exerciseList: {
+  header: {
+    gap: spacing.sm,
+  },
+  brandRow: {
+    alignItems: 'center' as const,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: spacing.md,
+  },
+  avatar: {
+    alignItems: 'center' as const,
+    backgroundColor: colors.subtle,
+    borderColor: colors.border,
+    borderRadius: controlSizes.touch / 2,
+    borderWidth: 1,
+    height: controlSizes.touch,
+    justifyContent: 'center' as const,
+    width: controlSizes.touch,
+  },
+  stateArea: {
+    flexGrow: 1,
+    justifyContent: 'center' as const,
+  },
+  exerciseSection: {
     gap: spacing.md,
   },
-  sectionTitle: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-  exerciseTitle: {
-    color: colors.ink,
-    ...typography.exerciseTitle,
-  },
-  offlineBadge: {
-    alignSelf: 'flex-start' as const,
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  offlineText: {
-    color: colors.primaryText,
-    ...typography.bodyStrong,
-    fontSize: typography.caption.fontSize,
+  progressContent: {
+    gap: spacing.md,
   },
   progressTrack: {
-    backgroundColor: colors.line,
-    borderRadius: radii.pill,
-    height: controlSizes.progressTrack,
+    backgroundColor: colors.borderOnBrand,
+    borderRadius: controlSizes.touch,
+    height: spacing.sm,
     overflow: 'hidden' as const,
   },
   progressFill: {
     backgroundColor: colors.primary,
-    borderRadius: radii.pill,
-    height: controlSizes.progressTrack,
-  },
-  modalBackdrop: {
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: 'flex-end' as const,
-  },
-  modalSurface: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.sheet,
-    borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
-    padding: spacing.xxl,
-  },
-  modalHandle: {
-    alignSelf: 'center' as const,
-    backgroundColor: colors.muted,
-    borderRadius: radii.handle,
-    height: controlSizes.sheetHandleHeight,
-    width: controlSizes.sheetHandleWidth,
-  },
-  modalTitle: {
-    color: colors.ink,
-    ...typography.sheetTitle,
+    borderRadius: controlSizes.touch,
+    height: spacing.sm,
   },
 };
