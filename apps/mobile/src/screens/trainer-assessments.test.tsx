@@ -100,6 +100,7 @@ describe('TrainerAssessmentsScreen', () => {
     renderTrainerAssessments();
 
     expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Nova avaliação' })).toHaveLength(1);
     await user.press(screen.getByRole('button', { name: 'Nova avaliação' }));
 
     expect(routerState.push).toHaveBeenCalledWith({
@@ -164,7 +165,12 @@ describe('TrainerAssessmentsScreen', () => {
     renderTrainerAssessments();
 
     expect(screen.getByText('Aluno inválido')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
 
     await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
 
@@ -176,11 +182,16 @@ describe('TrainerAssessmentsScreen', () => {
 
     renderTrainerAssessments();
 
+    expect(screen.getByRole('header', { name: 'Aluno' })).toBeTruthy();
     expect(screen.getByText('Carregando avaliações')).toBeTruthy();
-    expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByLabelText('Carregando avaliações')).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
   });
 
-  it('permite retry depois de erro inicial', async () => {
+  it('permite retry pelo cabeçalho depois de erro inicial', async () => {
     const user = userEvent.setup();
     apiState.request
       .mockRejectedValueOnce(new Error('offline'))
@@ -189,7 +200,8 @@ describe('TrainerAssessmentsScreen', () => {
     renderTrainerAssessments();
 
     expect(await screen.findByText('Não foi possível carregar as avaliações')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Nenhuma avaliação registrada')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
@@ -222,8 +234,12 @@ describe('TrainerAssessmentsScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Aluno' })).toBeTruthy();
     expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voltar para aluno' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
     expect(screen.queryByText('03/09/2026')).toBeNull();
     expect(screen.queryByText('Não foi possível atualizar as avaliações.')).toBeNull();
   });
@@ -240,7 +256,11 @@ describe('TrainerAssessmentsScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
     expect(await screen.findByText('Avaliações não encontradas')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Aluno' })).toBeTruthy();
     expect(screen.getByText('Estas avaliações não estão disponíveis para sua conta.')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
     expect(screen.queryByText('03/09/2026')).toBeNull();
     expect(screen.queryByText('Não foi possível carregar mais avaliações.')).toBeNull();
   });
@@ -284,12 +304,15 @@ describe('TrainerAssessmentsScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
 
-    expect(screen.getByRole('button', { name: 'Atualizando...' }).props.accessibilityState).toEqual(
+    expect(screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
     expect(screen.getByRole('button', { name: 'Carregar mais' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    expect(apiState.request).toHaveBeenCalledTimes(2);
 
     await act(async () => {
       refreshRequest.resolve({ items: [assessmentFixture()], total: 2 });
@@ -299,6 +322,33 @@ describe('TrainerAssessmentsScreen', () => {
         expect.objectContaining({ disabled: false }),
       ),
     );
+  });
+
+  it('mantém itens e usa somente o botão de paginação enquanto carrega a próxima página', async () => {
+    const user = userEvent.setup();
+    const pageRequest = deferred<AssessmentsPage>();
+    apiState.request
+      .mockResolvedValueOnce({ items: [assessmentFixture()], total: 2 })
+      .mockReturnValueOnce(pageRequest.promise);
+
+    renderTrainerAssessments();
+    expect(await screen.findByText('03/09/2026')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+
+    expect(screen.getByText('03/09/2026')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Carregando mais...' })).toBeTruthy();
+    expect(screen.queryByText('Atualizando')).toBeNull();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
+
+    await act(async () => {
+      pageRequest.resolve({ items: [assessmentFixture({ id: 'assessment-2' })], total: 2 });
+    });
+
+    await waitFor(() => expect(screen.getAllByText('03/09/2026')).toHaveLength(2));
   });
 
   it('volta deterministically para o detalhe do aluno', async () => {

@@ -9,8 +9,10 @@ export type TrainerScreenProps = {
   title: string;
   subtitle?: string;
   contextual?: boolean;
+  backLabel?: string;
+  backDisabled?: boolean;
   onBack?: () => void;
-  onRefresh: () => void;
+  onRefresh?: () => void;
   refreshDisabled: boolean;
   refreshing?: boolean;
   children: ReactNode;
@@ -20,6 +22,8 @@ export function TrainerScreen({
   title,
   subtitle,
   contextual = false,
+  backLabel = 'Voltar para alunos',
+  backDisabled = false,
   onBack,
   onRefresh,
   refreshDisabled,
@@ -40,13 +44,19 @@ export function TrainerScreen({
     <Screen style={{ flex: 1, position: 'relative' }}>
       <View className="flex-1 gap-3" onLayout={handleLayout} testID="trainer-screen-content">
         <Header
-          action={{
-            label: 'Atualizar',
-            onPress: onRefresh,
-            disabled: refreshDisabled || refreshing,
-          }}
+          action={
+            onRefresh
+              ? {
+                  label: 'Atualizar',
+                  onPress: onRefresh,
+                  disabled: refreshDisabled || refreshing,
+                }
+              : undefined
+          }
           backAction={
-            contextual && onBack ? { label: 'Voltar para alunos', onPress: onBack } : undefined
+            contextual && onBack
+              ? { label: backLabel, onPress: onBack, disabled: backDisabled }
+              : undefined
           }
           className="min-h-[48px]"
           title={title}

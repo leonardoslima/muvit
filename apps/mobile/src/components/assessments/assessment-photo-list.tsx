@@ -1,5 +1,6 @@
-import { Image, StyleSheet, View } from 'react-native';
-import { radii, spacing } from '../../lib/styles';
+import { Image, View } from 'react-native';
+import { radii } from '../../lib/design-system/tokens';
+import { Text } from '../ui/v2/text';
 
 export type AssessmentPhotoListProps = {
   dateLabel: string;
@@ -10,29 +11,25 @@ function createAssessmentPhotoKey(uri: string, position: number): string {
   return `${uri}-${position}`;
 }
 
-export function AssessmentPhotoList({ dateLabel, photos }: AssessmentPhotoListProps) {
+export function AssessmentPhotoList({
+  dateLabel,
+  photos,
+}: AssessmentPhotoListProps): React.JSX.Element {
   return (
-    <View style={styles.container}>
+    <View className="gap-4">
       {photos.map((uri, index) => (
-        <Image
-          accessibilityLabel={`Foto ${index + 1} da avaliação de ${dateLabel}`}
-          key={createAssessmentPhotoKey(uri, index)}
-          resizeMode="cover"
-          source={{ uri }}
-          style={styles.photo}
-        />
+        <View className="gap-2" key={createAssessmentPhotoKey(uri, index)}>
+          <Text className="text-v2-secondary" variant="support">
+            Foto {index + 1}
+          </Text>
+          <Image
+            accessibilityLabel={`Foto ${index + 1} da avaliação de ${dateLabel}`}
+            resizeMode="contain"
+            source={{ uri }}
+            style={{ aspectRatio: 4 / 3, borderRadius: radii.card, width: '100%' }}
+          />
+        </View>
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.md,
-  },
-  photo: {
-    aspectRatio: 4 / 3,
-    borderRadius: radii.md,
-    width: '100%',
-  },
-});

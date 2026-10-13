@@ -26,6 +26,7 @@ function host(type: string) {
 }
 
 export const ActivityIndicator = host('View');
+export const KeyboardAvoidingView = host('View');
 export const Image = host('Image');
 export const Pressable = host('View');
 export const ScrollView = host('RCTScrollView');

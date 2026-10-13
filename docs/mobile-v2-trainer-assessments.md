@@ -176,3 +176,11 @@ A nova comparação dos retângulos globais dos 265 quadros raiz não encontrou 
 Por solicitação do usuário, as 41 telas da MUV-30 foram aproximadas no canvas. A organização conserva as seis linhas, a ordem e as colunas existentes; o intervalo fixo de 4100 dp entre o início de cada linha foi substituído por 180 dp após o quadro mais alto da linha anterior. A primeira linha também começa 180 dp abaixo do catálogo de componentes. Catálogo, contrato e conteúdo interno das telas foram preservados. A área vertical ocupada pelas telas caiu de 23094 para 13533 dp, aproximadamente 41% menor.
 
 A leitura após o reposicionamento confirmou as 41 posições previstas, nenhuma alteração de dimensões e nenhuma interseção entre os 265 quadros raiz do documento. O salvamento permanece com o usuário.
+
+### Implementação mobile — MUV-39 — 2026-10-13
+
+A lista de avaliações do professor, o detalhe e o formulário de nova avaliação foram migrados para os componentes e tokens v2, mantendo rotas, identidade do aluno, queries, paginação, validação, upload e payloads existentes. A grade de fotos selecionadas preserva até três itens e suas proporções; a leitura do detalhe mostra todas as fotos válidas retornadas pela API. Foram adicionados testes para cabeçalhos responsivos, estados de consulta, identidade, métricas, fotos, formulário, bloqueio durante envio e consumidores existentes do shell.
+
+Validações automatizadas concluídas nesta execução: a suíte mobile passou com 64 arquivos e 560 testes; typecheck passou; cobertura core foi 93,97% de statements e UI 89,07%; Biome passou nos arquivos TypeScript/TSX alterados; git diff --check passou. expo-doctor aprovou 16 de 17 verificações e apontou apenas versões preexistentes diferentes das recomendadas para sentry-expo e @react-navigation/bottom-tabs; manifests e lockfile não foram alterados.
+
+O APK debug foi instalado no emulador Android isolado e carregou o bundle Metro desta worktree. A autenticação manual não avançou para as telas protegidas, então lista, detalhe, formulário, teclado, picker e fluxo de salvamento não receberam validação visual/runtime autenticada nesta execução. As capturas anteriores disponíveis eram de uma implementação desatualizada e foram descartadas como evidência. Essa limitação não é substituída pelos testes de componente.

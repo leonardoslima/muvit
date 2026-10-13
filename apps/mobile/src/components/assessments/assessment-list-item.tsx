@@ -1,43 +1,51 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { View } from 'react-native';
 import type { Assessment } from '../../application/assessments/assessment-data';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { colors } from '../../lib/design-system/tokens';
+import { Card } from '../ui/v2/card';
+import { Text } from '../ui/v2/text';
 
 export type AssessmentListItemProps = {
   assessment: Assessment;
   onPress: () => void;
 };
 
-export function AssessmentListItem({ assessment, onPress }: AssessmentListItemProps) {
+export function AssessmentListItem({
+  assessment,
+  onPress,
+}: AssessmentListItemProps): React.JSX.Element {
   const date = formatDate(assessment.date);
 
   return (
-    <Pressable
-      accessible
-      accessibilityLabel={`Abrir avaliação de ${date}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
+    <Card
+      action={{ label: `Abrir avaliação de ${date}`, onPress }}
+      className="gap-4 rounded-v2-card border-v2-border bg-v2-surface p-5"
     >
-      <Card>
-        <Text style={styles.date}>{date}</Text>
-        <View style={styles.metrics}>
-          <View style={styles.metric}>
-            <Text style={sharedStyles.label}>Peso</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.weightKg, 'kg')}</Text>
-          </View>
-          <View style={styles.metric}>
-            <Text style={sharedStyles.label}>Gordura</Text>
-            <Text style={sharedStyles.subtitle}>{formatMetric(assessment.bodyFatPct, '%')}</Text>
-          </View>
-        </View>
-        {assessment.notes ? (
-          <Text numberOfLines={2} style={sharedStyles.subtitle}>
-            {assessment.notes}
-          </Text>
-        ) : null}
-      </Card>
-    </Pressable>
+      <View className="flex-row items-start justify-between gap-4">
+        <Text variant="sectionTitle">{date}</Text>
+        <ChevronRight accessible={false} color={colors.secondary} size={22} />
+      </View>
+      <View className="flex-row gap-4">
+        <MetricSummary label="Peso" value={formatMetric(assessment.weightKg, 'kg')} />
+        <MetricSummary label="Gordura" value={formatMetric(assessment.bodyFatPct, '%')} />
+      </View>
+      {assessment.notes ? (
+        <Text className="text-v2-secondary" numberOfLines={2}>
+          {assessment.notes}
+        </Text>
+      ) : null}
+    </Card>
+  );
+}
+
+function MetricSummary({ label, value }: { label: string; value: string }): React.JSX.Element {
+  return (
+    <View className="min-w-0 flex-1 gap-1">
+      <Text className="text-v2-secondary" variant="support">
+        {label}
+      </Text>
+      <Text className="font-v2-bold">{value}</Text>
+    </View>
   );
 }
 
@@ -55,22 +63,3 @@ function formatMetric(value: string | number | null, unit: string): string {
   const formatted = number.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
   return unit === '%' ? `${formatted}%` : `${formatted} ${unit}`;
 }
-
-const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  date: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-  metrics: {
-    gap: spacing.xs,
-  },
-  metric: {
-    gap: spacing.xs,
-  },
-});

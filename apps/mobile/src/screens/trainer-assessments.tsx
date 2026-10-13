@@ -1,21 +1,22 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 import {
   type AssessmentsPage,
   TRAINER_ASSESSMENTS_PAGE_SIZE,
   listAssessments,
 } from '../application/assessments/assessment-data';
+import { AssessmentHeading } from '../components/assessments/assessment-heading';
 import { AssessmentListItem } from '../components/assessments/assessment-list-item';
-import { AppButton } from '../components/ui/button';
-import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
+import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { Button } from '../components/ui/v2/button';
+import { Message } from '../components/ui/v2/message';
+import { StatePanel } from '../components/ui/v2/state-panel';
 import { ApiError } from '../lib/api';
-import { spacing } from '../lib/styles';
+import { spacing } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
 
-export function TrainerAssessmentsScreen() {
+export function TrainerAssessmentsScreen(): React.JSX.Element {
   const api = useApiClient();
   const params = useLocalSearchParams<{ studentId?: string | string[] }>();
   const studentId = Array.isArray(params.studentId) ? params.studentId[0] : params.studentId;
@@ -59,62 +60,15 @@ export function TrainerAssessmentsScreen() {
     router.dismissTo(`/trainer/students/${studentId}`);
   }
 
-  if (!studentId) {
-    return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          actionLabel="Voltar para alunos"
-          description="Não foi possível identificar o aluno solicitado."
-          onAction={returnToStudent}
-          title="Aluno inválido"
-          tone="error"
-        />
-      </Screen>
-    );
-  }
+  function refreshAssessments(): void {
+    if (!studentId || isNotFound) return;
 
-  if (query.isPending) {
-    return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          description="Estamos buscando o histórico deste aluno."
-          title="Carregando avaliações"
-          tone="loading"
-        />
-      </Screen>
-    );
-  }
-
-  if (isNotFound) {
-    return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          actionLabel="Voltar para aluno"
-          description="Estas avaliações não estão disponíveis para sua conta."
-          onAction={returnToStudent}
-          title="Avaliações não encontradas"
-          tone="error"
-        />
-      </Screen>
-    );
-  }
-
-  if (isInitialError) {
-    return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          actionDisabled={query.isFetching}
-          actionLabel="Tentar novamente"
-          description="Verifique sua conexão e tente novamente."
-          onAction={() => void query.refetch()}
-          title="Não foi possível carregar as avaliações"
-          tone="error"
-        />
-      </Screen>
-    );
+    void query.refetch();
   }
 
   function openAssessment(assessmentId: string): void {
+    if (!studentId) return;
+
     router.push({
       pathname: '/trainer/students/[studentId]/assessments/[assessmentId]',
       params: { studentId, assessmentId },
@@ -122,79 +76,122 @@ export function TrainerAssessmentsScreen() {
   }
 
   function openNewAssessment(): void {
+    if (!studentId) return;
+
     router.push({
       pathname: '/trainer/students/[studentId]/assessments/new',
       params: { studentId },
     });
   }
 
-  const isEmpty = hasData && total === 0;
-
-  return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para aluno" onPress={returnToStudent} variant="secondary" />
-      <ScreenHeader
-        subtitle="Consulte o histórico de medidas e avaliações deste aluno."
-        title="Avaliações"
+  let content: React.JSX.Element;
+  if (!studentId) {
+    content = (
+      <StatePanel
+        className="flex-1"
+        description="Não foi possível identificar o aluno solicitado."
+        kind="error"
+        title="Aluno inválido"
       />
-      <AppButton label="Nova avaliação" onPress={openNewAssessment} />
+    );
+  } else if (query.isPending) {
+    content = (
+      <StatePanel
+        className="flex-1"
+        description="Estamos buscando o histórico deste aluno."
+        kind="loading"
+        title="Carregando avaliações"
+      />
+    );
+  } else if (isNotFound) {
+    content = (
+      <StatePanel
+        className="flex-1"
+        description="Estas avaliações não estão disponíveis para sua conta."
+        kind="error"
+        title="Avaliações não encontradas"
+      />
+    );
+  } else if (isInitialError) {
+    content = (
+      <StatePanel
+        className="flex-1"
+        description="Verifique sua conexão e tente atualizar pelo cabeçalho."
+        kind="error"
+        title="Não foi possível carregar as avaliações"
+      />
+    );
+  } else {
+    const isEmpty = hasData && total === 0;
 
-      {isEmpty ? (
-        <StatePanel
-          description="Registre uma avaliação para acompanhar a evolução deste aluno."
-          title="Nenhuma avaliação registrada"
-          tone="empty"
+    content = (
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          flexGrow: 1,
+          gap: spacing.xxl,
+          paddingTop: spacing.sm,
+        }}
+      >
+        <AssessmentHeading
+          subtitle="Histórico de medidas e avaliações deste aluno."
+          title="Avaliações"
         />
-      ) : null}
+        <Button label="Nova avaliação" onPress={openNewAssessment} />
 
-      {assessments.map((assessment) => (
-        <AssessmentListItem
-          assessment={assessment}
-          key={assessment.id}
-          onPress={() => openAssessment(assessment.id)}
-        />
-      ))}
+        {isEmpty ? (
+          <StatePanel
+            description="Registre uma avaliação para acompanhar a evolução deste aluno."
+            kind="empty"
+            title="Nenhuma avaliação registrada"
+          />
+        ) : null}
 
-      {hasRefreshError ? (
-        <InlineMessage message="Não foi possível atualizar as avaliações." tone="error" />
-      ) : null}
+        {assessments.map((assessment) => (
+          <AssessmentListItem
+            assessment={assessment}
+            key={assessment.id}
+            onPress={() => openAssessment(assessment.id)}
+          />
+        ))}
 
-      {hasPaginationError ? (
-        <>
-          <InlineMessage message="Não foi possível carregar mais avaliações." tone="error" />
-          <AppButton
+        {hasRefreshError ? (
+          <Message title="Não foi possível atualizar as avaliações." variant="error" />
+        ) : null}
+
+        {hasPaginationError ? (
+          <Message title="Não foi possível carregar mais avaliações." variant="error" />
+        ) : null}
+
+        {query.hasNextPage ? (
+          <Button
             disabled={query.isFetching}
-            label={query.isFetchingNextPage ? 'Carregando mais...' : 'Tentar carregar mais'}
+            label={
+              query.isFetchingNextPage
+                ? 'Carregando mais...'
+                : hasPaginationError
+                  ? 'Tentar carregar mais'
+                  : 'Carregar mais'
+            }
             onPress={() => void query.fetchNextPage()}
             variant="secondary"
           />
-        </>
-      ) : null}
+        ) : null}
+      </ScrollView>
+    );
+  }
 
-      {query.hasNextPage && !hasPaginationError ? (
-        <AppButton
-          disabled={query.isFetching}
-          label={query.isFetchingNextPage ? 'Carregando mais...' : 'Carregar mais'}
-          onPress={() => void query.fetchNextPage()}
-          variant="secondary"
-        />
-      ) : null}
-
-      <AppButton
-        disabled={query.isFetching}
-        label={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
-        onPress={() => void query.refetch()}
-        variant="secondary"
-      />
-    </Screen>
+  return (
+    <TrainerScreen
+      backLabel={studentId ? 'Voltar para aluno' : 'Voltar para alunos'}
+      contextual
+      onBack={returnToStudent}
+      onRefresh={refreshAssessments}
+      refreshDisabled={!studentId || query.isFetching || isNotFound}
+      refreshing={hasData && query.isRefetching && !query.isFetchingNextPage && !isNotFound}
+      title={studentId ? 'Aluno' : 'Alunos'}
+    >
+      {content}
+    </TrainerScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  centeredState: {
-    justifyContent: 'center',
-  },
-  content: {
-    paddingBottom: spacing.xxxl,
-  },
-});
