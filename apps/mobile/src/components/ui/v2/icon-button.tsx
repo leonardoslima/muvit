@@ -1,7 +1,7 @@
 import { type ReactNode, forwardRef } from 'react';
 import { ActivityIndicator, Pressable, type PressableProps, type View } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors } from '../../../lib/design-system/tokens';
+import { colors } from '../../../lib/design-system/tokens';
 import { type ControlVariant, controlClasses, pressedClasses, useControlState } from './control';
 
 export type IconButtonProps = Omit<PressableProps, 'children' | 'accessibilityLabel'> & {
@@ -46,12 +46,12 @@ export const IconButton = forwardRef<View, IconButtonProps>(function IconButton(
           accessibilityLabel="Carregando"
           color={
             variant === 'destructive'
-              ? v2Colors.surface
+              ? colors.surface
               : variant === 'immersive'
-                ? v2Colors.sessionText
+                ? colors.sessionText
                 : variant === 'primary'
-                  ? v2Colors.text
-                  : v2Colors.brand
+                  ? colors.text
+                  : colors.brand
           }
           size="small"
         />

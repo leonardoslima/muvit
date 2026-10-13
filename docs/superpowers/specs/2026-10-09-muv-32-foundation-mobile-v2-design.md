@@ -18,7 +18,7 @@ O MCP leu o canvas aprovado em `C:/Users/Leonardo/Desktop/Muvit/muvit/assets/des
 
 ## Arquitetura e interfaces
 
-- `src/lib/design-system/tokens.ts` exporta `penTokens` com nomes/valores exatos dos 96 tokens, além de `v2Colors`, `v2Spacing`, `v2Radii`, `v2ControlSizes`, `v2Typography`, `v2Elevation` e `v2FontFamilies` derivados. Não importa React Native: Tailwind e testes consomem a mesma fonte.
+- `src/lib/design-system/tokens.ts` exporta `penTokens` com nomes/valores exatos dos 96 tokens, além de `colors`, `spacing`, `radii`, `controlSizes`, `typography`, `elevation` e `fontFamilies` derivados. Não importa React Native: Tailwind e testes consomem a mesma fonte.
 - `src/lib/design-system/cn.ts` exporta `cn(...inputs: ClassValue[]): string`, combinando clsx e tailwind-merge, conforme React Native Reusables.
 - `src/components/ui/v2/` contém `Text`, `Button`, `IconButton`, `Field`, `NumericField`, `SectionTab`, `Header`, `Card`, `Badge`, `Message`, `StatePanel`, `Surface`, `Skeleton` e `SheetSurface`, com barrel público. Componentes de domínio não entram nesta camada.
 - React Native Reusables fornece a base local adaptada de Text/context, Button/variantes, Input, Card e Badge quando equivalentes. Registrar proveniência, licença MIT e adaptações; não instalar uma biblioteca fictícia monolítica. Slot só é necessário se houver composição `asChild` real. Lucide fornece ícones aprovados.

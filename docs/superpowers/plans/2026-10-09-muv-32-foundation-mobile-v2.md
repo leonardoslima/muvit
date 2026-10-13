@@ -33,7 +33,7 @@
 
 **Files:** criar tokens.ts/tokens.test.ts, cn.ts, babel.config.js, metro.config.js, tailwind.config.ts, global.css, nativewind-env.d.ts; modificar package.json mobile, app.json se necessário, app/_layout.tsx e pnpm-lock.yaml.
 
-**Interfaces:** exportar `penTokens`, `v2Colors` (background/surface/text/brand/secondary/primary/primaryPressed/border/subtle/disabled/error/errorBg/warning/warningBg/success/successBg/info/infoBg/scrim/sessionBackground/sessionSurface/sessionRaised/sessionBorder/sessionText/sessionSecondary), `v2Spacing`, `v2Radii`, `v2ControlSizes`, `v2Typography`, `v2Elevation`, `v2FontFamilies`; `cn(...inputs: ClassValue[]): string`. Tailwind expõe colors `v2-*`, fontFamily `v2-regular/medium/semibold/bold/extrabold`, raios e dimensões arbitrárias seguem tokens. Tarefa 2 pode usar `penTokens` diretamente para valores exatos.
+**Interfaces:** exportar `penTokens`, `colors` (background/surface/text/brand/secondary/primary/primaryPressed/border/subtle/disabled/error/errorBg/warning/warningBg/success/successBg/info/infoBg/scrim/sessionBackground/sessionSurface/sessionRaised/sessionBorder/sessionText/sessionSecondary), `spacing`, `radii`, `controlSizes`, `typography`, `elevation`, `fontFamilies`; `cn(...inputs: ClassValue[]): string`. Tailwind expõe colors `v2-*`, fontFamily `v2-regular/medium/semibold/bold/extrabold`, raios e dimensões arbitrárias seguem tokens. Tarefa 2 pode usar `penTokens` diretamente para valores exatos.
 
 - [x] Escrever teste que exige os 96 nomes/valores aprovados e preservação de colors/typography legacy.
 - [x] Rodar `pnpm.cmd --dir apps/mobile test src/lib/design-system/tokens.test.ts`; confirmar falha pela API ausente.

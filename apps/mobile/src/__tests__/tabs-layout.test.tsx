@@ -120,6 +120,10 @@ vi.mock('@expo/vector-icons', () => ({
     React.createElement('Ionicons', props),
 }));
 
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0 }),
+}));
+
 describe('TabsLayout', () => {
   beforeEach(() => {
     tabsState.buttonCases.length = 0;
@@ -181,6 +185,6 @@ describe('TabsLayout', () => {
       return tabBarIcon({ color: '#111111', focused: false, size: 24 }).props.name;
     });
 
-    expect(iconNames).toEqual(['calendar-outline', 'stats-chart-outline', 'person-outline']);
+    expect(iconNames).toEqual(['home-outline', 'stats-chart-outline', 'person-outline']);
   });
 });

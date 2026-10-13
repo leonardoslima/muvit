@@ -2,7 +2,7 @@ import { ArrowLeft, RotateCw, X } from 'lucide-react-native';
 import { forwardRef } from 'react';
 import { View, type ViewProps } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors, v2ControlSizes } from '../../../lib/design-system/tokens';
+import { colors, controlSizes } from '../../../lib/design-system/tokens';
 import type { Action } from './control';
 import { IconButton } from './icon-button';
 import { Text } from './text';
@@ -19,7 +19,7 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
   ref,
 ) {
   const session = variant === 'session';
-  const color = session ? v2Colors.sessionText : v2Colors.brand;
+  const color = session ? colors.sessionText : colors.brand;
   const BackIcon = session ? X : ArrowLeft;
   return (
     <View
@@ -34,7 +34,7 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
               {...backAction}
               accessibilityLabel={backAction.label}
               variant={session ? 'immersive' : 'secondary'}
-              icon={<BackIcon size={v2ControlSizes.icon} color={color} />}
+              icon={<BackIcon size={controlSizes.icon} color={color} />}
             />
           )}
         </View>
@@ -53,7 +53,7 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
               {...action}
               accessibilityLabel={action.label}
               variant={session ? 'immersive' : 'secondary'}
-              icon={<RotateCw size={v2ControlSizes.icon} color={color} />}
+              icon={<RotateCw size={controlSizes.icon} color={color} />}
             />
           )}
         </View>

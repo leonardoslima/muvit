@@ -2,7 +2,7 @@
 import { forwardRef } from 'react';
 import { ActivityIndicator, Pressable, type PressableProps, View } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors } from '../../../lib/design-system/tokens';
+import { colors } from '../../../lib/design-system/tokens';
 import {
   type ControlVariant,
   controlClasses,
@@ -27,14 +27,14 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
   const control = useControlState(props, loading);
   const textClass = control.disabled ? 'text-v2-secondary' : controlTextClasses[variant];
   const spinnerColor = control.disabled
-    ? v2Colors.secondary
+    ? colors.secondary
     : variant === 'destructive'
-      ? v2Colors.surface
+      ? colors.surface
       : variant === 'immersive'
-        ? v2Colors.sessionText
+        ? colors.sessionText
         : variant === 'primary'
-          ? v2Colors.text
-          : v2Colors.brand;
+          ? colors.text
+          : colors.brand;
   return (
     <TextClassContext.Provider value={textClass}>
       <Pressable

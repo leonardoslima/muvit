@@ -2,7 +2,7 @@ import { CircleCheck, CircleX, Inbox } from 'lucide-react-native';
 import { forwardRef } from 'react';
 import { ActivityIndicator, View, type ViewProps } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors } from '../../../lib/design-system/tokens';
+import { colors } from '../../../lib/design-system/tokens';
 import { Button } from './button';
 import type { Action } from './control';
 import { Text } from './text';
@@ -20,8 +20,7 @@ export const StatePanel = forwardRef<View, StatePanelProps>(function StatePanel(
   ref,
 ) {
   const immersive = variant === 'immersive';
-  const color =
-    kind === 'error' ? v2Colors.error : immersive ? v2Colors.sessionText : v2Colors.brand;
+  const color = kind === 'error' ? colors.error : immersive ? colors.sessionText : colors.brand;
   const Icon = kind === 'error' ? CircleX : kind === 'success' ? CircleCheck : Inbox;
   return (
     <View

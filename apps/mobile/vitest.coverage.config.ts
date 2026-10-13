@@ -14,7 +14,6 @@ export default mergeConfig(
           'src/lib/config-url.ts',
           'src/lib/log-queue.ts',
           'src/lib/offline-cache.ts',
-          'src/lib/push-token.ts',
           'src/lib/uploads.ts',
         ],
         exclude: ['src/**/*.test.ts', 'test/**'],

@@ -13,16 +13,11 @@ vi.mock('../components/queue-drain', () => ({
   QueueDrain: () => React.createElement('Text', null, 'queue-drain'),
 }));
 
-vi.mock('../components/push-token-registration', () => ({
-  PushTokenRegistration: () => React.createElement('Text', null, 'push-registration'),
-}));
-
 describe('boundaries estruturais de role', () => {
-  it('monta os efeitos privados e a Stack no layout student', () => {
+  it('monta o efeito privado e a Stack do aluno', () => {
     render(<StudentLayout />);
 
     expect(screen.getByText('queue-drain')).toBeTruthy();
-    expect(screen.getByText('push-registration')).toBeTruthy();
     expect(screen.getByTestId('stack')).toBeTruthy();
   });
 
@@ -31,6 +26,5 @@ describe('boundaries estruturais de role', () => {
 
     expect(screen.getByTestId('stack')).toBeTruthy();
     expect(screen.queryByText('queue-drain')).toBeNull();
-    expect(screen.queryByText('push-registration')).toBeNull();
   });
 });

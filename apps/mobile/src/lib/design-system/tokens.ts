@@ -97,7 +97,7 @@ export const penTokens = {
   'elevation/overlay': 2,
 } as const;
 
-export const v2Colors = {
+export const colors = {
   background: penTokens['color/bg/default'],
   surface: penTokens['color/surface/default'],
   text: penTokens['color/text/primary'],
@@ -129,7 +129,7 @@ export const v2Colors = {
   sessionSecondary: penTokens['color/session/text-secondary'],
 } as const;
 
-export const v2Spacing = {
+export const spacing = {
   none: penTokens['space/0'],
   xs: penTokens['space/4'],
   optical: penTokens['space/6'],
@@ -143,7 +143,7 @@ export const v2Spacing = {
   huge: penTokens['space/64'],
 } as const;
 
-export const v2Radii = {
+export const radii = {
   field: penTokens['radius/20'],
   card: penTokens['radius/20'],
   session: penTokens['radius/24'],
@@ -152,7 +152,7 @@ export const v2Radii = {
   button: penTokens['radius/29'],
 } as const;
 
-export const v2ControlSizes = {
+export const controlSizes = {
   touch: penTokens['size/touch'],
   button: penTokens['size/button'],
   compact: penTokens['size/button/compact'],
@@ -162,13 +162,13 @@ export const v2ControlSizes = {
   tabBar: penTokens['size/tabbar'],
 } as const;
 
-export const v2Elevation = {
+export const elevation = {
   base: penTokens['elevation/base'],
   sticky: penTokens['elevation/sticky'],
   overlay: penTokens['elevation/overlay'],
 } as const;
 
-export const v2FontFamilies = {
+export const fontFamilies = {
   regular: 'DMSans_400Regular',
   medium: 'DMSans_500Medium',
   semibold: 'DMSans_600SemiBold',
@@ -176,47 +176,47 @@ export const v2FontFamilies = {
   extrabold: 'DMSans_800ExtraBold',
 } as const;
 
-export const v2Typography = {
+export const typography = {
   display: {
-    fontFamily: v2FontFamilies.bold,
+    fontFamily: fontFamilies.bold,
     fontSize: penTokens['font/size/84'],
     lineHeight: 92.4,
   },
-  timer: { fontFamily: v2FontFamilies.bold, fontSize: penTokens['font/size/43'], lineHeight: 51.6 },
+  timer: { fontFamily: fontFamilies.bold, fontSize: penTokens['font/size/43'], lineHeight: 51.6 },
   screenTitle: {
-    fontFamily: v2FontFamilies.extrabold,
+    fontFamily: fontFamilies.extrabold,
     fontSize: penTokens['font/size/30'],
     lineHeight: 36,
   },
   sectionTitle: {
-    fontFamily: v2FontFamilies.bold,
+    fontFamily: fontFamilies.bold,
     fontSize: penTokens['font/size/20'],
     lineHeight: 26,
   },
   action: {
-    fontFamily: v2FontFamilies.bold,
+    fontFamily: fontFamilies.bold,
     fontSize: penTokens['font/size/17'],
     lineHeight: 22.1,
   },
   body: {
-    fontFamily: v2FontFamilies.regular,
+    fontFamily: fontFamilies.regular,
     fontSize: penTokens['font/size/14'],
     lineHeight: 19.6,
   },
   support: {
-    fontFamily: v2FontFamilies.regular,
+    fontFamily: fontFamilies.regular,
     fontSize: penTokens['font/size/12'],
     lineHeight: 16.8,
   },
   caption: {
-    fontFamily: v2FontFamilies.bold,
+    fontFamily: fontFamilies.bold,
     fontSize: penTokens['font/size/11'],
     lineHeight: 15.4,
   },
-  button: { fontFamily: v2FontFamilies.bold, fontSize: penTokens['font/size/15'], lineHeight: 21 },
-  label: { fontFamily: v2FontFamilies.bold, fontSize: penTokens['font/size/14'], lineHeight: 19.6 },
+  button: { fontFamily: fontFamilies.bold, fontSize: penTokens['font/size/15'], lineHeight: 21 },
+  label: { fontFamily: fontFamilies.bold, fontSize: penTokens['font/size/14'], lineHeight: 19.6 },
   input: {
-    fontFamily: v2FontFamilies.regular,
+    fontFamily: fontFamilies.regular,
     fontSize: penTokens['font/size/14'],
     lineHeight: 19.6,
   },

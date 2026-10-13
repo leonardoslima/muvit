@@ -3,7 +3,7 @@ import { Search } from 'lucide-react-native';
 import { type ReactNode, forwardRef, useState } from 'react';
 import { TextInput, type TextInputProps, View } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors, v2ControlSizes } from '../../../lib/design-system/tokens';
+import { colors, controlSizes } from '../../../lib/design-system/tokens';
 import { Text } from './text';
 
 export type FieldProps = Omit<TextInputProps, 'value' | 'onChangeText' | 'readOnly'> & {
@@ -93,8 +93,8 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
         {leading ??
           (kind === 'search' ? (
             <Search
-              size={v2ControlSizes.icon}
-              color={immersive ? v2Colors.sessionSecondary : v2Colors.secondary}
+              size={controlSizes.icon}
+              color={immersive ? colors.sessionSecondary : colors.secondary}
               accessible={false}
             />
           ) : null)}
@@ -129,8 +129,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           keyboardType={props.keyboardType ?? (kind === 'numeric' ? 'decimal-pad' : 'default')}
           returnKeyType={props.returnKeyType ?? (kind === 'search' ? 'search' : 'done')}
           placeholderTextColor={
-            props.placeholderTextColor ??
-            (immersive ? v2Colors.sessionSecondary : v2Colors.secondary)
+            props.placeholderTextColor ?? (immersive ? colors.sessionSecondary : colors.secondary)
           }
           className={cn(
             'min-w-0 flex-1 py-3 font-v2-regular text-[14px] leading-[19.6px]',
