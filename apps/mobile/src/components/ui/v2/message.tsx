@@ -2,7 +2,7 @@ import { CircleCheck, CircleX, Info, TriangleAlert } from 'lucide-react-native';
 import { forwardRef } from 'react';
 import { View, type ViewProps } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors } from '../../../lib/design-system/tokens';
+import { colors } from '../../../lib/design-system/tokens';
 import { Button } from './button';
 import type { Action } from './control';
 import { Text, TextClassContext } from './text';
@@ -11,22 +11,22 @@ const variants = {
   success: {
     background: 'bg-v2-successBg',
     text: 'text-v2-success',
-    color: v2Colors.success,
+    color: colors.success,
     Icon: CircleCheck,
   },
   warning: {
     background: 'bg-v2-warningBg',
     text: 'text-v2-warning',
-    color: v2Colors.warning,
+    color: colors.warning,
     Icon: TriangleAlert,
   },
   error: {
     background: 'bg-v2-errorBg',
     text: 'text-v2-error',
-    color: v2Colors.error,
+    color: colors.error,
     Icon: CircleX,
   },
-  info: { background: 'bg-v2-infoBg', text: 'text-v2-info', color: v2Colors.info, Icon: Info },
+  info: { background: 'bg-v2-infoBg', text: 'text-v2-info', color: colors.info, Icon: Info },
 };
 export type MessageProps = ViewProps & {
   title: string;

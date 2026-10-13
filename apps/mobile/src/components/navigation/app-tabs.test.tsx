@@ -2,12 +2,12 @@ import { render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  colors,
+  controlSizes,
+  fontFamilies,
   penTokens,
-  v2Colors,
-  v2ControlSizes,
-  v2FontFamilies,
-  v2Spacing,
-  v2Typography,
+  spacing,
+  typography,
 } from '../../lib/design-system/tokens';
 import { AppTabsLayout } from './app-tabs';
 
@@ -145,8 +145,8 @@ describe('AppTabsLayout', () => {
     render(<AppTabsLayout tabs={[]} />);
 
     expect(tabsState.screenOptions?.tabBarLabelStyle).toEqual({
-      fontFamily: v2FontFamilies.semibold,
-      fontSize: v2Typography.caption.fontSize,
+      fontFamily: fontFamilies.semibold,
+      fontSize: typography.caption.fontSize,
     });
   });
 
@@ -158,18 +158,18 @@ describe('AppTabsLayout', () => {
 
       expect(tabsState.screenOptions?.tabBarItemStyle).toEqual(
         expect.objectContaining({
-          marginHorizontal: v2Spacing.optical,
-          minHeight: v2ControlSizes.touch,
+          marginHorizontal: spacing.optical,
+          minHeight: controlSizes.touch,
         }),
       );
 
       // Pen usa ~106/119 dp; 6 dp por lado preserva a proporção sem fixar a largura do item.
       // A captura Android tem viewport de 320 dp: sobra um slot de 96 dp após os gutters de 16 dp.
-      const androidSlotWidth = (320 - 2 * v2Spacing.lg) / 3;
-      const androidTouchTargetWidth = androidSlotWidth - 2 * v2Spacing.optical;
+      const androidSlotWidth = (320 - 2 * spacing.lg) / 3;
+      const androidTouchTargetWidth = androidSlotWidth - 2 * spacing.optical;
 
       expect(androidTouchTargetWidth).toBeGreaterThanOrEqual(48);
-      expect(v2ControlSizes.touch).toBeGreaterThanOrEqual(48);
+      expect(controlSizes.touch).toBeGreaterThanOrEqual(48);
     },
   );
 
@@ -180,23 +180,23 @@ describe('AppTabsLayout', () => {
 
     expect(tabsState.screenOptions).toEqual(
       expect.objectContaining({
-        tabBarActiveBackgroundColor: v2Colors.subtle,
-        tabBarActiveTintColor: v2Colors.brand,
-        tabBarInactiveTintColor: v2Colors.inactiveIcon,
+        tabBarActiveBackgroundColor: colors.subtle,
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.inactiveIcon,
         tabBarItemStyle: {
-          marginHorizontal: v2Spacing.optical,
+          marginHorizontal: spacing.optical,
           borderRadius: penTokens['radius/29'],
-          minHeight: v2ControlSizes.touch,
+          minHeight: controlSizes.touch,
         },
         tabBarStyle: expect.objectContaining({
           backgroundColor: 'transparent',
           borderRadius: penTokens['radius/33'],
           elevation: 0,
-          height: v2ControlSizes.tabBar + 34,
-          paddingBottom: v2Spacing.sm + 34,
-          paddingTop: v2Spacing.sm,
+          height: controlSizes.tabBar + 34,
+          paddingBottom: spacing.sm + 34,
+          paddingTop: spacing.sm,
           shadowOpacity: 0,
-          transform: [{ translateY: -v2Spacing.lg }],
+          transform: [{ translateY: -spacing.lg }],
         }),
       }),
     );
@@ -219,9 +219,9 @@ describe('AppTabsLayout', () => {
       const background = tabBarBackground();
       expect(background.props.pointerEvents).toBe('none');
       expect(background.props.style).toEqual({
-        backgroundColor: v2Colors.surface,
+        backgroundColor: colors.surface,
         borderRadius: penTokens['radius/34'],
-        height: v2ControlSizes.tabBar,
+        height: controlSizes.tabBar,
         left: 0,
         position: 'absolute',
         right: 0,
@@ -232,11 +232,11 @@ describe('AppTabsLayout', () => {
         expect.objectContaining({
           backgroundColor: 'transparent',
           elevation: 0,
-          height: v2ControlSizes.tabBar + bottomInset,
-          paddingBottom: v2Spacing.sm + bottomInset,
-          paddingTop: v2Spacing.sm,
+          height: controlSizes.tabBar + bottomInset,
+          paddingBottom: spacing.sm + bottomInset,
+          paddingTop: spacing.sm,
           shadowOpacity: 0,
-          transform: [{ translateY: -v2Spacing.lg }],
+          transform: [{ translateY: -spacing.lg }],
         }),
       );
     },

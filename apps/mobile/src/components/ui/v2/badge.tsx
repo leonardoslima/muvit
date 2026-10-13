@@ -3,32 +3,32 @@ import { Check, Clock3, Minus, TriangleAlert } from 'lucide-react-native';
 import { forwardRef } from 'react';
 import { View, type ViewProps } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
-import { v2Colors } from '../../../lib/design-system/tokens';
+import { colors } from '../../../lib/design-system/tokens';
 import { Text, TextClassContext } from './text';
 
 const variants = {
   active: {
     background: 'bg-v2-successBg',
     text: 'text-v2-success',
-    color: v2Colors.success,
+    color: colors.success,
     Icon: Check,
   },
   inactive: {
     background: 'bg-v2-subtle',
     text: 'text-v2-secondary',
-    color: v2Colors.secondary,
+    color: colors.secondary,
     Icon: Minus,
   },
   pending: {
     background: 'bg-v2-warningBg',
     text: 'text-v2-warning',
-    color: v2Colors.warning,
+    color: colors.warning,
     Icon: Clock3,
   },
   error: {
     background: 'bg-v2-errorBg',
     text: 'text-v2-error',
-    color: v2Colors.error,
+    color: colors.error,
     Icon: TriangleAlert,
   },
 };

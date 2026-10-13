@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { colors, typography } from '../styles';
-import { penTokens, v2ControlSizes, v2Typography } from './tokens';
+import { controlSizes, typography as designTypography, penTokens } from './tokens';
 
 // Fixture obtida por GetVariables no Pen aprovado, conferida em 09/10/2026.
 const approvedPenTokens = {
@@ -109,19 +109,19 @@ describe('contrato de exportação dos tokens v2', () => {
   });
 
   it('deriva dimensões mínimas sem fixar a altura do conteúdo', () => {
-    expect(v2ControlSizes).toMatchObject({
+    expect(controlSizes).toMatchObject({
       touch: 48,
       button: 58,
       compact: 52,
       field: 52,
       authField: 58,
     });
-    expect(v2Typography.body).toMatchObject({
+    expect(designTypography.body).toMatchObject({
       fontSize: 14,
       lineHeight: 19.6,
       fontFamily: 'DMSans_400Regular',
     });
-    expect(v2Typography.screenTitle).toMatchObject({
+    expect(designTypography.screenTitle).toMatchObject({
       fontSize: 30,
       lineHeight: 36,
       fontFamily: 'DMSans_800ExtraBold',

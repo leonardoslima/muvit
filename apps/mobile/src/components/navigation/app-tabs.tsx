@@ -5,12 +5,12 @@ import type { ComponentProps } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  colors,
+  controlSizes,
+  fontFamilies,
   penTokens,
-  v2Colors,
-  v2ControlSizes,
-  v2FontFamilies,
-  v2Spacing,
-  v2Typography,
+  spacing,
+  typography,
 } from '../../lib/design-system/tokens';
 
 export type AppTab = {
@@ -30,26 +30,26 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: v2Colors.brand,
-        tabBarActiveBackgroundColor: v2Colors.subtle,
-        tabBarInactiveTintColor: v2Colors.inactiveIcon,
+        tabBarActiveTintColor: colors.brand,
+        tabBarActiveBackgroundColor: colors.subtle,
+        tabBarInactiveTintColor: colors.inactiveIcon,
         tabBarItemStyle: {
-          marginHorizontal: v2Spacing.optical,
+          marginHorizontal: spacing.optical,
           borderRadius: penTokens['radius/29'],
-          minHeight: v2ControlSizes.touch,
+          minHeight: controlSizes.touch,
         },
         tabBarButton: (props) => (
           <PlatformPressable
             {...props}
             style={[
               props.style,
-              { borderRadius: penTokens['radius/29'], minHeight: v2ControlSizes.touch },
+              { borderRadius: penTokens['radius/29'], minHeight: controlSizes.touch },
             ]}
           />
         ),
         tabBarLabelStyle: {
-          fontFamily: v2FontFamilies.semibold,
-          fontSize: v2Typography.caption.fontSize,
+          fontFamily: fontFamilies.semibold,
+          fontSize: typography.caption.fontSize,
         },
         tabBarBackground: () => (
           <View
@@ -59,24 +59,24 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
               top: 0,
               left: 0,
               right: 0,
-              height: v2ControlSizes.tabBar,
+              height: controlSizes.tabBar,
               borderRadius: penTokens['radius/34'],
-              backgroundColor: v2Colors.surface,
+              backgroundColor: colors.surface,
             }}
           />
         ),
         tabBarStyle: {
           position: 'absolute',
-          marginHorizontal: v2Spacing.lg,
-          transform: [{ translateY: -v2Spacing.lg }],
-          height: v2ControlSizes.tabBar + insets.bottom,
+          marginHorizontal: spacing.lg,
+          transform: [{ translateY: -spacing.lg }],
+          height: controlSizes.tabBar + insets.bottom,
           borderRadius: penTokens['radius/33'],
           borderTopWidth: 0,
           backgroundColor: 'transparent',
           elevation: 0,
           shadowOpacity: 0,
-          paddingBottom: v2Spacing.sm + insets.bottom,
-          paddingTop: v2Spacing.sm,
+          paddingBottom: spacing.sm + insets.bottom,
+          paddingTop: spacing.sm,
         },
       }}
     >

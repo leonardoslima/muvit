@@ -28,7 +28,7 @@ import {
   Surface,
   Text,
 } from '../../src/components/ui/v2';
-import { v2Colors } from '../../src/lib/design-system/tokens';
+import { colors } from '../../src/lib/design-system/tokens';
 
 function FoundationPreview() {
   const [fontsLoaded] = useFonts({
@@ -61,7 +61,7 @@ function FoundationPreview() {
   }, []);
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: v2Colors.background }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         {!fontsLoaded ? (
           <StatePanel kind="loading" title="Carregando fontes" />
         ) : (
@@ -141,7 +141,7 @@ function FoundationPreview() {
                   />
                   <IconButton
                     accessibilityLabel="Favoritar exemplo"
-                    icon={<Heart color={v2Colors.brand} size={22} />}
+                    icon={<Heart color={colors.brand} size={22} />}
                     onPress={act}
                   />
                   <Card action={{ label: 'Abrir exemplo', onPress: act }}>

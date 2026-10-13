@@ -3,7 +3,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { describe, expect, it, vi } from 'vitest';
-import { v2Colors, v2Spacing } from '../../lib/design-system/tokens';
+import { colors as designColors, spacing as designSpacing } from '../../lib/design-system/tokens';
 import { colors, spacing, typography } from '../../lib/styles';
 import { AppButton } from './button';
 import { Field } from './field';
@@ -164,14 +164,14 @@ describe('componentes visuais mobile', () => {
 
     expect(insideSafeArea.props.edges).toEqual(['top', 'left', 'right']);
     expect(StyleSheet.flatten(insideSafeArea.props.style).backgroundColor).toBe(
-      v2Colors.background,
+      designColors.background,
     );
     expect(content).toEqual(
       expect.objectContaining({
-        gap: v2Spacing.lg,
-        paddingBottom: 101 + v2Spacing.lg,
-        paddingHorizontal: v2Spacing.lg,
-        paddingVertical: v2Spacing.xxl,
+        gap: designSpacing.lg,
+        paddingBottom: 101 + designSpacing.lg,
+        paddingHorizontal: designSpacing.lg,
+        paddingVertical: designSpacing.xxl,
       }),
     );
   });
@@ -196,7 +196,7 @@ describe('componentes visuais mobile', () => {
     const style = StyleSheet.flatten(safeArea.props.style);
 
     expect(safeArea.props.edges).toEqual(['top', 'left', 'right']);
-    expect(style.paddingBottom).toBe(101 + v2Spacing.lg);
+    expect(style.paddingBottom).toBe(101 + designSpacing.lg);
   });
 
   it('usa o Header v2 e preserva contexto e subtítulo do cabeçalho compartilhado', () => {

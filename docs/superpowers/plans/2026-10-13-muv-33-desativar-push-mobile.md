@@ -79,11 +79,11 @@ Alternativas: reduzir a caixa inteira para 67 dp e deslocá-la por safe area exi
 
 **Arquivos:** modificar `apps/mobile/app/(student)/(tabs)/_layout.tsx`, `apps/mobile/src/__tests__/tabs-layout.test.tsx`, `apps/mobile/src/components/navigation/app-tabs.tsx` e `apps/mobile/src/components/navigation/app-tabs.test.tsx`. Preservar `apps/mobile/src/components/ui/screen.tsx` e validar seus testes existentes em `apps/mobile/src/components/ui/ui.test.tsx`; nenhuma screen de domínio deve mudar.
 
-**Interfaces:** `AppTabsLayout({ tabs }: AppTabsLayoutProps)` continua consumindo `readonly AppTab[]`; acrescentar `tabBarBackground: () => React.ReactElement` nas opções de navegação, retornando `View` com superfície branca e altura `v2ControlSizes.tabBar`. Não criar interface pública nem mudar rotas.
+**Interfaces:** `AppTabsLayout({ tabs }: AppTabsLayoutProps)` continua consumindo `readonly AppTab[]`; acrescentar `tabBarBackground: () => React.ReactElement` nas opções de navegação, retornando `View` com superfície branca e altura `controlSizes.tabBar`. Não criar interface pública nem mudar rotas.
 
 - [x] Expectativa de ícones atualizada em `tabs-layout.test.tsx` para `['home-outline', 'stats-chart-outline', 'person-outline']`; confirmado no fonte pelo planner.
 - [x] Configuração do aluno alterada somente de `calendar-outline` para `home-outline`, preservando nomes/labels das rotas; confirmado no fonte pelo planner.
-- [x] Testes de `tabBarBackground` implementados para insets inferiores `0`, `24` e `34`: superfície sempre com altura 67, cor `v2Colors.surface` e radius 34 (`penTokens['radius/34']`); caixa externa transparente, altura `67 + inset`, padding inferior `8 + inset`, padding superior 8, deslocamento vertical -16, `elevation: 0` e `shadowOpacity: 0`. Confirmado no fonte pelo planner.
+- [x] Testes de `tabBarBackground` implementados para insets inferiores `0`, `24` e `34`: superfície sempre com altura 67, cor `colors.surface` e radius 34 (`penTokens['radius/34']`); caixa externa transparente, altura `67 + inset`, padding inferior `8 + inset`, padding superior 8, deslocamento vertical -16, `elevation: 0` e `shadowOpacity: 0`. Confirmado no fonte pelo planner.
 - [x] `tabBarBackground` implementado com `View` e tokens existentes; caixa transparente/sem sombra, mantendo altura/paddings da reserva, `PlatformPressable` e inset do `Screen`; confirmado no fonte pelo planner.
 - [x] A suíte final `pnpm.cmd --dir apps/mobile exec vitest run --hookTimeout=30000` engloba os testes de shell/aluno/professor/Screen e passou com 58 arquivos/517 testes, conforme executor. Typecheck/Biome também aprovados.
 - [x] Confirmação pós-fix do Visual QA aprovada conforme executor, com cápsula 67 dp/r34, safe area, alvos de pelo menos 48 dp e `home-outline` em Hoje. Os logins autenticados de ambos os papéis precederam essa confirmação.
@@ -98,9 +98,9 @@ O planner mediu o bitmap `O2Tlz.png` (780×1688) com `System.Drawing`: na linha 
 
 **Arquivos:** refinamento limitado a `apps/mobile/src/components/navigation/app-tabs.tsx` e `apps/mobile/src/components/navigation/app-tabs.test.tsx`, usando o mesmo shell compartilhado. Nenhuma screen de domínio deve mudar.
 
-- [x] Comparação registrada: deslocamento esquerdo observado no export Pen de 10 dp na base de 390 dp. A implementação adaptou o recuo ao viewport Android menor usando `marginHorizontal: v2Spacing.optical` (6 dp) por item, em vez de impor largura fixa de 106 dp ou apresentar 6 dp como medida literal do Pen.
+- [x] Comparação registrada: deslocamento esquerdo observado no export Pen de 10 dp na base de 390 dp. A implementação adaptou o recuo ao viewport Android menor usando `marginHorizontal: spacing.optical` (6 dp) por item, em vez de impor largura fixa de 106 dp ou apresentar 6 dp como medida literal do Pen.
 - [x] O executor informou ciclo RED/GREEN focado após o refinamento de margem, com 9/9 testes aprovados. O teste exige recuo do item, mantendo cápsula 67 dp/r34, altura/reserva `67 + inset` e alvo mínimo de 48 dp.
-- [x] O planner confirmou no fonte a aplicação de `marginHorizontal: v2Spacing.optical` em `tabBarItemStyle`, preservando destinos, eventos, labels e permissões.
+- [x] O planner confirmou no fonte a aplicação de `marginHorizontal: spacing.optical` em `tabBarItemStyle`, preservando destinos, eventos, labels e permissões.
 - [x] O executor informou captura final ADB do professor: cápsula `[42,1639]–[798,1815]`, seleção `[58,1660]–[278,1794]`; à densidade nominal de 2,625 px/dp, o recuo é aproximadamente 6 dp e o alvo mede aproximadamente 84×51 dp. A nova evidência confirma que a seleção não encosta na cápsula e mantém dimensão mínima de toque.
 - [x] Aluno e professor foram autenticados/verificados antes do último refinamento, aplicado ao componente compartilhado. A captura final após esse refinamento é do professor; não foi declarada uma captura final do aluno que não ocorreu. O executor informou revisão técnica independente `APPROVED`, sem findings após a correção.
 

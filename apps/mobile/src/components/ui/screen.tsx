@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { v2Colors, v2Spacing } from '../../lib/design-system/tokens';
+import { colors, spacing } from '../../lib/design-system/tokens';
 import { sharedStyles } from '../../lib/styles';
 import { Header as V2Header } from './v2/header';
 import { Text as V2Text } from './v2/text';
@@ -26,7 +26,7 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   const safeAreaEdges: ('top' | 'right' | 'bottom' | 'left')[] = inTabs
     ? ['top', 'left', 'right']
     : ['top', 'right', 'bottom', 'left'];
-  const tabBarInset = inTabs ? { paddingBottom: tabBarHeight + v2Spacing.lg } : undefined;
+  const tabBarInset = inTabs ? { paddingBottom: tabBarHeight + spacing.lg } : undefined;
 
   if (!scroll) {
     return (
@@ -35,8 +35,8 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
         style={[
           sharedStyles.screen,
           {
-            backgroundColor: v2Colors.background,
-            paddingHorizontal: v2Spacing.lg,
+            backgroundColor: colors.background,
+            paddingHorizontal: spacing.lg,
           },
           style,
           tabBarInset,
@@ -50,14 +50,14 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   return (
     <SafeAreaView
       edges={safeAreaEdges}
-      style={[sharedStyles.safeArea, { backgroundColor: v2Colors.background }]}
+      style={[sharedStyles.safeArea, { backgroundColor: colors.background }]}
     >
       <ScrollView
         contentContainerStyle={[
           {
-            gap: v2Spacing.lg,
-            paddingHorizontal: v2Spacing.lg,
-            paddingVertical: v2Spacing.xxl,
+            gap: spacing.lg,
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.xxl,
           },
           contentContainerStyle,
           tabBarInset,
