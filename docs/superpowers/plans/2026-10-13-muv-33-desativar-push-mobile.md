@@ -104,15 +104,17 @@ O planner mediu o bitmap `O2Tlz.png` (780×1688) com `System.Drawing`: na linha 
 - [x] O executor informou captura final ADB do professor: cápsula `[42,1639]–[798,1815]`, seleção `[58,1660]–[278,1794]`; à densidade nominal de 2,625 px/dp, o recuo é aproximadamente 6 dp e o alvo mede aproximadamente 84×51 dp. A nova evidência confirma que a seleção não encosta na cápsula e mantém dimensão mínima de toque.
 - [x] Aluno e professor foram autenticados/verificados antes do último refinamento, aplicado ao componente compartilhado. A captura final após esse refinamento é do professor; não foi declarada uma captura final do aluno que não ocorreu. O executor informou revisão técnica independente `APPROVED`, sem findings após a correção.
 
-As Etapas 2/2A estão concluídas com os resultados e limites registrados acima. A validação visual foi realizada por ADB/Expo Go; Maestro permanece sem execução por ausência da ferramenta. A prontidão de entrega ainda depende das ações remotas da Etapa 3.
+As Etapas 2/2A estão concluídas com os resultados e limites registrados acima. A validação visual foi realizada por ADB/Expo Go; Maestro permanece sem execução por ausência da ferramenta. A entrega remota foi concluída conforme a Etapa 3.
 
 ## Etapa 3: revisão e entrega
 
 **Interfaces:** consome diff e evidências finais; produz a PR #21 atualizada para revisão humana no SHA validado.
 
 - [x] O executor informou revisão técnica independente `APPROVED`, sem findings após o refinamento final.
-- [ ] Fazer commit/push e confirmar os checks obrigatórios do novo SHA da PR #21.
-- [ ] Corrigir o comentário Linear `047f4ae2-94a0-40b3-b535-0267b45baef2`, cuja atribuição do bloqueio ao Expo Go ficou superada pela descoberta do import ainda ativo.
-- [ ] Atualizar evidências e estado de revisão do card; remover `agent_blocked` somente quando as verificações obrigatórias restantes estiverem comprovadas. Não declarar revisão humana pronta com gate obrigatório pendente.
+- [x] O executor informou commit/push `2f8b96c6c82b4f0ac4eeaae089fd30329bbaa553`; a [PR #21](https://github.com/leonardoslima/muvit/pull/21) permanece aberta e sem merge. CI run #71 concluído verde em Biome, Mobile Test, Turborepo Build e TypeScript.
+- [x] O executor informou correção do comentário Linear `047f4ae2-94a0-40b3-b535-0267b45baef2`, atualizando a causa do bloqueio e as evidências obtidas após remover a integração ainda importada.
+- [x] O executor informou remoção de `agent_blocked`; MUV-33 permanece `In Review` com `agent_review`, aguardando revisão humana, sem Done nem merge.
+
+Este fechamento documental registra o encerramento após o commit de implementação `2f8b96c6c82b4f0ac4eeaae089fd30329bbaa553`. O CI run #71 passou todos os checks obrigatórios no commit de código; esta nota final só atualiza o plano.
 
 Os resultados acima atribuídos ao executor não foram reexecutados pelo planner. Uma execução passada ou binário previamente instalado não constitui garantia para builds antigos; a ausência da integração deve ser vinculada ao diff e ao bundle atuais.
