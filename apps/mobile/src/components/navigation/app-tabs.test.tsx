@@ -43,6 +43,7 @@ type ScreenOptions = {
   tabBarActiveBackgroundColor?: string;
   tabBarActiveTintColor?: string;
   tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+  tabBarBackground?: () => React.ReactElement<{ pointerEvents?: 'none'; style?: unknown }>;
   tabBarInactiveTintColor?: string;
   tabBarItemStyle?: Record<string, unknown>;
   tabBarLabelStyle?: {
@@ -149,6 +150,29 @@ describe('AppTabsLayout', () => {
     });
   });
 
+  it.each([0, 24, 34])(
+    'inseta horizontalmente a seleção sem reduzir o alvo abaixo de 48 dp com inset inferior de %i dp',
+    (bottomInset) => {
+      safeAreaState.insets.bottom = bottomInset;
+      render(<AppTabsLayout tabs={[]} />);
+
+      expect(tabsState.screenOptions?.tabBarItemStyle).toEqual(
+        expect.objectContaining({
+          marginHorizontal: v2Spacing.optical,
+          minHeight: v2ControlSizes.touch,
+        }),
+      );
+
+      // Pen usa ~106/119 dp; 6 dp por lado preserva a proporção sem fixar a largura do item.
+      // A captura Android tem viewport de 320 dp: sobra um slot de 96 dp após os gutters de 16 dp.
+      const androidSlotWidth = (320 - 2 * v2Spacing.lg) / 3;
+      const androidTouchTargetWidth = androidSlotWidth - 2 * v2Spacing.optical;
+
+      expect(androidTouchTargetWidth).toBeGreaterThanOrEqual(48);
+      expect(v2ControlSizes.touch).toBeGreaterThanOrEqual(48);
+    },
+  );
+
   it('aplica seleção v2, alvo mínimo e safe area inferior dinâmica à tab bar', () => {
     safeAreaState.insets.bottom = 34;
 
@@ -160,18 +184,61 @@ describe('AppTabsLayout', () => {
         tabBarActiveTintColor: v2Colors.brand,
         tabBarInactiveTintColor: v2Colors.inactiveIcon,
         tabBarItemStyle: {
+          marginHorizontal: v2Spacing.optical,
           borderRadius: penTokens['radius/29'],
           minHeight: v2ControlSizes.touch,
         },
         tabBarStyle: expect.objectContaining({
-          backgroundColor: v2Colors.surface,
+          backgroundColor: 'transparent',
           borderRadius: penTokens['radius/33'],
+          elevation: 0,
           height: v2ControlSizes.tabBar + 34,
           paddingBottom: v2Spacing.sm + 34,
           paddingTop: v2Spacing.sm,
+          shadowOpacity: 0,
           transform: [{ translateY: -v2Spacing.lg }],
         }),
       }),
     );
   });
+
+  it.each([0, 24, 34])(
+    'mantém a cápsula de 67dp alinhada ao topo com inset inferior de %i dp',
+    (bottomInset) => {
+      safeAreaState.insets.bottom = bottomInset;
+
+      render(<AppTabsLayout tabs={[]} />);
+
+      const screenOptions = tabsState.screenOptions;
+      if (!screenOptions) throw new Error('As opções das abas não foram capturadas');
+
+      const tabBarBackground = screenOptions.tabBarBackground;
+      expect(tabBarBackground).toBeTypeOf('function');
+      if (!tabBarBackground) throw new Error('O fundo da tab bar não foi configurado');
+
+      const background = tabBarBackground();
+      expect(background.props.pointerEvents).toBe('none');
+      expect(background.props.style).toEqual({
+        backgroundColor: v2Colors.surface,
+        borderRadius: penTokens['radius/34'],
+        height: v2ControlSizes.tabBar,
+        left: 0,
+        position: 'absolute',
+        right: 0,
+        top: 0,
+      });
+
+      expect(screenOptions.tabBarStyle).toEqual(
+        expect.objectContaining({
+          backgroundColor: 'transparent',
+          elevation: 0,
+          height: v2ControlSizes.tabBar + bottomInset,
+          paddingBottom: v2Spacing.sm + bottomInset,
+          paddingTop: v2Spacing.sm,
+          shadowOpacity: 0,
+          transform: [{ translateY: -v2Spacing.lg }],
+        }),
+      );
+    },
+  );
 });

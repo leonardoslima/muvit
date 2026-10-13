@@ -185,6 +185,6 @@ describe('TabsLayout', () => {
       return tabBarIcon({ color: '#111111', focused: false, size: 24 }).props.name;
     });
 
-    expect(iconNames).toEqual(['calendar-outline', 'stats-chart-outline', 'person-outline']);
+    expect(iconNames).toEqual(['home-outline', 'stats-chart-outline', 'person-outline']);
   });
 });

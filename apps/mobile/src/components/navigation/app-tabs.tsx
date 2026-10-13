@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlatformPressable } from '@react-navigation/elements';
 import { Tabs } from 'expo-router';
 import type { ComponentProps } from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   penTokens,
@@ -33,6 +34,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
         tabBarActiveBackgroundColor: v2Colors.subtle,
         tabBarInactiveTintColor: v2Colors.inactiveIcon,
         tabBarItemStyle: {
+          marginHorizontal: v2Spacing.optical,
           borderRadius: penTokens['radius/29'],
           minHeight: v2ControlSizes.touch,
         },
@@ -49,6 +51,20 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
           fontFamily: v2FontFamilies.semibold,
           fontSize: v2Typography.caption.fontSize,
         },
+        tabBarBackground: () => (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: v2ControlSizes.tabBar,
+              borderRadius: penTokens['radius/34'],
+              backgroundColor: v2Colors.surface,
+            }}
+          />
+        ),
         tabBarStyle: {
           position: 'absolute',
           marginHorizontal: v2Spacing.lg,
@@ -56,7 +72,9 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
           height: v2ControlSizes.tabBar + insets.bottom,
           borderRadius: penTokens['radius/33'],
           borderTopWidth: 0,
-          backgroundColor: v2Colors.surface,
+          backgroundColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0,
           paddingBottom: v2Spacing.sm + insets.bottom,
           paddingTop: v2Spacing.sm,
         },

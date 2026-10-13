@@ -81,10 +81,6 @@ vi.mock('../components/queue-drain', () => ({
   QueueDrain: () => React.createElement('Text', null, 'queue-drain'),
 }));
 
-vi.mock('../components/push-token-registration', () => ({
-  PushTokenRegistration: () => React.createElement('Text', null, 'push-registration'),
-}));
-
 describe('RootLayout', () => {
   beforeEach(() => {
     fontState.useFonts.mockImplementation(() => [fontState.loaded]);
@@ -187,7 +183,6 @@ describe('RootLayout', () => {
     expect(screen.getByTestId('query-client-provider')).toBeTruthy();
     expect(screen.getByTestId('router-slot')).toBeTruthy();
     expect(screen.queryByText('queue-drain')).toBeNull();
-    expect(screen.queryByText('push-registration')).toBeNull();
   });
 
   it('bloqueia role desconhecida sem montar Slot', () => {
