@@ -55,6 +55,15 @@ function renderTrainerStudentDetail() {
   );
 }
 
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolvePromise = (_value: T): void => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
+}
+
 beforeEach(() => {
   apiState.request.mockReset();
   routerState.push.mockReset();
@@ -89,6 +98,29 @@ describe('TrainerStudentDetailScreen', () => {
     expect(screen.getByText('Evitar impacto no joelho')).toBeTruthy();
   });
 
+  it('usa verde profundo no cartão de identidade', async () => {
+    apiState.request.mockResolvedValueOnce(studentFixture());
+
+    renderTrainerStudentDetail();
+
+    await screen.findByText('Ana Lima');
+    const identity = screen.getByTestId('trainer-student-identity');
+
+    expect(identity?.props.className).toContain('bg-v2-text');
+  });
+
+  it('não acrescenta textos de apoio ausentes no handoff', async () => {
+    apiState.request.mockResolvedValueOnce(studentFixture());
+
+    renderTrainerStudentDetail();
+
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    expect(
+      screen.queryByText('Consulte o histórico ou registre uma nova avaliação deste aluno.'),
+    ).toBeNull();
+    expect(screen.queryByText('Consulte ou monte a prescrição de treino deste aluno.')).toBeNull();
+  });
+
   it('não diferencia aluno ausente de aluno fora do escopo', async () => {
     apiState.request.mockRejectedValueOnce(new ApiError('not found', 404));
 
@@ -96,7 +128,11 @@ describe('TrainerStudentDetailScreen', () => {
 
     expect(await screen.findByText('Aluno não encontrado')).toBeTruthy();
     expect(screen.getByText('Este aluno não está disponível para sua conta.')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voltar para alunos' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
   });
 
   it('mostra loading durante a carga inicial', () => {
@@ -105,7 +141,9 @@ describe('TrainerStudentDetailScreen', () => {
     renderTrainerStudentDetail();
 
     expect(screen.getByText('Carregando aluno')).toBeTruthy();
-    expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Carregando aluno' })).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
   });
 
   it('permite retry depois de erro genérico', async () => {
@@ -116,7 +154,9 @@ describe('TrainerStudentDetailScreen', () => {
 
     renderTrainerStudentDetail();
 
-    await user.press(await screen.findByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
   });
@@ -155,6 +195,28 @@ describe('TrainerStudentDetailScreen', () => {
     expect(await screen.findByText('Pausado')).toBeTruthy();
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(screen.getByText('Ana Lima')).toBeTruthy();
+  });
+
+  it('mantém o conteúdo visível e um único progresso durante refresh', async () => {
+    const user = userEvent.setup();
+    const refresh = deferred<TrainerStudent>();
+    apiState.request.mockResolvedValueOnce(studentFixture()).mockReturnValueOnce(refresh.promise);
+
+    renderTrainerStudentDetail();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+
+    expect(screen.getByText('Atualizando')).toBeTruthy();
+    expect(screen.getByText('Ana Lima')).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
+
+    refresh.resolve(studentFixture({ status: 'paused' }));
+    expect(await screen.findByText('Pausado')).toBeTruthy();
+    await waitFor(() => expect(screen.queryByText('Atualizando')).toBeNull());
   });
 
   it('preserva o conteúdo e exibe erro quando a atualização falha', async () => {
@@ -219,6 +281,55 @@ describe('TrainerStudentDetailScreen', () => {
     expect(routerState.replace).toHaveBeenCalledWith('/trainer/students');
   });
 
+  it.each(['paused', 'inactive'] as const)(
+    'preserva os quatro acessos para aluno %s com nome e contato extensos',
+    async (status) => {
+      const name = 'Ana Júlia de Souza Campos com sobrenome extenso';
+      const email = 'ana.julia.souza.campos@example.com';
+      const phone = '27999999999999999999';
+      const student = studentFixture({
+        status,
+        name,
+        email,
+        phone,
+      });
+      apiState.request.mockResolvedValueOnce(student);
+
+      renderTrainerStudentDetail();
+
+      expect(await screen.findByText(name)).toBeTruthy();
+      expect(screen.getByText(name).props.numberOfLines).toBeUndefined();
+      expect(screen.getByText(email).props.numberOfLines).toBeUndefined();
+      expect(screen.getByText(phone).props.numberOfLines).toBeUndefined();
+      expect(screen.getByText(status === 'paused' ? 'Pausado' : 'Inativo')).toBeTruthy();
+      for (const label of ['Ver histórico', 'Nova avaliação', 'Ver treinos', 'Novo treino']) {
+        expect(screen.getByRole('button', { name: label })).toBeTruthy();
+      }
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it('prioriza 404 após refresh e oculta os dados anteriores', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce(studentFixture())
+      .mockRejectedValueOnce(new ApiError('not found', 404));
+
+    renderTrainerStudentDetail();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+
+    expect(await screen.findByText('Aluno não encontrado')).toBeTruthy();
+    expect(screen.queryByText('Ana Lima')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ver histórico' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Novo treino' })).toBeNull();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar para alunos' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
+  });
+
   it('não chama API quando o parâmetro da rota está ausente', () => {
     paramsState.studentId = undefined;
 
@@ -226,6 +337,11 @@ describe('TrainerStudentDetailScreen', () => {
 
     expect(screen.getByText('Aluno inválido')).toBeTruthy();
     expect(screen.getByText('Não foi possível identificar o aluno solicitado.')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar para alunos' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
     expect(apiState.request).not.toHaveBeenCalled();
   });
 });

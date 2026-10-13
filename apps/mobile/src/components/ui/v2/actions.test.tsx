@@ -192,6 +192,47 @@ describe('ações v2', () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
+  it('aplica uma classe opcional somente ao título do Header', () => {
+    render(<Header title="Alunos" titleClassName="text-[15px]" />);
+
+    expect(screen.getByRole('header').props.className).toContain('text-[15px]');
+  });
+
+  it('compõe leading e label longo no Button e troca o leading por um único progresso', () => {
+    const onPress = vi.fn();
+    const label = 'Ver treinos e exercícios cadastrados';
+    const { rerender } = render(
+      <Button
+        label={label}
+        labelClassName="text-[14px]"
+        leading={<NativeText testID="button-leading">ícone</NativeText>}
+        onPress={onPress}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: label });
+    expect(screen.getByTestId('button-leading')).toBeTruthy();
+    expect(screen.getByText(label).props.className).toContain('text-[14px]');
+    expect(screen.getByText(label).props.numberOfLines).toBeUndefined();
+    fireEvent.press(button);
+    expect(onPress).toHaveBeenCalledOnce();
+
+    rerender(
+      <Button
+        label={label}
+        labelClassName="text-[14px]"
+        leading={<NativeText testID="button-leading">ícone</NativeText>}
+        loading
+        onPress={onPress}
+      />,
+    );
+
+    expect(screen.queryByTestId('button-leading')).toBeNull();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    fireEvent.press(screen.getByRole('button', { name: label }));
+    expect(onPress).toHaveBeenCalledOnce();
+  });
+
   it('Card imersivo mantém eventos nativos de foco e pressão', () => {
     const onFocus = vi.fn();
     const onBlur = vi.fn();

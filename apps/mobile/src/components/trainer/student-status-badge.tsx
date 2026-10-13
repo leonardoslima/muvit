@@ -1,9 +1,13 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Check, Clock3, Minus } from 'lucide-react-native';
+import { View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
-import { colors, radii, spacing, typography } from '../../lib/styles';
+import { cn } from '../../lib/design-system/cn';
+import { colors } from '../../lib/design-system/tokens';
+import { Text } from '../ui/v2/text';
 
 export type StudentStatusBadgeProps = {
   status: TrainerStudent['status'];
+  compact?: boolean;
 };
 
 const statusCopy = {
@@ -14,53 +18,47 @@ const statusCopy = {
 
 const statusStyles = {
   active: {
-    backgroundColor: colors.primarySoft,
-    borderColor: undefined,
-    textColor: colors.primaryText,
+    backgroundClass: 'bg-v2-successBg',
+    textClass: 'text-v2-success',
+    color: colors.success,
+    Icon: Check,
   },
   paused: {
-    backgroundColor: colors.warningSoft,
-    borderColor: undefined,
-    textColor: colors.warningText,
+    backgroundClass: 'bg-v2-warningBg',
+    textClass: 'text-v2-warning',
+    color: colors.warning,
+    Icon: Clock3,
   },
   inactive: {
-    backgroundColor: colors.background,
-    borderColor: colors.line,
-    textColor: colors.muted,
+    backgroundClass: 'bg-v2-infoBg',
+    textClass: 'text-v2-info',
+    color: colors.info,
+    Icon: Minus,
   },
 } as const satisfies Record<
   TrainerStudent['status'],
-  { backgroundColor: string; textColor: string; borderColor?: string }
+  { backgroundClass: string; textClass: string; color: string; Icon: typeof Check }
 >;
 
-export function StudentStatusBadge({ status }: StudentStatusBadgeProps) {
+export function StudentStatusBadge({ status, compact = false }: StudentStatusBadgeProps) {
   const visualStyle = statusStyles[status];
+  const Icon = visualStyle.Icon;
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: visualStyle.backgroundColor,
-          borderColor: visualStyle.borderColor,
-          borderWidth: visualStyle.borderColor ? 1 : 0,
-        },
-      ]}
+      accessible
+      accessibilityLabel={statusCopy[status]}
+      className={cn(
+        'flex-row items-center self-start gap-[6px] rounded-full',
+        compact ? 'min-h-[24px] px-2 py-1' : 'min-h-[32px] px-3 py-2',
+        visualStyle.backgroundClass,
+      )}
       testID="student-status-badge"
     >
-      <Text style={[styles.text, { color: visualStyle.textColor }]}>{statusCopy[status]}</Text>
+      <Icon size={compact ? 12 : 14} color={visualStyle.color} accessible={false} />
+      <Text className={`shrink font-v2-bold ${visualStyle.textClass}`} variant="support">
+        {statusCopy[status]}
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  text: {
-    ...typography.labelCompact,
-  },
-});

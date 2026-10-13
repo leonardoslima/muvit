@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { useState } from 'react';
+import { type LayoutChangeEvent, Pressable, View } from 'react-native';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
-import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { colors } from '../../lib/design-system/tokens';
+import { Text } from '../ui/v2/text';
 import { StudentStatusBadge } from './student-status-badge';
 
 export type StudentListItemProps = {
@@ -10,28 +12,44 @@ export type StudentListItemProps = {
 };
 
 export function StudentListItem({ onPress, student }: StudentListItemProps) {
+  const [width, setWidth] = useState<number>();
+  const handleLayout = (event: LayoutChangeEvent): void => {
+    setWidth(event.nativeEvent.layout.width);
+  };
+
   return (
     <Pressable
       accessible
       accessibilityLabel={`Abrir ${student.name}`}
       accessibilityRole="button"
+      className="flex-row items-center gap-3 border-b border-v2-border py-4"
+      onLayout={handleLayout}
       onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
+      style={({ pressed }) => (pressed ? { opacity: 0.8 } : undefined)}
     >
-      <Card>
-        <View style={styles.row}>
-          <View accessibilityLabel={`Iniciais de ${student.name}`} style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(student.name)}</Text>
-          </View>
-
-          <View style={styles.copy}>
-            <Text style={styles.name}>{student.name}</Text>
-            <Text style={sharedStyles.subtitle}>{resolveContact(student)}</Text>
-          </View>
-
-          <StudentStatusBadge status={student.status} />
-        </View>
-      </Card>
+      <View
+        accessible={false}
+        className="h-12 w-12 shrink-0 items-center justify-center rounded-full bg-v2-subtle"
+      >
+        <Text className="font-v2-bold text-v2-brand" variant="label">
+          {getInitials(student.name)}
+        </Text>
+      </View>
+      <View className="min-w-0 flex-1 gap-1">
+        <Text
+          className={width !== undefined && width <= 320 ? 'text-[16px]' : undefined}
+          variant="action"
+        >
+          {student.name}
+        </Text>
+        <Text className="text-[13px] leading-[18px] text-v2-secondary">
+          {resolveContact(student)}
+        </Text>
+        <StudentStatusBadge compact status={student.status} />
+      </View>
+      <View accessible={false} className="shrink-0">
+        <ChevronRight size={20} color={colors.secondary} accessible={false} />
+      </View>
     </Pressable>
   );
 }
@@ -49,37 +67,3 @@ function getInitials(name: string): string {
 function resolveContact(student: TrainerStudent): string {
   return student.email || student.phone || 'Sem contato cadastrado';
 }
-
-const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  row: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  avatar: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.avatar,
-    height: controlSizes.touchTarget,
-    justifyContent: 'center',
-    width: controlSizes.touchTarget,
-  },
-  avatarText: {
-    color: colors.ink,
-    ...typography.label,
-  },
-  copy: {
-    flex: 1,
-    minWidth: 0,
-  },
-  name: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-});

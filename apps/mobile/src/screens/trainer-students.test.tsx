@@ -124,13 +124,44 @@ describe('TrainerStudentsScreen', () => {
     );
   });
 
+  it('remove espaços da busca e reinicia o offset depois de carregar páginas', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ total: 3, items: [studentFixture()] })
+      .mockResolvedValueOnce({
+        total: 3,
+        items: [studentFixture({ id: 'student-2', name: 'Bruna Lima' })],
+      })
+      .mockResolvedValueOnce({
+        total: 1,
+        items: [studentFixture({ id: 'student-3', name: 'Ana Júlia Souza' })],
+      });
+
+    renderTrainerStudents();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    expect(await screen.findByText('Bruna Lima')).toBeTruthy();
+    await user.type(screen.getByLabelText('Buscar aluno'), '  Ana Júlia  ');
+    await user.press(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(await screen.findByText('Ana Júlia Souza')).toBeTruthy();
+    expect(apiState.request).toHaveBeenLastCalledWith(
+      '/students?q=Ana%20J%C3%BAlia&limit=25&offset=0',
+      expect.any(Object),
+    );
+  });
+
   it('mostra loading durante a carga inicial', () => {
     apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
 
     renderTrainerStudents();
 
     expect(screen.getByText('Carregando alunos')).toBeTruthy();
-    expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.getByRole('progressbar', { name: 'Carregando alunos' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
   });
 
   it('permite retry depois de erro inicial', async () => {
@@ -141,7 +172,10 @@ describe('TrainerStudentsScreen', () => {
 
     renderTrainerStudents();
 
-    await user.press(await screen.findByRole('button', { name: 'Tentar novamente' }));
+    expect(await screen.findByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(await screen.findByText('Não foi possível carregar seus alunos')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     expect(await screen.findByText('Nenhum aluno vinculado')).toBeTruthy();
   });
 
@@ -158,6 +192,8 @@ describe('TrainerStudentsScreen', () => {
     await user.type(screen.getByLabelText('Buscar aluno'), 'Ninguém');
     await user.press(screen.getByRole('button', { name: 'Buscar' }));
     expect(await screen.findByText('Nenhum aluno encontrado')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Limpar busca' })).toHaveLength(1);
+    expect(screen.getByText('0 alunos encontrados')).toBeTruthy();
 
     await user.press(screen.getAllByRole('button', { name: 'Limpar busca' })[0]);
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
@@ -270,6 +306,11 @@ describe('TrainerStudentsScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
 
+    expect(screen.getByText('Atualizando')).toBeTruthy();
+    expect(screen.getByText('Aguarde enquanto os dados são atualizados.')).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Atualizando...' })).toBeNull();
+
     const loadMoreButton = screen.getByRole('button', { name: 'Carregar mais' });
     expect(loadMoreButton.props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
@@ -326,6 +367,8 @@ describe('TrainerStudentsScreen', () => {
     expect(updateButton.props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
+    expect(screen.queryByText('Atualizando')).toBeNull();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
     await user.press(updateButton);
     expect(apiState.request).toHaveBeenCalledTimes(3);
 
@@ -340,5 +383,7 @@ describe('TrainerStudentsScreen', () => {
 
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Carregar mais' })).toBeNull();
+    expect(screen.getByText('1 de 1 alunos carregados')).toBeTruthy();
+    expect(screen.getByText('Todos os alunos carregados')).toBeTruthy();
   });
 });

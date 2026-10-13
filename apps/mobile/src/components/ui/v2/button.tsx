@@ -1,5 +1,5 @@
 // Adaptado de React Native Reusables; proveniência e licença em README.md e LICENSE.
-import { forwardRef } from 'react';
+import { type ReactNode, forwardRef } from 'react';
 import { ActivityIndicator, Pressable, type PressableProps, View } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
 import { colors } from '../../../lib/design-system/tokens';
@@ -18,10 +18,21 @@ export type ButtonProps = Omit<PressableProps, 'children'> & {
   loading?: boolean;
   compact?: boolean;
   className?: string;
+  leading?: ReactNode;
+  labelClassName?: string;
 };
 
 export const Button = forwardRef<View, ButtonProps>(function Button(
-  { label, variant = 'primary', loading = false, compact = false, className, ...props },
+  {
+    label,
+    variant = 'primary',
+    loading = false,
+    compact = false,
+    className,
+    leading,
+    labelClassName,
+    ...props
+  },
   ref,
 ) {
   const control = useControlState(props, loading);
@@ -62,8 +73,8 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           className,
         )}
       >
-        <View className="w-[20px] shrink-0 items-center">
-          {loading && (
+        <View className={cn('shrink-0 items-center justify-center', !leading && 'w-[20px]')}>
+          {loading ? (
             <ActivityIndicator
               accessible
               accessibilityRole="progressbar"
@@ -71,12 +82,14 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
               color={spinnerColor}
               size="small"
             />
+          ) : (
+            leading
           )}
         </View>
-        <Text variant="button" className="shrink text-center">
+        <Text variant="button" className={cn('shrink text-center', labelClassName)}>
           {label}
         </Text>
-        <View className="w-[20px] shrink-0" />
+        {!leading && <View className="w-[20px] shrink-0" />}
       </Pressable>
     </TextClassContext.Provider>
   );
