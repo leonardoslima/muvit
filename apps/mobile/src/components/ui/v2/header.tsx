@@ -13,9 +13,10 @@ export type HeaderProps = ViewProps & {
   backAction?: Action;
   action?: Action;
   className?: string;
+  titleClassName?: string;
 };
 export const Header = forwardRef<View, HeaderProps>(function Header(
-  { title, variant = 'default', backAction, action, className, ...props },
+  { title, variant = 'default', backAction, action, className, titleClassName, ...props },
   ref,
 ) {
   const session = variant === 'session';
@@ -42,7 +43,11 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
       <Text
         accessibilityRole="header"
         variant={session ? 'action' : 'screenTitle'}
-        className={cn('flex-1', session && 'text-center text-v2-sessionText font-v2-semibold')}
+        className={cn(
+          'flex-1',
+          session && 'text-center text-v2-sessionText font-v2-semibold',
+          titleClassName,
+        )}
       >
         {title}
       </Text>

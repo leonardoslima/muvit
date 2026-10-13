@@ -1,8 +1,6 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../../application/trainer/trainer-data';
-import { colors } from '../../lib/styles';
 import { StudentListItem } from './student-list-item';
 import { StudentStatusBadge } from './student-status-badge';
 
@@ -43,20 +41,20 @@ describe('StudentListItem', () => {
   });
 
   it.each([
-    ['active', 'Ativo', colors.primarySoft, colors.primaryText, undefined],
-    ['paused', 'Pausado', colors.warningSoft, colors.warningText, undefined],
-    ['inactive', 'Inativo', colors.background, colors.muted, colors.line],
+    ['active', 'Ativo', 'bg-v2-successBg', 'text-v2-success'],
+    ['paused', 'Pausado', 'bg-v2-warningBg', 'text-v2-warning'],
+    ['inactive', 'Inativo', 'bg-v2-infoBg', 'text-v2-info'],
   ] as const)(
-    'traduz status %s para %s com tokens semânticos',
-    (status, label, backgroundColor, textColor, borderColor) => {
+    'traduz status %s para %s com a variante v2 correspondente',
+    (status, label, backgroundClass, textClass) => {
       render(<StudentListItem onPress={() => undefined} student={studentFixture({ status })} />);
 
       expect(screen.getByText(label)).toBeTruthy();
-      const badgeStyle = StyleSheet.flatten(screen.getByTestId('student-status-badge').props.style);
-      const textStyle = StyleSheet.flatten(screen.getByText(label).props.style);
+      const badgeClassName = screen.getByTestId('student-status-badge').props.className;
+      const textClassName = screen.getByText(label).props.className;
 
-      expect(badgeStyle).toMatchObject({ backgroundColor, borderColor });
-      expect(textStyle).toMatchObject({ color: textColor });
+      expect(badgeClassName).toContain(backgroundClass);
+      expect(textClassName).toContain(textClass);
     },
   );
 
@@ -83,6 +81,23 @@ describe('StudentListItem', () => {
 
     expect(screen.getByText('AL')).toBeTruthy();
   });
+
+  it('mantém nome e contato longos sem truncamento em uma única linha tocável', () => {
+    const name = 'Ana Júlia de Souza Campos com sobrenome extenso';
+    const email = 'ana.julia.souza.campos@example.com';
+    const student = studentFixture({
+      name,
+      email,
+      status: 'paused',
+    });
+
+    render(<StudentListItem onPress={() => undefined} student={student} />);
+
+    expect(screen.getByText(name).props.numberOfLines).toBeUndefined();
+    expect(screen.getByText(email).props.numberOfLines).toBeUndefined();
+    expect(screen.getByText('Pausado')).toBeTruthy();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+  });
 });
 
 describe('StudentStatusBadge', () => {
@@ -94,5 +109,13 @@ describe('StudentStatusBadge', () => {
     render(<StudentStatusBadge status={status} />);
 
     expect(screen.getByText(label)).toBeTruthy();
+  });
+
+  it('mantém texto e identidade acessível no modo compacto', () => {
+    render(<StudentStatusBadge compact status="inactive" />);
+
+    expect(screen.getByText('Inativo')).toBeTruthy();
+    expect(screen.getByLabelText('Inativo')).toBeTruthy();
+    expect(screen.getByTestId('student-status-badge').props.className).toContain('min-h-[24px]');
   });
 });
