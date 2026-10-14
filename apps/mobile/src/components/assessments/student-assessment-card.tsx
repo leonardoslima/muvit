@@ -75,6 +75,7 @@ export function StudentAssessmentCard({
         <View className="gap-3">
           <Text variant="sectionTitle">Fotos da avaliação</Text>
           <AssessmentPhotoGrid
+            columnInset={1}
             onOpen={onOpenPhoto}
             photos={photos.map((uri) => ({ uri }))}
             testID="student-assessment-photos"

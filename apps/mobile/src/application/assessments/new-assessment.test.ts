@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  type AssessmentPhotoInput,
   buildAssessmentPayload,
   normalizeAssessmentPhotoSelection,
   submitAssessment,
   toOptionalNumber,
   toSupportedContentType,
-  type AssessmentPhotoInput,
 } from './new-assessment';
 
 function photo(uri: string, contentType: AssessmentPhotoInput['contentType'] = 'image/jpeg') {

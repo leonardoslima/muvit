@@ -11,6 +11,7 @@ export type AssessmentPhotoGridProps = {
   onAdd?: () => void;
   onRemove?: (index: number) => void;
   maxPhotos?: number;
+  columnInset?: number;
   addLabel?: string;
   emptyHint?: string;
   description?: string;
@@ -33,6 +34,7 @@ export function AssessmentPhotoGrid({
   onAdd,
   onRemove,
   maxPhotos,
+  columnInset = 0,
   addLabel = 'Adicionar foto',
   emptyHint,
   description,
@@ -53,7 +55,7 @@ export function AssessmentPhotoGrid({
     const availableWidth = width - PHOTO_GRID_GAP;
     if (!Number.isFinite(width) || availableWidth <= 0) return;
 
-    const nextColumnWidth = availableWidth / 2;
+    const nextColumnWidth = Math.max(0, availableWidth / 2 - columnInset);
     setColumnWidth((current) => (current === nextColumnWidth ? current : nextColumnWidth));
   }
 

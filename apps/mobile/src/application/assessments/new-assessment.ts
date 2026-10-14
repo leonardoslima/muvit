@@ -1,5 +1,5 @@
 import type { ApiRequester } from '../../lib/api';
-import { createAssessment, type CreateAssessmentInput } from './assessment-data';
+import { type CreateAssessmentInput, createAssessment } from './assessment-data';
 
 export type AssessmentPhotoInput = {
   uri: string;

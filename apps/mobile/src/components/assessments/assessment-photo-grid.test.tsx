@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { colors, controlSizes } from '../../lib/design-system/tokens';
+import { colors, controlSizes, spacing } from '../../lib/design-system/tokens';
 import { AssessmentPhotoGrid } from './assessment-photo-grid';
 
 function photos(count: number): { uri: string }[] {
@@ -29,6 +29,22 @@ describe('AssessmentPhotoGrid', () => {
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByLabelText('Prévia da foto 1')).toBeTruthy();
     expect(screen.getByLabelText('Prévia da foto 2')).toBeTruthy();
+  });
+
+  it('reserva margem para o arredondamento nativo das duas colunas', () => {
+    const layoutWidth = 322.25;
+    const { getByTestId } = render(<AssessmentPhotoGrid columnInset={1} photos={photos(2)} />);
+
+    fireEvent(getByTestId('assessment-photo-grid'), 'layout', {
+      nativeEvent: { layout: { width: layoutWidth } },
+    });
+
+    const firstPhoto = screen.getByLabelText('Prévia da foto 1');
+    const columnWidth = firstPhoto.parent?.parent?.parent?.parent?.props.style?.width;
+    expect(typeof columnWidth).toBe('number');
+    if (typeof columnWidth !== 'number') return;
+
+    expect(columnWidth * 2 + spacing.md).toBeLessThan(layoutWidth);
   });
 
   it('abre a foto pressionada usando seu índice atual', () => {
