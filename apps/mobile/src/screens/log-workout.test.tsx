@@ -1,7 +1,8 @@
 import type { workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
+import { type ComponentProps, type ReactNode, StrictMode, useLayoutEffect } from 'react';
+import { ScrollView } from 'react-native';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { mobileRoutes } from '../application/navigation/role-navigation';
@@ -16,10 +17,23 @@ type PreventRemoveEvent = { data: { action: unknown } };
 
 const routerState = vi.hoisted(() => ({
   back: vi.fn(),
+  canGoBack: vi.fn(() => true),
   replace: vi.fn(),
   dayId: '22222222-2222-4222-8222-222222222222',
 }));
 const linkState = vi.hoisted(() => ({ hrefs: [] as string[] }));
+const appStateState = vi.hoisted(() => ({
+  addEventListener:
+    vi.fn<(event: string, listener: (state: string) => void) => { remove: () => void }>(),
+  remove: vi.fn(),
+}));
+const focusState = vi.hoisted(() => ({ isFocused: true }));
+const actionFocusState = vi.hoisted(() => ({ node: { testID: 'demonstration-action-node' } }));
+const accessibilityState = vi.hoisted(() => ({
+  findNodeHandle: vi.fn((node: object | null) => (node ? 1 : null)),
+  setAccessibilityFocus: vi.fn(),
+}));
+const mediaState = vi.hoisted(() => ({ useMedia: vi.fn() }));
 
 const apiState = vi.hoisted(() => ({ bindCurrentSession: vi.fn(), request: vi.fn() }));
 const storageState = vi.hoisted(() => ({
@@ -38,14 +52,67 @@ const authState = vi.hoisted(() => ({
   isPending: false,
 }));
 
+vi.mock('react-native', async (importOriginal) => {
+  const native = await importOriginal<typeof import('react-native')>();
+  return {
+    ...native,
+    AppState: { addEventListener: appStateState.addEventListener },
+    AccessibilityInfo: {
+      ...native.AccessibilityInfo,
+      setAccessibilityFocus: accessibilityState.setAccessibilityFocus,
+    },
+    findNodeHandle: accessibilityState.findNodeHandle,
+  };
+});
+
+vi.mock('../lib/use-session-exercise-media', () => ({
+  useSessionExerciseMedia: mediaState.useMedia,
+}));
+
+vi.mock('../components/ui/v2', async (importOriginal) => {
+  const React = await import('react');
+  const ui = await importOriginal<typeof import('../components/ui/v2')>();
+
+  return {
+    ...ui,
+    Button: React.forwardRef((props: ComponentProps<typeof ui.Button>, ref) => {
+      React.useImperativeHandle(ref, () => actionFocusState.node, []);
+      return React.createElement(ui.Button, props);
+    }),
+  };
+});
+
+vi.mock('../components/workouts/exercise-demonstration-media', async () => {
+  const React = await import('react');
+  const { View } = await import('react-native');
+
+  const ExerciseDemonstrationMedia = React.forwardRef<
+    { exitFullscreen: () => Promise<void> },
+    Record<string, unknown>
+  >((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({ exitFullscreen: async () => undefined }), []);
+    return React.createElement(View, { testID: 'exercise-demonstration-media-mock' });
+  });
+
+  return { ExerciseDemonstrationMedia };
+});
+
 vi.mock('expo-router', () => ({
   Link: ({ children, href }: { children: ReactNode; href: string }) => {
     linkState.hrefs.push(href);
     return children;
   },
-  router: { back: routerState.back, replace: routerState.replace },
+  router: {
+    back: routerState.back,
+    canGoBack: routerState.canGoBack,
+    replace: routerState.replace,
+  },
   useLocalSearchParams: () => ({ dayId: routerState.dayId }),
   useNavigation: () => ({ dispatch: navigationState.dispatch }),
+}));
+
+vi.mock('@react-navigation/native', () => ({
+  useIsFocused: () => focusState.isFocused,
 }));
 
 vi.mock('../lib/use-prevent-remove', () => ({
@@ -57,7 +124,17 @@ vi.mock('../lib/use-prevent-remove', () => ({
 
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
+
+vi.mock('expo-status-bar', async () => {
+  const React = await import('react');
+  const { View } = await import('react-native');
+  return {
+    StatusBar: ({ style }: { style: string }) =>
+      React.createElement(View, { testID: `session-status-bar-${style}` }),
+  };
+});
 
 vi.mock('../lib/auth-client', () => ({
   authClient: { useSession: () => authState },
@@ -318,6 +395,19 @@ describe('LogWorkoutScreen', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mediaState.useMedia.mockReturnValue({
+      data: { kind: 'missing' },
+      error: null,
+      isLoading: false,
+      offline: false,
+      retry: vi.fn(),
+    });
+    accessibilityState.findNodeHandle.mockImplementation((node: object | null) =>
+      node ? 1 : null,
+    );
+    appStateState.addEventListener.mockReturnValue({ remove: appStateState.remove });
+    focusState.isFocused = true;
+    routerState.canGoBack.mockReturnValue(true);
     routerState.dayId = '22222222-2222-4222-8222-222222222222';
     authState.data = { user: { id: 'auth-user-id', role: 'student' } };
     authState.isPending = false;
@@ -340,15 +430,179 @@ describe('LogWorkoutScreen', () => {
     });
   });
 
+  it('mantém ação de fechar durante o carregamento sem rascunho', async () => {
+    const pending = createDeferred<unknown>();
+    apiState.request.mockImplementationOnce(() => pending.promise);
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Carregando treino')).toBeTruthy();
+    try {
+      expect(screen.getByRole('button', { name: 'Fechar sessão' })).toBeTruthy();
+    } finally {
+      await act(async () => {
+        pending.reject(new Error('offline'));
+        await pending.promise.catch(() => undefined);
+      });
+    }
+  });
+
+  it('remove a barra da sessão ao perder foco e a restaura ao recuperar foco', () => {
+    const { queryClient, view } = renderWithQueryClient();
+
+    expect(screen.getByTestId('session-status-bar-light')).toBeTruthy();
+    focusState.isFocused = false;
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    expect(screen.queryByTestId('session-status-bar-light')).toBeNull();
+
+    focusState.isFocused = true;
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByTestId('session-status-bar-light')).toBeTruthy();
+  });
+
+  it('abre e fecha a demonstração sem remontar nem alterar o rascunho da sessão', async () => {
+    mockWorkoutDay();
+    mockDraftStorage();
+    const { view } = renderWithQueryClient();
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Carga utilizada'), '0,');
+    expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0,');
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    });
+
+    const apiCallsBeforeDemo = apiState.request.mock.calls.length;
+    const storageReadsBeforeDemo = storageState.getItem.mock.calls.length;
+    const storageWritesBeforeDemo = storageState.setItem.mock.calls.length;
+    const storageRemovalsBeforeDemo = storageState.removeItem.mock.calls.length;
+    const focusCallsBeforeDemo = accessibilityState.setAccessibilityFocus.mock.calls.length;
+
+    fireEvent.press(screen.getByRole('button', { name: 'Ver execução de Supino inclinado' }));
+    expect(await screen.findByText('Demonstração do exercício')).toBeTruthy();
+    const scrollViews = view.UNSAFE_getAllByType(ScrollView);
+    expect(scrollViews).toHaveLength(2);
+    const [background] = scrollViews;
+    expect(background.props.accessibilityElementsHidden).toBe(true);
+    expect(background.props.importantForAccessibility).toBe('no-hide-descendants');
+    expect(background.props.pointerEvents).toBe('none');
+    expect(screen.getByRole('button', { name: 'Voltar à série' })).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('button', { name: 'Voltar à série' }));
+
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0,');
+    expect(apiState.request).toHaveBeenCalledTimes(apiCallsBeforeDemo);
+    expect(storageState.getItem).toHaveBeenCalledTimes(storageReadsBeforeDemo);
+    expect(storageState.setItem).toHaveBeenCalledTimes(storageWritesBeforeDemo);
+    expect(storageState.removeItem).toHaveBeenCalledTimes(storageRemovalsBeforeDemo);
+    expect(routerState.back).not.toHaveBeenCalled();
+    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(accessibilityState.findNodeHandle).toHaveBeenCalledWith(actionFocusState.node);
+    expect(accessibilityState.setAccessibilityFocus).toHaveBeenCalledTimes(
+      focusCallsBeforeDemo + 1,
+    );
+  });
+
+  it('volta da demonstração para a confirmação do exercício sem avançar', async () => {
+    const completeExerciseSession: GuidedSession = {
+      ...draftSession,
+      currentSetIndex: 1,
+      phase: 'exercise-complete',
+      sets: draftSession.sets.map((set, index) =>
+        index < 2 ? { ...set, repsDone: '10', completed: true } : set,
+      ),
+    };
+    mockWorkoutDay();
+    mockDraftStorage(completeExerciseSession);
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Supino inclinado concluído')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Ver execução de Tríceps corda' }));
+
+    expect(await screen.findByText('Tríceps corda')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar ao treino' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Voltar ao treino' }));
+
+    expect(await screen.findByText('Supino inclinado concluído')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Próximo exercício' })).toBeTruthy();
+    expect(screen.queryByText('Série 1 de 1')).toBeNull();
+  });
+
+  it('deixa o descanso expirar durante a demonstração e retorna em 00:00 sem pular', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T12:00:00.000Z'));
+    const restSession: GuidedSession = {
+      ...draftSession,
+      currentSetIndex: 0,
+      phase: 'rest',
+      restEndsAtMs: Date.now() + 1_000,
+    };
+    mockWorkoutDay();
+    mockDraftStorage(restSession);
+
+    try {
+      renderWithQueryClient();
+      expect(await screen.findByText('Descanso')).toBeTruthy();
+      fireEvent.press(screen.getByRole('button', { name: 'Ver execução de Supino inclinado' }));
+
+      expect(await screen.findByText('00:01')).toBeTruthy();
+      const writesBeforeExpiry = storageState.setItem.mock.calls.length;
+      vi.setSystemTime(Date.now() + 1_000);
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+
+      expect(screen.getByText('00:00')).toBeTruthy();
+      fireEvent.press(screen.getByRole('button', { name: 'Voltar ao descanso' }));
+
+      expect(await screen.findByText('Descanso')).toBeTruthy();
+      expect(screen.getByText('00:00')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Pular descanso' })).toBeTruthy();
+      expect(storageState.setItem).toHaveBeenCalledTimes(writesBeforeExpiry);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('exibe treino indisponível e oferece nova tentativa quando o carregamento falha', async () => {
     apiState.request.mockRejectedValueOnce(new Error('offline'));
     renderWithQueryClient();
 
     expect(await screen.findByText('Treino indisponível')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Fechar sessão' })).toBeTruthy();
+    const pending = createDeferred<unknown>();
+    apiState.request
+      .mockReset()
+      .mockImplementationOnce(() => pending.promise)
+      .mockResolvedValueOnce({ ...workoutPlan, days: workoutPlan.days });
+    const retryButton = screen.getByRole('button', { name: 'Tentar novamente' });
+    try {
+      await act(async () => {
+        fireEvent.press(retryButton);
+        fireEvent.press(retryButton);
+        await Promise.resolve();
+      });
 
-    mockWorkoutDay();
-    await userEvent.setup().press(screen.getByRole('button', { name: 'Tentar novamente' }));
+      expect(apiState.request).toHaveBeenCalledOnce();
+      await waitFor(() => expect(screen.getByText('Carregando treino')).toBeTruthy());
+    } finally {
+      await act(async () => {
+        pending.resolve({ items: [{ ...planSummary, id: workoutPlan.id }] });
+        await pending.promise;
+      });
+    }
 
     expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
   });
@@ -470,6 +724,9 @@ describe('LogWorkoutScreen', () => {
 
     expect(await screen.findByText('Duração total: 2 min')).toBeTruthy();
     expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Fechar sessão' })).toBeTruthy();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Fechar sessão' }));
+    expect(routerState.back).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
     expect(apiState.request).not.toHaveBeenCalled();
   });
@@ -845,7 +1102,7 @@ describe('LogWorkoutScreen', () => {
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
     pressPreventedNavigation({ type: 'GO_BACK', key: 'discard-cache' });
-    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
     await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
     expect(queryClient.getQueryData(guidedQueryKey)).toBeUndefined();
     expect(invalidateSpy).toHaveBeenCalledWith({
@@ -1032,7 +1289,7 @@ describe('LogWorkoutScreen', () => {
       expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
       await waitFor(() => expect(navigationState.enabled).toBe(true));
       pressPreventedNavigation({ type: 'GO_BACK', key: 'same-key-remount' });
-      fireEvent.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+      fireEvent.press(screen.getByRole('button', { name: 'Descartar treino' }));
 
       expect(events).toEqual(['save:start']);
       pendingWrite.resolve();
@@ -1102,7 +1359,7 @@ describe('LogWorkoutScreen', () => {
       ).toHaveLength(1);
       await waitFor(() => expect(navigationState.enabled).toBe(true));
       pressPreventedNavigation({ type: 'GO_BACK', key: 'stale-discard' });
-      await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+      await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
       expect(events).toEqual(['save:10']);
 
       pendingWrite.resolve();
@@ -1153,7 +1410,7 @@ describe('LogWorkoutScreen', () => {
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
     pressPreventedNavigation({ type: 'GO_BACK', key: 'lifecycle-cleanup' });
-    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
     authState.data = { user: { id: '', role: 'student' } };
     view.rerender(
       <QueryClientProvider client={queryClient}>
@@ -1633,7 +1890,6 @@ describe('LogWorkoutScreen', () => {
     mockStatefulDraftStorage();
     renderWithQueryClient();
     expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
-
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
     const pendingWrite = createDeferred<void>();
     const events: string[] = [];
@@ -1661,6 +1917,7 @@ describe('LogWorkoutScreen', () => {
     mockStatefulDraftStorage();
     renderWithQueryClient();
     expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+    const repsInput = screen.getByLabelText('Repetições realizadas');
 
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
     const pendingWrite = createDeferred<void>();
@@ -1673,7 +1930,7 @@ describe('LogWorkoutScreen', () => {
     });
 
     pressPreventedNavigation({ type: 'GO_BACK', key: 'queued-save' });
-    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    fireEvent.changeText(repsInput, '10');
     await waitFor(() => expect(events).toEqual(['set:10']));
     await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
     expect(events).toEqual(['set:10']);
@@ -1717,6 +1974,7 @@ describe('LogWorkoutScreen', () => {
     mockStatefulDraftStorage();
     renderWithQueryClient();
     expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+    const repsInput = screen.getByLabelText('Repetições realizadas');
 
     const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
     const pending = createDeferred<void>();
@@ -1737,10 +1995,10 @@ describe('LogWorkoutScreen', () => {
 
     pressPreventedNavigation({ type: 'GO_BACK', key: 'queued-discard' });
     act(() => {
-      fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+      fireEvent.changeText(repsInput, '10');
     });
     await waitFor(() => expect(events).toEqual(['save:10']));
-    fireEvent.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Descartar treino' }));
 
     expect(events).toEqual(['save:10']);
     expect(navigationState.dispatch).not.toHaveBeenCalled();
@@ -2195,7 +2453,39 @@ describe('LogWorkoutScreen', () => {
     await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
   });
 
-  it('não inicia um segundo descarte enquanto Encerrar treino está pendente', async () => {
+  it('bloqueia o cabeçalho de saída enquanto concluir a série está pendente', async () => {
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage();
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '10');
+    await waitFor(() =>
+      expect(parseStoredSession(storage.getSerialized() ?? '').sets[0]?.repsDone).toBe('10'),
+    );
+
+    const sessionKey = `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`;
+    const pending = createDeferred<void>();
+    storageState.setItem.mockImplementation(async (key: string, value: string) => {
+      if (key === sessionKey) {
+        persistedStorage.set(key, value);
+        await pending.promise;
+      }
+    });
+    fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+
+    const closeButton = screen.getByRole('button', { name: 'Fechar sessão' });
+    await waitFor(() => expect(closeButton.props.accessibilityState.disabled).toBe(true));
+    fireEvent.press(closeButton);
+
+    expect(routerState.back).not.toHaveBeenCalled();
+    expect(screen.queryByText('Sair da sessão')).toBeNull();
+
+    pending.resolve();
+    expect(await screen.findByText('Descanso')).toBeTruthy();
+  });
+
+  it('não inicia um segundo descarte enquanto a operação está pendente', async () => {
     const user = userEvent.setup();
     mockWorkoutDay();
     mockStatefulDraftStorage();
@@ -2209,8 +2499,8 @@ describe('LogWorkoutScreen', () => {
     });
 
     pressPreventedNavigation({ type: 'GO_BACK', key: 'pending-discard' });
-    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
-    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
 
     expect(storageState.removeItem.mock.calls.filter(([key]) => key === sessionKey)).toHaveLength(
       1,
@@ -2339,7 +2629,7 @@ describe('LogWorkoutScreen', () => {
 
     const action = { type: 'GO_BACK', key: 'discard' };
     pressPreventedNavigation(action);
-    await user.press(screen.getByRole('button', { name: 'Encerrar treino' }));
+    await user.press(screen.getByRole('button', { name: 'Descartar treino' }));
 
     await waitFor(() =>
       expect(storageState.removeItem).toHaveBeenCalledWith(
@@ -2371,6 +2661,52 @@ describe('LogWorkoutScreen', () => {
 
     navigationState.dispatch.mockClear();
     const newAction = { type: 'GO_BACK', key: 'new-user' };
+    pressPreventedNavigation(newAction);
+    await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+    expect(navigationState.dispatch).toHaveBeenCalledWith(newAction);
+    expect(navigationState.dispatch).not.toHaveBeenCalledWith(oldAction);
+  });
+
+  it('limpa a ação interceptada ao trocar o dia da sessão', async () => {
+    const user = userEvent.setup();
+    mockWorkoutDay();
+    const { queryClient, view } = renderWithQueryClient();
+    expect(await screen.findByText('Série 1 de 2')).toBeTruthy();
+
+    const oldAction = { type: 'GO_BACK', key: 'old-day' };
+    pressPreventedNavigation(oldAction);
+    expect(await screen.findByText('Sair da sessão')).toBeTruthy();
+
+    const secondDayId = '88888888-8888-4888-8888-888888888888';
+    const secondPlan: WorkoutPlan = {
+      ...workoutPlan,
+      days: workoutPlan.days.map((day) => ({
+        ...day,
+        id: secondDayId,
+        exercises: day.exercises.map((exercise) => ({
+          ...exercise,
+          workoutDayId: secondDayId,
+        })),
+      })),
+    };
+    routerState.dayId = secondDayId;
+    mockWorkoutDay(secondPlan);
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <LogWorkoutScreen />
+      </QueryClientProvider>,
+    );
+    await waitFor(() =>
+      expect(storageState.getItem).toHaveBeenCalledWith(
+        `muvit_workout_session:${authState.data.user.id}:${secondDayId}`,
+      ),
+    );
+    expect(screen.queryByText('Sair da sessão')).toBeNull();
+
+    navigationState.dispatch.mockClear();
+    const newAction = { type: 'GO_BACK', key: 'new-day' };
     pressPreventedNavigation(newAction);
     await user.press(screen.getByRole('button', { name: 'Salvar e sair' }));
 

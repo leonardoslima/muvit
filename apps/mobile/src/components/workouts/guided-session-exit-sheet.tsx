@@ -1,0 +1,80 @@
+import { Modal, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, spacing } from '../../lib/design-system/tokens';
+import { Button } from '../ui/v2/button';
+import { Message } from '../ui/v2/message';
+import { SheetSurface } from '../ui/v2/sheet-surface';
+import { Text } from '../ui/v2/text';
+
+export type GuidedSessionExitSheetProps = {
+  visible: boolean;
+  busy: boolean;
+  context: string;
+  storageError: string | null;
+  onContinue: () => void;
+  onSave: () => Promise<void>;
+  onDiscard: () => Promise<void>;
+};
+
+export function GuidedSessionExitSheet({
+  visible,
+  busy,
+  context,
+  storageError,
+  onContinue,
+  onSave,
+  onDiscard,
+}: GuidedSessionExitSheetProps): React.JSX.Element {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Modal
+      animationType="slide"
+      onRequestClose={() => {
+        if (!busy) onContinue();
+      }}
+      transparent
+      visible={visible}
+    >
+      <View
+        accessibilityViewIsModal
+        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: colors.scrim }}
+      >
+        <SheetSurface style={{ paddingBottom: Math.max(insets.bottom, spacing.xxl) }}>
+          <View className="gap-2">
+            <Text accessibilityRole="header" variant="sectionTitle">
+              Sair da sessão
+            </Text>
+            <Text className="text-v2-secondary" variant="body">
+              Escolha como deseja sair.
+            </Text>
+          </View>
+          <Text variant="body">{context}</Text>
+          {storageError ? (
+            <Message
+              title="Não foi possível salvar seu progresso"
+              description={storageError}
+              variant="warning"
+            />
+          ) : null}
+          <Button disabled={busy} label="Continuar treinando" onPress={onContinue} />
+          <Button
+            disabled={busy}
+            label="Salvar e sair"
+            onPress={() => void onSave()}
+            variant="secondary"
+          />
+          <Button
+            disabled={busy}
+            label="Descartar treino"
+            onPress={() => void onDiscard()}
+            variant="destructive"
+          />
+          <Text className="text-v2-secondary" variant="support">
+            Você poderá retomar depois se escolher salvar e sair.
+          </Text>
+        </SheetSurface>
+      </View>
+    </Modal>
+  );
+}
