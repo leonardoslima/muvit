@@ -12,6 +12,21 @@ function photo(uri: string, contentType: AssessmentPhotoInput['contentType'] = '
   return { uri, contentType };
 }
 
+function createDeferredPromise<T>() {
+  let resolvePromise: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve(value: T) {
+      if (!resolvePromise) throw new Error('Promise resolver is unavailable');
+      resolvePromise(value);
+    },
+  };
+}
+
 describe('new assessment service', () => {
   it('normalizes optional numbers and content types', () => {
     expect(toOptionalNumber('12,5')).toBe(12.5);
@@ -137,24 +152,34 @@ describe('new assessment service', () => {
     const events: string[] = [];
     const uploadedUris: string[] = [];
     const photos = Array.from({ length: 8 }, (_, index) => photo(`file://photo-${index + 1}.jpg`));
+    const uploadPromises = Array.from({ length: 8 }, () => createDeferredPromise<string>());
+    const uploadStarts = Array.from({ length: 8 }, () => createDeferredPromise<void>());
+    let activeUploads = 0;
+    let maxActiveUploads = 0;
     const api = {
       request: vi.fn().mockImplementation(() => {
         events.push('post');
         return Promise.resolve(undefined);
       }),
     };
-    const uploadPhoto = vi.fn().mockImplementation(async (input: AssessmentPhotoInput) => {
-      const uploadNumber = uploadedUris.length + 1;
+    const uploadPhoto = vi.fn().mockImplementation((input: AssessmentPhotoInput) => {
+      const uploadIndex = uploadedUris.length;
+      const uploadNumber = uploadIndex + 1;
       events.push(`upload-${uploadNumber}`);
       uploadedUris.push(input.uri);
-      return `https://cdn.test/photo-${uploadNumber}.jpg`;
+      activeUploads += 1;
+      maxActiveUploads = Math.max(maxActiveUploads, activeUploads);
+      uploadStarts[uploadIndex].resolve(undefined);
+      return uploadPromises[uploadIndex].promise.finally(() => {
+        activeUploads -= 1;
+      });
     });
     const invalidateAssessments = vi.fn().mockImplementation(() => {
       events.push('invalidate');
       return Promise.resolve();
     });
 
-    await submitAssessment({
+    const submission = submitAssessment({
       api,
       values: {
         date: '2026-06-11',
@@ -167,7 +192,28 @@ describe('new assessment service', () => {
       invalidateAssessments,
     });
 
+    expect(uploadPhoto).toHaveBeenCalledTimes(1);
+    expect(uploadedUris).toEqual(['file://photo-1.jpg']);
+    expect(activeUploads).toBe(1);
+    expect(maxActiveUploads).toBe(1);
+
+    for (let index = 0; index < uploadPromises.length; index += 1) {
+      expect(activeUploads).toBe(1);
+      uploadPromises[index].resolve(`https://cdn.test/photo-${index + 1}.jpg`);
+
+      if (index < uploadPromises.length - 1) {
+        await uploadStarts[index + 1].promise;
+        expect(uploadPhoto).toHaveBeenCalledTimes(index + 2);
+        expect(activeUploads).toBe(1);
+        expect(maxActiveUploads).toBe(1);
+      }
+    }
+
+    await submission;
+
     expect(uploadPhoto).toHaveBeenCalledTimes(8);
+    expect(activeUploads).toBe(0);
+    expect(maxActiveUploads).toBe(1);
     expect(uploadedUris).toEqual([
       'file://photo-1.jpg',
       'file://photo-2.jpg',
