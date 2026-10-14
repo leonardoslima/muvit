@@ -1,134 +1,125 @@
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import {
-  submitAssessment,
-  toSupportedContentType,
-} from '../application/assessments/new-assessment';
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Field } from '../components/ui/field';
-import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { todayIsoDate } from '../lib/date';
-import { queryClient } from '../lib/query-client';
-import { spacing } from '../lib/styles';
-import { type AssessmentPhoto, uploadAssessmentPhoto } from '../lib/uploads';
-import { useApiClient } from '../lib/use-api';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { AssessmentPhotoGrid } from '../components/assessments/assessment-photo-grid';
+import { AssessmentPhotoViewer } from '../components/assessments/assessment-photo-viewer';
+import { Screen } from '../components/ui/screen';
+import { Button } from '../components/ui/v2/button';
+import { Field } from '../components/ui/v2/field';
+import { Header } from '../components/ui/v2/header';
+import { Message } from '../components/ui/v2/message';
+import { Text } from '../components/ui/v2/text';
+import { spacing } from '../lib/design-system/tokens';
+import { useNewAssessment } from '../lib/use-new-assessment';
 
-export function NewAssessmentScreen() {
-  const api = useApiClient();
-
-  const [date, setDate] = useState(todayIsoDate());
-  const [weightKg, setWeightKg] = useState('');
-  const [bodyFatPct, setBodyFatPct] = useState('');
-  const [notes, setNotes] = useState('');
-  const [photo, setPhoto] = useState<AssessmentPhoto>();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string>();
-  const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    if (!success) return;
-
-    const timeout = setTimeout(() => router.back(), 150);
-    return () => clearTimeout(timeout);
-  }, [success]);
-
-  async function pickPhoto() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
-    const asset = result.assets?.[0];
-    const contentType = toSupportedContentType(asset?.mimeType);
-    if (!result.canceled && asset?.uri && contentType) {
-      setPhoto({ uri: asset.uri, contentType });
-    }
-  }
-
-  async function submit() {
-    if (submitting) return;
-
-    setSubmitting(true);
-    setError(undefined);
-    setSuccess(false);
-
-    try {
-      await submitAssessment({
-        api,
-        values: { date, weightKg, bodyFatPct, notes, photo },
-        uploadPhoto: (selectedPhoto) => uploadAssessmentPhoto({ api, photo: selectedPhoto }),
-        invalidateAssessments: () =>
-          queryClient.invalidateQueries({ queryKey: ['assessments', 'me'] }),
-      });
-      setSuccess(true);
-    } catch {
-      setError('Não foi possível salvar sua avaliação.');
-    } finally {
-      setSubmitting(false);
-    }
-  }
+export function NewAssessmentScreen(): React.JSX.Element {
+  const { values, submitting, picking, success, error, setField, addPhotos, removePhoto, submit } =
+    useNewAssessment();
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const formActionsDisabled = submitting || success;
+  const photos = values.photos.map(({ uri }) => uri);
+  const photosDescription =
+    values.photos.length === 0
+      ? undefined
+      : `${values.photos.length} ${values.photos.length === 1 ? 'foto selecionada' : 'fotos selecionadas'}`;
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <ScreenHeader
-        subtitle="Registre suas medidas para acompanhar sua evolução."
-        title="Nova avaliação"
-      />
+    <Screen style={{ paddingVertical: 0 }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1"
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            gap: spacing.xxl,
+            paddingBottom: spacing.xxxl,
+            paddingTop: spacing.xl,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="gap-2">
+            <Header
+              backAction={{
+                label: 'Voltar para progresso',
+                onPress: () => router.back(),
+                disabled: formActionsDisabled,
+              }}
+              title="Nova avaliação"
+              variant="contextual"
+            />
+            <Text className="text-v2-secondary" variant="body">
+              Registre suas medidas para acompanhar sua evolução.
+            </Text>
+          </View>
 
-      <Card>
-        <Field
-          label="Data da avaliação"
-          onChangeText={setDate}
-          placeholder="AAAA-MM-DD"
-          value={date}
-        />
-        <Field
-          keyboardType="decimal-pad"
-          label="Peso"
-          onChangeText={setWeightKg}
-          unit="kg"
-          value={weightKg}
-        />
-        <Field
-          keyboardType="decimal-pad"
-          label="Gordura corporal"
-          onChangeText={setBodyFatPct}
-          unit="%"
-          value={bodyFatPct}
-        />
-        <Field
-          label="Observações"
-          multiline
-          numberOfLines={4}
-          onChangeText={setNotes}
-          placeholder="Como você está se sentindo?"
-          value={notes}
-        />
-      </Card>
+          <View className="gap-4">
+            <Field
+              label="Data da avaliação"
+              onChangeText={(value) => setField('date', value)}
+              placeholder="AAAA-MM-DD"
+              value={values.date}
+            />
+            <Field
+              keyboardType="decimal-pad"
+              label="Peso"
+              onChangeText={(value) => setField('weightKg', value)}
+              placeholder="Ex.: 70,5"
+              unit="kg"
+              value={values.weightKg}
+            />
+            <Field
+              keyboardType="decimal-pad"
+              label="Gordura corporal"
+              onChangeText={(value) => setField('bodyFatPct', value)}
+              placeholder="Ex.: 20,5"
+              unit="%"
+              value={values.bodyFatPct}
+            />
+            <Field
+              label="Observações"
+              maxLength={2000}
+              multiline
+              numberOfLines={4}
+              onChangeText={(value) => setField('notes', value)}
+              placeholder="Como você está se sentindo?"
+              textAlignVertical="top"
+              value={values.notes}
+            />
+          </View>
 
-      {error ? <InlineMessage message={error} tone="error" /> : null}
-      {success ? <InlineMessage message="Avaliação salva!" tone="success" /> : null}
+          <View className="gap-3">
+            <Text variant="sectionTitle">Fotos</Text>
+            <AssessmentPhotoGrid
+              addLabel={picking ? 'Abrindo biblioteca...' : 'Adicionar fotos'}
+              description={photosDescription}
+              disabled={formActionsDisabled || picking}
+              emptyHint="Selecione imagens JPEG ou PNG."
+              onAdd={() => void addPhotos()}
+              onOpen={setViewerIndex}
+              onRemove={removePhoto}
+              photos={values.photos}
+            />
+          </View>
 
-      <AppButton
-        disabled={submitting || success}
-        label={photo ? 'Foto adicionada' : 'Adicionar foto'}
-        onPress={() => void pickPhoto()}
-        variant="secondary"
-      />
-      <AppButton
-        disabled={submitting || success}
-        label={submitting ? 'Salvando avaliação...' : 'Salvar avaliação'}
-        onPress={() => void submit()}
+          {error ? <Message title={error} variant="error" /> : null}
+          {success ? <Message title="Avaliação salva!" variant="success" /> : null}
+
+          <Button
+            disabled={formActionsDisabled}
+            label={submitting ? 'Salvando avaliação...' : 'Salvar avaliação'}
+            loading={submitting}
+            onPress={() => void submit()}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <AssessmentPhotoViewer
+        photos={photos}
+        index={viewerIndex}
+        onIndexChange={setViewerIndex}
+        onClose={() => setViewerIndex(null)}
       />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    paddingBottom: spacing.xxxl,
-  },
-});
