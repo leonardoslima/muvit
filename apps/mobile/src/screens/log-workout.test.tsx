@@ -488,6 +488,7 @@ describe('LogWorkoutScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: 'Ver execução de Supino inclinado' }));
     expect(await screen.findByText('Demonstração do exercício')).toBeTruthy();
+    expect(screen.getByTestId('session-status-bar-dark')).toBeTruthy();
     const scrollViews = view.UNSAFE_getAllByType(ScrollView);
     expect(scrollViews).toHaveLength(2);
     const [background] = scrollViews;
@@ -499,6 +500,7 @@ describe('LogWorkoutScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Voltar à série' }));
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    expect(screen.getByTestId('session-status-bar-light')).toBeTruthy();
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
     expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0,');
     expect(apiState.request).toHaveBeenCalledTimes(apiCallsBeforeDemo);

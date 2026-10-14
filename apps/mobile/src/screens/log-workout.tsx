@@ -262,7 +262,10 @@ export function LogWorkoutScreen() {
 
   return (
     <>
-      <GuidedSessionLayout contentHidden={exitVisible || demonstrationVisible}>
+      <GuidedSessionLayout
+        contentHidden={exitVisible || demonstrationVisible}
+        statusBarStyle={demonstrationVisible ? 'dark' : 'light'}
+      >
         <SessionHeader
           busy={controller.busy}
           onClose={requestClose}
