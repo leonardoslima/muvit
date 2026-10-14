@@ -72,10 +72,41 @@ describe('TrainerNewAssessmentScreen', () => {
   it('inicia com todayIsoDate e não mostra IMC sem peso e altura', () => {
     renderTrainerNewAssessment();
 
+    expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
     expect(screen.getByLabelText('Data da avaliação').props.value).toBe(todayIsoDate());
     expect(screen.getByText('IMC')).toBeTruthy();
     expect(screen.getByText('Informe peso e altura')).toBeTruthy();
     expect(screen.queryByText('26,0')).toBeNull();
+  });
+
+  it('usa os placeholders aprovados nos doze campos numéricos e nas observações', () => {
+    renderTrainerNewAssessment();
+
+    const placeholders = [
+      ['Peso', 'Ex.: 70,5'],
+      ['Altura', 'Ex.: 170'],
+      ['Gordura corporal', 'Ex.: 20,5'],
+      ['Peito', 'Ex.: 95'],
+      ['Cintura', 'Ex.: 80'],
+      ['Quadril', 'Ex.: 100'],
+      ['Braço direito', 'Ex.: 32,5'],
+      ['Braço esquerdo', 'Ex.: 32,5'],
+      ['Coxa direita', 'Ex.: 55'],
+      ['Coxa esquerda', 'Ex.: 55'],
+      ['Panturrilha direita', 'Ex.: 36'],
+      ['Panturrilha esquerda', 'Ex.: 36'],
+      ['Observações', 'Adicione observações sobre a avaliação'],
+    ];
+
+    for (const [label, placeholder] of placeholders) {
+      expect(screen.getByLabelText(label).props.placeholder).toBe(placeholder);
+    }
+
+    for (const label of placeholders.slice(0, 12).map(([fieldLabel]) => fieldLabel)) {
+      expect(screen.getByLabelText(label).props.keyboardType).toBe('decimal-pad');
+    }
   });
 
   it('envia avaliação completa, sem IMC no payload, invalida caches e redireciona após feedback', async () => {
@@ -108,7 +139,7 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(screen.getByText('26,0')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
-    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     await waitFor(() => {
@@ -208,10 +239,12 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     expect(screen.getByText('Aluno inválido')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
     expect(screen.getByText('Não foi possível identificar o aluno solicitado.')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
 
-    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+    expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
 
     expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
   });
@@ -225,11 +258,11 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
-    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.queryByText('Foto 2')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Adicionar outra foto' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Adicionar foto' })).toBeTruthy();
     expect(screen.queryByText('Selecione uma imagem JPEG ou PNG.')).toBeNull();
   });
 
@@ -258,13 +291,13 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
-    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
-    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.getByText('Foto 2')).toBeTruthy();
     expect(screen.getByText('Foto 3')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Adicionar outra foto' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
     expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(3);
   });
 
@@ -324,7 +357,7 @@ describe('TrainerNewAssessmentScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Remover foto 1' }));
     expect(screen.getByText('Foto 1')).toBeTruthy();
 
-    await user.press(screen.getByRole('button', { name: 'Adicionar outra foto' }));
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
     expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 
     await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
@@ -335,6 +368,53 @@ describe('TrainerNewAssessmentScreen', () => {
     await waitFor(() => {
       expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
     });
+  });
+
+  it('mantém controles bloqueados durante a invalidação e o sucesso transitório', async () => {
+    const user = userEvent.setup();
+    const invalidation = deferred<void>();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('https://cdn.test/front.jpg');
+    apiState.request.mockResolvedValueOnce({ id: 'assessment-new' });
+    queryState.invalidateQueries.mockReturnValue(invalidation.promise);
+
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledTimes(2));
+
+    const weightField = screen.getByLabelText('Peso');
+    const backButton = screen.getByRole('button', { name: 'Voltar para avaliações' });
+    const removeButton = screen.getByRole('button', { name: 'Remover foto 1' });
+    const addButton = screen.getByRole('button', { name: 'Adicionar foto' });
+    const submitButton = screen.getByRole('button', { name: 'Salvando avaliação...' });
+    expect(weightField.props.accessibilityState.disabled).toBe(true);
+    expect(backButton.props.accessibilityState.disabled).toBe(true);
+    expect(removeButton.props.accessibilityState.disabled).toBe(true);
+    expect(addButton.props.accessibilityState.disabled).toBe(true);
+    expect(submitButton.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+
+    await user.type(weightField, '82,5');
+    await user.press(addButton);
+    await user.press(removeButton);
+    await user.press(backButton);
+    await user.press(submitButton);
+    expect(weightField.props.value).toBe('');
+    expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    expect(apiState.request).toHaveBeenCalledTimes(1);
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+    invalidation.resolve(undefined);
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    expect(screen.getByLabelText('Peso').props.accessibilityState.disabled).toBe(true);
+    expect(
+      screen.getByRole('button', { name: 'Voltar para avaliações' }).props.accessibilityState
+        .disabled,
+    ).toBe(true);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
   });
 
   it('preserva valores e fotos quando o POST falha', async () => {

@@ -94,7 +94,12 @@ describe('TrainerAssessmentDetailScreen', () => {
           chest: 101.5,
           waist: 84,
         },
-        photos: ['https://cdn.test/front.jpg', 'https://cdn.test/back.jpg'],
+        photos: [
+          'https://cdn.test/front.jpg',
+          'https://cdn.test/back.jpg',
+          'https://cdn.test/side.jpg',
+          'https://cdn.test/pose.jpg',
+        ],
         notes: 'Boa evolução',
       }),
     );
@@ -109,6 +114,8 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(screen.getByText('84 cm')).toBeTruthy();
     expect(screen.getByLabelText('Foto 1 da avaliação de 03/09/2026')).toBeTruthy();
     expect(screen.getByLabelText('Foto 2 da avaliação de 03/09/2026')).toBeTruthy();
+    expect(screen.getByLabelText('Foto 3 da avaliação de 03/09/2026')).toBeTruthy();
+    expect(screen.getByLabelText('Foto 4 da avaliação de 03/09/2026')).toBeTruthy();
     expect(screen.getByText('Boa evolução')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledWith(`/assessments/${ASSESSMENT_ID}`, {
       signal: expect.anything(),
@@ -155,12 +162,25 @@ describe('TrainerAssessmentDetailScreen', () => {
   });
 
   it('não renderiza avaliação de outro aluno no contexto da URL', async () => {
-    apiState.request.mockResolvedValueOnce(assessmentFixture({ studentId: OTHER_STUDENT_ID }));
+    apiState.request.mockResolvedValueOnce(
+      assessmentFixture({
+        studentId: OTHER_STUDENT_ID,
+        notes: 'Nota confidencial de outro aluno',
+        photos: ['https://cdn.test/confidential.jpg'],
+      }),
+    );
 
     renderTrainerAssessmentDetail();
 
     expect(await screen.findByText('Avaliação indisponível')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
+    expect(screen.queryByText('03/09/2026')).toBeNull();
     expect(screen.queryByText('82,5 kg')).toBeNull();
+    expect(screen.queryByText('Nota confidencial de outro aluno')).toBeNull();
+    expect(screen.queryByLabelText('Foto 1 da avaliação de 03/09/2026')).toBeNull();
     expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
   });
 
@@ -185,7 +205,8 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(screen.getByText('Não foi possível identificar a avaliação solicitada.')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
 
-    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
 
     expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
   });
@@ -208,8 +229,13 @@ describe('TrainerAssessmentDetailScreen', () => {
 
     renderTrainerAssessmentDetail();
 
+    expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
     expect(screen.getByText('Carregando avaliação')).toBeTruthy();
-    expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByLabelText('Carregando avaliação')).toBeTruthy();
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
   });
 
   it('mostra 404 como avaliação não encontrada sem revelar escopo', async () => {
@@ -218,12 +244,16 @@ describe('TrainerAssessmentDetailScreen', () => {
     renderTrainerAssessmentDetail();
 
     expect(await screen.findByText('Avaliação não encontrada')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
     expect(screen.getByText('Esta avaliação não está disponível para sua conta.')).toBeTruthy();
     expect(screen.queryByText('not found')).toBeNull();
     expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState.disabled,
+    ).toBe(true);
   });
 
-  it('permite retry depois de erro genérico', async () => {
+  it('permite retry pelo cabeçalho depois de erro genérico', async () => {
     const user = userEvent.setup();
     apiState.request
       .mockRejectedValueOnce(new Error('offline'))
@@ -232,7 +262,8 @@ describe('TrainerAssessmentDetailScreen', () => {
     renderTrainerAssessmentDetail();
 
     expect(await screen.findByText('Não foi possível carregar a avaliação')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
 
     expect(await screen.findByText('03/09/2026')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
@@ -317,10 +348,12 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(await screen.findByText('82,5 kg')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
 
-    expect(screen.getByRole('button', { name: 'Atualizando...' }).props.accessibilityState).toEqual(
+    expect(screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
 
     refreshRequest.resolve(assessmentFixture({ weightKg: '81' }));
     await waitFor(() =>

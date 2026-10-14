@@ -94,4 +94,36 @@ describe('TrainerScreen', () => {
 
     expect(screen.getByRole('header', { name: 'Início' }).props.className).toContain('text-[26px]');
   });
+
+  it('omite atualizar quando a tela não recebe uma ação de refresh', () => {
+    render(
+      <TrainerScreen title="Nova avaliação" refreshDisabled={false}>
+        <Text>Formulário</Text>
+      </TrainerScreen>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
+  });
+
+  it('permite rotular e desabilitar o retorno contextual', () => {
+    const onBack = vi.fn();
+    render(
+      <TrainerScreen
+        backDisabled
+        backLabel="Voltar para avaliações"
+        contextual
+        onBack={onBack}
+        onRefresh={() => undefined}
+        refreshDisabled
+        title="Nova avaliação"
+      >
+        <Text>Formulário</Text>
+      </TrainerScreen>,
+    );
+
+    const backButton = screen.getByRole('button', { name: 'Voltar para avaliações' });
+    expect(backButton.props.accessibilityState.disabled).toBe(true);
+    fireEvent.press(backButton);
+    expect(onBack).not.toHaveBeenCalled();
+  });
 });

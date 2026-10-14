@@ -1,21 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import type { Assessment } from '../application/assessments/assessment-data';
 import { getAssessment } from '../application/assessments/assessment-data';
+import { AssessmentHeading } from '../components/assessments/assessment-heading';
 import { AssessmentMeasurementsCard } from '../components/assessments/assessment-measurements-card';
 import { AssessmentMetric } from '../components/assessments/assessment-metric';
 import { AssessmentPhotoList } from '../components/assessments/assessment-photo-list';
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
+import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { Message } from '../components/ui/v2/message';
+import { StatePanel } from '../components/ui/v2/state-panel';
+import { Text } from '../components/ui/v2/text';
 import { ApiError } from '../lib/api';
-import { colors, sharedStyles, spacing, typography } from '../lib/styles';
+import { spacing } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
 
-export function TrainerAssessmentDetailScreen() {
+export function TrainerAssessmentDetailScreen(): React.JSX.Element {
   const api = useApiClient();
   const params = useLocalSearchParams<{
     studentId?: string | string[];
@@ -35,6 +35,12 @@ export function TrainerAssessmentDetailScreen() {
     },
   });
 
+  const assessment = query.data;
+  const isNotFound = query.error instanceof ApiError && query.error.status === 404;
+  const isWrongStudent = Boolean(assessment && studentId && assessment.studentId !== studentId);
+  const refreshDisabled =
+    !studentId || !assessmentId || query.isFetching || isNotFound || isWrongStudent;
+
   function returnToAssessments(): void {
     if (!studentId) {
       router.dismissTo('/trainer/students');
@@ -44,124 +50,137 @@ export function TrainerAssessmentDetailScreen() {
     router.dismissTo(`/trainer/students/${studentId}/assessments`);
   }
 
-  if (!studentId || !assessmentId) {
-    return (
-      <Screen style={styles.centeredState}>
+  function refreshAssessment(): void {
+    if (refreshDisabled) return;
+
+    void query.refetch();
+  }
+
+  function renderContent(): React.JSX.Element {
+    if (!studentId || !assessmentId) {
+      return (
         <StatePanel
-          actionLabel="Voltar para avaliações"
+          className="flex-1"
           description="Não foi possível identificar a avaliação solicitada."
-          onAction={returnToAssessments}
+          kind="error"
           title="Avaliação inválida"
-          tone="error"
         />
-      </Screen>
-    );
-  }
+      );
+    }
 
-  if (query.isPending) {
-    return (
-      <Screen style={styles.centeredState}>
+    if (query.isPending) {
+      return (
         <StatePanel
+          className="flex-1"
           description="Estamos carregando os dados desta avaliação."
+          kind="loading"
           title="Carregando avaliação"
-          tone="loading"
         />
-      </Screen>
-    );
-  }
+      );
+    }
 
-  const isNotFound = query.error instanceof ApiError && query.error.status === 404;
-
-  if (isNotFound) {
-    return (
-      <Screen style={styles.centeredState}>
+    if (isNotFound) {
+      return (
         <StatePanel
-          actionLabel="Voltar para avaliações"
+          className="flex-1"
           description="Esta avaliação não está disponível para sua conta."
-          onAction={returnToAssessments}
+          kind="error"
           title="Avaliação não encontrada"
-          tone="error"
         />
-      </Screen>
-    );
-  }
+      );
+    }
 
-  if (query.isError && !query.data) {
-    return (
-      <Screen style={styles.centeredState}>
+    if (query.isError && !assessment) {
+      return (
         <StatePanel
-          actionDisabled={query.isRefetching}
-          actionLabel="Tentar novamente"
-          description="Verifique sua conexão e tente novamente."
-          onAction={() => void query.refetch()}
+          className="flex-1"
+          description="Verifique sua conexão e tente atualizar pelo cabeçalho."
+          kind="error"
           title="Não foi possível carregar a avaliação"
-          tone="error"
         />
-      </Screen>
-    );
-  }
+      );
+    }
 
-  const assessment = query.data;
-
-  if (assessment.studentId !== studentId) {
-    return (
-      <Screen style={styles.centeredState}>
+    if (isWrongStudent) {
+      return (
         <StatePanel
-          actionLabel="Voltar para avaliações"
+          className="flex-1"
           description="Esta avaliação não pertence ao aluno aberto neste contexto."
-          onAction={returnToAssessments}
+          kind="error"
           title="Avaliação indisponível"
-          tone="error"
         />
-      </Screen>
+      );
+    }
+
+    if (!assessment) {
+      return (
+        <StatePanel
+          className="flex-1"
+          description="Não foi possível carregar os dados desta avaliação."
+          kind="error"
+          title="Avaliação indisponível"
+        />
+      );
+    }
+
+    const dateLabel = formatDate(assessment.date);
+    const photos = assessment.photos?.filter((photo) => photo.trim().length > 0) ?? [];
+
+    return (
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          gap: spacing.xxl,
+          paddingTop: spacing.sm,
+        }}
+      >
+        <AssessmentHeading subtitle="Avaliação do aluno" title={dateLabel} />
+
+        <View className="gap-3">
+          <Text variant="sectionTitle">Métricas principais</Text>
+          <View className="gap-1">
+            <AssessmentMetric label="Peso" value={formatMetric(assessment.weightKg, 'kg')} />
+            <AssessmentMetric label="Altura" value={formatMetric(assessment.heightCm, 'cm')} />
+            <AssessmentMetric
+              label="Gordura corporal"
+              value={formatMetric(assessment.bodyFatPct, '%')}
+            />
+          </View>
+        </View>
+
+        <AssessmentMeasurementsCard measurements={assessment.measurements} />
+
+        {photos.length > 0 ? (
+          <View className="gap-3">
+            <Text variant="sectionTitle">Fotos</Text>
+            <AssessmentPhotoList dateLabel={dateLabel} photos={photos} />
+          </View>
+        ) : null}
+
+        <View className="gap-3">
+          <Text variant="sectionTitle">Observações</Text>
+          <Text className="text-v2-secondary">{formatNotes(assessment.notes)}</Text>
+        </View>
+
+        {query.isRefetchError ? (
+          <Message title="Não foi possível atualizar a avaliação." variant="error" />
+        ) : null}
+      </ScrollView>
     );
   }
-
-  const dateLabel = formatDate(assessment.date);
-  const photos = assessment.photos?.filter((photo) => photo.trim().length > 0) ?? [];
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar para avaliações" onPress={returnToAssessments} variant="secondary" />
-      <ScreenHeader eyebrow="Avaliação" title={dateLabel} />
-
-      <Card>
-        <Text style={styles.sectionTitle}>Métricas principais</Text>
-        <View style={styles.metrics}>
-          <AssessmentMetric label="Peso" value={formatMetric(assessment.weightKg, 'kg')} />
-          <AssessmentMetric label="Altura" value={formatMetric(assessment.heightCm, 'cm')} />
-          <AssessmentMetric
-            label="Gordura corporal"
-            value={formatMetric(assessment.bodyFatPct, '%')}
-          />
-        </View>
-      </Card>
-
-      <AssessmentMeasurementsCard measurements={assessment.measurements} />
-
-      {photos.length > 0 ? (
-        <Card>
-          <Text style={styles.sectionTitle}>Fotos</Text>
-          <AssessmentPhotoList dateLabel={dateLabel} photos={photos} />
-        </Card>
-      ) : null}
-
-      <Card>
-        <Text style={styles.sectionTitle}>Observações</Text>
-        <Text style={sharedStyles.subtitle}>{formatNotes(assessment.notes)}</Text>
-      </Card>
-
-      {query.isRefetchError ? (
-        <InlineMessage message="Não foi possível atualizar a avaliação." tone="error" />
-      ) : null}
-
-      <AppButton
-        disabled={query.isRefetching}
-        label={query.isRefetching ? 'Atualizando...' : 'Atualizar'}
-        onPress={() => void query.refetch()}
-        variant="secondary"
-      />
-    </Screen>
+    <TrainerScreen
+      backLabel={studentId ? 'Voltar para avaliações' : 'Voltar para alunos'}
+      contextual
+      onBack={returnToAssessments}
+      onRefresh={refreshAssessment}
+      refreshDisabled={refreshDisabled}
+      refreshing={Boolean(assessment) && query.isRefetching && !isNotFound && !isWrongStudent}
+      title={studentId ? 'Avaliações' : 'Alunos'}
+    >
+      {renderContent()}
+    </TrainerScreen>
   );
 }
 
@@ -197,19 +216,3 @@ function formatMetric(value: Assessment['weightKg'], unit: string): string {
 function formatNotes(value: string | null): string {
   return value?.trim() || 'Não informado';
 }
-
-const styles = StyleSheet.create({
-  centeredState: {
-    justifyContent: 'center',
-  },
-  content: {
-    paddingBottom: spacing.xxxl,
-  },
-  metrics: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-});

@@ -1,7 +1,6 @@
-import { StyleSheet, Text } from 'react-native';
+import { View } from 'react-native';
 import type { Assessment } from '../../application/assessments/assessment-data';
-import { colors, sharedStyles, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { Text } from '../ui/v2/text';
 import { AssessmentMetric } from './assessment-metric';
 
 const MEASUREMENTS = [
@@ -23,27 +22,31 @@ export type AssessmentMeasurementsCardProps = {
   measurements: Assessment['measurements'];
 };
 
-export function AssessmentMeasurementsCard({ measurements }: AssessmentMeasurementsCardProps) {
+export function AssessmentMeasurementsCard({
+  measurements,
+}: AssessmentMeasurementsCardProps): React.JSX.Element {
   const normalizedMeasurements: AssessmentMeasurements = measurements ?? {};
   const availableMeasurements = MEASUREMENTS.filter(
     ([, key]) => normalizedMeasurements[key] !== undefined,
   );
 
   return (
-    <Card>
-      <Text style={styles.sectionTitle}>Medidas de circunferência</Text>
+    <View className="gap-3">
+      <Text variant="sectionTitle">Medidas de circunferência</Text>
       {availableMeasurements.length === 0 ? (
-        <Text style={sharedStyles.subtitle}>Não informado</Text>
+        <Text className="text-v2-secondary">Não informado</Text>
       ) : (
-        availableMeasurements.map(([label, key]) => (
-          <AssessmentMetric
-            key={key}
-            label={label}
-            value={formatMeasurement(normalizedMeasurements, key)}
-          />
-        ))
+        <View className="gap-1">
+          {availableMeasurements.map(([label, key]) => (
+            <AssessmentMetric
+              key={key}
+              label={label}
+              value={formatMeasurement(normalizedMeasurements, key)}
+            />
+          ))}
+        </View>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -56,10 +59,3 @@ function formatMeasurement(measurements: AssessmentMeasurements, key: Measuremen
 
   return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} cm`;
 }
-
-const styles = StyleSheet.create({
-  sectionTitle: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-});
