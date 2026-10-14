@@ -1,13 +1,5 @@
 import type { ApiRequester } from '../../lib/api';
-import { createAssessment } from './assessment-data';
-
-type AssessmentPayload = {
-  date: string;
-  weightKg?: number;
-  bodyFatPct?: number;
-  photos?: string[];
-  notes?: string;
-};
+import { createAssessment, type CreateAssessmentInput } from './assessment-data';
 
 export type AssessmentPhotoInput = {
   uri: string;
@@ -19,7 +11,7 @@ export type AssessmentFormValues = {
   weightKg: string;
   bodyFatPct: string;
   notes: string;
-  photo?: AssessmentPhotoInput;
+  photos: readonly AssessmentPhotoInput[];
 };
 
 export function toOptionalNumber(value: string): number | undefined {
@@ -36,24 +28,39 @@ export function toSupportedContentType(
   return null;
 }
 
+export function normalizeAssessmentPhotoSelection(
+  assets: readonly { uri?: string; mimeType?: string }[],
+): AssessmentPhotoInput[] | null {
+  const photos: AssessmentPhotoInput[] = [];
+
+  for (const asset of assets) {
+    const contentType = toSupportedContentType(asset.mimeType);
+    if (!asset.uri || !contentType) return null;
+
+    photos.push({ uri: asset.uri, contentType });
+  }
+
+  return photos;
+}
+
 export function buildAssessmentPayload({
   date,
   weightKg,
   bodyFatPct,
   notes,
-  photoUrl,
+  photoUrls,
 }: {
   date: string;
   weightKg: string;
   bodyFatPct: string;
   notes: string;
-  photoUrl?: string;
-}): AssessmentPayload {
+  photoUrls?: readonly string[];
+}): CreateAssessmentInput {
   return {
     date,
     weightKg: toOptionalNumber(weightKg),
     bodyFatPct: toOptionalNumber(bodyFatPct),
-    photos: photoUrl ? [photoUrl] : undefined,
+    photos: photoUrls?.length ? [...photoUrls] : undefined,
     notes: notes.trim() || undefined,
   };
 }
@@ -69,13 +76,17 @@ export async function submitAssessment({
   uploadPhoto: (photo: AssessmentPhotoInput) => Promise<string>;
   invalidateAssessments: () => Promise<void>;
 }): Promise<void> {
-  const photoUrl = values.photo ? await uploadPhoto(values.photo) : undefined;
+  const photoUrls: string[] = [];
+  for (const photo of values.photos) {
+    photoUrls.push(await uploadPhoto(photo));
+  }
+
   const payload = buildAssessmentPayload({
     date: values.date,
     weightKg: values.weightKg,
     bodyFatPct: values.bodyFatPct,
     notes: values.notes,
-    photoUrl,
+    photoUrls,
   });
 
   await createAssessment(api, { kind: 'self' }, payload);
