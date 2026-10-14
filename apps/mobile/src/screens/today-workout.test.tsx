@@ -1,14 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ApiTransportError } from '../lib/api';
+import { todayIsoDate } from '../lib/date';
 import { workoutSessionKey } from '../lib/workout-session-storage';
 import { TodayWorkoutScreen } from './today-workout';
 
 const authState = vi.hoisted(() => ({ userId: 'auth-user-a' as string | null }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const linkState = vi.hoisted(() => ({ hrefs: [] as string[] }));
+const routerState = vi.hoisted(() => ({ pushes: [] as unknown[] }));
 const storageState = vi.hoisted(() => ({
   getItem: vi.fn(),
   removeItem: vi.fn(),
@@ -38,6 +40,10 @@ vi.mock('expo-router', () => ({
     linkState.hrefs.push(href);
     return children;
   },
+  useNavigation: () => ({ addListener: () => () => undefined }),
+  router: {
+    push: (target: unknown) => routerState.pushes.push(target),
+  },
 }));
 
 function renderWithQueryClient(queryClient = createQueryClient()) {
@@ -50,6 +56,16 @@ function renderWithQueryClient(queryClient = createQueryClient()) {
 
 function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } });
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
 }
 
 const activeWorkout = {
@@ -117,6 +133,34 @@ const activeWorkoutSummary = {
   status: activeWorkout.status,
   createdAt: activeWorkout.createdAt,
 };
+
+const emptyStateRefreshScenarios = [
+  {
+    name: 'sem plano ativo',
+    activePlan: false,
+    title: 'Sem plano ativo',
+    description: 'Seu professor ainda não publicou um plano de treino.',
+  },
+  {
+    name: 'dia de recuperação',
+    activePlan: true,
+    title: 'Hoje é dia de recuperação',
+    description: 'Aproveite para descansar e se preparar para o próximo treino.',
+  },
+] as const;
+
+function emptyWorkoutResponse(path: string, activePlan: boolean): Promise<unknown> {
+  if (path === '/students/me/workout-plans') {
+    return Promise.resolve({ items: activePlan ? [activeWorkoutSummary] : [] });
+  }
+  if (path === `/workout-plans/${activeWorkout.id}`) {
+    return Promise.resolve({ ...activeWorkout, days: [] });
+  }
+  if (path === '/students/me/workout-logs?limit=30') {
+    return Promise.resolve({ items: [] });
+  }
+  return Promise.reject(new Error('Requisição inesperada'));
+}
 
 const cachedWorkout = {
   plan: {
@@ -192,21 +236,24 @@ describe('TodayWorkoutScreen', () => {
     storageState.removeItem.mockReset();
     storageState.setItem.mockReset();
     linkState.hrefs = [];
+    routerState.pushes = [];
     storageState.getItem.mockResolvedValue(null);
     storageState.removeItem.mockResolvedValue(undefined);
     storageState.setItem.mockResolvedValue(undefined);
   });
 
-  it('renders the no-active-plan state', async () => {
+  it('mantém o cabeçalho no estado sem plano ativo', async () => {
     apiState.request.mockResolvedValueOnce({ items: [] });
 
     renderWithQueryClient();
 
     expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
     expect(screen.getByText('Seu professor ainda não publicou um plano de treino.')).toBeTruthy();
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Encontre seu próximo movimento.')).toBeTruthy();
   });
 
-  it('renders the recovery state when there is no workout today', async () => {
+  it('mantém o cabeçalho no estado de recuperação', async () => {
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({ ...activeWorkout, days: [] })
@@ -218,9 +265,68 @@ describe('TodayWorkoutScreen', () => {
     expect(
       screen.getByText('Aproveite para descansar e se preparar para o próximo treino.'),
     ).toBeTruthy();
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
   });
 
-  it('renders loaded workout', async () => {
+  it.each(emptyStateRefreshScenarios)(
+    'mantém o estado vazio de $name durante falha de atualização e retry',
+    async ({ activePlan, description, title }) => {
+      const queryClient = createQueryClient();
+      apiState.request.mockImplementation((path: string) => emptyWorkoutResponse(path, activePlan));
+
+      renderWithQueryClient(queryClient);
+
+      expect(await screen.findByText(title)).toBeTruthy();
+      expect(screen.getByText(description)).toBeTruthy();
+      apiState.request.mockRejectedValueOnce(new ApiError('indisponível', 503));
+
+      await act(async () => {
+        await queryClient.refetchQueries({ queryKey: ['today-workout', 'auth-user-a'] });
+      });
+
+      expect(await screen.findByText('Não foi possível atualizar')).toBeTruthy();
+      expect(
+        screen.getByText('O estado de hoje foi mantido. Tente atualizar novamente.'),
+      ).toBeTruthy();
+      expect(screen.getByText(title)).toBeTruthy();
+      expect(screen.getByText(description)).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
+
+      const pendingRetry = createDeferred<unknown>();
+      apiState.request.mockReset();
+      apiState.request.mockImplementation((path: string) =>
+        path === '/students/me/workout-plans'
+          ? pendingRetry.promise
+          : emptyWorkoutResponse(path, activePlan),
+      );
+      const retry = screen.getByRole('button', { name: 'Tentar novamente' });
+
+      await act(async () => {
+        fireEvent.press(retry);
+        fireEvent.press(retry);
+      });
+
+      const updatingAction = await screen.findByRole('button', { name: 'Atualizando…' });
+      expect(updatingAction.props.accessibilityState?.disabled).toBe(true);
+      expect(
+        screen.getByText('O estado de hoje foi mantido. Tente atualizar novamente.'),
+      ).toBeTruthy();
+      expect(screen.getByText(title)).toBeTruthy();
+      expect(screen.getByText(description)).toBeTruthy();
+      expect(screen.queryByText('Carregando treino')).toBeNull();
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+
+      await act(async () =>
+        pendingRetry.resolve({ items: activePlan ? [activeWorkoutSummary] : [] }),
+      );
+
+      await waitFor(() => expect(screen.queryByText('Não foi possível atualizar')).toBeNull());
+      expect(screen.getByText(title)).toBeTruthy();
+      expect(screen.getByText(description)).toBeTruthy();
+    },
+  );
+
+  it('mostra o treino disponível e abre a visão geral pelo CTA', async () => {
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce(activeWorkout)
@@ -228,10 +334,10 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
-    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
+    expect(await screen.findByText('Plano A · Treino A')).toBeTruthy();
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
-    expect(screen.getByText('Iniciar treino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
     expect(linkState.hrefs).toContain(`/log/${activeWorkout.days[0].id}`);
     expect(storageState.getItem).toHaveBeenCalledWith(
       workoutSessionKey('auth-user-a', activeWorkout.days[0].id),
@@ -239,7 +345,160 @@ describe('TodayWorkoutScreen', () => {
     await waitFor(() => expect(screen.queryByText('Sem treino ativo')).toBeNull());
   });
 
-  it('rejects an invalid online workout before caching or rendering it', async () => {
+  it('mantém o cabeçalho durante a consulta inicial e mostra o treino após o sucesso', async () => {
+    const pendingSummaries = createDeferred<unknown>();
+    apiState.request.mockImplementation((path: string) => {
+      if (path === '/students/me/workout-plans') return pendingSummaries.promise;
+      if (path === `/workout-plans/${activeWorkout.id}`) return Promise.resolve(activeWorkout);
+      return Promise.resolve({ items: [] });
+    });
+
+    renderWithQueryClient();
+
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Encontre seu próximo movimento.')).toBeTruthy();
+    expect(await screen.findByText('Carregando treino')).toBeTruthy();
+
+    await act(async () => pendingSummaries.resolve({ items: [activeWorkoutSummary] }));
+
+    expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+    expect(screen.getByText('Supino')).toBeTruthy();
+  });
+
+  it('recupera erro inicial com um retry e um único indicador de loading', async () => {
+    const initialFailure = createDeferred<unknown>();
+    apiState.request.mockReturnValueOnce(initialFailure.promise);
+
+    renderWithQueryClient();
+
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(await screen.findByText('Carregando treino')).toBeTruthy();
+
+    await act(async () => initialFailure.reject(new ApiError('indisponível', 503)));
+
+    expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    const pendingRetry = createDeferred<unknown>();
+    apiState.request.mockReset();
+    apiState.request.mockImplementation((path: string) => {
+      if (path === '/students/me/workout-plans') return pendingRetry.promise;
+      if (path === `/workout-plans/${activeWorkout.id}`) return Promise.resolve(activeWorkout);
+      return Promise.resolve({ items: [] });
+    });
+    const retry = screen.getByRole('button', { name: 'Tentar novamente' });
+
+    await act(async () => {
+      fireEvent.press(retry);
+      fireEvent.press(retry);
+    });
+
+    expect(await screen.findByText('Carregando treino')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    expect(apiState.request).toHaveBeenCalledTimes(1);
+
+    await act(async () => pendingRetry.resolve({ items: [activeWorkoutSummary] }));
+
+    expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+    expect(screen.getByText('Supino')).toBeTruthy();
+  });
+
+  it('preserva o conteúdo após falha de atualização e bloqueia o retry contextual duplicado', async () => {
+    const queryClient = createQueryClient();
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+    renderWithQueryClient(queryClient);
+
+    expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+    apiState.request.mockRejectedValueOnce(new ApiError('indisponível', 503));
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: ['today-workout', 'auth-user-a'] });
+    });
+
+    expect(await screen.findByText('Não foi possível atualizar')).toBeTruthy();
+    expect(screen.getByText('Supino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+
+    const pendingRetry = createDeferred<unknown>();
+    apiState.request.mockReset();
+    apiState.request.mockImplementation((path: string) => {
+      if (path === '/students/me/workout-plans') return pendingRetry.promise;
+      if (path === `/workout-plans/${activeWorkout.id}`) return Promise.resolve(activeWorkout);
+      return Promise.resolve({ items: [] });
+    });
+    const retry = screen.getByRole('button', { name: 'Tentar novamente' });
+
+    await act(async () => {
+      fireEvent.press(retry);
+      fireEvent.press(retry);
+    });
+
+    const updatingAction = await screen.findByRole('button', { name: 'Atualizando…' });
+    expect(updatingAction.props.accessibilityState?.disabled).toBe(true);
+    expect(screen.getByText('Supino')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+    expect(screen.queryByText('Carregando treino')).toBeNull();
+    expect(apiState.request).toHaveBeenCalledTimes(1);
+
+    await act(async () => pendingRetry.resolve({ items: [activeWorkoutSummary] }));
+
+    await waitFor(() => expect(screen.queryByText('Não foi possível atualizar')).toBeNull());
+    expect(screen.getByText('Supino')).toBeTruthy();
+  });
+
+  it('mantém Continuar treino quando o rascunho chega a 100%', async () => {
+    const day = activeWorkout.days[0];
+    storageState.getItem.mockImplementation(async (key: string) =>
+      key === workoutSessionKey('auth-user-a', day.id)
+        ? JSON.stringify({
+            version: 1,
+            workoutDayId: day.id,
+            startedAtMs: 1_000,
+            updatedAtMs: 121_000,
+            currentExerciseIndex: 1,
+            currentSetIndex: 0,
+            phase: 'set',
+            restEndsAtMs: null,
+            sets: [
+              {
+                workoutExerciseId: day.exercises[0].id,
+                setNumber: 1,
+                repsDone: '10',
+                loadKg: '20',
+                completed: true,
+              },
+              {
+                workoutExerciseId: day.exercises[0].id,
+                setNumber: 2,
+                repsDone: '10',
+                loadKg: '20',
+                completed: true,
+              },
+              {
+                workoutExerciseId: day.exercises[1].id,
+                setNumber: 1,
+                repsDone: '12',
+                loadKg: '',
+                completed: true,
+              },
+            ],
+          })
+        : null,
+    );
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino pronto para concluir')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continuar treino' })).toBeTruthy();
+    expect(linkState.hrefs).toContain(`/session/${day.id}`);
+  });
+
+  it('exibe o cabeçalho no erro de payload online inválido', async () => {
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
       .mockResolvedValueOnce({
@@ -261,6 +520,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
     expect(screen.queryByText('Supino')).toBeNull();
   });
@@ -309,19 +569,20 @@ describe('TodayWorkoutScreen', () => {
     expect(storageState.setItem).not.toHaveBeenCalled();
   });
 
-  it('shows retry instead of stale content for an HTTP API error', async () => {
+  it('exibe o cabeçalho e retry para erro HTTP sem dados', async () => {
     apiState.request.mockRejectedValueOnce(new ApiError('unauthorized', 401));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
 
     renderWithQueryClient();
 
     expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
+    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
     expect(screen.queryByText('offline')).toBeNull();
     expect(storageState.getItem).not.toHaveBeenCalled();
   });
 
-  it('offers continuing the workout when a draft exists for the authenticated user and day', async () => {
+  it('continua o rascunho autenticado direto na sessão', async () => {
     const savedSession = {
       version: 1,
       workoutDayId: activeWorkout.days[0].id,
@@ -462,8 +723,8 @@ describe('TodayWorkoutScreen', () => {
     try {
       renderWithQueryClient();
 
-      expect(await screen.findByText('Seu treino de hoje')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
+      expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
       expect(screen.queryByText('Treino concluído')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
       expect(linkState.hrefs).toContain(`/log/${day.id}`);
@@ -473,7 +734,7 @@ describe('TodayWorkoutScreen', () => {
     }
   });
 
-  it('trata um envelope summary como conclusão local sem iniciar ou continuar', async () => {
+  it('preserva a lista no summary e não oferece iniciar ou continuar', async () => {
     const day = activeWorkout.days[0];
     const sessionKey = workoutSessionKey('auth-user-a', day.id);
     storageState.getItem.mockImplementation(async (key: string) =>
@@ -529,10 +790,75 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Treino concluído')).toBeTruthy();
+    expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
     expect(linkState.hrefs).not.toContain(`/log/${day.id}`);
     expect(linkState.hrefs).not.toContain(`/session/${day.id}`);
+  });
+
+  it('prioriza a conclusão do journal sobre um rascunho ativo sem CTAs', async () => {
+    const day = activeWorkout.days[0];
+    const date = todayIsoDate();
+    const startedAtMs = new Date(`${date}T12:00:00`).getTime();
+    const sessionKey = workoutSessionKey('auth-user-a', day.id);
+    const journal = [
+      {
+        version: 1,
+        operationId: 'terminal-today',
+        ownerAuthUserId: 'auth-user-a',
+        workoutDayId: day.id,
+        date,
+        finish: {
+          durationMin: 2,
+          completed: true,
+          sets: [
+            {
+              workoutExerciseId: day.exercises[0].id,
+              setNumber: 1,
+              repsDone: 10,
+              loadKg: 20,
+            },
+          ],
+        },
+        stage: { kind: 'terminal' },
+      },
+    ];
+    const activeDraft = {
+      version: 1,
+      workoutDayId: day.id,
+      startedAtMs,
+      updatedAtMs: startedAtMs + 60_000,
+      currentExerciseIndex: 0,
+      currentSetIndex: 0,
+      phase: 'set',
+      restEndsAtMs: null,
+      sets: [
+        {
+          workoutExerciseId: day.exercises[0].id,
+          setNumber: 1,
+          repsDone: '',
+          loadKg: '',
+          completed: false,
+        },
+      ],
+    };
+    storageState.getItem.mockImplementation(async (key: string) => {
+      if (key === sessionKey) return JSON.stringify(activeDraft);
+      if (key === 'muvit_workout_log_journal') return JSON.stringify(journal);
+      return null;
+    });
+    apiState.request
+      .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
+      .mockResolvedValueOnce(activeWorkout)
+      .mockResolvedValueOnce({ items: [] });
+
+    renderWithQueryClient();
+
+    expect(await screen.findByText('Treino concluído')).toBeTruthy();
+    expect(screen.getByText('Supino')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Iniciar treino' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
   });
 
   it('shows a retry action when loading today fails without cache', async () => {
@@ -549,28 +875,28 @@ describe('TodayWorkoutScreen', () => {
     expect(await screen.findByText('Iniciar treino')).toBeTruthy();
   });
 
-  it('renders stale offline badge from cached workout', async () => {
+  it('informa que o treino válido veio do cache offline', async () => {
     apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify(cachedWorkout));
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(await screen.findByText('Treino carregado offline')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
     expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
   });
 
-  it('shows the offline badge for stale empty states', async () => {
+  it('informa o estado offline junto ao vazio sem plano', async () => {
     apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify({ status: 'no-active-plan' }));
 
     renderWithQueryClient();
 
     expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
-    expect(screen.getByText('offline')).toBeTruthy();
+    expect(screen.getByText('Treino carregado offline')).toBeTruthy();
   });
 
-  it('shows the offline badge for a stale recovery state', async () => {
+  it('informa o estado offline junto à recuperação', async () => {
     apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(
       JSON.stringify({
@@ -582,10 +908,10 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Hoje é dia de recuperação')).toBeTruthy();
-    expect(screen.getByText('offline')).toBeTruthy();
+    expect(screen.getByText('Treino carregado offline')).toBeTruthy();
   });
 
-  it('shows retry when stale cache is invalid', async () => {
+  it('oferece retry quando o cache offline é inválido', async () => {
     apiState.request.mockRejectedValueOnce(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockResolvedValueOnce(JSON.stringify({ cached: true }));
 
@@ -595,7 +921,7 @@ describe('TodayWorkoutScreen', () => {
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
   });
 
-  it('isolates the offline cache when the authenticated account changes', async () => {
+  it('isola o cache offline quando a conta autenticada muda', async () => {
     apiState.request.mockRejectedValue(new ApiTransportError(new TypeError('offline')));
     storageState.getItem.mockImplementation(async (key: string) =>
       key === 'today-workout:auth-user-a'
@@ -608,7 +934,7 @@ describe('TodayWorkoutScreen', () => {
     const queryClient = createQueryClient();
     const firstRender = renderWithQueryClient(queryClient);
 
-    expect(await screen.findByText('offline')).toBeTruthy();
+    expect(await screen.findByText('Treino carregado offline')).toBeTruthy();
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-a');
 
     authState.userId = 'auth-user-b';
@@ -622,7 +948,7 @@ describe('TodayWorkoutScreen', () => {
     expect(storageState.getItem).toHaveBeenCalledWith('today-workout:auth-user-b');
   });
 
-  it('opens and closes the exercise details modal', async () => {
+  it('abre detalhes pelo ID da prescrição com origem Hoje', async () => {
     const user = userEvent.setup();
     apiState.request
       .mockResolvedValueOnce({ items: [activeWorkoutSummary] })
@@ -644,17 +970,19 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    await user.press(await screen.findByText('Supino'));
+    await user.press(await screen.findByRole('button', { name: 'Ver detalhes de Supino, Peito' }));
 
-    expect(screen.getByText('Grupo: chest')).toBeTruthy();
-    expect(screen.getByText('Controlar cadencia')).toBeTruthy();
-
-    await user.press(screen.getByText('Fechar'));
-
-    await waitFor(() => expect(screen.queryByText('Grupo: chest')).toBeNull());
+    expect(routerState.pushes).toContainEqual({
+      pathname: '/exercise/[dayId]/[exerciseId]',
+      params: {
+        dayId: activeWorkout.days[0].id,
+        exerciseId: activeWorkout.days[0].exercises[0].id,
+        source: 'today',
+      },
+    });
   });
 
-  it('closes the exercise modal when the authenticated account changes', async () => {
+  it('remove a lista anterior quando a conta autenticada muda', async () => {
     const user = userEvent.setup();
     const otherWorkout = {
       ...activeWorkout,
@@ -697,8 +1025,9 @@ describe('TodayWorkoutScreen', () => {
 
     const queryClient = createQueryClient();
     const firstRender = renderWithQueryClient(queryClient);
-    await user.press(await screen.findByText('Supino'));
-    expect(screen.getByText('Grupo: chest')).toBeTruthy();
+    expect(await screen.findByText('Supino')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Ver detalhes de Supino, Peito' }));
+    expect(routerState.pushes).toHaveLength(1);
 
     authState.userId = 'auth-user-b';
     firstRender.rerender(
@@ -708,6 +1037,6 @@ describe('TodayWorkoutScreen', () => {
     );
 
     expect(await screen.findByText('Agachamento')).toBeTruthy();
-    expect(screen.queryByText('Grupo: chest')).toBeNull();
+    expect(screen.queryByText('Supino')).toBeNull();
   });
 });

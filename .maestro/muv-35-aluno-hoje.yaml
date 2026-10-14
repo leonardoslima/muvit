@@ -1,0 +1,15 @@
+appId: host.exp.exponent
+name: MUV-35 — Hoje, visão geral e exercício
+---
+- runFlow:
+    file: login-aluno.yaml
+- assertVisible: Seu treino de hoje
+- tapOn: Iniciar treino
+- assertVisible: Visão geral do treino
+- tapOn: Rosca direta
+- assertVisible: Prescrição
+- assertVisible: 3 séries · 12 repetições
+- tapOn: Voltar ao treino
+- assertVisible: Visão geral do treino
+- tapOn: Voltar para Hoje
+- assertVisible: Seu treino de hoje

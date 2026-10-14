@@ -1,33 +1,30 @@
-import type { workoutPlanFullSchema } from '@muvit/validators';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
-import type { z } from 'zod';
+import { ArrowLeft } from 'lucide-react-native';
+import { useRef } from 'react';
+import type * as React from 'react';
+import { View } from 'react-native';
 import { estimateWorkoutDuration, loadWorkoutDay } from '../application/workouts/today-workout';
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
+import { Screen } from '../components/ui/screen';
+import { Button } from '../components/ui/v2/button';
+import { IconButton } from '../components/ui/v2/icon-button';
+import { Message } from '../components/ui/v2/message';
+import { StatePanel } from '../components/ui/v2/state-panel';
+import { Surface } from '../components/ui/v2/surface';
+import { Text } from '../components/ui/v2/text';
+import { StudentExerciseList } from '../components/workouts/student-exercise-list';
 import { authClient } from '../lib/auth-client';
-import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
+import { colors, spacing } from '../lib/design-system/tokens';
+import { muscleGroupLabel } from '../lib/muscle-groups';
 import { useApiClient } from '../lib/use-api';
 
-type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
-type WorkoutDay = WorkoutPlan['days'][number];
-type WorkoutExercise = WorkoutDay['exercises'][number];
-type SelectedExercise = {
-  authUserId: string;
-  dayId: string;
-  exerciseId: string;
-};
-
-export function WorkoutOverviewScreen() {
+export function WorkoutOverviewScreen(): React.JSX.Element {
   const api = useApiClient();
   const authUserId = authClient.useSession().data?.user.id;
   const params = useLocalSearchParams<{ dayId: string }>();
   const dayId = Array.isArray(params.dayId) ? params.dayId[0] : params.dayId;
-  const [selectedExerciseSelection, setSelectedExerciseSelection] = useState<SelectedExercise>();
+  const retryContext = JSON.stringify([authUserId ?? null, dayId ?? null]);
+  const retryingContexts = useRef(new Set<string>());
 
   const query = useQuery({
     enabled: Boolean(authUserId && dayId),
@@ -38,192 +35,137 @@ export function WorkoutOverviewScreen() {
     },
   });
 
-  if (query.isLoading) {
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+  };
+
+  const retry = () => {
+    if (query.isFetching || retryingContexts.current.has(retryContext)) return;
+    retryingContexts.current.add(retryContext);
+    void query.refetch().finally(() => {
+      retryingContexts.current.delete(retryContext);
+    });
+  };
+
+  const header = <OverviewHeader onBack={goBack} />;
+
+  if (!query.data && (query.isLoading || query.isFetching || query.isPending)) {
     return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          description="Estamos buscando os exercícios do treino."
-          title="Carregando treino"
-          tone="loading"
-        />
+      <Screen scroll contentContainerStyle={styles.content}>
+        {header}
+        <View className="flex-grow justify-center">
+          <StatePanel
+            description="Estamos buscando os exercícios do treino."
+            kind="loading"
+            title="Carregando treino"
+          />
+        </View>
       </Screen>
     );
   }
 
-  if (query.isError || !query.data) {
+  if (!query.data) {
     return (
-      <Screen style={styles.centeredState}>
-        <StatePanel
-          actionLabel="Tentar novamente"
-          description="Verifique sua conexão e tente novamente."
-          onAction={() => void query.refetch()}
-          title="Não foi possível carregar o treino"
-          tone="error"
-        />
+      <Screen scroll contentContainerStyle={styles.content}>
+        {header}
+        <View className="flex-grow justify-center">
+          <StatePanel
+            action={{ label: 'Tentar novamente', onPress: retry }}
+            description="Verifique sua conexão e tente novamente."
+            kind="error"
+            title="Não foi possível carregar o treino"
+          />
+        </View>
       </Screen>
     );
   }
 
   const day = query.data;
-  const muscleGroups = getMuscleGroups(day);
-  const selectedExercise =
-    selectedExerciseSelection &&
-    selectedExerciseSelection.authUserId === authUserId &&
-    selectedExerciseSelection.dayId === day.id
-      ? day.exercises.find((exercise) => exercise.id === selectedExerciseSelection.exerciseId)
-      : undefined;
+  const hasRefreshError = Boolean(query.error && query.data);
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <AppButton label="Voltar" onPress={() => router.back()} variant="secondary" />
-      <ScreenHeader
-        eyebrow="VISÃO GERAL"
-        subtitle={`${day.exercises.length} exercícios · ~${estimateWorkoutDuration(day)} min`}
-        title={day.label}
-      />
+      {header}
+      {hasRefreshError ? (
+        <Message
+          action={{
+            label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
+            onPress: retry,
+            disabled: query.isFetching,
+            loading: query.isFetching,
+          }}
+          description="Seu treino continua disponível. Tente atualizar novamente."
+          title="Não foi possível atualizar"
+          variant="error"
+        />
+      ) : null}
 
-      <Card>
-        <Text style={styles.cardTitle}>Foco do treino</Text>
-        <Text style={sharedStyles.subtitle}>{muscleGroups || 'Treino completo'}</Text>
-      </Card>
+      <Surface variant="subtle" className="gap-2 rounded-v2-card p-5">
+        <Text variant="sectionTitle">{day.label}</Text>
+        <Text className="text-v2-secondary" variant="body">
+          {day.exercises.length} exercícios · ~{estimateWorkoutDuration(day)} min estimados
+        </Text>
+        <Text className="text-v2-brand" variant="label">
+          {getMuscleGroups(day)}
+        </Text>
+      </Surface>
 
-      <View style={styles.exerciseList}>
-        <Text style={styles.sectionTitle}>Exercícios</Text>
-        {day.exercises.map((exercise) => (
-          <Pressable
-            accessibilityLabel={exercise.exercise.name}
-            accessibilityRole="button"
-            key={exercise.id}
-            onPress={() => {
-              if (!authUserId) return;
-              setSelectedExerciseSelection({
-                authUserId,
-                dayId: day.id,
-                exerciseId: exercise.id,
-              });
-            }}
-            style={styles.exerciseCard}
-          >
-            <View style={styles.exerciseText}>
-              <Text style={styles.exerciseTitle}>{exercise.exercise.name}</Text>
-              <Text style={sharedStyles.subtitle}>
-                {exercise.sets} séries · {exercise.reps} repetições
-              </Text>
-            </View>
-            <Text style={styles.exerciseHint}>Ver detalhes</Text>
-          </Pressable>
-        ))}
+      <View className="gap-4">
+        <Text variant="sectionTitle">Exercícios</Text>
+        <StudentExerciseList
+          day={day}
+          onExercisePress={(exerciseId) => {
+            router.push({
+              pathname: '/exercise/[dayId]/[exerciseId]',
+              params: { dayId: day.id, exerciseId, source: 'overview' },
+            });
+          }}
+          variant="detailed"
+        />
       </View>
 
-      <AppButton label="Iniciar treino" onPress={() => router.push(`/session/${day.id}`)} />
-
-      <ExerciseModal
-        exercise={selectedExercise}
-        onClose={() => setSelectedExerciseSelection(undefined)}
-      />
+      <Button label="Iniciar treino" onPress={() => router.push(`/session/${day.id}`)} />
     </Screen>
   );
 }
 
-function getMuscleGroups(day: WorkoutDay): string {
-  return Array.from(
-    new Set(day.exercises.map((exercise) => exercise.exercise.muscleGroup).filter(Boolean)),
-  ).join(' · ');
-}
-
-function ExerciseModal({
-  exercise,
-  onClose,
-}: {
-  exercise?: WorkoutExercise;
-  onClose: () => void;
-}) {
+function OverviewHeader({ onBack }: { onBack: () => void }): React.JSX.Element {
   return (
-    <Modal animationType="slide" onRequestClose={onClose} transparent visible={Boolean(exercise)}>
-      <View style={styles.modalBackdrop}>
-        <View style={styles.modalSurface}>
-          <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>{exercise?.exercise.name}</Text>
-          <Text style={sharedStyles.subtitle}>
-            Grupo muscular: {exercise?.exercise.muscleGroup}
-          </Text>
-          <Text style={sharedStyles.subtitle}>
-            {exercise?.sets} séries de {exercise?.reps} repetições
-          </Text>
-          <Text style={sharedStyles.subtitle}>Descanso: {exercise?.restSeconds ?? 0} s</Text>
-          {exercise?.notes ? <Text style={sharedStyles.subtitle}>{exercise.notes}</Text> : null}
-          <AppButton label="Fechar" onPress={onClose} variant="secondary" />
-        </View>
+    <View className="gap-6">
+      <View className="flex-row items-center gap-3">
+        <IconButton
+          accessibilityLabel="Voltar para Hoje"
+          icon={<ArrowLeft size={20} color={colors.brand} accessible={false} />}
+          onPress={onBack}
+        />
+        <Text className="text-v2-brand" variant="label">
+          Hoje
+        </Text>
       </View>
-    </Modal>
+      <View className="gap-3">
+        <Text variant="screenTitle">Visão geral do treino</Text>
+        <Text className="text-v2-secondary" variant="body">
+          Confira os exercícios antes de começar.
+        </Text>
+      </View>
+    </View>
   );
 }
 
+function getMuscleGroups(day: { exercises: { exercise: { muscleGroup: string } }[] }): string {
+  return [
+    ...new Set(day.exercises.map((item) => muscleGroupLabel(item.exercise.muscleGroup))),
+  ].join(' · ');
+}
+
 const styles = {
-  centeredState: {
-    justifyContent: 'center' as const,
-    padding: spacing.lg,
-  },
   content: {
-    gap: spacing.lg,
+    flexGrow: 1,
+    gap: spacing.xxl,
     paddingBottom: spacing.xxxl,
-  },
-  cardTitle: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-  exerciseList: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-  exerciseCard: {
-    alignItems: 'center' as const,
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    flexDirection: 'row' as const,
-    gap: spacing.md,
-    justifyContent: 'space-between' as const,
-    padding: spacing.lg,
-  },
-  exerciseText: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  exerciseTitle: {
-    color: colors.ink,
-    ...typography.exerciseTitle,
-  },
-  exerciseHint: {
-    color: colors.primaryText,
-    ...typography.bodyStrong,
-    fontSize: typography.caption.fontSize,
-  },
-  modalBackdrop: {
-    backgroundColor: colors.scrim,
-    flex: 1,
-    justifyContent: 'flex-end' as const,
-  },
-  modalSurface: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.sheet,
-    borderTopRightRadius: radii.sheet,
-    gap: spacing.md,
-    padding: spacing.xxl,
-  },
-  modalHandle: {
-    alignSelf: 'center' as const,
-    backgroundColor: colors.muted,
-    borderRadius: radii.handle,
-    height: controlSizes.sheetHandleHeight,
-    width: controlSizes.sheetHandleWidth,
-  },
-  modalTitle: {
-    color: colors.ink,
-    ...typography.sheetTitle,
   },
 };

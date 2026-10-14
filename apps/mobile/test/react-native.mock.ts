@@ -52,6 +52,14 @@ export const Alert = {
   ) => undefined,
 };
 
+export const AccessibilityInfo = {
+  setAccessibilityFocus: (_node: number) => undefined,
+};
+
+export function findNodeHandle(node: unknown): number | null {
+  return node === null || node === undefined ? null : 1;
+}
+
 export const Platform = {
   OS: 'ios',
   select: (options: Record<string, unknown>) => options.ios ?? options.native ?? options.default,
