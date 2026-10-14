@@ -7,6 +7,7 @@ import { AssessmentPhotoViewer } from '../components/assessments/assessment-phot
 import { StudentAssessmentCard } from '../components/assessments/student-assessment-card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
 import { Button, Message, StatePanel, Text } from '../components/ui/v2';
+import { authClient } from '../lib/auth-client';
 import { useApiClient } from '../lib/use-api';
 
 type OpenAssessmentPhotos = {
@@ -16,6 +17,9 @@ type OpenAssessmentPhotos = {
 
 export function ProgressScreen(): React.JSX.Element {
   const api = useApiClient();
+  const session = authClient.useSession();
+  const displayName = session.data?.user.name?.trim() || 'Aluno';
+  const initials = getInitials(session.data?.user.name);
   const retrying = useRef(false);
   const [openPhotos, setOpenPhotos] = useState<OpenAssessmentPhotos | null>(null);
   const query = useQuery({
@@ -48,17 +52,50 @@ export function ProgressScreen(): React.JSX.Element {
   return (
     <>
       <Screen scroll>
-        <View className="flex-row items-start justify-between gap-4">
-          <View className="min-w-0 flex-1">
+        <View className="gap-5" testID="progress-page-header">
+          <View className="flex-row items-center justify-between" testID="progress-brand-row">
+            <Text
+              accessibilityLabel="Muvit"
+              className="font-v2-bold text-v2-text"
+              variant="sectionTitle"
+            >
+              muvit<Text className="text-v2-primary">.</Text>
+            </Text>
+            <View
+              accessible
+              accessibilityLabel={`Iniciais de ${displayName}`}
+              className="h-12 w-12 items-center justify-center rounded-full bg-v2-subtle"
+            >
+              <Text className="text-v2-brand" variant="label">
+                {initials}
+              </Text>
+            </View>
+          </View>
+          <View className="gap-2" testID="progress-title-block">
             <ScreenHeader
               subtitle="Acompanhe suas medidas e perceba sua evolução."
               title="Progresso"
             />
           </View>
           <Link asChild href="/new-assessment">
-            <Button label="Nova avaliação" onPress={() => undefined} variant="secondary" />
+            <Button
+              className="w-full"
+              label="Nova avaliação"
+              onPress={() => undefined}
+              testID="progress-new-assessment"
+              variant="secondary"
+            />
           </Link>
         </View>
+
+        <Text
+          accessibilityRole="header"
+          className="text-v2-text"
+          testID="progress-assessments-heading"
+          variant="sectionTitle"
+        >
+          Suas avaliações
+        </Text>
 
         {isLoadingWithoutResponse ? (
           <StatePanel
@@ -114,4 +151,14 @@ export function ProgressScreen(): React.JSX.Element {
       />
     </>
   );
+}
+
+function getInitials(name: string | undefined): string {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+
+  return initials || 'AL';
 }

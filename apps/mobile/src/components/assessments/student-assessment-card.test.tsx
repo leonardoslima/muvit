@@ -55,6 +55,25 @@ describe('StudentAssessmentCard', () => {
     expect(screen.getByText(notes).props.numberOfLines).toBeUndefined();
   });
 
+  it('agrupa peso e gordura em duas colunas e identifica comparações abaixo', () => {
+    render(
+      <StudentAssessmentCard
+        assessment={assessment({ weightKg: 72.4, bodyFatPct: 21.6 })}
+        previousAssessment={assessment({ weightKg: 73.2, bodyFatPct: 22 })}
+        onOpenPhoto={() => undefined}
+      />,
+    );
+
+    const metrics = screen.getByTestId('student-assessment-primary-metrics');
+    expect(metrics.props.className).toContain('flex-row');
+    expect(screen.getByText('Peso')).toBeTruthy();
+    expect(screen.getByText('Gordura corporal')).toBeTruthy();
+    expect(screen.getByText('72,4 kg').props.className).toContain('font-v2-bold');
+    expect(screen.getByText('21,6%').props.className).toContain('font-v2-bold');
+    expect(screen.getByText('Peso: 0,8 kg a menos')).toBeTruthy();
+    expect(screen.getByText('Gordura: 0,4 p.p. a menos')).toBeTruthy();
+  });
+
   it('mostra oito fotos e encaminha cada índice para abertura sem remover anexos', () => {
     const onOpenPhoto = vi.fn();
     const photos = Array.from(

@@ -32,18 +32,39 @@ export function StudentAssessmentCard({
     >
       <Text variant="sectionTitle">{readout.dateLabel}</Text>
 
-      <View className="gap-1">
-        <AssessmentMetric label="Peso" value={readout.weightLabel} />
-        {readout.weightComparison ? (
-          <Text className="text-v2-brand" variant="support">
-            {readout.weightComparison}
-          </Text>
-        ) : null}
-        <AssessmentMetric label="Gordura corporal" value={readout.bodyFatLabel} />
-        {readout.bodyFatComparison ? (
-          <Text className="text-v2-brand" variant="support">
-            {readout.bodyFatComparison}
-          </Text>
+      <View className="gap-3">
+        <View className="flex-row items-start gap-4" testID="student-assessment-primary-metrics">
+          <View className="min-w-0 flex-1 gap-1">
+            <Text className="text-v2-secondary" variant="support">
+              Peso
+            </Text>
+            <Text className="font-v2-bold text-v2-text" variant="sectionTitle">
+              {readout.weightLabel}
+            </Text>
+          </View>
+          <View className="min-w-0 flex-1 gap-1">
+            <Text className="text-v2-secondary" variant="support">
+              Gordura corporal
+            </Text>
+            <Text className="font-v2-bold text-v2-text" variant="sectionTitle">
+              {readout.bodyFatLabel}
+            </Text>
+          </View>
+        </View>
+
+        {readout.weightComparison || readout.bodyFatComparison ? (
+          <View className="gap-1">
+            {readout.weightComparison ? (
+              <Text className="text-v2-brand" variant="support">
+                Peso: {readout.weightComparison}
+              </Text>
+            ) : null}
+            {readout.bodyFatComparison ? (
+              <Text className="text-v2-brand" variant="support">
+                Gordura: {readout.bodyFatComparison}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 

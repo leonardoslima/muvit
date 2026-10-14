@@ -32,7 +32,7 @@ describe('buildStudentProgressReadout', () => {
     );
 
     expect(readout.weightLabel).toBe('82,5 kg');
-    expect(readout.bodyFatLabel).toBe('19,25% de gordura');
+    expect(readout.bodyFatLabel).toBe('19,25%');
   });
 
   it('não inventa zero para medidas nulas ou inválidas', () => {
@@ -41,13 +41,34 @@ describe('buildStudentProgressReadout', () => {
     );
 
     expect(readout.weightLabel).toBe('— kg');
-    expect(readout.bodyFatLabel).toBe('—% de gordura');
+    expect(readout.bodyFatLabel).toBe('—%');
   });
 
   it('preserva zero como valor válido de gordura corporal', () => {
-    expect(buildStudentProgressReadout(assessment({ bodyFatPct: 0 })).bodyFatLabel).toBe(
-      '0% de gordura',
+    expect(buildStudentProgressReadout(assessment({ bodyFatPct: 0 })).bodyFatLabel).toBe('0%');
+  });
+
+  it('trata peso e gordura vazios ou em branco como ausência, não como zero', () => {
+    const readout = buildStudentProgressReadout(
+      assessment({ weightKg: '', bodyFatPct: '   ' }),
+      assessment({ weightKg: 82, bodyFatPct: 21 }),
     );
+
+    expect(readout.weightLabel).toBe('— kg');
+    expect(readout.bodyFatLabel).toBe('—%');
+    expect(readout.weightComparison).toBeUndefined();
+    expect(readout.bodyFatComparison).toBeUndefined();
+  });
+
+  it('omite comparações quando o valor de referência vazio ou em branco não é numérico', () => {
+    const readout = buildStudentProgressReadout(
+      assessment({ weightKg: 80, bodyFatPct: 0 }),
+      assessment({ weightKg: '', bodyFatPct: '  ' }),
+    );
+
+    expect(readout.weightComparison).toBeUndefined();
+    expect(readout.bodyFatComparison).toBeUndefined();
+    expect(readout.bodyFatLabel).toBe('0%');
   });
 
   it('formata medidas parciais sem criar comparações sem referência', () => {
@@ -57,7 +78,7 @@ describe('buildStudentProgressReadout', () => {
 
     expect(readout.weightLabel).toBe('78,5 kg');
     expect(readout.heightLabel).toBe('170,4 cm');
-    expect(readout.bodyFatLabel).toBe('—% de gordura');
+    expect(readout.bodyFatLabel).toBe('—%');
     expect(readout.weightComparison).toBeUndefined();
     expect(readout.bodyFatComparison).toBeUndefined();
   });

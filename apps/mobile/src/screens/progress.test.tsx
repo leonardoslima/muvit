@@ -13,9 +13,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProgressScreen } from './progress';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
+const sessionState = vi.hoisted(() => ({ name: 'Ana Lima' }));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('../lib/auth-client', () => ({
+  authClient: {
+    useSession: () => ({ data: { user: { name: sessionState.name } }, isPending: false }),
+  },
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
@@ -54,6 +61,7 @@ function deferred<T>(): {
 
 beforeEach(() => {
   apiState.request.mockReset();
+  sessionState.name = 'Ana Lima';
 });
 
 describe('ProgressScreen', () => {
@@ -65,6 +73,33 @@ describe('ProgressScreen', () => {
     expect(screen.getByText('Carregando progresso')).toBeTruthy();
     expect(screen.getByLabelText('Carregando progresso')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Nova avaliação' })).toBeTruthy();
+  });
+
+  it('mantém identidade, contexto, ação larga e heading nessa ordem em viewport estreita', () => {
+    apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
+
+    renderWithQueryClient();
+
+    expect(screen.getByLabelText('Muvit')).toBeTruthy();
+    expect(screen.getByLabelText('Iniciais de Ana Lima')).toBeTruthy();
+    expect(screen.getByText('AL')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Progresso' })).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Suas avaliações' })).toBeTruthy();
+    expect(
+      screen
+        .getAllByTestId(/^progress-(brand-row|title-block|new-assessment|assessments-heading)$/)
+        .map((element) => element.props.testID),
+    ).toEqual([
+      'progress-brand-row',
+      'progress-title-block',
+      'progress-new-assessment',
+      'progress-assessments-heading',
+    ]);
+
+    const action = screen.getByRole('button', { name: 'Nova avaliação' });
+    expect(action.props.className).toContain('w-full');
+    expect(action.props.className).not.toMatch(/min-w-|w-\[/);
+    expect(screen.getByTestId('progress-page-header').props.className).toContain('gap-5');
   });
 
   it('permite tentar novamente depois de uma falha e exibe o vazio', async () => {
@@ -152,9 +187,9 @@ describe('ProgressScreen', () => {
     const card = await screen.findByTestId('assessment-card-assessment-new');
     expect(within(card).getByText('12/06/2026')).toBeTruthy();
     expect(within(card).getByText('80 kg')).toBeTruthy();
-    expect(within(card).getByText('19% de gordura')).toBeTruthy();
-    expect(within(card).getByText('2 kg a menos')).toBeTruthy();
-    expect(within(card).getByText('2 p.p. a menos')).toBeTruthy();
+    expect(within(card).getByText('19%')).toBeTruthy();
+    expect(within(card).getByText('Peso: 2 kg a menos')).toBeTruthy();
+    expect(within(card).getByText('Gordura: 2 p.p. a menos')).toBeTruthy();
     expect(within(card).getByText('Evoluiu')).toBeTruthy();
     expect(await screen.findByText('12/05/2026')).toBeTruthy();
     expect(screen.getAllByTestId(/^assessment-card-/).map((item) => item.props.testID)).toEqual([
@@ -190,8 +225,8 @@ describe('ProgressScreen', () => {
     renderWithQueryClient();
 
     const card = await screen.findByTestId('assessment-card-assessment-gain');
-    expect(within(card).getByText('2 kg a mais')).toBeTruthy();
-    expect(within(card).getByText('2 p.p. a mais')).toBeTruthy();
+    expect(within(card).getByText('Peso: 2 kg a mais')).toBeTruthy();
+    expect(within(card).getByText('Gordura: 2 p.p. a mais')).toBeTruthy();
   });
 
   it('preserva os valores neutros quando uma avaliação não tem medidas', async () => {
@@ -213,7 +248,7 @@ describe('ProgressScreen', () => {
     const card = await screen.findByTestId('assessment-card-assessment-without-measures');
     expect(within(card).getByText('data não informada')).toBeTruthy();
     expect(within(card).getByText('— kg')).toBeTruthy();
-    expect(within(card).getByText('—% de gordura')).toBeTruthy();
+    expect(within(card).getByText('—%')).toBeTruthy();
   });
 
   it('não compara com registro mais antigo quando a avaliação adjacente não tem medida', async () => {

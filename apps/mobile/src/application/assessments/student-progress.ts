@@ -46,7 +46,12 @@ function formatDate(value: string): string {
 
 function toNumber(value: string | number | null | undefined): number | null {
   if (value === null || value === undefined) return null;
-  const normalized = typeof value === 'number' ? value : Number(value.trim().replace(',', '.'));
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = Number(trimmed.replace(',', '.'));
   return Number.isFinite(normalized) ? normalized : null;
 }
 
@@ -55,7 +60,7 @@ function formatMetric(value: number | null, unit: string): string {
 }
 
 function formatBodyFat(value: number | null): string {
-  return value === null ? '—% de gordura' : `${formatNumber(value)}% de gordura`;
+  return value === null ? '—%' : `${formatNumber(value)}%`;
 }
 
 function formatComparison(current: number, previous: number, unit: string): string {
