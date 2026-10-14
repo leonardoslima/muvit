@@ -1,6 +1,10 @@
 # Aluno — progresso e avaliações v2 — MUV-27
 
-A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta estende a direção A e a foundation do MUV-24. O design foi aprovado pelo usuário em 2026-10-04 para commit e integração local na `develop`. A implementação pertence ao MUV-37; esta entrega não altera código Expo, API, validação, perfil ou autenticação. Na revisão de 2026-10-03, o usuário definiu seleção de fotos sem limite de quantidade, com conferência visual antes do envio. Esse requisito novo está representado no design e depende de adequação funcional separada, pois difere dos contratos atuais.
+A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta registra a direção A e a foundation do MUV-24; o design foi aprovado pelo usuário em 2026-10-04. A implementação foi entregue no MUV-37 em 2026-10-14. O usuário autorizou adequar app, API e validação para aceitar quantidade ilimitada de fotos, sem preservar o teto antigo de seis. O histórico de validação e os limites da inspeção nativa estão em [`docs/muv-37-validation-report.md`](./muv-37-validation-report.md).
+
+## Status da implementação
+
+O app do aluno aceita seleção cumulativa e sem teto de fotos, pré-visualização, remoção antes do envio, envio sequencial e leitura das fotos registradas. O contrato compartilhado/API aceita qualquer quantidade válida de URLs; o banco já armazena `photos` como `jsonb` sem limite de itens, portanto esta entrega não exige migration. O fluxo do professor mantém seu máximo de três fotos. Consulte o relatório do MUV-37 para comandos, resultados e capturas do AVD.
 
 ## Onde encontrar
 
@@ -78,9 +82,9 @@ A ação de remover atua somente na seleção ainda não enviada. Nas seções `
 
 Não há teto de quantidade no design solicitado. Mais fotos criam novas linhas e rolagem, sem truncar a lista ou trocar os anexos por um contador de imagens ocultas. A amostra com oito fotos valida a apresentação de um conjunto maior; seus assets se repetem apenas como ilustração de layout. O produto deve representar cada imagem efetivamente selecionada.
 
-Essa seleção múltipla, a conferência e a remoção da seleção são requisitos novos. Atualmente, `new-assessment.tsx` guarda uma foto, consome apenas `result.assets[0]` e `createAssessmentSchema` limita `photos` a seis. A implementação precisa adequar app, serviço de envio e contrato de validação/API antes de oferecer o comportamento sem limite. O MUV-27 apenas registra e desenha a orientação; não altera esses arquivos nem declara que a API atual aceita o novo fluxo. Suporte de arquivo, permissões e aparência do seletor devem ser resolvidos nessa implementação; o design não acrescenta câmera ou compartilhamento.
+Essa seleção múltipla, a conferência e a remoção da seleção foram implementadas no MUV-37. `new-assessment.tsx` acumula os assets escolhidos e o serviço envia cada foto em ordem antes de criar a avaliação. O schema compartilhado deixou de limitar `photos` a seis, sem alterar o formato dos dados, os limites dos demais campos ou o máximo de três fotos deliberado no fluxo do professor. O relatório do MUV-37 registra a confirmação por testes de schema, API, serviço e AVD. O design não acrescenta câmera ou compartilhamento.
 
-O envio conserva a sequência de upload dos anexos, criação da avaliação, invalidação da query de avaliações e confirmação de sucesso. O serviço atual precisa ser adequado para o conjunto selecionado. Durante o envio, as miniaturas permanecem visíveis e as ações de adicionar/remover fotos e salvar ficam desabilitadas. O botão de salvar exibe **Salvando avaliação...** com largura estável. O design não bloqueia os demais campos que o fluxo atual mantém editáveis.
+O envio conserva a sequência de upload dos anexos, criação da avaliação, invalidação da query de avaliações e confirmação de sucesso. O serviço do MUV-37 executa essa sequência para todo o conjunto selecionado. Durante o envio, as miniaturas permanecem visíveis e as ações de adicionar/remover fotos e salvar ficam desabilitadas. O botão de salvar exibe **Salvando avaliação...** com largura estável. O design não bloqueia os demais campos que o fluxo atual mantém editáveis.
 
 No erro, preservar data, valores, observações e todas as fotos selecionadas; mostrar **Não foi possível salvar sua avaliação.** e permitir novo envio. Não inferir causa específica nem prometer idempotência, descarte ou salvamento offline. Como o fluxo existente inclui invalidação depois da criação, uma falha da operação completa não constitui prova de que nenhum registro foi criado.
 
@@ -106,4 +110,4 @@ A conferência dos 31 frames de topo do MUV-27 (28 telas, dois quadros de compon
 
 Na conferência final de 2026-10-04, o MCP confirmou 31 frames, 165 instâncias, nenhuma sobreposição, nenhum placeholder ativo e nenhum escape Unicode no texto do canvas. A captura de `e34lmL` confirmou a apresentação das fotos selecionadas. Os documentos também passaram por `git diff --check` e busca de escapes Unicode antes do commit.
 
-Testes, lint, typecheck, build e execução Expo não se aplicam a este diff de design. A aprovação visual foi recebida; a implementação e a validação nativa do MUV-37 permanecem pendentes.
+As capturas Pen documentam a proposta e não substituem a execução do app. O MUV-37 também foi validado em Android; as capturas do histórico e do visor, os comandos e o resultado de cada gate estão em [`docs/muv-37-validation-report.md`](./muv-37-validation-report.md). Os cenários não cobertos pela inspeção visual estão explicitamente listados nesse relatório.

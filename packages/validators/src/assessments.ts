@@ -20,7 +20,7 @@ export const createAssessmentSchema = z.object({
   heightCm: z.number().positive().max(300).optional(),
   bodyFatPct: z.number().min(0).max(80).optional(),
   measurements: measurementsSchema.optional(),
-  photos: z.array(z.string().url()).max(6).optional(),
+  photos: z.array(z.string().url()).optional(),
   notes: z.string().max(2000).optional(),
 });
 

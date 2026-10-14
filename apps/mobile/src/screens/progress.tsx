@@ -1,188 +1,164 @@
-import type { assessmentSchema } from '@muvit/validators';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
-import type { z } from 'zod';
-
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
+import { useRef, useState } from 'react';
+import { View } from 'react-native';
+import type { Assessment, AssessmentsPage } from '../application/assessments/assessment-data';
+import { AssessmentPhotoViewer } from '../components/assessments/assessment-photo-viewer';
+import { StudentAssessmentCard } from '../components/assessments/student-assessment-card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
-import { colors, fontFamilies, sharedStyles, spacing, typography } from '../lib/styles';
+import { Button, Message, StatePanel, Text } from '../components/ui/v2';
+import { authClient } from '../lib/auth-client';
 import { useApiClient } from '../lib/use-api';
 
-type Assessment = z.infer<typeof assessmentSchema>;
+type OpenAssessmentPhotos = {
+  photos: readonly string[];
+  index: number;
+};
 
-export function ProgressScreen() {
+export function ProgressScreen(): React.JSX.Element {
   const api = useApiClient();
-
+  const session = authClient.useSession();
+  const displayName = session.data?.user.name?.trim() || 'Aluno';
+  const initials = getInitials(session.data?.user.name);
+  const retrying = useRef(false);
+  const [openPhotos, setOpenPhotos] = useState<OpenAssessmentPhotos | null>(null);
   const query = useQuery({
     queryKey: ['assessments', 'me'],
-    queryFn: async () => {
-      return api.request<{ items: Assessment[]; total: number }>(
-        '/students/me/assessments?limit=20',
-      );
-    },
+    queryFn: async () => api.request<AssessmentsPage>('/students/me/assessments?limit=20'),
   });
 
+  const hasResponse = query.data !== undefined;
+  const isLoadingWithoutResponse = !hasResponse && query.isFetching;
+  const hasInitialError = !hasResponse && query.isError && !query.isFetching;
+  const hasRefreshError = hasResponse && query.isError && !query.isFetching;
+
+  function retry(): void {
+    if (retrying.current || query.isFetching) return;
+    retrying.current = true;
+    void query.refetch().then(
+      () => {
+        retrying.current = false;
+      },
+      () => {
+        retrying.current = false;
+      },
+    );
+  }
+
+  function openAssessmentPhoto(photos: readonly string[], index: number): void {
+    setOpenPhotos({ photos, index });
+  }
+
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <View style={styles.headerCopy}>
-          <ScreenHeader
-            subtitle="Acompanhe suas medidas e perceba sua evolução."
-            title="Progresso"
-          />
+    <>
+      <Screen scroll>
+        <View className="gap-5" testID="progress-page-header">
+          <View className="flex-row items-center justify-between" testID="progress-brand-row">
+            <Text
+              accessibilityLabel="Muvit"
+              className="font-v2-bold text-v2-text"
+              variant="sectionTitle"
+            >
+              muvit<Text className="text-v2-primary">.</Text>
+            </Text>
+            <View
+              accessible
+              accessibilityLabel={`Iniciais de ${displayName}`}
+              className="h-12 w-12 items-center justify-center rounded-full bg-v2-subtle"
+            >
+              <Text className="text-v2-brand" variant="label">
+                {initials}
+              </Text>
+            </View>
+          </View>
+          <View className="gap-2" testID="progress-title-block">
+            <ScreenHeader
+              subtitle="Acompanhe suas medidas e perceba sua evolução."
+              title="Progresso"
+            />
+          </View>
+          <Link asChild href="/new-assessment">
+            <Button
+              className="w-full"
+              label="Nova avaliação"
+              onPress={() => undefined}
+              testID="progress-new-assessment"
+              variant="secondary"
+            />
+          </Link>
         </View>
-        <Link asChild href="/new-assessment">
-          <AppButton label="Nova avaliação" onPress={() => undefined} variant="secondary" />
-        </Link>
-      </View>
 
-      {query.isLoading ? (
-        <StatePanel
-          description="Estamos buscando suas avaliações mais recentes."
-          title="Carregando progresso"
-          tone="loading"
-        />
-      ) : null}
+        <Text
+          accessibilityRole="header"
+          className="text-v2-text"
+          testID="progress-assessments-heading"
+          variant="sectionTitle"
+        >
+          Suas avaliações
+        </Text>
 
-      {query.isError ? (
-        <StatePanel
-          actionLabel="Tentar novamente"
-          description="Verifique sua conexão e tente novamente."
-          onAction={() => void query.refetch()}
-          title="Não foi possível carregar seu progresso"
-          tone="error"
-        />
-      ) : null}
+        {isLoadingWithoutResponse ? (
+          <StatePanel
+            description="Estamos buscando suas avaliações mais recentes."
+            kind="loading"
+            title="Carregando progresso"
+          />
+        ) : null}
 
-      {query.data?.items.length === 0 ? (
-        <StatePanel
-          description="Registre uma avaliação para acompanhar sua evolução."
-          title="Nenhuma avaliação registrada"
-          tone="empty"
-        />
-      ) : null}
+        {hasInitialError ? (
+          <StatePanel
+            action={{ label: 'Tentar novamente', onPress: retry }}
+            description="Verifique sua conexão e tente novamente."
+            kind="error"
+            title="Não foi possível carregar seu progresso"
+          />
+        ) : null}
 
-      {query.data?.items.map((assessment: Assessment, index: number) => (
-        <AssessmentCard
-          assessment={assessment}
-          key={assessment.id}
-          previousAssessment={query.data?.items[index + 1]}
-        />
-      ))}
-    </Screen>
+        {hasRefreshError ? (
+          <Message
+            action={{ label: 'Tentar novamente', onPress: retry }}
+            title="Não foi possível atualizar suas avaliações."
+            variant="error"
+          />
+        ) : null}
+
+        {query.data?.items.length === 0 ? (
+          <StatePanel
+            description="Registre uma avaliação para acompanhar sua evolução."
+            kind="empty"
+            title="Nenhuma avaliação registrada"
+          />
+        ) : null}
+
+        {query.data?.items.map((assessment: Assessment, index: number) => (
+          <StudentAssessmentCard
+            assessment={assessment}
+            key={assessment.id}
+            onOpenPhoto={(photoIndex) => {
+              if (assessment.photos) openAssessmentPhoto(assessment.photos, photoIndex);
+            }}
+            previousAssessment={query.data?.items[index + 1]}
+          />
+        ))}
+      </Screen>
+      <AssessmentPhotoViewer
+        index={openPhotos?.index ?? null}
+        onClose={() => setOpenPhotos(null)}
+        onIndexChange={(index) =>
+          setOpenPhotos((current) => (current ? { ...current, index } : null))
+        }
+        photos={openPhotos?.photos ?? []}
+      />
+    </>
   );
 }
 
-function AssessmentCard({
-  assessment,
-  previousAssessment,
-}: {
-  assessment: Assessment;
-  previousAssessment?: Assessment;
-}) {
-  const weight = toNumber(assessment.weightKg);
-  const bodyFat = toNumber(assessment.bodyFatPct);
-  const previousWeight = toNumber(previousAssessment?.weightKg);
-  const previousBodyFat = toNumber(previousAssessment?.bodyFatPct);
+function getInitials(name: string | undefined): string {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
 
-  return (
-    <Card testID={`assessment-card-${assessment.id}`}>
-      <Text style={styles.date}>{formatDate(assessment.date)}</Text>
-      <View style={styles.metrics}>
-        <Metric label="Peso" value={formatMetric(weight, 'kg')} />
-        <Metric label="Gordura corporal" value={formatBodyFat(bodyFat)} />
-      </View>
-      {weight !== null && previousWeight !== null ? (
-        <Comparison label={formatDelta(weight - previousWeight, 'kg')} />
-      ) : null}
-      {bodyFat !== null && previousBodyFat !== null ? (
-        <Comparison label={formatDelta(bodyFat - previousBodyFat, 'p.p.')} />
-      ) : null}
-      {assessment.notes ? <Text style={sharedStyles.subtitle}>{assessment.notes}</Text> : null}
-    </Card>
-  );
+  return initials || 'AL';
 }
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metric}>
-      <Text style={sharedStyles.label}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-    </View>
-  );
-}
-
-function Comparison({ label }: { label: string }) {
-  return <Text style={styles.comparison}>{label}</Text>;
-}
-
-function formatDate(value: string): string {
-  const [year, month, day] = value.split('-');
-  if (!year || !month || !day) return value;
-  return `${day}/${month}/${year}`;
-}
-
-function toNumber(value: string | number | null | undefined): number | null {
-  if (value === null || value === undefined) return null;
-  const normalized = typeof value === 'number' ? value : Number(value.replace(',', '.'));
-  return Number.isFinite(normalized) ? normalized : null;
-}
-
-function formatMetric(value: number | null, unit: string): string {
-  return value === null ? `— ${unit}` : `${formatNumber(value)} ${unit}`;
-}
-
-function formatBodyFat(value: number | null): string {
-  return value === null ? '—% de gordura' : `${formatNumber(value)}% de gordura`;
-}
-
-function formatNumber(value: number): string {
-  return value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-}
-
-function formatDelta(delta: number, unit: string): string {
-  if (delta === 0) return `Sem alteração em ${unit}`;
-  const direction = delta < 0 ? 'a menos' : 'a mais';
-  return `${formatNumber(Math.abs(delta))} ${unit} ${direction}`;
-}
-
-const styles = StyleSheet.create({
-  content: {
-    paddingBottom: spacing.xxxl,
-  },
-  headerRow: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.md,
-    justifyContent: 'space-between',
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  date: {
-    color: colors.ink,
-    fontFamily: fontFamilies.heading,
-    fontSize: 20,
-  },
-  metrics: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.lg,
-  },
-  metric: {
-    flexGrow: 1,
-    minWidth: 120,
-  },
-  metricValue: {
-    color: colors.ink,
-    ...typography.cardTitle,
-    fontSize: 18,
-  },
-  comparison: {
-    color: colors.primaryText,
-    ...typography.bodyStrong,
-  },
-});
