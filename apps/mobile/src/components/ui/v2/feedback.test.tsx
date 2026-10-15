@@ -9,6 +9,16 @@ import { Surface } from './surface';
 import { Text, TextClassContext } from './text';
 
 describe('feedback e superfícies v2', () => {
+  it('Message error sem título anuncia somente a descrição com região polite', () => {
+    const description = 'Não foi possível sair agora.';
+    render(<Message variant="error" description={description} testID="message" />);
+
+    expect(screen.getAllByText(description)).toHaveLength(1);
+    expect(screen.getByRole('alert')).toBe(screen.getByText(description));
+    expect(screen.getByTestId('message').props.accessibilityLiveRegion).toBe('polite');
+    expect(screen.queryByText('Erro')).toBeNull();
+  });
+
   it.each(['success', 'warning', 'error', 'info'] as const)(
     'Message %s preserva descrição e ação do caller',
     (variant) => {
