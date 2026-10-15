@@ -49,6 +49,7 @@ async function createStudentWorkoutScenario() {
   return {
     studentId,
     studentCookie,
+    planId: plan.json().id as string,
     workoutDayId: plan.json().days[0].id as string,
     workoutExerciseId: plan.json().days[0].exercises[0].id as string,
   };
@@ -301,5 +302,75 @@ describe('workout logs', () => {
       },
     });
     expect(r.statusCode).toBe(404);
+  });
+
+  it('keeps completed history after replacing a plan and rejects new logs on archived days', async () => {
+    const { studentCookie, planId, workoutDayId, workoutExerciseId } =
+      await createStudentWorkoutScenario();
+    const started = await app.inject({
+      method: 'POST',
+      url: '/workout-logs',
+      headers: { cookie: studentCookie },
+      payload: { workoutDayId, date: '2026-10-14' },
+    });
+    const logId = started.json().id as string;
+    const finished = await app.inject({
+      method: 'PATCH',
+      url: `/workout-logs/${logId}/finish`,
+      headers: { cookie: studentCookie },
+      payload: {
+        durationMin: 35,
+        sets: [{ workoutExerciseId, setNumber: 1, repsDone: 10, loadKg: 50, completed: true }],
+      },
+    });
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/workout-plans/${planId}`,
+      headers: { cookie: studentCookie },
+      payload: {
+        days: [
+          {
+            label: 'Treino renovado',
+            dayOrder: 0,
+            exercises: [
+              {
+                exerciseId: finished.json().sets[0].exercise.id,
+                exerciseOrder: 0,
+                sets: 4,
+                reps: '8',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const archivedDay = await db.query.workoutDays.findFirst({
+      where: (days, { eq }) => eq(days.id, workoutDayId),
+    });
+    const historicalLog = await app.inject({
+      method: 'GET',
+      url: `/workout-logs/${logId}`,
+      headers: { cookie: studentCookie },
+    });
+    const newLogOnArchivedDay = await app.inject({
+      method: 'POST',
+      url: '/workout-logs',
+      headers: { cookie: studentCookie },
+      payload: { workoutDayId, date: '2026-10-15' },
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().days).toHaveLength(1);
+    expect(updated.json().days[0].label).toBe('Treino renovado');
+    expect(archivedDay?.isCurrent).toBe(false);
+    expect(historicalLog.statusCode).toBe(200);
+    expect(historicalLog.json().sets).toEqual([
+      expect.objectContaining({
+        workoutExerciseId,
+        exercise: expect.objectContaining({ id: finished.json().sets[0].exercise.id }),
+      }),
+    ]);
+    expect(newLogOnArchivedDay.statusCode).toBe(404);
   });
 });

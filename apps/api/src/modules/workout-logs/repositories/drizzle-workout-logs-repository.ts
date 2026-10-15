@@ -72,11 +72,11 @@ export class DrizzleWorkoutLogsRepository implements WorkoutLogsRepository {
   async findWorkoutDayAccess(workoutDayId: string) {
     const day = await db.query.workoutDays.findFirst({
       where: eq(schema.workoutDays.id, workoutDayId),
-      columns: { id: true },
+      columns: { id: true, isCurrent: true },
       with: { plan: { columns: { studentId: true } } },
     });
     if (!day) return null;
-    return { id: day.id, studentId: day.plan.studentId };
+    return { id: day.id, studentId: day.plan.studentId, isCurrent: day.isCurrent };
   }
 
   async start(studentId: string, input: StartWorkoutLogInput) {

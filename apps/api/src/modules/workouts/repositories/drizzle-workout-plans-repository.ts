@@ -2,13 +2,18 @@ import { db, schema } from '@muvit/db';
 import { asc, desc, eq } from 'drizzle-orm';
 import type {
   CreateWorkoutPlanData,
+  CreateWorkoutPlanInput,
   UpdateWorkoutPlanInput,
   WorkoutPlanFullResponse,
   WorkoutPlansRepository,
 } from './workout-plans-repository.js';
 
+type WorkoutPlanTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type WorkoutPlanDayInput = CreateWorkoutPlanInput['days'][number];
+
 const withDaysAndExercises = {
   days: {
+    where: eq(schema.workoutDays.isCurrent, true),
     orderBy: [asc(schema.workoutDays.dayOrder)],
     with: {
       exercises: {
@@ -20,6 +25,41 @@ const withDaysAndExercises = {
     },
   },
 };
+
+export async function replaceWorkoutPlanDays(
+  tx: WorkoutPlanTransaction,
+  planId: string,
+  days: WorkoutPlanDayInput[],
+) {
+  await tx
+    .update(schema.workoutDays)
+    .set({ isCurrent: false })
+    .where(eq(schema.workoutDays.planId, planId));
+
+  for (const day of days) {
+    const [insertedDay] = await tx
+      .insert(schema.workoutDays)
+      .values({ planId, label: day.label, dayOrder: day.dayOrder })
+      .returning();
+    if (!insertedDay) throw new Error('insert failed');
+
+    if (day.exercises.length > 0) {
+      await tx.insert(schema.workoutExercises).values(
+        day.exercises.map((exercise) => ({
+          workoutDayId: insertedDay.id,
+          exerciseId: exercise.exerciseId,
+          exerciseOrder: exercise.exerciseOrder,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          restSeconds: exercise.restSeconds ?? null,
+          loadKg: exercise.loadKg !== undefined ? String(exercise.loadKg) : null,
+          tempo: exercise.tempo ?? null,
+          notes: exercise.notes ?? null,
+        })),
+      );
+    }
+  }
+}
 
 export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
   async create(data: CreateWorkoutPlanData) {
@@ -38,29 +78,7 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
         .returning();
       if (!inserted) throw new Error('insert failed');
 
-      for (const day of data.days) {
-        const [insertedDay] = await tx
-          .insert(schema.workoutDays)
-          .values({ planId: inserted.id, label: day.label, dayOrder: day.dayOrder })
-          .returning();
-        if (!insertedDay) throw new Error('insert failed');
-
-        if (day.exercises.length > 0) {
-          await tx.insert(schema.workoutExercises).values(
-            day.exercises.map((exercise) => ({
-              workoutDayId: insertedDay.id,
-              exerciseId: exercise.exerciseId,
-              exerciseOrder: exercise.exerciseOrder,
-              sets: exercise.sets,
-              reps: exercise.reps,
-              restSeconds: exercise.restSeconds ?? null,
-              loadKg: exercise.loadKg !== undefined ? String(exercise.loadKg) : null,
-              tempo: exercise.tempo ?? null,
-              notes: exercise.notes ?? null,
-            })),
-          );
-        }
-      }
+      await replaceWorkoutPlanDays(tx, inserted.id, data.days);
 
       const result = await tx.query.workoutPlans.findFirst({
         where: eq(schema.workoutPlans.id, inserted.id),
@@ -99,7 +117,7 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
   async findAccessById(id: string) {
     const plan = await db.query.workoutPlans.findFirst({
       where: eq(schema.workoutPlans.id, id),
-      columns: { id: true, studentId: true, trainerId: true },
+      columns: { id: true, studentId: true, trainerId: true, status: true },
     });
     return plan ?? null;
   }
@@ -121,31 +139,7 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
       }
 
       if (input.days !== undefined) {
-        await tx.delete(schema.workoutDays).where(eq(schema.workoutDays.planId, id));
-
-        for (const day of input.days) {
-          const [insertedDay] = await tx
-            .insert(schema.workoutDays)
-            .values({ planId: id, label: day.label, dayOrder: day.dayOrder })
-            .returning();
-          if (!insertedDay) throw new Error('insert failed');
-
-          if (day.exercises.length > 0) {
-            await tx.insert(schema.workoutExercises).values(
-              day.exercises.map((exercise) => ({
-                workoutDayId: insertedDay.id,
-                exerciseId: exercise.exerciseId,
-                exerciseOrder: exercise.exerciseOrder,
-                sets: exercise.sets,
-                reps: exercise.reps,
-                restSeconds: exercise.restSeconds ?? null,
-                loadKg: exercise.loadKg !== undefined ? String(exercise.loadKg) : null,
-                tempo: exercise.tempo ?? null,
-                notes: exercise.notes ?? null,
-              })),
-            );
-          }
-        }
+        await replaceWorkoutPlanDays(tx, id, input.days);
       }
 
       const plan = await tx.query.workoutPlans.findFirst({

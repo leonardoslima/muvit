@@ -11,7 +11,7 @@ export type FinishWorkoutLogInput = z.infer<typeof finishWorkoutLogSchema>;
 export type ListWorkoutLogsQuery = z.infer<typeof listWorkoutLogsQuerySchema>;
 export type WorkoutLogFullResponse = z.input<typeof workoutLogFullSchema>;
 export type WorkoutLogAccess = { id: string; studentId: string };
-export type WorkoutDayAccess = { id: string; studentId: string };
+export type WorkoutDayAccess = { id: string; studentId: string; isCurrent: boolean };
 export type WorkoutLogSummary = {
   id: string;
   studentId: string;
