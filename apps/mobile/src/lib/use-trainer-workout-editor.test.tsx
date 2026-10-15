@@ -953,6 +953,72 @@ describe('useTrainerWorkoutEditor', () => {
     expect(result.current.focusedExerciseId).toBe(selectedExerciseId);
   });
 
+  it('preserva o draft confirmado contra refetches antigos da origem antes de publicar', async () => {
+    const staleDraft = draftFixture();
+    const savedDraft = {
+      ...draftFixture(),
+      revision: 5,
+      payload: { ...draftFixture().payload, name: 'Rascunho confirmado' },
+    };
+    const changedSourcePlan = activePlanFixture('Plano de origem atualizado');
+    const publishedPlan = activePlanFixture('Rascunho confirmado');
+    let draftReads = 0;
+    let sourcePlanReads = 0;
+    let publishBody: { payload: { name: string }; revision: number } | undefined;
+    const request = vi.fn((path: string, options?: { method?: string; body?: string }) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) {
+        draftReads += 1;
+        return Promise.resolve(staleDraft);
+      }
+      if (path === `/workout-plans/${PLAN_ID}`) {
+        sourcePlanReads += 1;
+        return Promise.resolve(
+          sourcePlanReads === 1 ? activePlanFixture('Plano de origem inicial') : changedSourcePlan,
+        );
+      }
+      if (path === '/workout-plan-drafts' && options?.method === 'POST') {
+        return Promise.resolve(savedDraft);
+      }
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`) {
+        publishBody = JSON.parse(options?.body ?? '{}') as typeof publishBody;
+        return Promise.resolve(publishedPlan);
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result, queryClient } = setup(api, 'edit', {
+      planId: PLAN_ID,
+      draftId: DRAFT_ID,
+    });
+    const detailKey = ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID] as const;
+
+    await waitFor(() => expect(result.current.editor.name).toBe('Força'));
+    act(() => result.current.changePlanField('name', 'Rascunho confirmado'));
+    await act(async () => {
+      expect(await result.current.saveDraft()).toBe(true);
+    });
+    const sourceReadsAfterSave = sourcePlanReads;
+
+    await act(async () => {
+      await queryClient.refetchQueries({ queryKey: detailKey, exact: true });
+    });
+    await waitFor(() => expect(result.current.plan?.name).toBe('Plano de origem atualizado'));
+
+    expect(draftReads).toBeGreaterThan(1);
+    expect(result.current.editor.name).toBe('Rascunho confirmado');
+    await act(async () => {
+      expect(await result.current.publish()).toBe(true);
+    });
+
+    expect(sourceReadsAfterSave).toBe(1);
+    expect(publishBody).toEqual(
+      expect.objectContaining({
+        payload: expect.objectContaining({ name: 'Rascunho confirmado' }),
+        revision: savedDraft.revision,
+      }),
+    );
+  });
+
   it('atualiza lista e detalhe montados ao salvar e publicar sem cruzar aluno ou conta', async () => {
     let remotePlan = activePlanFixture('Força');
     let remoteDraft: WorkoutPlanDraft | undefined;
@@ -1091,7 +1157,7 @@ describe('useTrainerWorkoutEditor', () => {
       });
 
       expect(reads.targetList).toBe(isolatedReadsBeforeSave.targetList + 1);
-      expect(planReads).toBe(planReadsBeforeSave + 1);
+      expect(planReads).toBe(planReadsBeforeSave);
       expect(targetList.getCurrentResult().data?.drafts[0]?.id).toBe(DRAFT_ID);
       expect(reads.otherAuthList).toBe(isolatedReadsBeforeSave.otherAuthList);
       expect(reads.otherStudentList).toBe(isolatedReadsBeforeSave.otherStudentList);

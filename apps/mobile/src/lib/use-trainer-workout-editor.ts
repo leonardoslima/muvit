@@ -154,9 +154,13 @@ export function useTrainerWorkoutEditor({
 
   const plan = planQuery.data ?? publishedPlanSnapshot;
   const dirty = isWorkoutEditorDirty(editor, baselineSnapshot);
+  const routeDraft = draftId && !draftConsumed ? draftQuery.data : undefined;
   const draft =
-    savedDraft ??
-    (draftId && !draftConsumed ? (hydratedDraftRef.current ?? draftQuery.data) : undefined);
+    dirty && savedDraft
+      ? savedDraft
+      : routeDraft && (!savedDraft || routeDraft.revision > savedDraft.revision)
+        ? routeDraft
+        : (savedDraft ?? (draftId && !draftConsumed ? hydratedDraftRef.current : undefined));
   const draftForContextValidation = draft;
   const invalidContext = !studentId || (mode === 'edit' && !draftId && !planId);
   let contextError: string | undefined;
@@ -207,9 +211,9 @@ export function useTrainerWorkoutEditor({
   useEffect(() => {
     if (contextError || dirtyRef.current) return;
 
-    if (draftId && !draftConsumed && draftQuery.data) {
-      if (draftQuery.data.sourcePlanId && !plan) return;
-      if (hydratedDraftRevision.current === draftQuery.data.revision) return;
+    if (draft) {
+      if (draft.sourcePlanId && !plan) return;
+      if (hydratedDraftRevision.current === draft.revision) return;
       try {
         const preserveInteraction = hydratedDraftRevision.current !== undefined;
         const selectedDayIndex = preserveInteraction
@@ -218,10 +222,10 @@ export function useTrainerWorkoutEditor({
         const focusLocation = preserveInteraction
           ? getFocusedExerciseLocation(editorRef.current, focusedExerciseId)
           : undefined;
-        const hydrated = hydrateWorkoutDraftEditorState(draftQuery.data, createLocalId);
-        hydratedDraftRef.current = draftQuery.data;
-        hydratedDraftRevision.current = draftQuery.data.revision;
-        setSavedDraft(draftQuery.data);
+        const hydrated = hydrateWorkoutDraftEditorState(draft, createLocalId);
+        hydratedDraftRef.current = draft;
+        hydratedDraftRevision.current = draft.revision;
+        setSavedDraft(draft);
         const selectedDay =
           hydrated.state.days[selectedDayIndex] ??
           hydrated.state.days.find((day) => day.localId === hydrated.selectedDayLocalId);
@@ -262,9 +266,7 @@ export function useTrainerWorkoutEditor({
     activePlanId,
     contextError,
     createLocalId,
-    draftId,
-    draftConsumed,
-    draftQuery.data,
+    draft,
     focusedExerciseId,
     mode,
     plan,
@@ -411,7 +413,7 @@ export function useTrainerWorkoutEditor({
       baselineSnapshotRef.current = getWorkoutEditorSnapshot(current);
       setBaselineSnapshot(baselineSnapshotRef.current);
       setFeedback({ tone: 'success', message: 'Rascunho salvo na sua conta.' });
-      await invalidateWorkoutQueries(queryClient, authUserId, studentId, sourcePlanId);
+      await invalidateWorkoutQueries(queryClient, authUserId, studentId);
       return true;
     } catch {
       setFeedback({ tone: 'error', message: 'Não foi possível salvar o rascunho.' });
@@ -528,17 +530,14 @@ export function useTrainerWorkoutEditor({
     if (busyRef.current) return;
     const selectedDayIndex = getSelectedDayIndex(editorRef.current, activeDayId);
     let restored = baselineEditorRef.current;
-    if (
-      draftId &&
-      !draftConsumed &&
-      draftQuery.data &&
-      hydratedDraftRevision.current !== draftQuery.data.revision
-    ) {
-      const latestDraft = hydrateWorkoutDraftEditorState(draftQuery.data, createLocalId);
-      restored = latestDraft.state;
-      hydratedDraftRef.current = draftQuery.data;
-      hydratedDraftRevision.current = draftQuery.data.revision;
-      setSavedDraft(draftQuery.data);
+    const latestDraft =
+      routeDraft && (!savedDraft || routeDraft.revision > savedDraft.revision) ? routeDraft : draft;
+    if (latestDraft && hydratedDraftRevision.current !== latestDraft.revision) {
+      const hydratedDraft = hydrateWorkoutDraftEditorState(latestDraft, createLocalId);
+      restored = hydratedDraft.state;
+      hydratedDraftRef.current = latestDraft;
+      hydratedDraftRevision.current = latestDraft.revision;
+      setSavedDraft(latestDraft);
       baselineEditorRef.current = restored;
       baselineSnapshotRef.current = getWorkoutEditorSnapshot(restored);
       setBaselineSnapshot(baselineSnapshotRef.current);
@@ -552,7 +551,7 @@ export function useTrainerWorkoutEditor({
     setActiveDayId(selectedDay?.localId);
     setFocusedExerciseId(focusedExerciseStillExists ? focusedExerciseId : undefined);
     setFeedback(undefined);
-  }, [activeDayId, createLocalId, draftConsumed, draftId, draftQuery.data, focusedExerciseId]);
+  }, [activeDayId, createLocalId, draft, focusedExerciseId, routeDraft, savedDraft]);
 
   const refresh = useCallback(async () => {
     if (busyRef.current || dirtyRef.current) return;
@@ -606,10 +605,12 @@ async function invalidateWorkoutQueries(
 ): Promise<void> {
   const queryKeys: { queryKey: readonly unknown[]; exact: boolean }[] = [
     { queryKey: ['trainer', 'workouts', studentId, authUserId], exact: true },
-    { queryKey: ['trainer', 'summary'], exact: true },
     { queryKey: trainerWorkoutDraftQueryKey(authUserId, studentId), exact: false },
     ...(planId
-      ? [{ queryKey: ['trainer', 'workout', planId, studentId, authUserId], exact: true }]
+      ? [
+          { queryKey: ['trainer', 'summary'], exact: true },
+          { queryKey: ['trainer', 'workout', planId, studentId, authUserId], exact: true },
+        ]
       : []),
   ];
   await Promise.allSettled(

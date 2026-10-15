@@ -11,6 +11,7 @@ import { ApiError } from '../lib/api';
 import { TrainerWorkoutEditorScreen } from './trainer-workout-editor';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
+const AUTH_USER_ID = '00000000-0000-0000-0000-000000000801';
 const SECOND_STUDENT_ID = '00000000-0000-0000-0000-000000000002';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const SECOND_DRAFT_ID = '00000000-0000-0000-0000-000000000502';
@@ -408,14 +409,24 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
       }),
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['trainer', 'workouts', STUDENT_ID],
-      refetchType: 'none',
+      queryKey: ['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['trainer', 'summary'],
-      refetchType: 'none',
+      exact: true,
+      refetchType: 'active',
     });
-    expect(setQueryData).toHaveBeenCalledWith(['trainer', 'workout', PLAN_ID], createdPlan);
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(setQueryData).toHaveBeenCalledWith(
+      ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      createdPlan,
+    );
     expect(await screen.findByText('Treino publicado com sucesso.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Ver treino' })).toBeNull();
     expect(routerState.replace).not.toHaveBeenCalled();
@@ -517,7 +528,10 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
     await act(async () => {
-      await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+      await queryClient.refetchQueries({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+        exact: true,
+      });
     });
 
     await waitFor(() => {
@@ -552,7 +566,10 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     await user.clear(screen.getByLabelText('Nome do treino'));
     await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
-    await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+    await queryClient.refetchQueries({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+    });
 
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Nome local');
     await user.press(screen.getByRole('tab', { name: 'Selecionar Treino B' }));
@@ -611,14 +628,24 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     expect(JSON.stringify(patchCall?.[1])).not.toContain('startDate');
     expect(JSON.stringify(patchCall?.[1])).not.toContain('endDate');
     expect(JSON.stringify(patchCall?.[1])).not.toContain('trainerId');
-    expect(setQueryData).toHaveBeenCalledWith(['trainer', 'workout', PLAN_ID], updatedPlan);
+    expect(setQueryData).toHaveBeenCalledWith(
+      ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      updatedPlan,
+    );
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['trainer', 'workouts', STUDENT_ID],
-      refetchType: 'none',
+      queryKey: ['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['trainer', 'summary'],
-      refetchType: 'none',
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
     });
     expect(await screen.findByText('Treino publicado com sucesso.')).toBeTruthy();
   });
