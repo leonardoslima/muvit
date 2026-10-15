@@ -9,7 +9,7 @@ import {
   spacing,
   typography,
 } from '../../lib/design-system/tokens';
-import { AppTabsLayout } from './app-tabs';
+import { AppTabsLayout, useRegisterAppTabPressGuard } from './app-tabs';
 
 const safeAreaState = vi.hoisted(() => ({
   insets: { top: 0, right: 0, bottom: 0, left: 0 },
@@ -30,11 +30,14 @@ type TabScreen = {
   };
 };
 
+type TabPressEvent = { persist: () => void };
+
 type TabBarButtonProps = {
   'aria-label'?: string;
   'aria-selected'?: boolean;
   children?: ReactNode;
   href?: string;
+  onPress?: (event: TabPressEvent) => void;
   role?: string;
   testID?: string;
 };
@@ -54,6 +57,12 @@ type ScreenOptions = {
 };
 
 const tabsState = vi.hoisted(() => ({
+  guardElement: null as ReactNode | null,
+  pressedRoutes: [] as Array<{
+    name: string;
+    params: Record<string, unknown>;
+    event: TabPressEvent;
+  }>,
   screenOptions: null as ScreenOptions | null,
   screens: [] as TabScreen[],
 }));
@@ -62,7 +71,7 @@ vi.mock('expo-router', () => {
   const Tabs = Object.assign(
     ({ children, screenOptions }: { children: ReactNode; screenOptions: ScreenOptions }) => {
       tabsState.screenOptions = screenOptions;
-      return React.createElement('View', null, children);
+      return React.createElement('View', null, children, tabsState.guardElement);
     },
     {
       Screen: ({ name, options }: TabScreen) => {
@@ -76,6 +85,13 @@ vi.mock('expo-router', () => {
           'aria-selected': name === 'students',
           children: React.createElement('Text', null, options.tabBarLabel),
           href: `/${name}`,
+          onPress: (event: TabPressEvent) => {
+            tabsState.pressedRoutes.push({
+              name,
+              params: name === 'profile' ? { section: 'account' } : {},
+              event,
+            });
+          },
           role: 'tab',
           testID: `tab-${name}`,
         });
@@ -100,8 +116,23 @@ vi.mock('@expo/vector-icons', () => ({
     React.createElement('Ionicons', props),
 }));
 
+function RegisterGuard({
+  guard,
+}: {
+  guard: {
+    busy: boolean;
+    dirty: boolean;
+    requestLeave: (resumeNavigation: () => void) => void;
+  };
+}) {
+  useRegisterAppTabPressGuard(guard, true);
+  return null;
+}
+
 describe('AppTabsLayout', () => {
   beforeEach(() => {
+    tabsState.guardElement = null;
+    tabsState.pressedRoutes.length = 0;
     tabsState.screenOptions = null;
     tabsState.screens.length = 0;
     safeAreaState.insets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -241,4 +272,84 @@ describe('AppTabsLayout', () => {
       );
     },
   );
+
+  it('retém a navegação do botão de Perfil até o guard liberar a ação original', () => {
+    let resumeNavigation: (() => void) | undefined;
+    const guard = {
+      busy: false,
+      dirty: true,
+      requestLeave: vi.fn((resume: () => void) => {
+        resumeNavigation = resume;
+      }),
+    };
+    tabsState.guardElement = <RegisterGuard guard={guard} />;
+    const tabsRender = render(
+      <AppTabsLayout
+        tabs={[
+          { icon: 'home-outline', name: 'index', title: 'Início' },
+          { icon: 'people-outline', name: 'students', title: 'Alunos' },
+          { icon: 'person-outline', name: 'profile', title: 'Perfil' },
+        ]}
+      />,
+    );
+    const event = { persist: vi.fn() };
+
+    tabsRender.getByTestId('tab-profile').props.onPress?.(event);
+
+    expect(event.persist).toHaveBeenCalledOnce();
+    expect(guard.requestLeave).toHaveBeenCalledOnce();
+    expect(tabsState.pressedRoutes).toHaveLength(0);
+
+    resumeNavigation?.();
+
+    expect(tabsState.pressedRoutes).toEqual([
+      { name: 'profile', params: { section: 'account' }, event },
+    ]);
+  });
+
+  it('bloqueia o botão de outra aba enquanto o guard do editor está ocupado', () => {
+    const guard = { busy: true, dirty: true, requestLeave: vi.fn() };
+    tabsState.guardElement = <RegisterGuard guard={guard} />;
+    const tabsRender = render(
+      <AppTabsLayout tabs={[{ icon: 'person-outline', name: 'profile', title: 'Perfil' }]} />,
+    );
+
+    tabsRender.getByTestId('tab-profile').props.onPress?.({ persist: vi.fn() });
+
+    expect(guard.requestLeave).not.toHaveBeenCalled();
+    expect(tabsState.pressedRoutes).toHaveLength(0);
+  });
+
+  it('mantém o destino mais recente enquanto dirty e bloqueia novos destinos quando busy', () => {
+    let resumeNavigation: (() => void) | undefined;
+    const guard = {
+      busy: false,
+      dirty: true,
+      requestLeave: vi.fn((resume: () => void) => {
+        resumeNavigation = resume;
+      }),
+    };
+    tabsState.guardElement = <RegisterGuard guard={guard} />;
+    const tabsRender = render(
+      <AppTabsLayout
+        tabs={[
+          { icon: 'home-outline', name: 'index', title: 'Início' },
+          { icon: 'person-outline', name: 'profile', title: 'Perfil' },
+        ]}
+      />,
+    );
+
+    tabsRender.getByTestId('tab-profile').props.onPress?.({ persist: vi.fn() });
+    tabsRender.getByTestId('tab-index').props.onPress?.({ persist: vi.fn() });
+    guard.busy = true;
+    tabsRender.getByTestId('tab-profile').props.onPress?.({ persist: vi.fn() });
+
+    expect(guard.requestLeave).toHaveBeenCalledTimes(2);
+    expect(tabsState.pressedRoutes).toHaveLength(0);
+    resumeNavigation?.();
+
+    expect(tabsState.pressedRoutes).toEqual([
+      { name: 'index', params: {}, event: expect.any(Object) },
+    ]);
+  });
 });

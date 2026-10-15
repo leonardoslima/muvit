@@ -1,7 +1,11 @@
-import { CommonActions } from '@react-navigation/native';
+import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import {
+  type AppTabPressGuard,
+  useRegisterAppTabPressGuard,
+} from '../components/navigation/app-tabs';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
 import { Button, Card, Field, Message, SectionTab, StatePanel, Text } from '../components/ui/v2';
 import { ExerciseCatalogModal } from '../components/workouts/exercise-catalog-modal';
@@ -20,19 +24,7 @@ export type TrainerWorkoutEditorScreenProps = {
 };
 
 type NavigationAction = unknown;
-type TabRoute = { key: string; name: string; params?: Record<string, unknown> };
-type TabPressEvent = { target?: string; preventDefault: () => void };
-type TabNavigation = {
-  dispatch: (action: NavigationAction) => void;
-  getState: () => { routes: TabRoute[] };
-  addListener: (event: 'tabPress', listener: (event: TabPressEvent) => void) => () => void;
-};
 type Navigation = {
-  dispatch: (action: NavigationAction) => void;
-  getParent: () => TabNavigation | undefined;
-};
-type PendingNavigation = {
-  action: NavigationAction;
   dispatch: (action: NavigationAction) => void;
 };
 
@@ -72,7 +64,8 @@ function TrainerWorkoutEditorInstance({
   mode,
 }: UseTrainerWorkoutEditorInput) {
   const navigation = useNavigation<Navigation>();
-  const pendingActionRef = useRef<PendingNavigation | null>(null);
+  const isFocused = useIsFocused();
+  const pendingNavigationRef = useRef<(() => void) | null>(null);
   const [exitVisible, setExitVisible] = useState(false);
   const [leaveAfterConfirmation, setLeaveAfterConfirmation] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -86,53 +79,46 @@ function TrainerWorkoutEditorInstance({
   });
   const activeDay = controller.activeDay;
   const hasUnsavedChanges = controller.dirty || controller.busy;
+  const requestTabLeave = useCallback(
+    (resumeNavigation: () => void) => {
+      if (controller.busy) return;
+      pendingNavigationRef.current = resumeNavigation;
+      setExitVisible(true);
+    },
+    [controller.busy],
+  );
+  const tabPressGuard = useMemo<AppTabPressGuard>(
+    () => ({
+      busy: controller.busy,
+      dirty: controller.dirty,
+      requestLeave: requestTabLeave,
+    }),
+    [controller.busy, controller.dirty, requestTabLeave],
+  );
+
+  useRegisterAppTabPressGuard(tabPressGuard, isFocused);
 
   usePreventRemove(hasUnsavedChanges, ({ data }) => {
     if (controller.busy) return;
-    pendingActionRef.current = {
-      action: data.action,
-      dispatch: (action) => navigation.dispatch(action),
-    };
+    pendingNavigationRef.current = () => navigation.dispatch(data.action);
     setExitVisible(true);
   });
-
-  useEffect(() => {
-    const tabsNavigation = navigation.getParent();
-    if (!tabsNavigation) return;
-
-    return tabsNavigation.addListener('tabPress', (event) => {
-      if (!controller.dirty && !controller.busy) return;
-      event.preventDefault();
-      if (controller.busy || !event.target) return;
-
-      const targetRoute = tabsNavigation
-        .getState()
-        .routes.find((route) => route.key === event.target);
-      if (!targetRoute) return;
-
-      pendingActionRef.current = {
-        action: CommonActions.navigate(targetRoute.name, targetRoute.params),
-        dispatch: (action) => tabsNavigation.dispatch(action),
-      };
-      setExitVisible(true);
-    });
-  }, [controller.busy, controller.dirty, navigation]);
 
   useEffect(() => {
     if (!leaveAfterConfirmation || controller.dirty || controller.busy) return;
 
     setExitVisible(false);
     setLeaveAfterConfirmation(false);
-    const pendingNavigation = pendingActionRef.current;
-    pendingActionRef.current = null;
+    const pendingNavigation = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
     if (pendingNavigation) {
-      pendingNavigation.dispatch(pendingNavigation.action);
+      pendingNavigation();
       return;
     }
     returnToPreviousScreen(studentId);
   }, [controller.busy, controller.dirty, leaveAfterConfirmation, studentId]);
 
-  const hasRemoteContext = Boolean(planId || draftId);
+  const hasRemoteContext = Boolean(planId || draftId || controller.plan?.id);
   const refreshDisabled =
     !studentId ||
     !hasRemoteContext ||
@@ -157,7 +143,7 @@ function TrainerWorkoutEditorInstance({
   const requestClose = () => {
     if (controller.busy) return;
     if (controller.dirty) {
-      pendingActionRef.current = null;
+      pendingNavigationRef.current = null;
       setExitVisible(true);
       return;
     }
@@ -166,7 +152,7 @@ function TrainerWorkoutEditorInstance({
 
   const continueEditing = () => {
     if (controller.busy) return;
-    pendingActionRef.current = null;
+    pendingNavigationRef.current = null;
     setExitVisible(false);
     setLeaveAfterConfirmation(false);
   };

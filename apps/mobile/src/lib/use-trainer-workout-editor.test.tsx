@@ -4,6 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { trainerWorkoutDraftQueryKey } from '../application/workouts/trainer-workout-data';
+import { ApiError } from './api';
 import type { ApiRequester } from './api';
 import { useTrainerWorkoutEditor } from './use-trainer-workout-editor';
 
@@ -12,6 +13,7 @@ const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const PUBLISHED_PLAN_ID = '00000000-0000-0000-0000-000000000302';
 const DRAFT_ID = '00000000-0000-0000-0000-000000000501';
+const SECOND_DRAFT_ID = '00000000-0000-0000-0000-000000000502';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
 
 function draftFixture(): WorkoutPlanDraft {
@@ -308,6 +310,7 @@ describe('useTrainerWorkoutEditor', () => {
       .mockResolvedValueOnce(draftFixture())
       .mockResolvedValueOnce(activePlanFixture('Força'))
       .mockResolvedValueOnce(publishedPlan)
+      .mockResolvedValueOnce(publishedPlan)
       .mockResolvedValueOnce(updatedPlan);
     const api = { request } as unknown as ApiRequester;
     const { result } = setup(api, 'create', { draftId: DRAFT_ID });
@@ -514,6 +517,240 @@ describe('useTrainerWorkoutEditor', () => {
     expect(saved).toBe(true);
     expect(body).not.toHaveProperty('draftId');
     expect(body).not.toHaveProperty('revision');
+  });
+
+  it('publica draft novo salvo mesmo sem alterações locais pendentes', async () => {
+    const savedDraft = { ...draftFixture(), sourcePlanId: null };
+    const publishedPlan = { ...activePlanFixture('Força'), id: PUBLISHED_PLAN_ID };
+    const request = vi
+      .fn()
+      .mockResolvedValueOnce(savedDraft)
+      .mockResolvedValueOnce(publishedPlan)
+      .mockResolvedValueOnce(publishedPlan);
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create');
+    act(() => result.current.updateEditor(() => validEditorState()));
+    act(() => result.current.setActiveDay('day-local-1'));
+
+    await act(async () => {
+      expect(await result.current.saveDraft()).toBe(true);
+    });
+    expect(result.current.dirty).toBe(false);
+
+    let published = false;
+    await act(async () => {
+      published = await result.current.publish();
+    });
+
+    expect(published).toBe(true);
+    expect(request).toHaveBeenCalledWith(
+      `/workout-plan-drafts/${savedDraft.id}/publish`,
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(request).not.toHaveBeenCalledWith('/workout-plans', expect.anything());
+  });
+
+  it('publica as novas alterações pelo draft salvo em uma rota sem draftId', async () => {
+    const savedDraft = { ...draftFixture(), sourcePlanId: null };
+    const publishedPlan = { ...activePlanFixture('Força atualizada'), id: PUBLISHED_PLAN_ID };
+    const request = vi.fn().mockResolvedValueOnce(savedDraft).mockResolvedValueOnce(publishedPlan);
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create');
+    act(() => result.current.updateEditor(() => validEditorState()));
+    act(() => result.current.setActiveDay('day-local-1'));
+    await act(async () => {
+      await result.current.saveDraft();
+    });
+    act(() => result.current.changePlanField('name', 'Força atualizada'));
+
+    let published = false;
+    await act(async () => {
+      published = await result.current.publish();
+    });
+
+    expect(published).toBe(true);
+    const publishCall = request.mock.calls.find(
+      (call) => call[0] === `/workout-plan-drafts/${savedDraft.id}/publish`,
+    );
+    expect(publishCall).toBeDefined();
+    const body = JSON.parse(publishCall?.[1]?.body as string) as {
+      payload: { name: string };
+      revision: number;
+    };
+    expect(body.payload.name).toBe('Força atualizada');
+    expect(body.revision).toBe(savedDraft.revision);
+    expect(request).not.toHaveBeenCalledWith('/workout-plans', expect.anything());
+  });
+
+  it('publica um segundo draft criado após consumir o draft inicial', async () => {
+    const firstDraft = draftFixture();
+    const secondDraft = { ...draftFixture(), id: SECOND_DRAFT_ID, revision: 1 };
+    const publishedPlan = { ...activePlanFixture('Força'), id: PUBLISHED_PLAN_ID };
+    const updatedPlan = { ...publishedPlan, name: 'Força após segundo draft' };
+    const request = vi.fn((path: string) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(firstDraft);
+      if (path === `/workout-plans/${PLAN_ID}`) return Promise.resolve(activePlanFixture('Força'));
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`)
+        return Promise.resolve(publishedPlan);
+      if (path === '/workout-plan-drafts') return Promise.resolve(secondDraft);
+      if (path === `/workout-plan-drafts/${SECOND_DRAFT_ID}/publish`) {
+        return Promise.resolve(updatedPlan);
+      }
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) return Promise.resolve(publishedPlan);
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    await waitFor(() => expect(result.current.draft?.revision).toBe(firstDraft.revision));
+
+    await act(async () => {
+      expect(await result.current.publish()).toBe(true);
+    });
+    act(() => result.current.changePlanField('name', 'Rascunho seguinte'));
+    await act(async () => {
+      expect(await result.current.saveDraft()).toBe(true);
+    });
+
+    let published = false;
+    await act(async () => {
+      published = await result.current.publish();
+    });
+
+    expect(published).toBe(true);
+    expect(request).toHaveBeenCalledWith(
+      `/workout-plan-drafts/${SECOND_DRAFT_ID}/publish`,
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(
+      request.mock.calls.filter((call) => call[0] === `/workout-plan-drafts/${DRAFT_ID}/publish`),
+    ).toHaveLength(1);
+  });
+
+  it('refaz a query do plano publicado ao atualizar o editor após publish de draft', async () => {
+    const publishedPlan = { ...activePlanFixture('Força publicada'), id: PUBLISHED_PLAN_ID };
+    const refreshedPlan = { ...publishedPlan, name: 'Força atualizada remotamente' };
+    let publishedPlanReads = 0;
+    const request = vi.fn((path: string) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(draftFixture());
+      if (path === `/workout-plans/${PLAN_ID}`) return Promise.resolve(activePlanFixture('Força'));
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`)
+        return Promise.resolve(publishedPlan);
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
+        publishedPlanReads += 1;
+        return Promise.resolve(publishedPlanReads === 1 ? publishedPlan : refreshedPlan);
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    await waitFor(() => expect(result.current.draft?.revision).toBe(4));
+    await act(async () => {
+      await result.current.publish();
+    });
+    await waitFor(() => expect(result.current.plan?.name).toBe('Força publicada'));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(publishedPlanReads).toBe(2);
+    await waitFor(() => expect(result.current.plan?.name).toBe('Força atualizada remotamente'));
+  });
+
+  it('mostra erro 404 da query do plano após publicar um draft', async () => {
+    const publishedPlan = { ...activePlanFixture('Força publicada'), id: PUBLISHED_PLAN_ID };
+    let publishedPlanReads = 0;
+    const request = vi.fn((path: string) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(draftFixture());
+      if (path === `/workout-plans/${PLAN_ID}`) return Promise.resolve(activePlanFixture('Força'));
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`)
+        return Promise.resolve(publishedPlan);
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
+        publishedPlanReads += 1;
+        return publishedPlanReads === 1
+          ? Promise.resolve(publishedPlan)
+          : Promise.reject(new ApiError('not found', 404));
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    await waitFor(() => expect(result.current.draft?.revision).toBe(4));
+    await act(async () => {
+      await result.current.publish();
+    });
+    await waitFor(() => expect(result.current.plan?.id).toBe(PUBLISHED_PLAN_ID));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() =>
+      expect(result.current.contextError).toBe('Este treino não está disponível para sua conta.'),
+    );
+  });
+
+  it('mantém loadError da query do plano após publicar um draft', async () => {
+    const publishedPlan = { ...activePlanFixture('Força publicada'), id: PUBLISHED_PLAN_ID };
+    let publishedPlanReads = 0;
+    const request = vi.fn((path: string) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(draftFixture());
+      if (path === `/workout-plans/${PLAN_ID}`) return Promise.resolve(activePlanFixture('Força'));
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`)
+        return Promise.resolve(publishedPlan);
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
+        publishedPlanReads += 1;
+        return publishedPlanReads === 1
+          ? Promise.resolve(publishedPlan)
+          : Promise.reject(new Error('offline'));
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    await waitFor(() => expect(result.current.draft?.revision).toBe(4));
+    await act(async () => {
+      await result.current.publish();
+    });
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => expect(result.current.loadError).toBeInstanceOf(Error));
+    expect(result.current.plan?.name).toBe('Força publicada');
+  });
+
+  it('respeita status arquivado retornado pela query após publicar um draft', async () => {
+    const publishedPlan = { ...activePlanFixture('Força publicada'), id: PUBLISHED_PLAN_ID };
+    const archivedPlan = { ...publishedPlan, status: 'archived' as const };
+    let publishedPlanReads = 0;
+    const request = vi.fn((path: string) => {
+      if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(draftFixture());
+      if (path === `/workout-plans/${PLAN_ID}`) return Promise.resolve(activePlanFixture('Força'));
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`)
+        return Promise.resolve(publishedPlan);
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
+        publishedPlanReads += 1;
+        return Promise.resolve(publishedPlanReads === 1 ? publishedPlan : archivedPlan);
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    await waitFor(() => expect(result.current.draft?.revision).toBe(4));
+    await act(async () => {
+      await result.current.publish();
+    });
+    await waitFor(() => expect(result.current.plan?.id).toBe(PUBLISHED_PLAN_ID));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() =>
+      expect(result.current.contextError).toBe('Planos arquivados são somente leitura no mobile.'),
+    );
   });
 
   it('preserva o plano ativo durante o save draft e trata falha de invalidação como sucesso confirmado', async () => {

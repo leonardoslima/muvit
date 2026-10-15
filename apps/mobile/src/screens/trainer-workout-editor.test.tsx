@@ -25,24 +25,22 @@ const routerState = vi.hoisted(() => ({
   dismissTo: vi.fn(),
   replace: vi.fn(),
 }));
-type TabPressEvent = { target?: string; preventDefault: () => void };
-type TabPressListener = (event: TabPressEvent) => void;
-const tabsNavigationState = vi.hoisted(() => ({
+const navigationState = vi.hoisted(() => ({
   dispatch: vi.fn(),
-  getState: vi.fn(() => ({
-    routes: [
-      { key: 'home-tab-key', name: 'index' },
-      { key: 'students-tab-key', name: 'students' },
-      { key: 'profile-tab-key', name: 'profile', params: { section: 'account' } },
-    ],
-  })),
-  addListener: vi.fn(),
-  listener: undefined as TabPressListener | undefined,
 }));
-const navigationState = vi.hoisted(() => ({ dispatch: vi.fn(), getParent: vi.fn() }));
 const guardState = vi.hoisted(() => ({
   callback: undefined as ((event: { data: { action: unknown } }) => void) | undefined,
   enabled: false,
+}));
+const appTabGuardState = vi.hoisted(() => ({
+  enabled: false,
+  guard: undefined as
+    | {
+        busy: boolean;
+        dirty: boolean;
+        requestLeave: (resumeNavigation: () => void) => void;
+      }
+    | undefined,
 }));
 const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
@@ -50,19 +48,14 @@ const paramsState = vi.hoisted(() => ({
   draftId: undefined as string | undefined,
 }));
 
-vi.mock('@react-navigation/native', () => ({
-  CommonActions: {
-    navigate: vi.fn((name: string, params?: Record<string, unknown>) => ({
-      type: 'NAVIGATE',
-      payload: { name, ...(params ? { params } : {}) },
-    })),
+vi.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
+
+vi.mock('../components/navigation/app-tabs', () => ({
+  useRegisterAppTabPressGuard: (guard: typeof appTabGuardState.guard, enabled: boolean) => {
+    appTabGuardState.enabled = enabled;
+    appTabGuardState.guard = enabled ? guard : undefined;
   },
 }));
-
-const tabNavigationAction = (params: {
-  name: string;
-  params?: Record<string, unknown>;
-}) => ({ type: 'NAVIGATE', payload: params });
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
@@ -239,19 +232,10 @@ beforeEach(() => {
   routerState.back.mockReset();
   routerState.canGoBack.mockReturnValue(true);
   navigationState.dispatch.mockReset();
-  navigationState.getParent.mockReturnValue(tabsNavigationState);
-  tabsNavigationState.dispatch.mockReset();
-  tabsNavigationState.getState.mockClear();
-  tabsNavigationState.addListener.mockReset();
-  tabsNavigationState.listener = undefined;
-  tabsNavigationState.addListener.mockImplementation(
-    (_event: 'tabPress', listener: TabPressListener) => {
-      tabsNavigationState.listener = listener;
-      return vi.fn();
-    },
-  );
   guardState.enabled = false;
   guardState.callback = undefined;
+  appTabGuardState.enabled = false;
+  appTabGuardState.guard = undefined;
   paramsState.studentId = STUDENT_ID;
   paramsState.planId = undefined;
   paramsState.draftId = undefined;
@@ -683,35 +667,43 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Força revisada');
   });
 
-  it('protege tabPress dirty e reaplica o destino com params após salvar', async () => {
+  it('registra guard dirty da rota, salva draft e reaplica a aba capturada uma vez', async () => {
     const user = userEvent.setup();
+    const savedDraft = { ...draftFixture(), sourcePlanId: null };
     apiState.request
       .mockResolvedValueOnce(singleDayEditablePlanFixture())
-      .mockResolvedValueOnce(draftFixture());
+      .mockResolvedValueOnce(savedDraft)
+      .mockResolvedValueOnce(editablePlanFixture());
     renderEditor('edit');
     await screen.findByLabelText('Nome do treino');
     await user.clear(screen.getByLabelText('Nome do treino'));
     await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
 
-    const event = { target: 'profile-tab-key', preventDefault: vi.fn() };
-    act(() => tabsNavigationState.listener?.(event));
-
-    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(appTabGuardState.enabled).toBe(true);
+    expect(appTabGuardState.guard).toEqual(expect.objectContaining({ dirty: true, busy: false }));
+    const resumeProfileNavigation = vi.fn();
+    const resumeHomeNavigation = vi.fn();
+    act(() => appTabGuardState.guard?.requestLeave(resumeProfileNavigation));
+    act(() => appTabGuardState.guard?.requestLeave(resumeHomeNavigation));
     expect(screen.getByText('Sair do editor?')).toBeTruthy();
-    expect(tabsNavigationState.dispatch).not.toHaveBeenCalled();
     await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
 
-    await waitFor(() => expect(tabsNavigationState.dispatch).toHaveBeenCalledOnce());
-    expect(tabsNavigationState.dispatch).toHaveBeenCalledWith(
-      tabNavigationAction({
-        name: 'profile',
-        params: { section: 'account' },
-      }),
-    );
+    await waitFor(() => expect(resumeHomeNavigation).toHaveBeenCalledOnce());
+    expect(resumeHomeNavigation).toHaveBeenCalledWith();
+    expect(resumeProfileNavigation).not.toHaveBeenCalled();
     expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Salvar alterações' }));
+    await waitFor(() =>
+      expect(apiState.request).toHaveBeenCalledWith(
+        `/workout-plan-drafts/${savedDraft.id}/publish`,
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(apiState.request).not.toHaveBeenCalledWith('/workout-plans', expect.anything());
   });
 
-  it('bloqueia novos tabPress durante save e reaplica somente o destino capturado', async () => {
+  it('mantém o destino capturado até um save em andamento confirmar o draft', async () => {
     const user = userEvent.setup();
     let resolveDraftSave: (draft: TrainerWorkoutPlanDraft) => void = () => undefined;
     const pendingDraftSave = new Promise<TrainerWorkoutPlanDraft>((resolve) => {
@@ -725,29 +717,15 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     await user.clear(screen.getByLabelText('Nome do treino'));
     await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
 
-    act(() => {
-      tabsNavigationState.listener?.({
-        target: 'profile-tab-key',
-        preventDefault: vi.fn(),
-      });
-    });
+    const resumeProfile = vi.fn();
+    act(() => appTabGuardState.guard?.requestLeave(resumeProfile));
     await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
     expect(screen.getByText('Sair do editor?')).toBeTruthy();
-
-    const busyTabPress = { target: 'home-tab-key', preventDefault: vi.fn() };
-    act(() => tabsNavigationState.listener?.(busyTabPress));
-
-    expect(busyTabPress.preventDefault).toHaveBeenCalledOnce();
-    expect(tabsNavigationState.dispatch).not.toHaveBeenCalled();
+    await waitFor(() => expect(appTabGuardState.guard?.busy).toBe(true));
+    expect(resumeProfile).not.toHaveBeenCalled();
     await act(async () => resolveDraftSave(draftFixture()));
 
-    await waitFor(() => expect(tabsNavigationState.dispatch).toHaveBeenCalledOnce());
-    expect(tabsNavigationState.dispatch).toHaveBeenCalledWith(
-      tabNavigationAction({
-        name: 'profile',
-        params: { section: 'account' },
-      }),
-    );
+    await waitFor(() => expect(resumeProfile).toHaveBeenCalledOnce());
   });
 
   it('reinicializa editor e identidade ao trocar draft/aluno na rota atual', async () => {
