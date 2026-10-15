@@ -9,6 +9,12 @@ export default mergeConfig(
         provider: 'v8',
         include: [
           'src/components/ui/v2/**/*.{ts,tsx}',
+          'src/components/workouts/guided-session-content.tsx',
+          'src/components/workouts/guided-session-demonstration.tsx',
+          'src/components/workouts/guided-session-exit-sheet.tsx',
+          'src/components/workouts/guided-session-layout.tsx',
+          'src/components/workouts/exercise-demonstration-media.tsx',
+          'src/components/workouts/workout-exercise-details.tsx',
           'src/screens/today-workout.tsx',
           'src/screens/progress.tsx',
           'src/screens/profile.tsx',

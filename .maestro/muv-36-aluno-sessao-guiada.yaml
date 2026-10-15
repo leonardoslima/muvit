@@ -1,0 +1,97 @@
+appId: host.exp.exponent
+name: MUV-36 — Sessão guiada do aluno
+---
+- runFlow:
+    file: login-aluno.yaml
+- assertVisible: Seu treino de hoje
+- takeScreenshot: muv36_today
+- runFlow:
+    when:
+      visible: Iniciar treino
+    commands:
+      - tapOn: Iniciar treino
+- runFlow:
+    when:
+      visible: Continuar treino
+    commands:
+      - tapOn: Continuar treino
+- assertVisible: Visão geral do treino
+- takeScreenshot: muv36_workout_overview
+- scrollUntilVisible:
+    element: Iniciar treino
+    direction: DOWN
+- tapOn: Iniciar treino
+- assertVisible: Repetições realizadas
+- takeScreenshot: muv36_active_set
+- tapOn:
+    text: Repetições realizadas
+    index: 1
+- inputText: '10'
+- hideKeyboard
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- tapOn:
+    text: Carga utilizada
+    index: 1
+- eraseText
+- inputText: '22'
+- hideKeyboard
+- scrollUntilVisible:
+    element: Ver execução
+    direction: UP
+- tapOn: Ver execução
+- assertVisible: Demonstração do exercício
+- takeScreenshot: muv36_demonstration
+- scrollUntilVisible:
+    element: Voltar à série
+    direction: DOWN
+- assertVisible: Voltar à série
+- tapOn: Voltar à série
+- assertVisible: Repetições realizadas
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- assertVisible: '10'
+- assertVisible: '22'
+- takeScreenshot: muv36_active_set_restored
+- tapOn: Concluir série
+- assertVisible: Descanso
+- takeScreenshot: muv36_rest
+- tapOn: +15 s
+- tapOn: Pular descanso
+- assertVisible: 'Série 2 de [0-9]+'
+- tapOn:
+    text: Repetições realizadas
+    index: 1
+- inputText: '8'
+- hideKeyboard
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- tapOn:
+    text: Carga utilizada
+    index: 1
+- eraseText
+- inputText: '18'
+- hideKeyboard
+- assertVisible: '10 reps · 22 kg'
+- tapOn: Fechar sessão
+- assertVisible: Sair da sessão
+- tapOn: Salvar e sair
+- assertVisible: Visão geral do treino
+- tapOn: Voltar para Hoje
+- assertVisible: Seu treino de hoje
+- tapOn: Continuar treino
+- assertVisible: Repetições realizadas
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- assertVisible: 'Série 2 de [0-9]+'
+- assertVisible: '8'
+- assertVisible: '18'
+- assertVisible: '10 reps · 22 kg'
+- tapOn: Fechar sessão
+- assertVisible: Sair da sessão
+- tapOn: Descartar treino
+- assertVisible: Seu treino de hoje

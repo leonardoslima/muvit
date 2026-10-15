@@ -4,16 +4,66 @@ name: Login de aluno para Hoje
 - launchApp:
     clearState: true
 - openLink: exp://127.0.0.1:8081
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: "Connected to expo-cli"
+    commands:
+      - tapOn:
+          point: "92%,34%"
 - assertVisible: Entrar
 - tapOn: voce@exemplo.com
 - inputText: ${MAESTRO_DEMO_STUDENT_EMAIL}
 - hideKeyboard
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+      - tapOn:
+          point: "92%,34%"
+- runFlow:
+    when:
+      visible: "Connected to expo-cli"
+    commands:
+      - tapOn:
+          point: "92%,34%"
 - tapOn: Sua senha
 - inputText: ${MAESTRO_DEMO_STUDENT_PASSWORD}
 - hideKeyboard
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+      - tapOn:
+          point: "92%,34%"
+- runFlow:
+    when:
+      visible: "Connected to expo-cli"
+    commands:
+      - tapOn:
+          point: "92%,34%"
 - tapOn:
     text: Entrar
     below: Senha
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+      - tapOn:
+          point: "92%,34%"
+- runFlow:
+    when:
+      visible: "Connected to expo-cli"
+    commands:
+      - tapOn:
+          point: "92%,34%"
 - runFlow:
     when:
       visible: "Muvit needs permissions.*"
