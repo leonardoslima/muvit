@@ -15,6 +15,14 @@ export type TrainerWorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 export type CreateTrainerWorkoutPlanInput = z.infer<typeof createWorkoutPlanSchema>;
 export type UpdateTrainerWorkoutPlanInput = z.infer<typeof updateWorkoutPlanSchema>;
 export type TrainerWorkoutPlanDraft = WorkoutPlanDraft;
+type NewTrainerWorkoutDraftRequest = Omit<SaveWorkoutPlanDraftInput, 'draftId' | 'revision'>;
+type ExistingTrainerWorkoutDraftRequest = NewTrainerWorkoutDraftRequest & {
+  draftId: NonNullable<SaveWorkoutPlanDraftInput['draftId']>;
+  revision: NonNullable<SaveWorkoutPlanDraftInput['revision']>;
+};
+export type SaveTrainerWorkoutDraftRequest =
+  | NewTrainerWorkoutDraftRequest
+  | ExistingTrainerWorkoutDraftRequest;
 
 export function trainerWorkoutDraftQueryKey(authUserId: string, studentId: string) {
   return ['trainer-workout-drafts', authUserId, studentId] as const;
@@ -86,7 +94,7 @@ export function getTrainerWorkoutDraft(
 
 export function saveTrainerWorkoutDraft(
   api: ApiRequester,
-  input: SaveWorkoutPlanDraftInput,
+  input: SaveTrainerWorkoutDraftRequest,
 ): Promise<TrainerWorkoutPlanDraft> {
   return api.request<TrainerWorkoutPlanDraft>('/workout-plan-drafts', {
     method: 'POST',
