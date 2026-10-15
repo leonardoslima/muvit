@@ -25,6 +25,7 @@ export const saveWorkoutPlanDraftSchema = z
   .object({
     studentId: z.string().uuid(),
     sourcePlanId: z.string().uuid().optional(),
+    draftId: z.string().uuid().optional(),
     payload: workoutPlanDraftPayloadSchema,
     selectedDayOrder: z.number().int().min(0),
     revision: z.number().int().min(1).optional(),
@@ -32,6 +33,15 @@ export const saveWorkoutPlanDraftSchema = z
   .refine((input) => input.payload.days.some((day) => day.dayOrder === input.selectedDayOrder), {
     path: ['selectedDayOrder'],
     message: 'O dia selecionado precisa existir no payload.',
+  })
+  .superRefine((input, context) => {
+    if ((input.draftId === undefined) === (input.revision === undefined)) return;
+
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: [input.draftId === undefined ? 'draftId' : 'revision'],
+      message: 'draftId e revision devem ser informados juntos.',
+    });
   });
 
 export const publishWorkoutPlanDraftSchema = z.object({

@@ -139,6 +139,49 @@ describe('contratos de rascunhos de planos de treino', () => {
     expect(publishWorkoutPlanDraftSchema.safeParse({ payload, revision: 1 }).success).toBe(true);
   });
 
+  it('aceita criação sem draftId nem revisão', () => {
+    expect(
+      saveWorkoutPlanDraftSchema.safeParse({
+        studentId: '00000000-0000-4000-8000-000000000002',
+        payload,
+        selectedDayOrder: 0,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('preserva draftId e revisão juntos ao atualizar', () => {
+    const draftId = '00000000-0000-4000-8000-000000000005';
+    const result = saveWorkoutPlanDraftSchema.safeParse({
+      studentId: '00000000-0000-4000-8000-000000000002',
+      payload,
+      selectedDayOrder: 0,
+      draftId,
+      revision: 2,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toMatchObject({ draftId, revision: 2 });
+    }
+  });
+
+  it.each([
+    {
+      description: 'draftId sem revisão',
+      input: { draftId: '00000000-0000-4000-8000-000000000005' },
+    },
+    { description: 'revisão sem draftId', input: { revision: 2 } },
+  ])('rejeita $description', ({ input }) => {
+    expect(
+      saveWorkoutPlanDraftSchema.safeParse({
+        studentId: '00000000-0000-4000-8000-000000000002',
+        payload,
+        selectedDayOrder: 0,
+        ...input,
+      }).success,
+    ).toBe(false);
+  });
+
   it.each([0, -1, 1.5])('rejeita revisão inválida %s ao publicar', (revision) => {
     expect(publishWorkoutPlanDraftSchema.safeParse({ payload, revision }).success).toBe(false);
   });
