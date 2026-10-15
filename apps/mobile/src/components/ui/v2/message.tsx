@@ -29,7 +29,7 @@ const variants = {
   info: { background: 'bg-v2-infoBg', text: 'text-v2-info', color: colors.info, Icon: Info },
 };
 export type MessageProps = ViewProps & {
-  title: string;
+  title?: string;
   description?: string;
   variant?: keyof typeof variants;
   action?: Action;
@@ -40,6 +40,7 @@ export const Message = forwardRef<View, MessageProps>(function Message(
   ref,
 ) {
   const { background, text, color, Icon } = variants[variant];
+  const hasTitle = title !== undefined;
   return (
     <TextClassContext.Provider value={text}>
       <View
@@ -50,14 +51,20 @@ export const Message = forwardRef<View, MessageProps>(function Message(
       >
         <Icon size={24} color={color} accessible={false} />
         <View className="min-w-0 flex-1 gap-2">
-          <Text
-            variant="label"
-            accessibilityRole={variant === 'error' ? 'alert' : undefined}
-            className="text-[16px] leading-[22.4px]"
-          >
-            {title}
-          </Text>
-          {description && <Text>{description}</Text>}
+          {hasTitle && (
+            <Text
+              variant="label"
+              accessibilityRole={variant === 'error' ? 'alert' : undefined}
+              className="text-[16px] leading-[22.4px]"
+            >
+              {title}
+            </Text>
+          )}
+          {description && (
+            <Text accessibilityRole={variant === 'error' && !hasTitle ? 'alert' : undefined}>
+              {description}
+            </Text>
+          )}
           {action && <Button {...action} variant="text" compact />}
         </View>
       </View>

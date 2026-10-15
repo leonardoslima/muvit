@@ -87,6 +87,23 @@ describe('telas de autenticação mobile', () => {
 
     const pendingButton = screen.getByRole('button', { name: 'Entrando...' });
     expect(pendingButton.props.disabled).toBe(true);
+    expect(pendingButton.props.accessibilityState).toMatchObject({
+      busy: true,
+      disabled: true,
+    });
+
+    const emailField = screen.getByLabelText('Email');
+    const passwordField = screen.getByLabelText('Senha');
+    expect(emailField.props.editable).toBe(true);
+    expect(passwordField.props.editable).toBe(true);
+
+    await user.type(emailField, '.br');
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com.br');
+
+    const signupLink = screen.getByRole('button', { name: 'Criar conta independente' });
+    expect(signupLink.props.disabled).toBe(false);
+    await user.press(signupLink);
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/signup');
 
     await user.press(pendingButton);
     expect(authState.signInEmail).toHaveBeenCalledOnce();
@@ -97,23 +114,29 @@ describe('telas de autenticação mobile', () => {
     });
   });
 
-  it('apresenta a composição visual de login com marca, ícones e ações contornadas', () => {
+  it('apresenta a composição v2 de login com marca, copy e campos seguros', () => {
     render(<LoginScreen />);
 
-    expect(screen.getByTestId('login-brand-symbol').props.style).toMatchObject({
-      backgroundColor: '#2ECC71',
-      borderRadius: 8,
-      height: 42,
-      width: 42,
+    expect(screen.getByLabelText('Muvit')).toBeTruthy();
+    expect(screen.getByText('Acesse sua conta para continuar.')).toBeTruthy();
+    expect(screen.queryByText('SEU TREINO, NO SEU RITMO')).toBeNull();
+    expect(screen.queryByTestId('login-email-icon')).toBeNull();
+    expect(screen.queryByTestId('login-password-icon')).toBeNull();
+    expect(screen.queryByTestId('login-submit-icon')).toBeNull();
+
+    const header = screen.getByRole('header', { name: 'Entrar' });
+    expect(header.props.className).toContain('text-[29px]');
+    expect(header.props.className).toContain('leading-[40.6px]');
+    expect(header.props.className).toContain('font-v2-extrabold');
+
+    expect(screen.getByTestId('login-email-control').props.className).toContain('min-h-[58px]');
+    expect(screen.getByTestId('login-password-control').props.className).toContain('min-h-[58px]');
+    expect(screen.getByLabelText('Senha').props).toMatchObject({
+      placeholder: 'Sua senha',
+      secureTextEntry: true,
     });
-    expect(screen.getByText('Muvit')).toBeTruthy();
-    expect(screen.getByText('SEU TREINO, NO SEU RITMO')).toBeTruthy();
-    expect(screen.getByTestId('login-email-icon').props.name).toBe('mail-outline');
-    expect(screen.getByTestId('login-password-icon').props.name).toBe('lock-closed-outline');
-    expect(screen.getByTestId('login-submit-icon').props.name).toBe('log-in-outline');
-    expect(screen.getByRole('button', { name: 'Criar conta independente' }).props.style).toEqual(
-      expect.any(Function),
-    );
+    expect(screen.queryByRole('button', { name: /senha|papel/i })).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
   });
 
   it('ajusta o login quando o teclado está aberto', () => {
@@ -122,6 +145,34 @@ describe('telas de autenticação mobile', () => {
     expect(screen.getByTestId('login-keyboard-avoiding-view').props).toMatchObject({
       behavior: Platform.OS === 'ios' ? 'padding' : 'height',
       style: { flex: 1 },
+    });
+  });
+
+  it('ajusta o cadastro quando o teclado está aberto', () => {
+    render(<SignupScreen />);
+
+    expect(screen.getByTestId('signup-keyboard-avoiding-view').props).toMatchObject({
+      behavior: Platform.OS === 'ios' ? 'padding' : 'height',
+      style: { flex: 1 },
+    });
+  });
+
+  it('mantém o CTA de login vazio habilitado e envia os valores vazios existentes', async () => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockResolvedValueOnce({
+      data: { user: { role: 'student' } },
+      error: null,
+    });
+
+    render(<LoginScreen />);
+
+    const submitButton = screen.getByRole('button', { name: 'Entrar' });
+    expect(submitButton.props.disabled).toBe(false);
+    await user.press(submitButton);
+
+    await waitFor(() => {
+      expect(authState.signInEmail).toHaveBeenCalledWith({ email: '', password: '' });
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
   });
 
@@ -169,6 +220,63 @@ describe('telas de autenticação mobile', () => {
     ).toBeTruthy();
   });
 
+  it.each([
+    {
+      label: '401',
+      code: 'INVALID_EMAIL_OR_PASSWORD',
+      status: 401,
+      message: 'Credenciais inválidas. Verifique os dados e tente novamente.',
+    },
+    {
+      label: '409',
+      code: 'CONFLICT',
+      status: 409,
+      message: 'Não foi possível concluir a solicitação. Tente novamente.',
+    },
+    {
+      label: '429',
+      code: 'TOO_MANY_REQUESTS',
+      status: 429,
+      message: 'Muitas tentativas. Aguarde um momento e tente novamente.',
+    },
+  ])('preserva o login e mostra a mensagem exata para HTTP $label', async (scenario) => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockResolvedValueOnce({
+      data: null,
+      error: { code: scenario.code, status: scenario.status },
+    });
+
+    render(<LoginScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-errada');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(await screen.findByText(scenario.message)).toBeTruthy();
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com');
+    expect(screen.getByLabelText('Senha').props.value).toBe('senha-errada');
+    expect(screen.queryByText('Erro')).toBeNull();
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
+  it('preserva o login e mostra a mensagem geral quando a rede rejeita', async () => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockRejectedValueOnce(new Error('network unavailable'));
+
+    render(<LoginScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-errada');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(
+      await screen.findByText('Não foi possível concluir a solicitação. Tente novamente.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com');
+    expect(screen.getByLabelText('Senha').props.value).toBe('senha-errada');
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
   it('encaminha login de treinador para o shell do treinador sem logout', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValueOnce({
@@ -204,6 +312,27 @@ describe('telas de autenticação mobile', () => {
 
     expect(
       await screen.findByText('Não foi possível identificar o perfil desta conta.'),
+    ).toBeTruthy();
+    expect(authState.signOut).toHaveBeenCalledOnce();
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
+  it('mostra o erro geral se o signOut do papel desconhecido rejeitar', async () => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockResolvedValueOnce({
+      data: { user: { role: 'legacy' } },
+      error: null,
+    });
+    authState.signOut.mockRejectedValueOnce(new Error('signOut unavailable'));
+
+    render(<LoginScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'legado@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(
+      await screen.findByText('Não foi possível concluir a solicitação. Tente novamente.'),
     ).toBeTruthy();
     expect(authState.signOut).toHaveBeenCalledOnce();
     expect(routerState.replace).not.toHaveBeenCalled();
@@ -280,6 +409,144 @@ describe('telas de autenticação mobile', () => {
       await screen.findByText('Não foi possível criar a conta com os dados informados.'),
     ).toBeTruthy();
     expect(routerState.replace).not.toHaveBeenCalledWith(mobileRoutes.studentHome);
+  });
+
+  it('mantém o CTA de cadastro vazio habilitado e envia os valores vazios existentes', async () => {
+    const user = userEvent.setup();
+    authState.signUpEmail.mockResolvedValueOnce({
+      data: { user: { role: 'student' } },
+      error: null,
+    });
+
+    render(<SignupScreen />);
+
+    const submitButton = screen.getByRole('button', { name: 'Criar conta' });
+    expect(submitButton.props.disabled).toBe(false);
+    await user.press(submitButton);
+
+    await waitFor(() => {
+      expect(authState.signUpEmail).toHaveBeenCalledWith({
+        name: '',
+        email: '',
+        password: '',
+        role: 'student',
+      });
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+    });
+  });
+
+  it('apresenta a composição v2 de cadastro com copy e campos seguros', () => {
+    render(<SignupScreen />);
+
+    expect(screen.getByLabelText('Muvit')).toBeTruthy();
+    expect(screen.getByText('Comece como aluno independente.')).toBeTruthy();
+    expect(screen.queryByText('SEU TREINO, NO SEU RITMO')).toBeNull();
+    expect(screen.getByTestId('signup-name-control').props.className).toContain('min-h-[58px]');
+    expect(screen.getByTestId('signup-email-control').props.className).toContain('min-h-[58px]');
+    expect(screen.getByTestId('signup-password-control').props.className).toContain('min-h-[58px]');
+    expect(screen.getByLabelText('Senha').props).toMatchObject({
+      placeholder: 'Sua senha',
+      secureTextEntry: true,
+    });
+    expect(screen.queryByRole('button', { name: /senha|papel/i })).toBeNull();
+    expect(screen.queryByRole('radio')).toBeNull();
+  });
+
+  it('mantém o cadastro pendente acessível sem bloquear campos ou link e ignora o segundo toque', async () => {
+    const user = userEvent.setup();
+    const pending = createDeferred<{
+      data: { user: { role: 'student' } };
+      error: null;
+    }>();
+    authState.signUpEmail.mockReturnValueOnce(pending.promise);
+
+    render(<SignupScreen />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Ana');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
+
+    const pendingButton = screen.getByRole('button', { name: 'Criando...' });
+    expect(pendingButton.props.disabled).toBe(true);
+    expect(pendingButton.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
+
+    const nameField = screen.getByLabelText('Nome');
+    expect(nameField.props.editable).toBe(true);
+    await user.type(nameField, ' Aluna');
+    expect(screen.getByLabelText('Nome').props.value).toBe('Ana Aluna');
+
+    const loginLink = screen.getByRole('button', { name: /já tenho conta/i });
+    expect(loginLink.props.disabled).toBe(false);
+    await user.press(loginLink);
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/login');
+
+    await user.press(pendingButton);
+    expect(authState.signUpEmail).toHaveBeenCalledOnce();
+
+    pending.resolve({ data: { user: { role: 'student' } }, error: null });
+    await waitFor(() => {
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+    });
+  });
+
+  it.each([
+    {
+      label: '401',
+      code: 'UNAUTHORIZED',
+      status: 401,
+      message: 'Não foi possível concluir a solicitação. Tente novamente.',
+    },
+    {
+      label: '409',
+      code: 'USER_ALREADY_EXISTS',
+      status: 409,
+      message: 'Não foi possível criar a conta com os dados informados.',
+    },
+    {
+      label: '429',
+      code: 'TOO_MANY_REQUESTS',
+      status: 429,
+      message: 'Muitas tentativas. Aguarde um momento e tente novamente.',
+    },
+  ])('preserva o cadastro e mostra a mensagem exata para HTTP $label', async (scenario) => {
+    const user = userEvent.setup();
+    authState.signUpEmail.mockResolvedValueOnce({
+      data: null,
+      error: { code: scenario.code, status: scenario.status },
+    });
+
+    render(<SignupScreen />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Ana Aluna');
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
+
+    expect(await screen.findByText(scenario.message)).toBeTruthy();
+    expect(screen.getByLabelText('Nome').props.value).toBe('Ana Aluna');
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com');
+    expect(screen.getByLabelText('Senha').props.value).toBe('senha-segura');
+    expect(screen.queryByText('Erro')).toBeNull();
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
+  it('preserva o cadastro e mostra a mensagem geral quando a rede rejeita', async () => {
+    const user = userEvent.setup();
+    authState.signUpEmail.mockRejectedValueOnce(new Error('network unavailable'));
+
+    render(<SignupScreen />);
+
+    await user.type(screen.getByLabelText('Nome'), 'Ana Aluna');
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Criar conta' }));
+
+    expect(
+      await screen.findByText('Não foi possível concluir a solicitação. Tente novamente.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Nome').props.value).toBe('Ana Aluna');
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com');
+    expect(screen.getByLabelText('Senha').props.value).toBe('senha-segura');
+    expect(routerState.replace).not.toHaveBeenCalled();
   });
 
   it('usa o destino de cadastro do link secundário do login', async () => {
