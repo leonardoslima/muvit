@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TrainerProfileScreen from '../../app/(trainer)/trainer/profile';
 import { ProfileScreen } from './profile';
@@ -80,7 +81,27 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('Maria Clara Silva')).toBeTruthy();
     expect(screen.getByText('maria@example.com')).toBeTruthy();
     expect(screen.getByText('Aluno independente')).toBeTruthy();
-    expect(screen.getByText('Informações da sua conta.')).toBeTruthy();
+
+    const profileHeading = screen.getByTestId('profile-heading');
+    const profileTitle = screen.getByTestId('profile-title');
+    const accountSubtitle = screen.getByTestId('profile-subtitle');
+    expect(within(profileHeading).getByTestId('profile-title')).toBeTruthy();
+    expect(within(profileHeading).getByTestId('profile-subtitle')).toBeTruthy();
+    expect(
+      screen.getAllByTestId(/profile-(heading|card)/).map((section) => section.props.testID),
+    ).toEqual(['profile-heading', 'profile-card']);
+    expect(profileHeading.props.style).toMatchObject({ gap: 8, paddingHorizontal: 6 });
+    expect(screen.getByText('Informações da sua conta.')).toBe(accountSubtitle);
+
+    const title = screen.getByRole('header', { name: 'Perfil' });
+    expect(title.props.className).toContain('text-[29px]');
+    expect(title.props.className).toContain('leading-[40.6px]');
+    expect(title.props.className).toContain('font-v2-extrabold');
+
+    const contentStyle = StyleSheet.flatten(
+      screen.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
+    );
+    expect(contentStyle).toMatchObject({ gap: 24, paddingHorizontal: 16, paddingVertical: 24 });
     expect(screen.queryByText('Treinos e evolução')).toBeNull();
     expect(
       screen.queryByText('Seus treinos e avaliações aparecem aqui conforme você avança.'),

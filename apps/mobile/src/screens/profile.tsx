@@ -5,6 +5,7 @@ import { AuthBrand } from '../components/auth/auth-brand';
 import { Screen } from '../components/ui/screen';
 import { Button, Card, Header, Message, StatePanel, Text } from '../components/ui/v2';
 import { authClient } from '../lib/auth-client';
+import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
 
 export type ProfileScreenProps = {
@@ -56,14 +57,23 @@ export function ProfileScreen({
   const initials = getInitials(user?.name, fallbackInitials);
 
   return (
-    <Screen scroll>
+    <Screen scroll contentContainerStyle={{ gap: spacing.xxl }}>
       <AuthBrand />
-      <Header title="Perfil" />
-
-      <Card className="items-center gap-3 rounded-[26px] border-0 p-6" testID="profile-card">
-        <Text className="w-full text-center" variant="sectionTitle">
+      <View
+        style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}
+        testID="profile-heading"
+      >
+        <Header
+          testID="profile-title"
+          title="Perfil"
+          titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold"
+        />
+        <Text className="text-v2-secondary" testID="profile-subtitle" variant="body">
           Informações da sua conta.
         </Text>
+      </View>
+
+      <Card className="items-center gap-3 rounded-[26px] border-0 p-6" testID="profile-card">
         <View
           accessibilityLabel={`Iniciais de ${displayName}`}
           className="h-[72px] w-[72px] items-center justify-center rounded-[36px] bg-v2-subtle"
