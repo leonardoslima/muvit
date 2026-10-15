@@ -80,17 +80,60 @@ export class DrizzleWorkoutLogsRepository implements WorkoutLogsRepository {
   }
 
   async start(studentId: string, input: StartWorkoutLogInput) {
-    const [log] = await db
-      .insert(schema.workoutLogs)
-      .values({
-        studentId,
-        workoutDayId: input.workoutDayId,
-        date: input.date,
-        completed: false,
-      })
-      .returning();
-    if (!log) throw new Error('insert failed');
-    return log;
+    return db.transaction(async (tx) => {
+      const [student] = await tx
+        .select({ id: schema.students.id })
+        .from(schema.students)
+        .where(eq(schema.students.id, studentId))
+        .for('update')
+        .limit(1);
+      if (!student) return null;
+
+      const [dayContext] = await tx
+        .select({ planId: schema.workoutDays.planId })
+        .from(schema.workoutDays)
+        .where(eq(schema.workoutDays.id, input.workoutDayId))
+        .limit(1);
+      if (!dayContext) return null;
+
+      const [plan] = await tx
+        .select({ id: schema.workoutPlans.id })
+        .from(schema.workoutPlans)
+        .where(
+          and(
+            eq(schema.workoutPlans.id, dayContext.planId),
+            eq(schema.workoutPlans.studentId, studentId),
+          ),
+        )
+        .for('update')
+        .limit(1);
+      if (!plan) return null;
+
+      const [day] = await tx
+        .select({ id: schema.workoutDays.id, isCurrent: schema.workoutDays.isCurrent })
+        .from(schema.workoutDays)
+        .where(
+          and(
+            eq(schema.workoutDays.id, input.workoutDayId),
+            eq(schema.workoutDays.planId, plan.id),
+          ),
+        )
+        .for('update')
+        .limit(1);
+      if (!day?.isCurrent) return null;
+
+      const [log] = await tx
+        .insert(schema.workoutLogs)
+        .values({
+          studentId,
+          workoutDayId: input.workoutDayId,
+          date: input.date,
+          completed: false,
+        })
+        .returning();
+      if (!log) throw new Error('insert failed');
+      return log;
+    });
   }
 
   async findById(id: string) {

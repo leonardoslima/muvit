@@ -4,6 +4,10 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
+import type { StudentAccessPolicy } from '../modules/students/use-cases/student-access-policy.js';
+import { DrizzleWorkoutLogsRepository } from '../modules/workout-logs/repositories/drizzle-workout-logs-repository.js';
+import { StartWorkoutLogUseCase } from '../modules/workout-logs/use-cases/start-workout-log.js';
+import type { RequestIdentity } from '../shared/request-identity.js';
 
 let app: FastifyInstance;
 
@@ -372,5 +376,73 @@ describe('workout logs', () => {
       }),
     ]);
     expect(newLogOnArchivedDay.statusCode).toBe(404);
+  });
+
+  it('rechecks the day after asynchronous access validation before inserting a log', async () => {
+    const { studentId, studentCookie, planId, workoutDayId, workoutExerciseId } =
+      await createStudentWorkoutScenario();
+    const student = await db.query.students.findFirst({
+      where: (students, { eq }) => eq(students.id, studentId),
+    });
+    if (!student) throw new Error('student fixture missing');
+    const originalExercise = await db.query.workoutExercises.findFirst({
+      where: (exercises, { eq }) => eq(exercises.id, workoutExerciseId),
+      columns: { exerciseId: true },
+    });
+    if (!originalExercise) throw new Error('workout exercise fixture missing');
+
+    let continueAccessCheck = () => {};
+    let signalAccessCheckStarted = () => {};
+    const accessCheckGate = new Promise<void>((resolve) => {
+      continueAccessCheck = resolve;
+    });
+    const accessCheckStarted = new Promise<void>((resolve) => {
+      signalAccessCheckStarted = resolve;
+    });
+    const accessPolicy: StudentAccessPolicy = {
+      execute: async () => {
+        signalAccessCheckStarted();
+        await accessCheckGate;
+        return student;
+      },
+    };
+    const identity: RequestIdentity = {
+      authUserId: 'test-auth-user',
+      profileId: studentId,
+      role: 'student',
+    };
+    const useCase = new StartWorkoutLogUseCase(new DrizzleWorkoutLogsRepository(), accessPolicy);
+    const pendingStart = useCase.execute(identity, {
+      workoutDayId,
+      date: '2026-10-15',
+    });
+
+    await accessCheckStarted;
+    const archived = await app.inject({
+      method: 'PATCH',
+      url: `/workout-plans/${planId}`,
+      headers: { cookie: studentCookie },
+      payload: {
+        days: [
+          {
+            label: 'Dia novo',
+            dayOrder: 0,
+            exercises: [
+              {
+                exerciseId: originalExercise.exerciseId,
+                exerciseOrder: 0,
+                sets: 4,
+                reps: '8',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    continueAccessCheck();
+    expect(archived.statusCode).toBe(200);
+    await expect(pendingStart).rejects.toMatchObject({ code: 'not_found' });
+    expect(await db.query.workoutLogs.findMany()).toHaveLength(0);
   });
 });

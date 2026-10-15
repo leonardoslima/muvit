@@ -64,6 +64,45 @@ async function createTrainerScenario() {
   };
 }
 
+async function waitForWorkoutDayArchiveLock(timeoutMs = 2_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const activity = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_stat_activity
+        WHERE pid <> pg_backend_pid()
+          AND datname = current_database()
+          AND state = 'active'
+          AND wait_event_type = 'Lock'
+          AND query ILIKE '%workout_days%'
+          AND query ILIKE '%is_current%'
+      ) AS blocked
+    `);
+    if (activity[0]?.blocked) return true;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
+async function waitForWorkoutPlanAndDayLockWaits(timeoutMs = 2_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const activity = await db.execute(sql`
+      SELECT COUNT(*)::int AS waiting
+      FROM pg_stat_activity
+      WHERE pid <> pg_backend_pid()
+        AND datname = current_database()
+        AND state = 'active'
+        AND wait_event_type = 'Lock'
+        AND (query ILIKE '%workout_plans%' OR query ILIKE '%workout_days%')
+    `);
+    if (Number(activity[0]?.waiting) >= 2) return true;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
 beforeEach(async () => {
   app = await buildTestApp();
   await truncateAll();
@@ -397,6 +436,7 @@ describe('workout plans', () => {
         studentId,
         payload: { ...payload, name: 'Rascunho versão 2' },
         selectedDayOrder: 0,
+        draftId: saved.id,
         revision: 1,
       },
     });
@@ -414,6 +454,7 @@ describe('workout plans', () => {
         studentId,
         payload: { ...payload, name: 'Valor antigo' },
         selectedDayOrder: 0,
+        draftId: saved.id,
         revision: 1,
       },
     });
@@ -427,6 +468,7 @@ describe('workout plans', () => {
             studentId,
             payload: { ...payload, name },
             selectedDayOrder: 0,
+            draftId: saved.id,
             revision: 2,
           },
         }),
@@ -451,6 +493,98 @@ describe('workout plans', () => {
       }),
     );
     expect(concurrentUpdates.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+  });
+
+  it('does not let a published draft overwrite a later draft with the same source', async () => {
+    const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
+    const sourcePlan = await app.inject({
+      method: 'POST',
+      url: '/workout-plans',
+      headers: { cookie: trainerCookie },
+      payload: {
+        studentId,
+        name: 'Plano inicial',
+        status: 'active',
+        days: [
+          {
+            label: 'Dia inicial',
+            dayOrder: 0,
+            exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 3, reps: '10' }],
+          },
+        ],
+      },
+    });
+    const sourcePlanId = sourcePlan.json().id as string;
+    const firstPayload = {
+      name: 'Rascunho D1',
+      days: [
+        {
+          label: 'Dia D1',
+          dayOrder: 0,
+          exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 4, reps: '8' }],
+        },
+      ],
+    };
+    const firstCreated = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: { studentId, sourcePlanId, payload: firstPayload, selectedDayOrder: 0 },
+    });
+    const firstDraft = firstCreated.json();
+    const published = await app.inject({
+      method: 'POST',
+      url: `/workout-plan-drafts/${firstDraft.id}/publish`,
+      headers: { cookie: trainerCookie },
+      payload: { revision: firstDraft.revision, payload: firstPayload },
+    });
+    const secondPayload = {
+      name: 'Rascunho D2',
+      days: [
+        {
+          label: 'Dia D2',
+          dayOrder: 0,
+          exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 5, reps: '6' }],
+        },
+      ],
+    };
+    const secondCreated = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: { studentId, sourcePlanId, payload: secondPayload, selectedDayOrder: 0 },
+    });
+    const secondDraft = secondCreated.json();
+    const lateSave = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: {
+        studentId,
+        sourcePlanId,
+        draftId: firstDraft.id,
+        revision: firstDraft.revision,
+        payload: { ...firstPayload, name: 'Rascunho D1 atrasado' },
+        selectedDayOrder: 0,
+      },
+    });
+    const secondRetrieved = await app.inject({
+      method: 'GET',
+      url: `/workout-plan-drafts/${secondDraft.id}`,
+      headers: { cookie: trainerCookie },
+    });
+
+    expect(firstCreated.statusCode).toBe(201);
+    expect(published.statusCode).toBe(200);
+    expect(secondCreated.statusCode).toBe(201);
+    expect(lateSave.statusCode).toBe(409);
+    expect(secondRetrieved.json()).toEqual(
+      expect.objectContaining({
+        id: secondDraft.id,
+        revision: 1,
+        payload: expect.objectContaining({ name: 'Rascunho D2' }),
+      }),
+    );
   });
 
   it('publishes the current client payload once and consumes its draft', async () => {
@@ -687,6 +821,139 @@ describe('workout plans', () => {
     expect(await db.query.workoutPlans.findMany()).toHaveLength(1);
     expect(await db.query.workoutPlanDrafts.findMany()).toHaveLength(0);
   });
+
+  it('locks the plan before replacing days when PATCH overlaps draft publication', async () => {
+    const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
+    const sourcePlan = await app.inject({
+      method: 'POST',
+      url: '/workout-plans',
+      headers: { cookie: trainerCookie },
+      payload: {
+        studentId,
+        name: 'Plano original',
+        status: 'active',
+        days: [
+          {
+            label: 'Dia original',
+            dayOrder: 0,
+            exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 3, reps: '10' }],
+          },
+        ],
+      },
+    });
+    const sourcePlanId = sourcePlan.json().id as string;
+    const draftPayload = {
+      name: 'Plano publicado',
+      days: [
+        {
+          label: 'Dia publicado',
+          dayOrder: 0,
+          exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 4, reps: '8' }],
+        },
+      ],
+    };
+    const draftResponse = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: { studentId, sourcePlanId, payload: draftPayload, selectedDayOrder: 0 },
+    });
+    const draft = draftResponse.json();
+
+    await db.execute(
+      sql.raw('DROP TRIGGER IF EXISTS pause_workout_day_archival_for_test ON workout_days'),
+    );
+    await db.execute(sql.raw('DROP FUNCTION IF EXISTS pause_workout_day_archival_for_test()'));
+    await db.execute(sql.raw('DROP TABLE IF EXISTS workout_day_archive_test_gate'));
+    await db.execute(
+      sql.raw('CREATE TABLE workout_day_archive_test_gate (id integer PRIMARY KEY)'),
+    );
+    await db.execute(sql.raw('INSERT INTO workout_day_archive_test_gate (id) VALUES (1)'));
+    await db.execute(
+      sql.raw(`
+        CREATE OR REPLACE FUNCTION pause_workout_day_archival_for_test()
+        RETURNS trigger AS $$
+        BEGIN
+          IF OLD.is_current = true AND NEW.is_current = false THEN
+            PERFORM id FROM workout_day_archive_test_gate WHERE id = 1 FOR UPDATE;
+          END IF;
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql
+      `),
+    );
+    await db.execute(
+      sql.raw(`
+        CREATE TRIGGER pause_workout_day_archival_for_test
+        BEFORE UPDATE OF is_current ON workout_days
+        FOR EACH ROW EXECUTE FUNCTION pause_workout_day_archival_for_test()
+      `),
+    );
+
+    let patchPromise: Promise<Awaited<ReturnType<FastifyInstance['inject']>>> | undefined;
+    let publishPromise: Promise<Awaited<ReturnType<FastifyInstance['inject']>>> | undefined;
+    let releaseLockBarrier = () => {};
+    let signalLockBarrierAcquired = () => {};
+    const lockBarrier = new Promise<void>((resolve) => {
+      releaseLockBarrier = resolve;
+    });
+    const lockBarrierAcquired = new Promise<void>((resolve) => {
+      signalLockBarrierAcquired = resolve;
+    });
+    const lockBarrierTransaction = db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT id FROM workout_day_archive_test_gate WHERE id = 1 FOR UPDATE`);
+      signalLockBarrierAcquired();
+      await lockBarrier;
+    });
+
+    try {
+      await lockBarrierAcquired;
+      patchPromise = Promise.resolve(
+        app.inject({
+          method: 'PATCH',
+          url: `/workout-plans/${sourcePlanId}`,
+          headers: { cookie: trainerCookie },
+          payload: {
+            days: [
+              {
+                label: 'Dia do PATCH',
+                dayOrder: 0,
+                exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 5, reps: '6' }],
+              },
+            ],
+          },
+        }),
+      );
+      expect(await waitForWorkoutDayArchiveLock()).toBe(true);
+
+      publishPromise = Promise.resolve(
+        app.inject({
+          method: 'POST',
+          url: `/workout-plan-drafts/${draft.id}/publish`,
+          headers: { cookie: trainerCookie },
+          payload: { revision: draft.revision, payload: draftPayload },
+        }),
+      );
+      expect(await waitForWorkoutPlanAndDayLockWaits()).toBe(true);
+      if (!patchPromise || !publishPromise) throw new Error('concurrent requests did not start');
+      releaseLockBarrier();
+      await lockBarrierTransaction;
+      const [patched, published] = await Promise.all([patchPromise, publishPromise]);
+
+      expect(patched.statusCode).toBe(200);
+      expect(published.statusCode).toBe(200);
+    } finally {
+      releaseLockBarrier();
+      await lockBarrierTransaction.catch(() => undefined);
+      await patchPromise?.catch(() => undefined);
+      await publishPromise?.catch(() => undefined);
+      await db.execute(
+        sql.raw('DROP TRIGGER IF EXISTS pause_workout_day_archival_for_test ON workout_days'),
+      );
+      await db.execute(sql.raw('DROP FUNCTION IF EXISTS pause_workout_day_archival_for_test()'));
+      await db.execute(sql.raw('DROP TABLE IF EXISTS workout_day_archive_test_gate'));
+    }
+  }, 10_000);
 
   it('rolls back the published plan when consuming the draft fails', async () => {
     const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
@@ -965,6 +1232,7 @@ describe('workout plans', () => {
       payload: {
         studentId,
         sourcePlanId,
+        draftId: draft.id,
         selectedDayOrder: 0,
         payload: draft.payload,
         revision: draft.revision,

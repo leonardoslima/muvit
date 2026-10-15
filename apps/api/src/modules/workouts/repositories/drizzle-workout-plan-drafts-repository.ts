@@ -202,7 +202,7 @@ export class DrizzleWorkoutPlanDraftsRepository implements WorkoutPlanDraftRepos
       const references = await findAvailableExerciseReferences(tx, trainerId, input.payload);
       if (!references) throw new UseCaseError('not_found', 'not found');
 
-      if (input.revision !== undefined) {
+      if (input.draftId !== undefined && input.revision !== undefined) {
         const [updated] = await tx
           .update(schema.workoutPlanDrafts)
           .set({
@@ -213,6 +213,7 @@ export class DrizzleWorkoutPlanDraftsRepository implements WorkoutPlanDraftRepos
           })
           .where(
             and(
+              eq(schema.workoutPlanDrafts.id, input.draftId),
               contextWhere(trainerId, input),
               eq(schema.workoutPlanDrafts.revision, input.revision),
             ),
@@ -220,6 +221,8 @@ export class DrizzleWorkoutPlanDraftsRepository implements WorkoutPlanDraftRepos
           .returning();
         return updated ? draftResponse(updated, references) : null;
       }
+
+      if (input.draftId !== undefined || input.revision !== undefined) return null;
 
       const [created] = await tx
         .insert(schema.workoutPlanDrafts)

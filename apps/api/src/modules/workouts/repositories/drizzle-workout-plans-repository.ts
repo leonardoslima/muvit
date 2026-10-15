@@ -124,6 +124,14 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
 
   async update(id: string, input: UpdateWorkoutPlanInput) {
     return db.transaction(async (tx) => {
+      const [lockedPlan] = await tx
+        .select({ id: schema.workoutPlans.id })
+        .from(schema.workoutPlans)
+        .where(eq(schema.workoutPlans.id, id))
+        .for('update')
+        .limit(1);
+      if (!lockedPlan) return null;
+
       const updateFields: Record<string, unknown> = {};
       if (input.name !== undefined) updateFields.name = input.name;
       if (input.status !== undefined) updateFields.status = input.status;
