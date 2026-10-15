@@ -629,6 +629,7 @@ describe('useTrainerWorkoutEditor', () => {
   it('refaz a query do plano publicado ao atualizar o editor após publish de draft', async () => {
     const publishedPlan = { ...activePlanFixture('Força publicada'), id: PUBLISHED_PLAN_ID };
     const refreshedPlan = { ...publishedPlan, name: 'Força atualizada remotamente' };
+    const latestPlan = { ...publishedPlan, name: 'Treino atualizado novamente' };
     let publishedPlanReads = 0;
     const request = vi.fn((path: string) => {
       if (path === `/workout-plan-drafts/${DRAFT_ID}`) return Promise.resolve(draftFixture());
@@ -637,12 +638,18 @@ describe('useTrainerWorkoutEditor', () => {
         return Promise.resolve(publishedPlan);
       if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
         publishedPlanReads += 1;
-        return Promise.resolve(publishedPlanReads === 1 ? publishedPlan : refreshedPlan);
+        return Promise.resolve(
+          publishedPlanReads === 1
+            ? publishedPlan
+            : publishedPlanReads === 2
+              ? refreshedPlan
+              : latestPlan,
+        );
       }
       throw new Error(`Unexpected request: ${path}`);
     });
     const api = { request } as unknown as ApiRequester;
-    const { result } = setup(api, 'create', { draftId: DRAFT_ID });
+    const { result, queryClient } = setup(api, 'create', { draftId: DRAFT_ID });
     await waitFor(() => expect(result.current.draft?.revision).toBe(4));
     await act(async () => {
       await result.current.publish();
@@ -655,6 +662,46 @@ describe('useTrainerWorkoutEditor', () => {
 
     expect(publishedPlanReads).toBe(2);
     await waitFor(() => expect(result.current.plan?.name).toBe('Força atualizada remotamente'));
+    await waitFor(() => expect(result.current.editor.name).toBe('Força atualizada remotamente'));
+
+    act(() => result.current.changePlanField('name', 'Nome local'));
+    act(() => {
+      queryClient.setQueryData(['trainer', 'workout', PUBLISHED_PLAN_ID], latestPlan);
+    });
+
+    await waitFor(() => expect(result.current.plan?.name).toBe('Treino atualizado novamente'));
+    expect(result.current.editor.name).toBe('Nome local');
+  });
+
+  it('reidrata campos do editor após refresh de um plano criado sem draft', async () => {
+    const createdPlan = { ...activePlanFixture('Força criada'), id: PUBLISHED_PLAN_ID };
+    const refreshedPlan = { ...createdPlan, name: 'Força criada atualizada' };
+    let planReads = 0;
+    const request = vi.fn((path: string, options?: { method?: string }) => {
+      if (path === '/workout-plans' && options?.method === 'POST') {
+        return Promise.resolve(createdPlan);
+      }
+      if (path === `/workout-plans/${PUBLISHED_PLAN_ID}`) {
+        planReads += 1;
+        return Promise.resolve(planReads === 1 ? createdPlan : refreshedPlan);
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const { result } = setup(api, 'create');
+    act(() => result.current.updateEditor(() => validEditorState()));
+    act(() => result.current.setActiveDay('day-local-1'));
+
+    await act(async () => {
+      expect(await result.current.publish()).toBe(true);
+    });
+    await waitFor(() => expect(result.current.plan?.id).toBe(PUBLISHED_PLAN_ID));
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    await waitFor(() => expect(result.current.editor.name).toBe('Força criada atualizada'));
+    expect(planReads).toBe(2);
   });
 
   it('mostra erro 404 da query do plano após publicar um draft', async () => {

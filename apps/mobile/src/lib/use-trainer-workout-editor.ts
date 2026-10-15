@@ -239,7 +239,7 @@ export function useTrainerWorkoutEditor({
       return;
     }
 
-    if (mode === 'edit' && plan) {
+    if ((mode === 'edit' || activePlanId) && plan) {
       const selectedDayIndex = getSelectedDayIndex(editorRef.current, activeDayId);
       const focusLocation = getFocusedExerciseLocation(editorRef.current, focusedExerciseId);
       const hydrated = hydrateWorkoutEditorState(plan, createLocalId);
@@ -259,6 +259,7 @@ export function useTrainerWorkoutEditor({
     }
   }, [
     activeDayId,
+    activePlanId,
     contextError,
     createLocalId,
     draftId,
