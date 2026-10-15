@@ -1,4 +1,9 @@
-import { createWorkoutPlanSchema, updateWorkoutPlanSchema } from '@muvit/validators';
+import {
+  createWorkoutPlanSchema,
+  updateWorkoutPlanSchema,
+  workoutPlanDraftPayloadSchema,
+} from '@muvit/validators';
+import type { WorkoutPlanDraftPayload } from '@muvit/validators';
 import type {
   CreateTrainerWorkoutPlanInput,
   TrainerWorkoutPlan,
@@ -294,7 +299,7 @@ export function buildCreateTrainerWorkoutInput(
   const candidate: CreateTrainerWorkoutPlanInput = {
     studentId,
     name: state.name.trim(),
-    status: state.status,
+    status: 'active',
     days: days.body,
   };
   const notes = state.notes.trim();
@@ -318,7 +323,7 @@ export function buildUpdateTrainerWorkoutInput(
   const candidate: UpdateTrainerWorkoutPlanInput = {
     name: state.name.trim(),
     notes: state.notes.trim(),
-    status: state.status,
+    status: 'active',
     days: days.body,
   };
 
@@ -328,19 +333,53 @@ export function buildUpdateTrainerWorkoutInput(
   return { ok: true, body: parsed.data };
 }
 
+export function buildWorkoutDraftPayload(
+  state: WorkoutEditorState,
+): BuildWorkoutInputResult<WorkoutPlanDraftPayload> {
+  const basicError = validateBasicEditorState(state);
+  if (basicError) return { ok: false, message: basicError };
+
+  const days = buildWorkoutDays(state, true);
+  if (!days.ok) return days;
+
+  const candidate: WorkoutPlanDraftPayload = {
+    name: state.name.trim(),
+    days: days.body,
+  };
+  const notes = state.notes.trim();
+  if (notes) candidate.notes = notes;
+
+  const parsed = workoutPlanDraftPayloadSchema.safeParse(candidate);
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? 'Revise os dados do treino.' };
+  }
+
+  return { ok: true, body: parsed.data };
+}
+
 function validateBasicEditorState(state: WorkoutEditorState): string | undefined {
   if (!state.name.trim()) return 'Informe um nome para o treino.';
+  if (state.name.trim().length > 200) return 'O nome do treino deve ter até 200 caracteres.';
+  if (state.notes.trim().length > 2000)
+    return 'As observações do treino devem ter até 2.000 caracteres.';
   if (state.days.length < 1 || state.days.length > DEFAULT_DAY_LABELS.length) {
     return 'O treino deve ter entre 1 e 7 dias.';
   }
-  if (state.days.some((day) => !day.label.trim())) {
-    return 'Informe um nome para cada dia.';
+  for (const day of state.days) {
+    if (!day.label.trim()) return 'Informe um nome para cada dia.';
+    if (day.label.trim().length > 50) return 'O nome de cada dia deve ter até 50 caracteres.';
   }
   if (state.days.some((day) => day.exercises.length === 0)) {
     return 'Cada dia precisa ter ao menos 1 exercício.';
   }
-  if (state.days.some((day) => day.exercises.some((exercise) => !exercise.reps.trim()))) {
-    return 'Repetições são obrigatórias.';
+  for (const day of state.days) {
+    for (const exercise of day.exercises) {
+      if (!exercise.reps.trim()) return 'Repetições são obrigatórias.';
+      if (exercise.reps.trim().length > 20) return 'Repetições devem ter até 20 caracteres.';
+      if (exercise.notes.trim().length > 500) {
+        return 'As observações do exercício devem ter até 500 caracteres.';
+      }
+    }
   }
 
   return undefined;
@@ -370,6 +409,9 @@ function buildWorkoutDays(
         'segundos',
       );
       if (!restSeconds.ok) return restSeconds;
+      if (preserveTempo && exercise.tempo && exercise.tempo.length > 10) {
+        return { ok: false, message: 'O tempo deve ter até 10 caracteres.' };
+      }
 
       const nextExercise: WorkoutPlanExerciseInput = {
         exerciseId: exercise.exerciseId,
