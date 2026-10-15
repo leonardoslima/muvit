@@ -60,7 +60,7 @@ name: MUV-36 — Sessão guiada do aluno
 - takeScreenshot: muv36_rest
 - tapOn: +15 s
 - tapOn: Pular descanso
-- assertVisible: 'Série 2 de'
+- assertVisible: 'Série 2 de [0-9]+'
 - tapOn:
     text: Repetições realizadas
     index: 1
@@ -79,13 +79,15 @@ name: MUV-36 — Sessão guiada do aluno
 - tapOn: Fechar sessão
 - assertVisible: Sair da sessão
 - tapOn: Salvar e sair
+- assertVisible: Visão geral do treino
+- tapOn: Voltar para Hoje
 - assertVisible: Seu treino de hoje
 - tapOn: Continuar treino
 - assertVisible: Repetições realizadas
 - scrollUntilVisible:
     element: Concluir série
     direction: DOWN
-- assertVisible: 'Série 2 de'
+- assertVisible: 'Série 2 de [0-9]+'
 - assertVisible: '8'
 - assertVisible: '18'
 - assertVisible: '10 reps · 22 kg'
