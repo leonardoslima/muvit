@@ -1,15 +1,13 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { mobileRoutes } from '../../src/application/navigation/role-navigation';
-import { Brand } from '../../src/components/ui/brand';
-import { AppButton } from '../../src/components/ui/button';
-import { Field } from '../../src/components/ui/field';
-import { InlineMessage } from '../../src/components/ui/inline-message';
-import { Screen, ScreenHeader } from '../../src/components/ui/screen';
+import { AuthBrand } from '../../src/components/auth/auth-brand';
+import { Screen } from '../../src/components/ui/screen';
+import { Button, Field, Header, Message, Text } from '../../src/components/ui/v2';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import { spacing } from '../../src/lib/styles';
+import { spacing } from '../../src/lib/design-system/tokens';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -43,47 +41,80 @@ export default function SignupScreen() {
   }
 
   return (
-    <Screen
-      scroll
-      contentContainerStyle={{
-        flexGrow: 1,
-        gap: spacing.lg,
-        justifyContent: 'center',
-        padding: spacing.xxl,
-      }}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      testID="signup-keyboard-avoiding-view"
     >
-      <Brand />
-      <ScreenHeader subtitle="Comece como aluno independente." title="Criar conta" />
-      <View style={{ gap: spacing.md }}>
-        <Field label="Nome" onChangeText={setName} placeholder="Seu nome completo" value={name} />
-        <Field
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          label="Email"
-          onChangeText={setEmail}
-          placeholder="voce@exemplo.com"
-          value={email}
-        />
-        <Field
-          label="Senha"
-          onChangeText={setPassword}
-          placeholder="Crie uma senha"
-          secureTextEntry
-          value={password}
-        />
-      </View>
-      {error ? <InlineMessage message={error} tone="error" /> : null}
-      <View style={{ gap: spacing.sm }}>
-        <AppButton
-          disabled={submitting}
-          label={submitting ? 'Criando...' : 'Criar conta'}
-          onPress={submit}
-        />
-        <Link href="/(auth)/login" asChild>
-          <AppButton label="Já tenho conta" onPress={() => undefined} variant="secondary" />
-        </Link>
-      </View>
-    </Screen>
+      <Screen
+        scroll
+        contentContainerStyle={{
+          flexGrow: 1,
+          gap: spacing.xxl,
+          paddingBottom: spacing.xxl,
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.xxl,
+        }}
+      >
+        <AuthBrand />
+        <View
+          testID="signup-heading"
+          style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}
+        >
+          <Header
+            title="Criar conta"
+            titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold"
+          />
+          <Text className="text-v2-secondary" variant="body">
+            Comece como aluno independente.
+          </Text>
+        </View>
+
+        <View testID="signup-fields" style={{ gap: spacing.xl }}>
+          <Field
+            label="Nome"
+            onChangeText={setName}
+            placeholder="Seu nome completo"
+            size="auth"
+            testID="signup-name"
+            value={name}
+          />
+          <Field
+            autoCapitalize="none"
+            autoComplete="email"
+            keyboardType="email-address"
+            label="Email"
+            onChangeText={setEmail}
+            placeholder="voce@exemplo.com"
+            size="auth"
+            testID="signup-email"
+            value={email}
+          />
+          <Field
+            kind="password"
+            label="Senha"
+            onChangeText={setPassword}
+            placeholder="Sua senha"
+            size="auth"
+            testID="signup-password"
+            value={password}
+          />
+        </View>
+
+        {error ? <Message description={error} variant="error" /> : null}
+
+        <View testID="signup-actions" style={{ gap: spacing.md }}>
+          <Button
+            disabled={submitting}
+            label={submitting ? 'Criando...' : 'Criar conta'}
+            loading={submitting}
+            onPress={submitting ? undefined : submit}
+          />
+          <Link href="/(auth)/login" asChild>
+            <Button label="Já tenho conta" onPress={() => undefined} variant="secondary" />
+          </Link>
+        </View>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }

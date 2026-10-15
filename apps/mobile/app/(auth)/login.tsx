@@ -1,78 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
-import { type ComponentProps, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  type TextInputProps,
-  View,
-} from 'react-native';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
-import { InlineMessage } from '../../src/components/ui/inline-message';
+import { AuthBrand } from '../../src/components/auth/auth-brand';
 import { Screen } from '../../src/components/ui/screen';
+import { Button, Field, Header, Message, Text } from '../../src/components/ui/v2';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import {
-  colors,
-  controlSizes,
-  radii,
-  sharedStyles,
-  spacing,
-  typography,
-} from '../../src/lib/styles';
-
-type LoginFieldProps = Omit<TextInputProps, 'onChangeText' | 'value'> & {
-  iconName: ComponentProps<typeof Ionicons>['name'];
-  iconTestID: string;
-  label: string;
-  onChangeText: (text: string) => void;
-  value: string;
-};
-
-function LoginField({
-  iconName,
-  iconTestID,
-  label,
-  onChangeText,
-  value,
-  ...inputProps
-}: LoginFieldProps) {
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <Text style={[sharedStyles.label, typography.labelCompact]}>{label}</Text>
-      <View
-        style={{
-          alignItems: 'center',
-          backgroundColor: colors.surface,
-          borderColor: colors.line,
-          borderRadius: radii.control,
-          borderWidth: 1,
-          flexDirection: 'row',
-          gap: spacing.sm,
-          height: controlSizes.authInput,
-          paddingHorizontal: spacing.lg,
-        }}
-      >
-        <Ionicons color={colors.muted} name={iconName} size={18} testID={iconTestID} />
-        <TextInput
-          {...inputProps}
-          accessibilityLabel={label}
-          onChangeText={onChangeText}
-          style={{
-            color: colors.ink,
-            flex: 1,
-            ...typography.input,
-            height: '100%',
-          }}
-          value={value}
-        />
-      </View>
-    </View>
-  );
-}
+import { spacing } from '../../src/lib/design-system/tokens';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -117,122 +52,60 @@ export default function LoginScreen() {
         contentContainerStyle={{
           flexGrow: 1,
           gap: spacing.xxl,
-          justifyContent: 'center',
           paddingBottom: spacing.xxl,
-          paddingHorizontal: spacing.xl,
-          paddingTop: spacing.xxxl,
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.xxl,
         }}
       >
+        <AuthBrand />
         <View
-          accessibilityLabel="Muvit"
-          style={{ alignItems: 'center', flexDirection: 'row', gap: spacing.md }}
+          testID="login-heading"
+          style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}
         >
-          <View
-            testID="login-brand-symbol"
-            style={{
-              alignItems: 'center',
-              backgroundColor: colors.primary,
-              borderRadius: radii.control,
-              height: controlSizes.brandMark,
-              justifyContent: 'center',
-              width: controlSizes.brandMark,
-            }}
-          >
-            <Ionicons color={colors.ink} name="barbell-outline" size={22} />
-          </View>
-          <View style={{ gap: spacing.xs }}>
-            <Text
-              style={{
-                color: colors.ink,
-                ...typography.brandCompact,
-              }}
-            >
-              Muvit
-            </Text>
-            <Text
-              style={{
-                color: colors.primaryText,
-                ...typography.brandTagline,
-                letterSpacing: 0.7,
-              }}
-            >
-              SEU TREINO, NO SEU RITMO
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ gap: spacing.sm }}>
-          <Text accessibilityRole="header" style={sharedStyles.title}>
-            Entrar
+          <Header title="Entrar" titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold" />
+          <Text className="text-v2-secondary" variant="body">
+            Acesse sua conta para continuar.
           </Text>
-          <Text style={sharedStyles.subtitle}>Acesse seus treinos e registre sua evolução.</Text>
         </View>
 
-        <View style={{ gap: spacing.md }}>
-          <LoginField
+        <View testID="login-fields" style={{ gap: spacing.xl }}>
+          <Field
             autoCapitalize="none"
             autoComplete="email"
-            iconName="mail-outline"
-            iconTestID="login-email-icon"
             keyboardType="email-address"
             label="Email"
             onChangeText={setEmail}
             placeholder="voce@exemplo.com"
+            size="auth"
+            testID="login-email"
             value={email}
           />
-          <LoginField
-            iconName="lock-closed-outline"
-            iconTestID="login-password-icon"
+          <Field
+            kind="password"
             label="Senha"
             onChangeText={setPassword}
             placeholder="Sua senha"
-            secureTextEntry
+            size="auth"
+            testID="login-password"
             value={password}
           />
         </View>
 
-        {error ? <InlineMessage message={error} tone="error" /> : null}
+        {error ? <Message description={error} variant="error" /> : null}
 
-        <View style={{ gap: spacing.sm }}>
-          <Pressable
-            accessible
-            accessibilityLabel={submitting ? 'Entrando...' : 'Entrar'}
-            accessibilityRole="button"
+        <View testID="login-actions" style={{ gap: spacing.md }}>
+          <Button
             disabled={submitting}
+            label={submitting ? 'Entrando...' : 'Entrar'}
+            loading={submitting}
             onPress={submitting ? undefined : submit}
-            style={({ pressed }) => [
-              sharedStyles.button,
-              { borderRadius: radii.control, flexDirection: 'row', gap: spacing.sm },
-              submitting ? { opacity: 0.5 } : null,
-              pressed && !submitting ? { opacity: 0.8 } : null,
-            ]}
-          >
-            <Text style={[sharedStyles.buttonText, typography.bodyStrong]}>
-              {submitting ? 'Entrando...' : 'Entrar'}
-            </Text>
-            <Ionicons
-              color={colors.ink}
-              name="log-in-outline"
-              size={18}
-              testID="login-submit-icon"
-            />
-          </Pressable>
+          />
           <Link href="/(auth)/signup" asChild>
-            <Pressable
-              accessible
-              accessibilityLabel="Criar conta independente"
-              accessibilityRole="button"
+            <Button
+              label="Criar conta independente"
               onPress={() => undefined}
-              style={({ pressed }) => [
-                sharedStyles.secondaryButton,
-                { borderRadius: radii.control },
-                pressed ? { opacity: 0.8 } : null,
-              ]}
-            >
-              <Text style={[sharedStyles.secondaryButtonText, typography.bodyStrong]}>
-                Criar conta independente
-              </Text>
-            </Pressable>
+              variant="secondary"
+            />
           </Link>
         </View>
       </Screen>
