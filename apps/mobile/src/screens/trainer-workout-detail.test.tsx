@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
@@ -7,6 +7,8 @@ import { TrainerWorkoutDetailScreen } from './trainer-workout-detail';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const OTHER_STUDENT_ID = '00000000-0000-0000-0000-000000000002';
+const AUTH_USER_ID = '00000000-0000-0000-0000-000000000801';
+const OTHER_AUTH_USER_ID = '00000000-0000-0000-0000-000000000802';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
 const DAY_ID = '00000000-0000-0000-0000-000000000201';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
@@ -21,9 +23,18 @@ const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
   planId: '00000000-0000-0000-0000-000000000301' as string | undefined,
 }));
+const authState = vi.hoisted(() => ({
+  userId: '00000000-0000-0000-0000-000000000801',
+}));
 
 vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
+}));
+
+vi.mock('../lib/auth-client', () => ({
+  authClient: {
+    useSession: () => ({ data: { user: { id: authState.userId } }, isPending: false }),
+  },
 }));
 
 vi.mock('expo-router', () => ({
@@ -87,12 +98,22 @@ function renderDetail() {
   );
 }
 
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolvePromise: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
+}
+
 beforeEach(() => {
   apiState.request.mockReset();
   routerState.dismissTo.mockReset();
   routerState.push.mockReset();
   paramsState.studentId = STUDENT_ID;
   paramsState.planId = PLAN_ID;
+  authState.userId = AUTH_USER_ID;
 });
 
 describe('TrainerWorkoutDetailScreen', () => {
@@ -115,6 +136,68 @@ describe('TrainerWorkoutDetailScreen', () => {
     expect(screen.queryByText('3010')).toBeNull();
   });
 
+  it('preserva a ordem recebida e mostra somente carga/descanso explicitamente definidos', async () => {
+    apiState.request.mockResolvedValueOnce(
+      planFixture({
+        days: [
+          {
+            id: '00000000-0000-0000-0000-000000000202',
+            planId: PLAN_ID,
+            label: 'Treino recebido primeiro',
+            dayOrder: 1,
+            exercises: [
+              {
+                id: EXERCISE_ROW_ID,
+                workoutDayId: '00000000-0000-0000-0000-000000000202',
+                exerciseId: EXERCISE_ID,
+                exerciseOrder: 0,
+                sets: 3,
+                reps: '10',
+                restSeconds: null,
+                loadKg: null,
+                tempo: null,
+                notes: null,
+                exercise: { id: EXERCISE_ID, name: 'Supino reto', muscleGroup: 'chest' },
+              },
+            ],
+          },
+          {
+            id: DAY_ID,
+            planId: PLAN_ID,
+            label: 'Treino recebido depois',
+            dayOrder: 0,
+            exercises: [
+              {
+                id: EXERCISE_ROW_ID,
+                workoutDayId: DAY_ID,
+                exerciseId: EXERCISE_ID,
+                exerciseOrder: 0,
+                sets: 3,
+                reps: '8',
+                restSeconds: 0,
+                loadKg: '0.00',
+                tempo: null,
+                notes: null,
+                exercise: { id: EXERCISE_ID, name: 'Supino reto', muscleGroup: 'chest' },
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    renderDetail();
+
+    const dayLabels = await screen.findAllByText(/Treino recebido/);
+    expect(dayLabels.map((label) => label.props.children)).toEqual([
+      'Treino recebido primeiro',
+      'Treino recebido depois',
+    ]);
+    expect(screen.getAllByText('Carga: 0 kg')).toHaveLength(1);
+    expect(screen.getAllByText('Descanso: 0s')).toHaveLength(1);
+    expect(screen.queryByText('Descanso: 90s')).toBeNull();
+  });
+
   it('valida params e retorna à lista segura sem request', async () => {
     const user = userEvent.setup();
     paramsState.studentId = undefined;
@@ -135,7 +218,7 @@ describe('TrainerWorkoutDetailScreen', () => {
     renderDetail();
 
     expect(screen.getByText('Carregando treino')).toBeTruthy();
-    expect(screen.getByLabelText('Carregando')).toBeTruthy();
+    expect(screen.getByLabelText('Carregando treino')).toBeTruthy();
   });
 
   it('mostra 404 genérico sem revelar escopo', async () => {
@@ -149,14 +232,21 @@ describe('TrainerWorkoutDetailScreen', () => {
 
   it('permite retry depois de erro inicial', async () => {
     const user = userEvent.setup();
-    apiState.request
-      .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce(planFixture());
+    const retry = deferred<TrainerWorkoutPlan>();
+    apiState.request.mockRejectedValueOnce(new Error('offline')).mockReturnValueOnce(retry.promise);
 
     renderDetail();
 
     expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
+    await waitFor(() => expect(screen.getByLabelText('Carregando treino')).toBeTruthy());
+    expect(screen.getByRole('button', { name: 'Atualizar' }).props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+
+    await act(async () => {
+      retry.resolve(planFixture());
+    });
 
     expect(await screen.findByText('Hipertrofia')).toBeTruthy();
     expect(apiState.request).toHaveBeenCalledTimes(2);
@@ -167,9 +257,76 @@ describe('TrainerWorkoutDetailScreen', () => {
 
     renderDetail();
 
-    expect(await screen.findByText('Treino indisponível')).toBeTruthy();
+    expect(await screen.findByText('Treino não encontrado')).toBeTruthy();
     expect(screen.queryByText('Hipertrofia')).toBeNull();
     expect(screen.queryByText('Supino reto')).toBeNull();
+  });
+
+  it('oculta conteúdo imediatamente ao trocar a identidade autenticada', async () => {
+    const oldPlan = planFixture({ name: 'Plano de outra sessão' });
+    const pendingPlan = new Promise<TrainerWorkoutPlan>(() => undefined);
+    apiState.request.mockResolvedValueOnce(oldPlan);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <TrainerWorkoutDetailScreen />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('Plano de outra sessão')).toBeTruthy();
+    expect(
+      queryClient.getQueryCache().find({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+        exact: true,
+      }),
+    ).toBeDefined();
+
+    authState.userId = OTHER_AUTH_USER_ID;
+    apiState.request.mockReturnValueOnce(pendingPlan);
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <TrainerWorkoutDetailScreen />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.queryByText('Plano de outra sessão')).toBeNull();
+    expect(screen.getByText('Carregando treino')).toBeTruthy();
+    expect(
+      queryClient.getQueryCache().find({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, OTHER_AUTH_USER_ID],
+        exact: true,
+      }),
+    ).toBeDefined();
+  });
+
+  it('não reutiliza o detalhe quando troca o aluno da rota', async () => {
+    apiState.request
+      .mockResolvedValueOnce(planFixture({ name: 'Treino do primeiro aluno' }))
+      .mockReturnValueOnce(new Promise<TrainerWorkoutPlan>(() => undefined));
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <TrainerWorkoutDetailScreen />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText('Treino do primeiro aluno')).toBeTruthy();
+
+    paramsState.studentId = OTHER_STUDENT_ID;
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <TrainerWorkoutDetailScreen />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.queryByText('Treino do primeiro aluno')).toBeNull();
+    expect(screen.getByText('Carregando treino')).toBeTruthy();
+    expect(
+      queryClient.getQueryCache().find({
+        queryKey: ['trainer', 'workout', PLAN_ID, OTHER_STUDENT_ID, AUTH_USER_ID],
+        exact: true,
+      }),
+    ).toBeDefined();
   });
 
   it.each([

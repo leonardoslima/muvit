@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import type { TrainerWorkoutPlan } from '../../application/workouts/trainer-workout-data';
 import { muscleGroupLabel } from '../../lib/muscle-groups';
-import { colors, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import { Card } from '../ui/v2/card';
+import { Text } from '../ui/v2/text';
 
 export type WorkoutDayCardProps = {
   day: TrainerWorkoutPlan['days'][number];
@@ -11,45 +11,50 @@ export type WorkoutDayCardProps = {
 export function WorkoutDayCard({ day }: WorkoutDayCardProps) {
   return (
     <Card>
-      <Text style={styles.title}>{day.label}</Text>
+      <Text variant="sectionTitle">{day.label}</Text>
 
       {day.exercises.map((item) => (
-        <View key={item.id} style={styles.exercise}>
-          <Text style={styles.exerciseName}>{item.exercise.name}</Text>
-          <Text style={sharedStyles.subtitle}>{muscleGroupLabel(item.exercise.muscleGroup)}</Text>
-          <Text style={sharedStyles.subtitle}>{`${item.sets} séries · ${item.reps} reps`}</Text>
-          {item.loadKg !== null ? (
-            <Text style={sharedStyles.subtitle}>{`Carga: ${formatDecimal(item.loadKg)} kg`}</Text>
+        <View key={item.id} className="gap-1 border-t border-v2-border pt-3">
+          <Text variant="label">{item.exercise.name}</Text>
+          <Text className="text-v2-secondary" variant="support">
+            {muscleGroupLabel(item.exercise.muscleGroup)}
+          </Text>
+          <Text className="text-v2-secondary" variant="support">
+            {item.sets} séries · {item.reps} reps
+          </Text>
+          {item.loadKg == null ? null : <LoadLabel value={item.loadKg} />}
+          {item.restSeconds == null ? null : (
+            <Text className="text-v2-secondary" variant="support">
+              Descanso: {item.restSeconds}s
+            </Text>
+          )}
+          {item.notes?.trim() ? (
+            <Text className="text-v2-secondary" variant="support">
+              {item.notes}
+            </Text>
           ) : null}
-          {item.restSeconds !== null ? (
-            <Text style={sharedStyles.subtitle}>{`Descanso: ${item.restSeconds}s`}</Text>
-          ) : null}
-          {item.notes?.trim() ? <Text style={sharedStyles.subtitle}>{item.notes}</Text> : null}
         </View>
       ))}
     </Card>
   );
 }
 
-function formatDecimal(value: string | number): string {
-  const number = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(number)) return String(value);
-  return number.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+function LoadLabel({ value }: { value: string | number }) {
+  const formattedLoad = formatDecimal(value);
+  if (!formattedLoad) return null;
+
+  return (
+    <Text className="text-v2-secondary" variant="support">
+      Carga: {formattedLoad} kg
+    </Text>
+  );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-  exercise: {
-    borderTopColor: colors.line,
-    borderTopWidth: 1,
-    gap: spacing.xs,
-    paddingTop: spacing.md,
-  },
-  exerciseName: {
-    color: colors.ink,
-    ...typography.exerciseTitle,
-  },
-});
+function formatDecimal(value: string | number): string | undefined {
+  const normalized = typeof value === 'string' ? value.trim() : value;
+  if (normalized === '') return undefined;
+
+  const number = typeof normalized === 'number' ? normalized : Number(normalized);
+  if (!Number.isFinite(number)) return undefined;
+  return number.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
