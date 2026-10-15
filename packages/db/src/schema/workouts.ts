@@ -45,6 +45,7 @@ export const workoutDays = pgTable(
       .references(() => workoutPlans.id, { onDelete: 'cascade' }),
     label: varchar('label', { length: 50 }).notNull(),
     dayOrder: integer('day_order').notNull(),
+    isCurrent: boolean('is_current').notNull().default(true),
   },
   (t) => ({
     planIdx: index('workout_days_plan_idx').on(t.planId),
