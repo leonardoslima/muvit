@@ -91,9 +91,20 @@ A validação manual usou o AVD dedicado `muvit-muv-34`, Android API 36 e Expo G
 - Após force-stop do Expo Go e reabertura do projeto, a sessão ativa foi restaurada em Hoje.
 - Credenciais inválidas exibiram “Credenciais inválidas. Verifique os dados e tente novamente.”; a falha de rede controlada exibiu “Não foi possível concluir a solicitação. Tente novamente.”. Os valores dos campos foram preservados nos dois erros.
 - Login e cadastro foram observados em 320, 390 e 430 dp. Em perfil com nome e email longos a 320 dp, ambos quebraram linha sem reticências; o cartão cresceu e as abas e Sair permaneceram disponíveis. Perfis de estudante e professor também foram exercitados na largura base do AVD.
-- Com o teclado aberto, o foco no campo de nome permaneceu visível. O CTA ficou inicialmente abaixo da área visível; após rolagem, “Criar conta” e “Já tenho conta” ficaram acessíveis acima do teclado. O botão Voltar nativo fechou o teclado e o CTA funcionou após ser reposicionado.
+- Com o teclado aberto na escala padrão, o foco no campo de nome permaneceu visível. O CTA ficou inicialmente abaixo da área visível; após rolagem, “Criar conta” e “Já tenho conta” ficaram acessíveis acima do teclado. O botão Voltar nativo fechou o teclado. O complemento em escala 1,25 registra um limite diferente para o botão secundário.
 - A escala de fonte 1,25 foi capturada e depois restaurada para 1,0. A árvore UI Automator mostrou hints/descrições e propriedades de foco/clique nos campos e identificou Entrar como botão clicável e focável; o email de perfil apareceu como TextView não focável. Os emails foram mascarados nas capturas e credenciais não foram registradas.
-- Não foi observado defeito funcional ou visual nos fluxos exercitados.
+- Não foi observada falha funcional nos fluxos exercitados. O limite visual do botão secundário com teclado aberto em escala 1,25 está descrito abaixo.
+
+### Complemento de QA runtime em escala de fonte 1,25
+
+Este complemento registra somente QA runtime manual no AVD Android API 36; não altera a evidência automatizada, que continua referenciada ao SHA 32d6be56f7e315d5888509124e28e4b4ad22d0d1, nem reexecuta seus gates.
+
+- Login: títulos, rótulos e controles cresceram; email, senha, Entrar e criar conta permaneceram visíveis com o teclado fechado, sem rolagem, clipping ou truncamento.
+- Cadastro: nome, email, senha e as duas ações couberam sem truncamento com o teclado fechado. Com o teclado aberto, “Criar conta” ficou abaixo da viewport e foi alcançado após rolagem, totalmente visível acima do teclado. Nessa posição, “Já tenho conta” continuou parcialmente encoberto. O toque no CTA primário após rolar fechou o teclado; o relatório registra que, com os campos vazios, não houve cadastro nesse ensaio.
+- Perfil de estudante: o nome longo quebrou em duas linhas sem reticências; o cartão cresceu e papel, Sair e abas permaneceram visíveis. O email foi mascarado na captura.
+- Perfil de treinador: nome, papel, Sair e abas permaneceram visíveis. O cartão cresceu verticalmente sem cortar os controles; o email foi mascarado na captura.
+
+Após o complemento, o AVD foi restaurado para font scale 1,0, resolução 1080 por 2400 e densidade 420 dpi; Wi-Fi e dados móveis estavam ligados e a rede padrão ativa. Nenhum outro AVD foi tocado. TalkBack também não foi executado no complemento.
 
 ### Limites observados
 
