@@ -100,7 +100,7 @@ A validação manual usou o AVD dedicado `muvit-muv-34`, Android API 36 e Expo G
 Este complemento registra somente QA runtime manual no AVD Android API 36; não altera a evidência automatizada, que continua referenciada ao SHA 32d6be56f7e315d5888509124e28e4b4ad22d0d1, nem reexecuta seus gates.
 
 - Login: títulos, rótulos e controles cresceram; email, senha, Entrar e criar conta permaneceram visíveis com o teclado fechado, sem rolagem, clipping ou truncamento.
-- Cadastro: nome, email, senha e as duas ações couberam sem truncamento com o teclado fechado. Com o teclado aberto, “Criar conta” ficou abaixo da viewport e foi alcançado após rolagem, totalmente visível acima do teclado. Nessa posição, “Já tenho conta” continuou parcialmente encoberto. O toque no CTA primário após rolar fechou o teclado; o relatório registra que, com os campos vazios, não houve cadastro nesse ensaio.
+- Cadastro: nome, email, senha e as duas ações couberam sem truncamento com o teclado fechado. Com o teclado aberto, “Criar conta” ficou abaixo da viewport e foi alcançado após rolagem, totalmente visível acima do teclado. Nessa posição, “Já tenho conta” continuou parcialmente encoberto. Ao tocar no CTA primário após a rolagem, o teclado fechou. Como os campos estavam vazios, esse ensaio não avaliou se o CTA permanecia habilitado nem se alguma regra de validação impediria o cadastro.
 - Perfil de estudante: o nome longo quebrou em duas linhas sem reticências; o cartão cresceu e papel, Sair e abas permaneceram visíveis. O email foi mascarado na captura.
 - Perfil de treinador: nome, papel, Sair e abas permaneceram visíveis. O cartão cresceu verticalmente sem cortar os controles; o email foi mascarado na captura.
 
