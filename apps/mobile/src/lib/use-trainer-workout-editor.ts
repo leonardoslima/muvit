@@ -145,7 +145,7 @@ export function useTrainerWorkoutEditor({
     activePlanId ?? (draftId && !draftConsumed ? draftSourcePlanId : draftId ? undefined : planId);
   const planQuery = useQuery({
     enabled: Boolean(studentId && contextPlanId && (mode === 'edit' || draftId || activePlanId)),
-    queryKey: ['trainer', 'workout', contextPlanId],
+    queryKey: ['trainer', 'workout', contextPlanId, studentId, authUserId],
     queryFn: ({ signal }) => {
       if (!contextPlanId) throw new Error('Treino inválido.');
       return getTrainerWorkoutPlan(api, contextPlanId, signal);
@@ -411,7 +411,7 @@ export function useTrainerWorkoutEditor({
       baselineSnapshotRef.current = getWorkoutEditorSnapshot(current);
       setBaselineSnapshot(baselineSnapshotRef.current);
       setFeedback({ tone: 'success', message: 'Rascunho salvo na sua conta.' });
-      await invalidateWorkoutQueries(queryClient, authUserId, studentId);
+      await invalidateWorkoutQueries(queryClient, authUserId, studentId, sourcePlanId);
       return true;
     } catch {
       setFeedback({ tone: 'error', message: 'Não foi possível salvar o rascunho.' });
@@ -483,7 +483,10 @@ export function useTrainerWorkoutEditor({
 
       setActivePlanId(published.id);
       setPublishedPlanSnapshot(published);
-      queryClient.setQueryData(['trainer', 'workout', published.id], published);
+      queryClient.setQueryData(
+        ['trainer', 'workout', published.id, studentId, authUserId],
+        published,
+      );
       if (draftToPublish) {
         if (draftId) setDraftConsumed(true);
         hydratedDraftRef.current = undefined;
@@ -601,14 +604,18 @@ async function invalidateWorkoutQueries(
   studentId: string,
   planId?: string,
 ): Promise<void> {
-  const queryKeys = [
-    ['trainer', 'workouts', studentId],
-    ['trainer', 'summary'],
-    trainerWorkoutDraftQueryKey(authUserId, studentId),
-    ...(planId ? [['trainer', 'workout', planId]] : []),
+  const queryKeys: { queryKey: readonly unknown[]; exact: boolean }[] = [
+    { queryKey: ['trainer', 'workouts', studentId, authUserId], exact: true },
+    { queryKey: ['trainer', 'summary'], exact: true },
+    { queryKey: trainerWorkoutDraftQueryKey(authUserId, studentId), exact: false },
+    ...(planId
+      ? [{ queryKey: ['trainer', 'workout', planId, studentId, authUserId], exact: true }]
+      : []),
   ];
   await Promise.allSettled(
-    queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey, refetchType: 'none' })),
+    queryKeys.map(({ queryKey, exact }) =>
+      queryClient.invalidateQueries({ queryKey, exact, refetchType: 'active' }),
+    ),
   );
 }
 

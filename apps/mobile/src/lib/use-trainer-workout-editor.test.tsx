@@ -1,9 +1,12 @@
 import type { WorkoutPlanDraft } from '@muvit/validators';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import type { PropsWithChildren } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { trainerWorkoutDraftQueryKey } from '../application/workouts/trainer-workout-data';
+import {
+  getTrainerWorkoutPlan,
+  trainerWorkoutDraftQueryKey,
+} from '../application/workouts/trainer-workout-data';
 import { ApiError } from './api';
 import type { ApiRequester } from './api';
 import { useTrainerWorkoutEditor } from './use-trainer-workout-editor';
@@ -15,6 +18,8 @@ const PUBLISHED_PLAN_ID = '00000000-0000-0000-0000-000000000302';
 const DRAFT_ID = '00000000-0000-0000-0000-000000000501';
 const SECOND_DRAFT_ID = '00000000-0000-0000-0000-000000000502';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
+const OTHER_AUTH_USER_ID = '00000000-0000-0000-0000-000000000802';
+const OTHER_STUDENT_ID = '00000000-0000-0000-0000-000000000002';
 
 function draftFixture(): WorkoutPlanDraft {
   return {
@@ -147,8 +152,10 @@ function setup(
   api: ApiRequester,
   mode: 'create' | 'edit',
   options: { planId?: string; draftId?: string } = {},
+  providedQueryClient?: QueryClient,
 ) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient =
+    providedQueryClient ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const wrapper = ({ children }: PropsWithChildren) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -213,7 +220,8 @@ describe('useTrainerWorkoutEditor', () => {
         .fn()
         .mockResolvedValueOnce(draftFixture())
         .mockResolvedValueOnce(activePlanFixture('Força'))
-        .mockReturnValueOnce(pendingPublish),
+        .mockReturnValueOnce(pendingPublish)
+        .mockResolvedValueOnce(activePlanFixture('Força atualizada')),
     } as unknown as ApiRequester;
     const { result } = setup(api, 'edit', { planId: PLAN_ID, draftId: DRAFT_ID });
     await waitFor(() => expect(result.current.editor.name).toBe('Força'));
@@ -270,13 +278,14 @@ describe('useTrainerWorkoutEditor', () => {
 
     expect(published).toBe(true);
     expect(result.current.dirty).toBe(false);
-    expect(api.request).toHaveBeenCalledTimes(3);
+    expect(api.request).toHaveBeenCalledTimes(4);
   });
 
   it('publica draft retomado sem exigir alteração local artificial', async () => {
     const request = vi
       .fn()
       .mockResolvedValueOnce(draftFixture())
+      .mockResolvedValueOnce(activePlanFixture('Força'))
       .mockResolvedValueOnce(activePlanFixture('Força'))
       .mockResolvedValueOnce(activePlanFixture('Força'));
     const api = { request } as unknown as ApiRequester;
@@ -289,7 +298,7 @@ describe('useTrainerWorkoutEditor', () => {
     });
 
     expect(published).toBe(true);
-    expect(request).toHaveBeenCalledTimes(3);
+    expect(request).toHaveBeenCalledTimes(4);
     expect(request).toHaveBeenCalledWith(
       `/workout-plan-drafts/${DRAFT_ID}/publish`,
       expect.objectContaining({ method: 'POST' }),
@@ -351,7 +360,9 @@ describe('useTrainerWorkoutEditor', () => {
 
     act(() => result.current.updateEditor((current) => ({ ...current, name: 'Nome local' })));
     await act(async () => {
-      await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+      await queryClient.refetchQueries({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      });
     });
 
     expect(result.current.editor.name).toBe('Nome local');
@@ -666,7 +677,10 @@ describe('useTrainerWorkoutEditor', () => {
 
     act(() => result.current.changePlanField('name', 'Nome local'));
     act(() => {
-      queryClient.setQueryData(['trainer', 'workout', PUBLISHED_PLAN_ID], latestPlan);
+      queryClient.setQueryData(
+        ['trainer', 'workout', PUBLISHED_PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+        latestPlan,
+      );
     });
 
     await waitFor(() => expect(result.current.plan?.name).toBe('Treino atualizado novamente'));
@@ -904,7 +918,9 @@ describe('useTrainerWorkoutEditor', () => {
       if (selectedExerciseId) result.current.setFocusedExercise(selectedExerciseId);
     });
     await act(async () => {
-      await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+      await queryClient.refetchQueries({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      });
     });
 
     await waitFor(() => expect(result.current.editor.name).toBe('Força atualizada'));
@@ -935,5 +951,171 @@ describe('useTrainerWorkoutEditor', () => {
     expect(result.current.editor.name).toBe('Força');
     expect(result.current.activeDay?.label).toBe('Treino B');
     expect(result.current.focusedExerciseId).toBe(selectedExerciseId);
+  });
+
+  it('atualiza lista e detalhe montados ao salvar e publicar sem cruzar aluno ou conta', async () => {
+    let remotePlan = activePlanFixture('Força');
+    let remoteDraft: WorkoutPlanDraft | undefined;
+    const savedDraft = {
+      ...draftFixture(),
+      payload: { ...draftFixture().payload, name: 'Força revisada' },
+    };
+    const publishedPlan = { ...activePlanFixture('Força publicada') };
+    let planReads = 0;
+    const request = vi.fn((path: string, options?: { method?: string }) => {
+      if (path === `/workout-plans/${PLAN_ID}`) {
+        planReads += 1;
+        return Promise.resolve(remotePlan);
+      }
+      if (path === '/workout-plan-drafts' && options?.method === 'POST') {
+        remoteDraft = savedDraft;
+        return Promise.resolve(savedDraft);
+      }
+      if (path === `/workout-plan-drafts/${DRAFT_ID}/publish`) {
+        remotePlan = publishedPlan;
+        remoteDraft = undefined;
+        return Promise.resolve(publishedPlan);
+      }
+      throw new Error(`Unexpected request: ${path}`);
+    });
+    const api = { request } as unknown as ApiRequester;
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, refetchOnWindowFocus: false, staleTime: Number.POSITIVE_INFINITY },
+      },
+    });
+    const reads = {
+      targetList: 0,
+      otherAuthList: 0,
+      otherStudentList: 0,
+      otherAuthDetail: 0,
+      otherStudentDetail: 0,
+    };
+    queryClient.setQueryData(['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID], {
+      plans: [remotePlan],
+      drafts: [],
+    });
+    queryClient.setQueryData(['trainer', 'workouts', STUDENT_ID, OTHER_AUTH_USER_ID], {
+      plans: [],
+      drafts: [],
+    });
+    queryClient.setQueryData(['trainer', 'workouts', OTHER_STUDENT_ID, AUTH_USER_ID], {
+      plans: [],
+      drafts: [],
+    });
+    queryClient.setQueryData(['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID], remotePlan);
+    queryClient.setQueryData(['trainer', 'workout', PLAN_ID], remotePlan);
+    queryClient.setQueryData(
+      ['trainer', 'workout', PLAN_ID, STUDENT_ID, OTHER_AUTH_USER_ID],
+      activePlanFixture('Outra conta'),
+    );
+    queryClient.setQueryData(['trainer', 'workout', PLAN_ID, OTHER_STUDENT_ID, AUTH_USER_ID], {
+      ...activePlanFixture('Outro aluno'),
+      studentId: OTHER_STUDENT_ID,
+    });
+    const targetList = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID],
+      queryFn: async () => {
+        reads.targetList += 1;
+        return {
+          plans: [remotePlan],
+          drafts: remoteDraft ? [remoteDraft] : [],
+        };
+      },
+    });
+    const otherAuthList = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workouts', STUDENT_ID, OTHER_AUTH_USER_ID],
+      queryFn: async () => {
+        reads.otherAuthList += 1;
+        return { plans: [], drafts: [] };
+      },
+    });
+    const otherStudentList = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workouts', OTHER_STUDENT_ID, AUTH_USER_ID],
+      queryFn: async () => {
+        reads.otherStudentList += 1;
+        return { plans: [], drafts: [] };
+      },
+    });
+    const targetDetail = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      queryFn: () => getTrainerWorkoutPlan(api, PLAN_ID),
+    });
+    const otherAuthDetail = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, OTHER_AUTH_USER_ID],
+      queryFn: async () => {
+        reads.otherAuthDetail += 1;
+        return activePlanFixture('Outra conta');
+      },
+    });
+    const otherStudentDetail = new QueryObserver(queryClient, {
+      staleTime: Number.POSITIVE_INFINITY,
+      queryKey: ['trainer', 'workout', PLAN_ID, OTHER_STUDENT_ID, AUTH_USER_ID],
+      queryFn: async () => {
+        reads.otherStudentDetail += 1;
+        return { ...activePlanFixture('Outro aluno'), studentId: OTHER_STUDENT_ID };
+      },
+    });
+    const observers = [
+      targetList,
+      otherAuthList,
+      otherStudentList,
+      targetDetail,
+      otherAuthDetail,
+      otherStudentDetail,
+    ];
+    const unsubscribe = observers.map((observer) => observer.subscribe(() => undefined));
+    const { result } = setup(api, 'edit', { planId: PLAN_ID }, queryClient);
+
+    try {
+      await waitFor(() => {
+        expect(targetList.getCurrentResult().data).toBeDefined();
+        expect(otherAuthList.getCurrentResult().data).toBeDefined();
+        expect(otherStudentList.getCurrentResult().data).toBeDefined();
+        expect(targetDetail.getCurrentResult().data?.id).toBe(PLAN_ID);
+        expect(otherAuthDetail.getCurrentResult().data).toBeDefined();
+        expect(otherStudentDetail.getCurrentResult().data).toBeDefined();
+        expect(result.current.editor.name).toBe('Força');
+      });
+
+      const planReadsBeforeSave = planReads;
+      const isolatedReadsBeforeSave = { ...reads };
+      act(() => result.current.changePlanField('name', 'Força revisada'));
+      await act(async () => {
+        expect(await result.current.saveDraft()).toBe(true);
+      });
+
+      expect(reads.targetList).toBe(isolatedReadsBeforeSave.targetList + 1);
+      expect(planReads).toBe(planReadsBeforeSave + 1);
+      expect(targetList.getCurrentResult().data?.drafts[0]?.id).toBe(DRAFT_ID);
+      expect(reads.otherAuthList).toBe(isolatedReadsBeforeSave.otherAuthList);
+      expect(reads.otherStudentList).toBe(isolatedReadsBeforeSave.otherStudentList);
+      expect(reads.otherAuthDetail).toBe(isolatedReadsBeforeSave.otherAuthDetail);
+      expect(reads.otherStudentDetail).toBe(isolatedReadsBeforeSave.otherStudentDetail);
+
+      const planReadsBeforePublish = planReads;
+      const targetListReadsBeforePublish = reads.targetList;
+      await act(async () => {
+        expect(await result.current.publish()).toBe(true);
+      });
+
+      expect(planReads).toBe(planReadsBeforePublish + 1);
+      expect(reads.targetList).toBe(targetListReadsBeforePublish + 1);
+      expect(targetList.getCurrentResult().data?.drafts).toEqual([]);
+      expect(targetList.getCurrentResult().data?.plans[0]?.name).toBe('Força publicada');
+      expect(targetDetail.getCurrentResult().data?.name).toBe('Força publicada');
+      expect(reads.otherAuthList).toBe(isolatedReadsBeforeSave.otherAuthList);
+      expect(reads.otherStudentList).toBe(isolatedReadsBeforeSave.otherStudentList);
+      expect(reads.otherAuthDetail).toBe(isolatedReadsBeforeSave.otherAuthDetail);
+      expect(reads.otherStudentDetail).toBe(isolatedReadsBeforeSave.otherStudentDetail);
+    } finally {
+      for (const stop of unsubscribe) stop();
+      for (const observer of observers) observer.destroy();
+    }
   });
 });
