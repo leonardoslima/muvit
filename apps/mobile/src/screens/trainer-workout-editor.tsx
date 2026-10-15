@@ -1,3 +1,4 @@
+import { CommonActions } from '@react-navigation/native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -12,13 +13,26 @@ import { spacing } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
 import { usePreventRemove } from '../lib/use-prevent-remove';
 import { useTrainerWorkoutEditor } from '../lib/use-trainer-workout-editor';
+import type { UseTrainerWorkoutEditorInput } from '../lib/use-trainer-workout-editor';
 
 export type TrainerWorkoutEditorScreenProps = {
   mode: 'create' | 'edit';
 };
 
 type NavigationAction = unknown;
+type TabRoute = { key: string; name: string; params?: Record<string, unknown> };
+type TabPressEvent = { target?: string; preventDefault: () => void };
+type TabNavigation = {
+  dispatch: (action: NavigationAction) => void;
+  getState: () => { routes: TabRoute[] };
+  addListener: (event: 'tabPress', listener: (event: TabPressEvent) => void) => () => void;
+};
 type Navigation = {
+  dispatch: (action: NavigationAction) => void;
+  getParent: () => TabNavigation | undefined;
+};
+type PendingNavigation = {
+  action: NavigationAction;
   dispatch: (action: NavigationAction) => void;
 };
 
@@ -35,9 +49,30 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
   const planId = firstParam(params.planId);
   const draftId = firstParam(params.draftId);
   const editorContextKey = JSON.stringify([authUserId, draftId, mode, planId, studentId]);
-  const previousContextKeyRef = useRef(editorContextKey);
+
+  return (
+    <TrainerWorkoutEditorInstance
+      key={editorContextKey}
+      api={api}
+      authUserId={authUserId}
+      studentId={studentId ?? ''}
+      mode={mode}
+      {...(planId ? { planId } : {})}
+      {...(draftId ? { draftId } : {})}
+    />
+  );
+}
+
+function TrainerWorkoutEditorInstance({
+  api,
+  authUserId,
+  studentId,
+  planId,
+  draftId,
+  mode,
+}: UseTrainerWorkoutEditorInput) {
   const navigation = useNavigation<Navigation>();
-  const pendingActionRef = useRef<NavigationAction | null>(null);
+  const pendingActionRef = useRef<PendingNavigation | null>(null);
   const [exitVisible, setExitVisible] = useState(false);
   const [leaveAfterConfirmation, setLeaveAfterConfirmation] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -54,32 +89,48 @@ export function TrainerWorkoutEditorScreen({ mode }: TrainerWorkoutEditorScreenP
 
   usePreventRemove(hasUnsavedChanges, ({ data }) => {
     if (controller.busy) return;
-    pendingActionRef.current = data.action;
+    pendingActionRef.current = {
+      action: data.action,
+      dispatch: (action) => navigation.dispatch(action),
+    };
     setExitVisible(true);
   });
 
   useEffect(() => {
-    if (previousContextKeyRef.current === editorContextKey) return;
-    previousContextKeyRef.current = editorContextKey;
-    pendingActionRef.current = null;
-    setExitVisible(false);
-    setLeaveAfterConfirmation(false);
-    setCatalogOpen(false);
-  }, [editorContextKey]);
+    const tabsNavigation = navigation.getParent();
+    if (!tabsNavigation) return;
+
+    return tabsNavigation.addListener('tabPress', (event) => {
+      if (!controller.dirty && !controller.busy) return;
+      event.preventDefault();
+      if (controller.busy || !event.target) return;
+
+      const targetRoute = tabsNavigation
+        .getState()
+        .routes.find((route) => route.key === event.target);
+      if (!targetRoute) return;
+
+      pendingActionRef.current = {
+        action: CommonActions.navigate(targetRoute.name, targetRoute.params),
+        dispatch: (action) => tabsNavigation.dispatch(action),
+      };
+      setExitVisible(true);
+    });
+  }, [controller.busy, controller.dirty, navigation]);
 
   useEffect(() => {
     if (!leaveAfterConfirmation || controller.dirty || controller.busy) return;
 
     setExitVisible(false);
     setLeaveAfterConfirmation(false);
-    const action = pendingActionRef.current;
+    const pendingNavigation = pendingActionRef.current;
     pendingActionRef.current = null;
-    if (action) {
-      navigation.dispatch(action);
+    if (pendingNavigation) {
+      pendingNavigation.dispatch(pendingNavigation.action);
       return;
     }
     returnToPreviousScreen(studentId);
-  }, [controller.busy, controller.dirty, leaveAfterConfirmation, navigation, studentId]);
+  }, [controller.busy, controller.dirty, leaveAfterConfirmation, studentId]);
 
   const hasRemoteContext = Boolean(planId || draftId);
   const refreshDisabled =
