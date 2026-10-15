@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import type {
   WorkoutEditorDay,
@@ -33,7 +34,9 @@ function renderDay(props: Partial<React.ComponentProps<typeof WorkoutEditorDayVi
     onAddExercise: vi.fn(),
     onChangeExercise: vi.fn(),
     onChangeLabel: vi.fn(),
+    onFocusExercise: vi.fn(),
     onMoveExercise: vi.fn(),
+    onRemoveDay: vi.fn(),
     onRemoveExercise: vi.fn(),
   };
 
@@ -57,7 +60,7 @@ describe('WorkoutEditorDayView', () => {
     expect(screen.queryByText('3010')).toBeNull();
     expect(screen.getByLabelText('Carga').props.keyboardType).toBe('decimal-pad');
     expect(screen.getByLabelText('Séries').props.keyboardType).toBe('numeric');
-    expect(screen.getByLabelText('Repetições').props.keyboardType).toBeUndefined();
+    expect(screen.getByLabelText('Repetições').props.keyboardType).toBe('default');
     expect(screen.getByLabelText('Descanso').props.keyboardType).toBe('numeric');
   });
 
@@ -135,5 +138,89 @@ describe('WorkoutEditorDayView', () => {
         expect.objectContaining({ disabled: true }),
       );
     }
+  });
+
+  it('foca exercício pelo lápis e mostra o estado de foco', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = renderDay();
+
+    await user.press(screen.getByRole('button', { name: 'Editar exercício Supino reto' }));
+
+    expect(callbacks.onFocusExercise).toHaveBeenCalledWith('exercise-1');
+    expect(screen.getByText('Editando exercício')).toBeTruthy();
+  });
+
+  it('prioriza alteração não salva sobre foco e oculta o indicador ao restaurar o baseline', () => {
+    const { rerender } = render(
+      <WorkoutEditorDayView
+        canRemoveDay={false}
+        day={dayFixture()}
+        dirtyExerciseIds={['exercise-1']}
+        focusedExerciseId="exercise-1"
+        onAddExercise={vi.fn()}
+        onChangeExercise={vi.fn()}
+        onChangeLabel={vi.fn()}
+        onFocusExercise={vi.fn()}
+        onMoveExercise={vi.fn()}
+        onRemoveDay={vi.fn()}
+        onRemoveExercise={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Alterações não salvas')).toBeTruthy();
+    expect(screen.queryByText('Editando exercício')).toBeNull();
+
+    rerender(
+      <WorkoutEditorDayView
+        canRemoveDay={false}
+        day={dayFixture()}
+        dirtyExerciseIds={[]}
+        focusedExerciseId="exercise-1"
+        onAddExercise={vi.fn()}
+        onChangeExercise={vi.fn()}
+        onChangeLabel={vi.fn()}
+        onFocusExercise={vi.fn()}
+        onMoveExercise={vi.fn()}
+        onRemoveDay={vi.fn()}
+        onRemoveExercise={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Editando exercício')).toBeTruthy();
+    expect(screen.queryByText('Alterações não salvas')).toBeNull();
+  });
+
+  it('remove dia vazio diretamente sem pedir confirmação', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const { callbacks } = renderDay({ day: dayFixture([]), canRemoveDay: true });
+
+    await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
+
+    expect(callbacks.onRemoveDay).toHaveBeenCalledOnce();
+    expect(alert).not.toHaveBeenCalled();
+  });
+
+  it('pede confirmação nativa para remover dia preenchido e impede remover o último dia', async () => {
+    const user = userEvent.setup();
+    const alert = vi.spyOn(Alert, 'alert');
+    const { callbacks } = renderDay({ canRemoveDay: true });
+
+    await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
+
+    expect(alert).toHaveBeenCalledWith(
+      'Remover dia?',
+      'O dia Treino A e seus exercícios serão removidos deste treino.',
+      expect.any(Array),
+    );
+    expect(callbacks.onRemoveDay).not.toHaveBeenCalled();
+    const buttons = alert.mock.calls[0]?.[2];
+    await buttons?.[1]?.onPress?.();
+    expect(callbacks.onRemoveDay).toHaveBeenCalledOnce();
+
+    renderDay({ canRemoveDay: false });
+    expect(
+      screen.getByRole('button', { name: 'Remover Treino A' }).props.accessibilityState,
+    ).toEqual(expect.objectContaining({ disabled: true }));
   });
 });
