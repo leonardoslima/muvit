@@ -1,27 +1,22 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { AppButton } from '../components/ui/button';
-import { Card } from '../components/ui/card';
-import { InlineMessage } from '../components/ui/inline-message';
-import { Screen, ScreenHeader } from '../components/ui/screen';
-import { StatePanel } from '../components/ui/state-panel';
+import { View } from 'react-native';
+import { AuthBrand } from '../components/auth/auth-brand';
+import { Screen } from '../components/ui/screen';
+import { Button, Card, Header, Message, StatePanel, Text } from '../components/ui/v2';
 import { authClient } from '../lib/auth-client';
 import { queryClient } from '../lib/query-client';
-import { colors, controlSizes, radii, sharedStyles, spacing, typography } from '../lib/styles';
 
 export type ProfileScreenProps = {
   accountType?: string;
   fallbackInitials?: string;
   fallbackName?: string;
-  journeyDescription?: string;
 };
 
 export function ProfileScreen({
   accountType = 'Aluno independente',
   fallbackInitials = 'AL',
   fallbackName = 'Aluno',
-  journeyDescription = 'Seus treinos e avaliações aparecem aqui conforme você avança.',
 }: ProfileScreenProps = {}) {
   const session = authClient.useSession();
   const user = session.data?.user;
@@ -49,8 +44,9 @@ export function ProfileScreen({
       <Screen>
         <StatePanel
           description="Estamos carregando seus dados."
+          kind="loading"
+          testID="profile-loading"
           title="Carregando perfil"
-          tone="loading"
         />
       </Screen>
     );
@@ -60,28 +56,53 @@ export function ProfileScreen({
   const initials = getInitials(user?.name, fallbackInitials);
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
-      <ScreenHeader subtitle="Seu espaço para acompanhar a jornada." title="Perfil" />
+    <Screen scroll>
+      <AuthBrand />
+      <Header title="Perfil" />
 
-      <Card style={styles.profileCard}>
-        <View accessibilityLabel={`Iniciais de ${displayName}`} style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
+      <Card className="items-center gap-3 rounded-[26px] border-0 p-6" testID="profile-card">
+        <Text className="w-full text-center" variant="sectionTitle">
+          Informações da sua conta.
+        </Text>
+        <View
+          accessibilityLabel={`Iniciais de ${displayName}`}
+          className="h-[72px] w-[72px] items-center justify-center rounded-[36px] bg-v2-subtle"
+          testID="profile-avatar"
+        >
+          <Text className="text-v2-brand" variant="action">
+            {initials}
+          </Text>
         </View>
-        <Text style={styles.name}>{displayName}</Text>
-        <Text style={sharedStyles.subtitle}>{user?.email ?? 'Sem email cadastrado'}</Text>
-        <Text style={styles.accountType}>{accountType}</Text>
+        <Text
+          className="w-full text-center text-[25px] leading-[32.5px] font-v2-extrabold"
+          testID="profile-name"
+        >
+          {displayName}
+        </Text>
+        <Text
+          className="w-full text-center text-v2-secondary"
+          testID="profile-email"
+          variant="body"
+        >
+          {user?.email ?? 'Sem email cadastrado'}
+        </Text>
+        <Text
+          className="w-full text-center text-v2-brand"
+          testID="profile-account-type"
+          variant="label"
+        >
+          {accountType}
+        </Text>
       </Card>
 
-      <Card>
-        <Text style={styles.sectionTitle}>Treinos e evolução</Text>
-        <Text style={sharedStyles.subtitle}>{journeyDescription}</Text>
-      </Card>
-
-      {logoutError ? <InlineMessage message={logoutError} tone="error" /> : null}
-      <AppButton
+      {logoutError ? (
+        <Message description={logoutError} testID="profile-error" variant="error" />
+      ) : null}
+      <Button
         disabled={loggingOut}
         label={loggingOut ? 'Saindo...' : 'Sair'}
-        onPress={() => void logout()}
+        loading={loggingOut}
+        onPress={loggingOut ? undefined : () => void logout()}
         variant="secondary"
       />
     </Screen>
@@ -96,37 +117,3 @@ function getInitials(name: string | undefined, fallbackInitials: string): string
     .join('');
   return initials || fallbackInitials;
 }
-
-const styles = StyleSheet.create({
-  content: {
-    paddingBottom: spacing.xxxl,
-  },
-  profileCard: {
-    alignItems: 'center',
-  },
-  avatar: {
-    alignItems: 'center',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.avatar,
-    height: controlSizes.avatar,
-    justifyContent: 'center',
-    width: controlSizes.avatar,
-  },
-  avatarText: {
-    color: colors.ink,
-    ...typography.brandCompact,
-  },
-  name: {
-    color: colors.ink,
-    ...typography.title,
-    textAlign: 'center',
-  },
-  accountType: {
-    color: colors.primaryText,
-    ...typography.bodyStrong,
-  },
-  sectionTitle: {
-    color: colors.ink,
-    ...typography.exerciseTitle,
-  },
-});
