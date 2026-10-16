@@ -51,4 +51,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 
 - Para alteracoes mobile, rode `pnpm.cmd --dir apps/mobile test`, `pnpm.cmd --dir apps/mobile typecheck` e `pnpm.cmd --dir apps/mobile doctor` conforme o risco.
 - Quando alterar navegacao ou UI, teste pelo Expo em ao menos uma plataforma alvo quando possivel.
+- Para QA manual em emulador/dispositivo, use um Expo Development Build com `expo-dev-client`, não o Expo Go. Gere e instale uma build Android com `eas build --profile development --platform android`, executado no diretório `apps/mobile`, onde está o `eas.json`; inicie o Metro com `pnpm.cmd --dir apps/mobile start`, `android` ou `ios`, que usam `--dev-client`.
+- O perfil EAS atual gera builds iOS para dispositivo; para usar o simulador iOS, configure `ios.simulator: true` no perfil antes de gerar a build.
+- Recrie e reinstale o Development Build depois de adicionar/remover dependência nativa ou alterar configuração nativa; alterações JS/TS podem ser carregadas pelo Metro no client instalado.
 - Para testes do app em emulador ou dispositivo, use Maestro como ferramenta padrão; registre evidências observáveis e limitações de cenários não reproduzidos.

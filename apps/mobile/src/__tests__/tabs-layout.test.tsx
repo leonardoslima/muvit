@@ -1,5 +1,5 @@
 import type { PlatformPressable } from '@react-navigation/elements';
-import { render } from '@testing-library/react-native';
+import { act, render } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TabsLayout from '../../app/(student)/(tabs)/_layout';
@@ -150,14 +150,26 @@ describe('TabsLayout', () => {
 
       expect(host.type).toBe('PlatformPressable');
       expect(host.props.testID).toBe(buttonCase.testID);
-      expect(host.props.onPress).toBe(buttonCase.onPress);
       expect(host.props.onLongPress).toBe(buttonCase.onLongPress);
       expect(host.props.role).toBe('tab');
       expect(host.props['aria-label']).toBe(buttonCase.label);
       expect(host.props['aria-selected']).toBe(buttonCase.selected);
       expect(host.props.href).toBe(`/${buttonCase.name}`);
       expect(host.props.android_ripple).toEqual({ borderless: true });
+      expect(host.props.style).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            backgroundColor: buttonCase.selected ? 'selected' : 'not-selected',
+            borderRadius: 0,
+          }),
+        ]),
+      );
       expect(tabsRender.getByTestId(buttonCase.labelTestID).props.children).toBe(buttonCase.label);
+
+      const pressEvent = { persist: vi.fn() };
+      act(() => host.props.onPress(pressEvent));
+      expect(buttonCase.onPress).toHaveBeenCalledOnce();
+      expect(buttonCase.onPress).toHaveBeenCalledWith(pressEvent);
     }
     tabsRender.unmount();
   });

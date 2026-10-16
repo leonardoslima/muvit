@@ -1,4 +1,7 @@
 import type {
+  PublishWorkoutPlanDraftInput,
+  SaveWorkoutPlanDraftInput,
+  WorkoutPlanDraft,
   createWorkoutPlanSchema,
   updateWorkoutPlanSchema,
   workoutPlanFullSchema,
@@ -11,6 +14,19 @@ export type TrainerWorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>
 export type TrainerWorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 export type CreateTrainerWorkoutPlanInput = z.infer<typeof createWorkoutPlanSchema>;
 export type UpdateTrainerWorkoutPlanInput = z.infer<typeof updateWorkoutPlanSchema>;
+export type TrainerWorkoutPlanDraft = WorkoutPlanDraft;
+type NewTrainerWorkoutDraftRequest = Omit<SaveWorkoutPlanDraftInput, 'draftId' | 'revision'>;
+type ExistingTrainerWorkoutDraftRequest = NewTrainerWorkoutDraftRequest & {
+  draftId: NonNullable<SaveWorkoutPlanDraftInput['draftId']>;
+  revision: NonNullable<SaveWorkoutPlanDraftInput['revision']>;
+};
+export type SaveTrainerWorkoutDraftRequest =
+  | NewTrainerWorkoutDraftRequest
+  | ExistingTrainerWorkoutDraftRequest;
+
+export function trainerWorkoutDraftQueryKey(authUserId: string, studentId: string) {
+  return ['trainer-workout-drafts', authUserId, studentId] as const;
+}
 
 export function listTrainerWorkoutPlans(
   api: ApiRequester,
@@ -52,4 +68,50 @@ export function updateTrainerWorkoutPlan(
     method: 'PATCH',
     body: JSON.stringify(input),
   });
+}
+
+export function listTrainerWorkoutDrafts(
+  api: ApiRequester,
+  studentId: string,
+  signal?: AbortSignal,
+): Promise<{ items: TrainerWorkoutPlanDraft[] }> {
+  return api.request<{ items: TrainerWorkoutPlanDraft[] }>(
+    `/students/${encodeURIComponent(studentId)}/workout-plan-drafts`,
+    { signal },
+  );
+}
+
+export function getTrainerWorkoutDraft(
+  api: ApiRequester,
+  draftId: string,
+  signal?: AbortSignal,
+): Promise<TrainerWorkoutPlanDraft> {
+  return api.request<TrainerWorkoutPlanDraft>(
+    `/workout-plan-drafts/${encodeURIComponent(draftId)}`,
+    { signal },
+  );
+}
+
+export function saveTrainerWorkoutDraft(
+  api: ApiRequester,
+  input: SaveTrainerWorkoutDraftRequest,
+): Promise<TrainerWorkoutPlanDraft> {
+  return api.request<TrainerWorkoutPlanDraft>('/workout-plan-drafts', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function publishTrainerWorkoutDraft(
+  api: ApiRequester,
+  draftId: string,
+  input: PublishWorkoutPlanDraftInput,
+): Promise<TrainerWorkoutPlan> {
+  return api.request<TrainerWorkoutPlan>(
+    `/workout-plan-drafts/${encodeURIComponent(draftId)}/publish`,
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
 }

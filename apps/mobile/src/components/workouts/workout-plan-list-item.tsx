@@ -1,34 +1,79 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type { TrainerWorkoutPlanSummary } from '../../application/workouts/trainer-workout-data';
-import { colors, radii, sharedStyles, spacing, typography } from '../../lib/styles';
-import { Card } from '../ui/card';
+import type {
+  TrainerWorkoutPlanDraft,
+  TrainerWorkoutPlanSummary,
+} from '../../application/workouts/trainer-workout-data';
+import { Card } from '../ui/v2/card';
+import { Text } from '../ui/v2/text';
 import { WorkoutStatusBadge, workoutStatusLabel } from './workout-status-badge';
 
-export type WorkoutPlanListItemProps = {
-  plan: TrainerWorkoutPlanSummary;
+type WorkoutPlanListItemCommonProps = {
   onPress: () => void;
+  disabled?: boolean;
 };
 
-export function WorkoutPlanListItem({ onPress, plan }: WorkoutPlanListItemProps) {
+export type WorkoutPlanListItemProps = WorkoutPlanListItemCommonProps &
+  (
+    | { plan: TrainerWorkoutPlanSummary; draft?: never }
+    | { draft: TrainerWorkoutPlanDraft; plan?: never }
+  );
+
+export function WorkoutPlanListItem(props: WorkoutPlanListItemProps) {
+  if (props.draft) {
+    return <DraftListItem disabled={props.disabled} draft={props.draft} onPress={props.onPress} />;
+  }
+
+  return <PlanListItem disabled={props.disabled} onPress={props.onPress} plan={props.plan} />;
+}
+
+function PlanListItem({
+  disabled,
+  onPress,
+  plan,
+}: WorkoutPlanListItemCommonProps & { plan: TrainerWorkoutPlanSummary }) {
   const period = formatWorkoutPeriod(plan.startDate, plan.endDate);
 
   return (
-    <Pressable
-      accessible
-      accessibilityLabel={`Abrir ${plan.name}, ${workoutStatusLabel(plan.status)}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed ? styles.pressed : null]}
+    <Card
+      action={{
+        label: `Abrir ${plan.name}, ${workoutStatusLabel(plan.status)}`,
+        onPress,
+        disabled,
+      }}
     >
-      <Card>
-        <View style={styles.heading}>
-          <Text style={styles.name}>{plan.name}</Text>
-          <WorkoutStatusBadge status={plan.status} />
-        </View>
-        {period ? <Text style={sharedStyles.subtitle}>{period}</Text> : null}
-        <Text style={sharedStyles.subtitle}>{`Criado em ${formatDate(plan.createdAt)}`}</Text>
-      </Card>
-    </Pressable>
+      <Text variant="sectionTitle">{plan.name}</Text>
+      <WorkoutStatusBadge status={plan.status} />
+      {period ? <Text className="text-v2-secondary">{period}</Text> : null}
+      <Text className="text-v2-secondary" variant="support">
+        Criado em {formatDate(plan.createdAt)}
+      </Text>
+    </Card>
+  );
+}
+
+function DraftListItem({
+  disabled,
+  draft,
+  onPress,
+}: WorkoutPlanListItemCommonProps & { draft: TrainerWorkoutPlanDraft }) {
+  const isEditing = draft.sourcePlanId !== null;
+
+  return (
+    <Card
+      action={{
+        label: `Continuar rascunho: ${draft.payload.name}`,
+        onPress,
+        disabled,
+      }}
+    >
+      <Text variant="sectionTitle">{draft.payload.name}</Text>
+      <WorkoutStatusBadge status="draft" />
+      <Text className="text-v2-brand" variant="support">
+        {isEditing ? 'Alteração em rascunho' : 'Nova prescrição'}
+      </Text>
+      <Text className="text-v2-secondary" variant="support">
+        Atualizado em {formatDate(draft.updatedAt)}
+      </Text>
+    </Card>
   );
 }
 
@@ -46,19 +91,3 @@ function formatDate(value: string): string {
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
 }
-
-const styles = StyleSheet.create({
-  pressable: {
-    borderRadius: radii.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  heading: {
-    gap: spacing.sm,
-  },
-  name: {
-    color: colors.ink,
-    ...typography.cardTitle,
-  },
-});

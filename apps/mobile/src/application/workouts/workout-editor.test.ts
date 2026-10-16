@@ -6,6 +6,7 @@ import {
   addWorkoutEditorExercise,
   buildCreateTrainerWorkoutInput,
   buildUpdateTrainerWorkoutInput,
+  buildWorkoutDraftPayload,
   createEmptyWorkoutEditorState,
   hydrateWorkoutEditorState,
   moveWorkoutEditorExercise,
@@ -276,7 +277,7 @@ describe('workout-editor', () => {
     invalidCases.push([state, 'Descanso deve ser um número inteiro.']);
     state = updateWorkoutEditorExerciseField(state, 'local-1', 'local-2', 'restSeconds', '90');
     state = updateWorkoutEditorExerciseField(state, 'local-1', 'local-2', 'notes', 'x'.repeat(501));
-    invalidCases.push([state, 'Revise os dados do treino.']);
+    invalidCases.push([state, 'As observações do exercício devem ter até 500 caracteres.']);
 
     for (const [candidate, message] of invalidCases) {
       expect(buildCreateTrainerWorkoutInput(candidate, STUDENT_ID)).toEqual({ ok: false, message });
@@ -306,7 +307,7 @@ describe('workout-editor', () => {
       studentId: STUDENT_ID,
       name: 'Hipertrofia',
       notes: 'Progressão semanal',
-      status: 'draft',
+      status: 'active',
       days: [
         {
           label: 'Treino A',
@@ -384,8 +385,100 @@ describe('workout-editor', () => {
 
     if (!result.ok) throw new Error(result.message);
     expect(result.body.name).toBe('Força revisada');
-    expect(result.body.status).toBe('draft');
+    expect(result.body.status).toBe('active');
     expect(result.body.days?.[0]?.label).toBe('Treino técnico');
     expect(result.body.days?.[0]?.exercises[0]?.reps).toBe('8-10');
+  });
+
+  it('publica nova prescrição como ativa mesmo se o estado indicar rascunho', () => {
+    const edited = updateWorkoutEditorPlanField(validEditorState(), 'status', 'draft');
+
+    const result = buildCreateTrainerWorkoutInput(edited, STUDENT_ID);
+
+    if (!result.ok) throw new Error(result.message);
+    expect(result.body.status).toBe('active');
+  });
+
+  it('normaliza payload de rascunho, mantém tempo recebido e recalcula ordens', () => {
+    const nextId = idFactory();
+    let state = hydrateWorkoutEditorState(existingPlan(), nextId);
+    const first = firstExercise(state);
+    state = updateWorkoutEditorExerciseField(
+      state,
+      firstDay(state).localId,
+      first.localId,
+      'loadKg',
+      '82,5',
+    );
+    state = updateWorkoutEditorExerciseField(
+      state,
+      firstDay(state).localId,
+      first.localId,
+      'restSeconds',
+      '',
+    );
+    state = updateWorkoutEditorExerciseField(
+      state,
+      firstDay(state).localId,
+      first.localId,
+      'notes',
+      '  ',
+    );
+    state = addWorkoutEditorDay(state, nextId);
+    const secondDay = state.days[1];
+    if (!secondDay) throw new Error('Expected a second editor day.');
+    state = addWorkoutEditorExercise(
+      state,
+      secondDay.localId,
+      exerciseReference(SECOND_EXERCISE_ID),
+      nextId,
+    );
+
+    const result = buildWorkoutDraftPayload(state);
+
+    expect(result).toEqual({
+      ok: true,
+      body: {
+        name: 'Força',
+        notes: 'Priorizar técnica',
+        days: [
+          {
+            label: 'Treino A',
+            dayOrder: 0,
+            exercises: [
+              {
+                exerciseId: EXERCISE_ID,
+                exerciseOrder: 0,
+                sets: 4,
+                reps: '8-10',
+                loadKg: 82.5,
+                tempo: '3010',
+              },
+            ],
+          },
+          {
+            label: 'Treino B',
+            dayOrder: 1,
+            exercises: [
+              {
+                exerciseId: SECOND_EXERCISE_ID,
+                exerciseOrder: 0,
+                sets: 3,
+                reps: '10',
+              },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it('retorna a primeira mensagem de validação sem construir payload inválido', () => {
+    const invalid = updateWorkoutEditorPlanField(validEditorState(), 'name', '  ');
+
+    expect(buildWorkoutDraftPayload(invalid)).toEqual({
+      ok: false,
+      message: 'Informe um nome para o treino.',
+    });
   });
 });

@@ -1,11 +1,15 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { describe, expect, it, vi } from 'vitest';
-import type { TrainerWorkoutPlanSummary } from '../../application/workouts/trainer-workout-data';
+import type {
+  TrainerWorkoutPlanDraft,
+  TrainerWorkoutPlanSummary,
+} from '../../application/workouts/trainer-workout-data';
 import { WorkoutPlanListItem } from './workout-plan-list-item';
 import { WorkoutStatusBadge } from './workout-status-badge';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
+const DRAFT_ID = '00000000-0000-0000-0000-000000000501';
 
 function planFixture(
   overrides: Partial<TrainerWorkoutPlanSummary> = {},
@@ -19,6 +23,45 @@ function planFixture(
     endDate: null,
     status: 'draft',
     createdAt: '2026-09-06T12:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function draftFixture(overrides: Partial<TrainerWorkoutPlanDraft> = {}): TrainerWorkoutPlanDraft {
+  return {
+    id: DRAFT_ID,
+    trainerId: '00000000-0000-0000-0000-000000000901',
+    studentId: STUDENT_ID,
+    sourcePlanId: null,
+    payload: {
+      name: 'Treino de criação',
+      notes: '',
+      days: [
+        {
+          label: 'Treino A',
+          dayOrder: 0,
+          exercises: [
+            {
+              exerciseId: '00000000-0000-0000-0000-000000000101',
+              exerciseOrder: 0,
+              sets: 3,
+              reps: '10',
+            },
+          ],
+        },
+      ],
+    },
+    selectedDayOrder: 0,
+    revision: 1,
+    createdAt: '2026-10-15T12:00:00.000Z',
+    updatedAt: '2026-10-15T12:00:00.000Z',
+    exerciseReferences: [
+      {
+        id: '00000000-0000-0000-0000-000000000101',
+        name: 'Supino reto',
+        muscleGroup: 'chest',
+      },
+    ],
     ...overrides,
   };
 }
@@ -84,4 +127,36 @@ describe('WorkoutPlanListItem', () => {
 
     expect(screen.queryByText(/A partir de|Até|—/)).toBeNull();
   });
+
+  it.each([
+    [null, 'Nova prescrição'],
+    [PLAN_ID, 'Alteração em rascunho'],
+  ] as const)(
+    'identifica e permite continuar rascunho de origem %s',
+    async (sourcePlanId, label) => {
+      const onPress = vi.fn();
+      const user = userEvent.setup();
+      const name = sourcePlanId ? 'Treino em edição' : 'Treino de criação';
+
+      render(
+        <WorkoutPlanListItem
+          draft={draftFixture({
+            sourcePlanId,
+            payload: { ...draftFixture().payload, name },
+          })}
+          onPress={onPress}
+        />,
+      );
+
+      const row = screen.getByRole('button', { name: `Continuar rascunho: ${name}` });
+      expect(row).toBeTruthy();
+      expect(screen.getByText(label)).toBeTruthy();
+      expect(screen.getByText('Rascunho')).toBeTruthy();
+      expect(screen.getByText('Atualizado em 15/10/2026')).toBeTruthy();
+
+      await user.press(row);
+
+      expect(onPress).toHaveBeenCalledOnce();
+    },
+  );
 });

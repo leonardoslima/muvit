@@ -9,7 +9,12 @@ export type CreateWorkoutPlanInput = z.infer<typeof createWorkoutPlanSchema>;
 export type UpdateWorkoutPlanInput = z.infer<typeof updateWorkoutPlanSchema>;
 export type WorkoutPlanFullResponse = z.input<typeof workoutPlanFullSchema>;
 export type CreateWorkoutPlanData = CreateWorkoutPlanInput & { trainerId: string | null };
-export type WorkoutPlanAccess = { id: string; studentId: string; trainerId: string | null };
+export type WorkoutPlanAccess = {
+  id: string;
+  studentId: string;
+  trainerId: string | null;
+  status: 'draft' | 'active' | 'archived';
+};
 export type WorkoutPlanSummary = {
   id: string;
   studentId: string;

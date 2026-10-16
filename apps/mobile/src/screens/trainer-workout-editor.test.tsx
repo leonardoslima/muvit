@@ -3,21 +3,59 @@ import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-lib
 import { Alert } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '../application/exercises/exercise-catalog';
-import type { TrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
+import type {
+  TrainerWorkoutPlan,
+  TrainerWorkoutPlanDraft,
+} from '../application/workouts/trainer-workout-data';
 import { ApiError } from '../lib/api';
 import { TrainerWorkoutEditorScreen } from './trainer-workout-editor';
 
 const STUDENT_ID = '00000000-0000-0000-0000-000000000001';
+const AUTH_USER_ID = '00000000-0000-0000-0000-000000000801';
+const SECOND_STUDENT_ID = '00000000-0000-0000-0000-000000000002';
 const PLAN_ID = '00000000-0000-0000-0000-000000000301';
+const SECOND_DRAFT_ID = '00000000-0000-0000-0000-000000000502';
 const EXERCISE_ID = '00000000-0000-0000-0000-000000000101';
 const DAY_ID = '00000000-0000-0000-0000-000000000201';
 const EXERCISE_ROW_ID = '00000000-0000-0000-0000-000000000401';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const routerState = vi.hoisted(() => ({ dismissTo: vi.fn(), replace: vi.fn() }));
+const routerState = vi.hoisted(() => ({
+  back: vi.fn(),
+  canGoBack: vi.fn(() => true),
+  dismissTo: vi.fn(),
+  replace: vi.fn(),
+}));
+const navigationState = vi.hoisted(() => ({
+  dispatch: vi.fn(),
+}));
+const guardState = vi.hoisted(() => ({
+  callback: undefined as ((event: { data: { action: unknown } }) => void) | undefined,
+  enabled: false,
+}));
+const appTabGuardState = vi.hoisted(() => ({
+  enabled: false,
+  guard: undefined as
+    | {
+        busy: boolean;
+        dirty: boolean;
+        requestLeave: (resumeNavigation: () => void) => void;
+      }
+    | undefined,
+}));
 const paramsState = vi.hoisted(() => ({
   studentId: '00000000-0000-0000-0000-000000000001' as string | undefined,
   planId: undefined as string | undefined,
+  draftId: undefined as string | undefined,
+}));
+
+vi.mock('@react-navigation/native', () => ({ useIsFocused: () => true }));
+
+vi.mock('../components/navigation/app-tabs', () => ({
+  useRegisterAppTabPressGuard: (guard: typeof appTabGuardState.guard, enabled: boolean) => {
+    appTabGuardState.enabled = enabled;
+    appTabGuardState.guard = enabled ? guard : undefined;
+  },
 }));
 
 vi.mock('../lib/use-api', () => ({
@@ -27,10 +65,28 @@ vi.mock('../lib/use-api', () => ({
 vi.mock('expo-router', () => ({
   router: routerState,
   useLocalSearchParams: () => paramsState,
+  useNavigation: () => navigationState,
+}));
+
+vi.mock('../lib/auth-client', () => ({
+  authClient: {
+    useSession: () => ({ data: { user: { id: '00000000-0000-0000-0000-000000000801' } } }),
+  },
+}));
+
+vi.mock('../lib/use-prevent-remove', () => ({
+  usePreventRemove: (
+    enabled: boolean,
+    callback: (event: { data: { action: unknown } }) => void,
+  ) => {
+    guardState.enabled = enabled;
+    guardState.callback = callback;
+  },
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
+  useSafeAreaInsets: () => ({ bottom: 0, left: 0, right: 0, top: 0 }),
 }));
 
 function exerciseFixture(overrides: Partial<Exercise> = {}): Exercise {
@@ -122,27 +178,91 @@ function singleDayEditablePlanFixture(
   return firstDay ? { ...plan, days: [firstDay] } : plan;
 }
 
+function draftFixture(): TrainerWorkoutPlanDraft {
+  return {
+    id: '00000000-0000-0000-0000-000000000501',
+    trainerId: '00000000-0000-0000-0000-000000000901',
+    studentId: STUDENT_ID,
+    sourcePlanId: PLAN_ID,
+    payload: {
+      name: 'Força revisada',
+      notes: 'Progressão semanal',
+      days: [
+        {
+          label: 'Treino A',
+          dayOrder: 0,
+          exercises: [
+            {
+              exerciseId: EXERCISE_ID,
+              exerciseOrder: 0,
+              sets: 4,
+              reps: '8-10',
+              restSeconds: 90,
+              loadKg: 82.5,
+              tempo: '3010',
+              notes: 'Sem falhar',
+            },
+          ],
+        },
+      ],
+    },
+    selectedDayOrder: 0,
+    revision: 1,
+    createdAt: '2026-10-15T12:00:00.000Z',
+    updatedAt: '2026-10-15T12:30:00.000Z',
+    exerciseReferences: [{ id: EXERCISE_ID, name: 'Supino reto', muscleGroup: 'chest' }],
+  };
+}
+
 function renderEditor(mode: 'create' | 'edit' = 'create') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const view = render(
+  const tree = () => (
     <QueryClientProvider client={queryClient}>
       <TrainerWorkoutEditorScreen mode={mode} />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(tree());
 
-  return { ...view, queryClient };
+  return { ...view, queryClient, rerenderEditor: () => view.rerender(tree()) };
 }
 
 beforeEach(() => {
   apiState.request.mockReset();
   routerState.dismissTo.mockReset();
   routerState.replace.mockReset();
+  routerState.back.mockReset();
+  routerState.canGoBack.mockReturnValue(true);
+  navigationState.dispatch.mockReset();
+  guardState.enabled = false;
+  guardState.callback = undefined;
+  appTabGuardState.enabled = false;
+  appTabGuardState.guard = undefined;
   paramsState.studentId = STUDENT_ID;
   paramsState.planId = undefined;
+  paramsState.draftId = undefined;
   vi.restoreAllMocks();
 });
 
 describe('TrainerWorkoutEditorScreen em criação', () => {
+  it('usa ações no cabeçalho e omite seletor de status e ações duplicadas no corpo', () => {
+    renderEditor();
+
+    expect(screen.queryByRole('button', { name: 'Ativo' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Rascunho' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Voltar para treinos' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: 'Ver treino' })).toBeNull();
+  });
+
+  it('mantém o título dos dias e a ação sem compressão em telas estreitas', () => {
+    renderEditor();
+
+    expect(screen.getByTestId('workout-days-header').props.className).toContain('flex-wrap');
+    expect(screen.getByText('Dias do treino').props.className).toContain('shrink-0');
+    expect(screen.getByRole('button', { name: 'Adicionar dia' }).props.className).toContain(
+      'shrink-0',
+    );
+  });
+
   it('mostra aluno inválido sem fazer POST', async () => {
     paramsState.studentId = undefined;
 
@@ -152,22 +272,19 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     expect(apiState.request).not.toHaveBeenCalled();
   });
 
-  it('inicia com rascunho, um dia vazio e permite adicionar até sete dias', async () => {
+  it('inicia sem status, mostra um dia vazio e permite adicionar até sete dias', async () => {
     const user = userEvent.setup();
     renderEditor();
 
     expect(screen.getByText('Novo treino')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Rascunho' }).props.accessibilityState).toEqual(
-      expect.objectContaining({ selected: true }),
-    );
-    expect(screen.getByRole('button', { name: 'Selecionar Treino A' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Selecionar Treino A' })).toBeTruthy();
     expect(screen.getByText('Nenhum exercício neste dia')).toBeTruthy();
 
     for (let index = 0; index < 6; index += 1) {
       await user.press(screen.getByRole('button', { name: 'Adicionar dia' }));
     }
 
-    expect(screen.getByRole('button', { name: 'Selecionar Treino G' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Selecionar Treino G' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Adicionar dia' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
@@ -180,13 +297,13 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.press(screen.getByLabelText('Nome do treino'));
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Adicionar dia' }));
-    await user.press(screen.getByRole('button', { name: 'Selecionar Treino A' }));
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Treino A' }));
     await user.clear(screen.getByLabelText('Nome do dia'));
     await user.type(screen.getByLabelText('Nome do dia'), 'Força');
-    await user.press(screen.getByRole('button', { name: 'Selecionar Treino B' }));
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Treino B' }));
 
     expect(screen.getByLabelText('Nome do dia').props.value).toBe('Treino B');
-    await user.press(screen.getByRole('button', { name: 'Selecionar Força' }));
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Força' }));
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
     expect(screen.getByLabelText('Nome do dia').props.value).toBe('Força');
   });
@@ -201,6 +318,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await screen.findByText('Supino reto');
     await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
     await user.press(screen.getByRole('button', { name: 'Adicionar dia' }));
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Treino A' }));
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
 
     expect(alert).toHaveBeenCalledWith(
@@ -211,13 +329,13 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     const buttons = alert.mock.calls[0]?.[2];
     expect(buttons).toBeDefined();
     await act(async () => buttons?.[0]?.onPress?.());
-    expect(screen.getByRole('button', { name: 'Selecionar Treino A' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Selecionar Treino A' })).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
     const secondButtons = alert.mock.calls[1]?.[2];
     await act(async () => secondButtons?.[1]?.onPress?.());
-    expect(screen.queryByRole('button', { name: 'Selecionar Treino A' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Selecionar Treino B' })).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Selecionar Treino A' })).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Selecionar Treino B' })).toBeTruthy();
   });
 
   it('integra o catálogo, aplica defaults e permite duplicar exercício', async () => {
@@ -267,7 +385,6 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     const setQueryData = vi.spyOn(queryClient, 'setQueryData');
 
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
-    await user.press(screen.getByRole('button', { name: 'Ativo' }));
     await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
     await screen.findByText('Supino reto');
     await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
@@ -302,16 +419,27 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
       }),
     });
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['trainer', 'workouts', STUDENT_ID],
+      queryKey: ['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['trainer', 'summary'] });
-    expect(setQueryData).toHaveBeenCalledWith(['trainer', 'workout', PLAN_ID], createdPlan);
-    expect(await screen.findByText('Treino salvo com sucesso.')).toBeTruthy();
-
-    await user.press(screen.getByRole('button', { name: 'Ver treino' }));
-    expect(routerState.replace).toHaveBeenCalledWith(
-      `/trainer/students/${STUDENT_ID}/workouts/${PLAN_ID}`,
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'summary'],
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(setQueryData).toHaveBeenCalledWith(
+      ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      createdPlan,
     );
+    expect(await screen.findByText('Treino publicado com sucesso.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Ver treino' })).toBeNull();
+    expect(routerState.replace).not.toHaveBeenCalled();
   });
 
   it('bloqueia submit concorrente, mantém valores no erro e limpa sucesso ao editar', async () => {
@@ -331,11 +459,11 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
     await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
 
-    expect(screen.getByRole('button', { name: 'Salvando...' }).props.accessibilityState).toEqual(
+    expect(screen.getByRole('button', { name: 'Publicando...' }).props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
     );
     await waitFor(() => rejectPost(new Error('offline')));
-    expect(await screen.findByText('Não foi possível salvar o treino.')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível publicar o treino.')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
   });
 });
@@ -352,7 +480,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     renderEditor('edit');
 
-    expect(screen.getByText('Treino inválido')).toBeTruthy();
+    expect(screen.getByText('Aluno inválido')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
   });
 
@@ -362,7 +490,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     renderEditor('edit');
 
-    expect(screen.getByText('Treino inválido')).toBeTruthy();
+    expect(screen.getByText('Aluno inválido')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
   });
 
@@ -410,7 +538,10 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
     await act(async () => {
-      await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+      await queryClient.refetchQueries({
+        queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+        exact: true,
+      });
     });
 
     await waitFor(() => {
@@ -445,10 +576,13 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     await user.clear(screen.getByLabelText('Nome do treino'));
     await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
-    await queryClient.refetchQueries({ queryKey: ['trainer', 'workout', PLAN_ID] });
+    await queryClient.refetchQueries({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+    });
 
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Nome local');
-    await user.press(screen.getByRole('button', { name: 'Selecionar Treino B' }));
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Treino B' }));
     expect(screen.getByLabelText('Nome do dia').props.value).toBe('Treino B');
   });
 
@@ -504,12 +638,26 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     expect(JSON.stringify(patchCall?.[1])).not.toContain('startDate');
     expect(JSON.stringify(patchCall?.[1])).not.toContain('endDate');
     expect(JSON.stringify(patchCall?.[1])).not.toContain('trainerId');
-    expect(setQueryData).toHaveBeenCalledWith(['trainer', 'workout', PLAN_ID], updatedPlan);
+    expect(setQueryData).toHaveBeenCalledWith(
+      ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      updatedPlan,
+    );
     expect(invalidateQueries).toHaveBeenCalledWith({
-      queryKey: ['trainer', 'workouts', STUDENT_ID],
+      queryKey: ['trainer', 'workouts', STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['trainer', 'summary'] });
-    expect(await screen.findByText('Treino atualizado com sucesso.')).toBeTruthy();
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'summary'],
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'workout', PLAN_ID, STUDENT_ID, AUTH_USER_ID],
+      exact: true,
+      refetchType: 'active',
+    });
+    expect(await screen.findByText('Treino publicado com sucesso.')).toBeTruthy();
   });
 
   it('mantém alterações locais quando o PATCH falha', async () => {
@@ -524,7 +672,158 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
     await user.press(screen.getByRole('button', { name: 'Salvar alterações' }));
 
-    expect(await screen.findByText('Não foi possível atualizar o treino.')).toBeTruthy();
+    expect(await screen.findByText('Não foi possível publicar o treino.')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Nome local');
+  });
+
+  it('salva rascunho confirmado antes de despachar a navegação capturada uma única vez', async () => {
+    const user = userEvent.setup();
+    const action = { type: 'GO_BACK' };
+    apiState.request
+      .mockResolvedValueOnce(singleDayEditablePlanFixture())
+      .mockResolvedValueOnce(draftFixture());
+    renderEditor('edit');
+    await screen.findByLabelText('Nome do treino');
+    await user.clear(screen.getByLabelText('Nome do treino'));
+    await user.type(screen.getByLabelText('Nome do treino'), 'Força revisada');
+
+    expect(guardState.enabled).toBe(true);
+    act(() => guardState.callback?.({ data: { action } }));
+    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
+
+    await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
+    expect(navigationState.dispatch).toHaveBeenCalledWith(action);
+    const draftSaveCalls = apiState.request.mock.calls.filter(
+      (call) => call[0] === '/workout-plan-drafts',
+    );
+    expect(draftSaveCalls).toHaveLength(1);
+    const body = JSON.parse(draftSaveCalls[0]?.[1]?.body as string) as Record<string, unknown>;
+    expect(body).not.toHaveProperty('draftId');
+    expect(body).not.toHaveProperty('revision');
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('Força revisada');
+  });
+
+  it('registra guard dirty da rota, salva draft e reaplica a aba capturada uma vez', async () => {
+    const user = userEvent.setup();
+    const savedDraft = { ...draftFixture(), sourcePlanId: null };
+    apiState.request
+      .mockResolvedValueOnce(singleDayEditablePlanFixture())
+      .mockResolvedValueOnce(savedDraft)
+      .mockResolvedValueOnce(editablePlanFixture());
+    renderEditor('edit');
+    await screen.findByLabelText('Nome do treino');
+    await user.clear(screen.getByLabelText('Nome do treino'));
+    await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
+
+    expect(appTabGuardState.enabled).toBe(true);
+    expect(appTabGuardState.guard).toEqual(expect.objectContaining({ dirty: true, busy: false }));
+    const resumeProfileNavigation = vi.fn();
+    const resumeHomeNavigation = vi.fn();
+    act(() => appTabGuardState.guard?.requestLeave(resumeProfileNavigation));
+    act(() => appTabGuardState.guard?.requestLeave(resumeHomeNavigation));
+    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
+
+    await waitFor(() => expect(resumeHomeNavigation).toHaveBeenCalledOnce());
+    expect(resumeHomeNavigation).toHaveBeenCalledWith();
+    expect(resumeProfileNavigation).not.toHaveBeenCalled();
+    expect(navigationState.dispatch).not.toHaveBeenCalled();
+
+    await user.press(screen.getByRole('button', { name: 'Salvar alterações' }));
+    await waitFor(() =>
+      expect(apiState.request).toHaveBeenCalledWith(
+        `/workout-plan-drafts/${savedDraft.id}/publish`,
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
+    expect(apiState.request).not.toHaveBeenCalledWith('/workout-plans', expect.anything());
+  });
+
+  it('mantém o destino capturado até um save em andamento confirmar o draft', async () => {
+    const user = userEvent.setup();
+    let resolveDraftSave: (draft: TrainerWorkoutPlanDraft) => void = () => undefined;
+    const pendingDraftSave = new Promise<TrainerWorkoutPlanDraft>((resolve) => {
+      resolveDraftSave = resolve;
+    });
+    apiState.request
+      .mockResolvedValueOnce(singleDayEditablePlanFixture())
+      .mockReturnValueOnce(pendingDraftSave);
+    renderEditor('edit');
+    await screen.findByLabelText('Nome do treino');
+    await user.clear(screen.getByLabelText('Nome do treino'));
+    await user.type(screen.getByLabelText('Nome do treino'), 'Nome local');
+
+    const resumeProfile = vi.fn();
+    act(() => appTabGuardState.guard?.requestLeave(resumeProfile));
+    await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
+    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    await waitFor(() => expect(appTabGuardState.guard?.busy).toBe(true));
+    expect(resumeProfile).not.toHaveBeenCalled();
+    await act(async () => resolveDraftSave(draftFixture()));
+
+    await waitFor(() => expect(resumeProfile).toHaveBeenCalledOnce());
+  });
+
+  it('reinicializa editor e identidade ao trocar draft/aluno na rota atual', async () => {
+    const user = userEvent.setup();
+    const nextDraft: TrainerWorkoutPlanDraft = {
+      ...draftFixture(),
+      id: SECOND_DRAFT_ID,
+      studentId: SECOND_STUDENT_ID,
+      sourcePlanId: null,
+      payload: { ...draftFixture().payload, name: 'Rascunho do segundo aluno' },
+    };
+    apiState.request
+      .mockResolvedValueOnce(draftFixture())
+      .mockResolvedValueOnce(singleDayEditablePlanFixture())
+      .mockResolvedValueOnce(nextDraft);
+    paramsState.draftId = '00000000-0000-0000-0000-000000000501';
+    const { rerenderEditor } = renderEditor('edit');
+    await screen.findByLabelText('Nome do treino');
+    await user.clear(screen.getByLabelText('Nome do treino'));
+    await user.type(screen.getByLabelText('Nome do treino'), 'Edição local antiga');
+
+    paramsState.studentId = SECOND_STUDENT_ID;
+    paramsState.planId = undefined;
+    paramsState.draftId = SECOND_DRAFT_ID;
+    rerenderEditor();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Nome do treino').props.value).toBe('Rascunho do segundo aluno');
+    });
+    expect(screen.queryByDisplayValue('Edição local antiga')).toBeNull();
+    expect(apiState.request).toHaveBeenCalledWith(`/workout-plan-drafts/${SECOND_DRAFT_ID}`, {
+      signal: expect.anything(),
+    });
+  });
+
+  it('ignora resposta tardia do draft anterior após trocar contexto', async () => {
+    let resolveFirstDraft: (draft: TrainerWorkoutPlanDraft) => void = () => undefined;
+    const pendingFirstDraft = new Promise<TrainerWorkoutPlanDraft>((resolve) => {
+      resolveFirstDraft = resolve;
+    });
+    const nextDraft: TrainerWorkoutPlanDraft = {
+      ...draftFixture(),
+      id: SECOND_DRAFT_ID,
+      studentId: SECOND_STUDENT_ID,
+      sourcePlanId: null,
+      payload: { ...draftFixture().payload, name: 'Rascunho do segundo aluno' },
+    };
+    apiState.request.mockReturnValueOnce(pendingFirstDraft).mockResolvedValueOnce(nextDraft);
+    paramsState.draftId = '00000000-0000-0000-0000-000000000501';
+    const { rerenderEditor } = renderEditor('edit');
+
+    paramsState.studentId = SECOND_STUDENT_ID;
+    paramsState.planId = undefined;
+    paramsState.draftId = SECOND_DRAFT_ID;
+    rerenderEditor();
+    await screen.findByLabelText('Nome do treino');
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('Rascunho do segundo aluno');
+
+    await act(async () => resolveFirstDraft(draftFixture()));
+
+    expect(screen.getByLabelText('Nome do treino').props.value).toBe('Rascunho do segundo aluno');
+    expect(screen.queryByDisplayValue('Força revisada')).toBeNull();
   });
 });

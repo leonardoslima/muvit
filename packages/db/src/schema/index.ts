@@ -5,4 +5,5 @@ export * from './students.js';
 export * from './assessments.js';
 export * from './exercises.js';
 export * from './workouts.js';
+export * from './workout-plan-drafts.js';
 export * from './relations.js';
