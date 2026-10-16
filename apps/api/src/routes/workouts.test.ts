@@ -402,6 +402,61 @@ describe('workout plans', () => {
     expect(await db.query.workoutPlans.findMany()).toHaveLength(0);
   });
 
+  it('keeps an exercise referenced by a draft from being deleted', async () => {
+    const { studentId, trainerCookie } = await createTrainerScenario();
+    const exerciseResponse = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      headers: { cookie: trainerCookie },
+      payload: { name: 'Crucifixo reservado', muscleGroup: 'chest' },
+    });
+    const exercise = exerciseResponse.json();
+    const saved = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: {
+        studentId,
+        selectedDayOrder: 0,
+        payload: {
+          name: 'Treino em rascunho',
+          days: [
+            {
+              label: 'Dia A',
+              dayOrder: 0,
+              exercises: [{ exerciseId: exercise.id, exerciseOrder: 0, sets: 3, reps: '10' }],
+            },
+          ],
+        },
+      },
+    });
+    const draft = saved.json();
+
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: `/exercises/${exercise.id}`,
+      headers: { cookie: trainerCookie },
+    });
+    const retrieved = await app.inject({
+      method: 'GET',
+      url: `/workout-plan-drafts/${draft.id}`,
+      headers: { cookie: trainerCookie },
+    });
+    const listed = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}/workout-plan-drafts`,
+      headers: { cookie: trainerCookie },
+    });
+
+    expect(exerciseResponse.statusCode).toBe(201);
+    expect(saved.statusCode).toBe(201);
+    expect(deleted.statusCode).toBe(409);
+    expect(retrieved.statusCode).toBe(200);
+    expect(retrieved.json()).toEqual(expect.objectContaining({ id: draft.id }));
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().items).toEqual([expect.objectContaining({ id: draft.id })]);
+  });
+
   it('increments draft revisions and rejects stale saves without replacing the latest payload', async () => {
     const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
     const payload = {

@@ -20,5 +20,10 @@ export interface ExercisesRepository {
     trainerId: string,
     input: UpdateExerciseInput,
   ): Promise<Exercise | null>;
-  deleteForTrainer(id: string, trainerId: string): Promise<boolean>;
+}
+
+export type DeleteExerciseResult = 'deleted' | 'not_found' | 'draft_reference';
+
+export interface DeleteExerciseRepository {
+  deleteForTrainer(id: string, trainerId: string): Promise<DeleteExerciseResult>;
 }

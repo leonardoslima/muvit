@@ -72,6 +72,7 @@ async function findAvailableExerciseReferences(
             or(isNull(schema.exercises.trainerId), eq(schema.exercises.trainerId, trainerId)),
           ),
         )
+        .for('key share')
     : [];
   if (rows.length !== ids.length) return null;
 

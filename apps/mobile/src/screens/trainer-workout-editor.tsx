@@ -272,12 +272,16 @@ function TrainerWorkoutEditorInstance({
               />
             </Card>
 
-            <View className="flex-row items-center justify-between gap-3">
-              <Text variant="sectionTitle">Dias do treino</Text>
+            <View className="flex-row flex-wrap items-center gap-3" testID="workout-days-header">
+              <Text className="shrink-0" variant="sectionTitle">
+                Dias do treino
+              </Text>
               <Button
+                className="ml-auto shrink-0"
                 compact
                 disabled={controller.busy || controller.editor.days.length >= 7}
                 label="Adicionar dia"
+                labelClassName="shrink-0"
                 onPress={addDay}
                 variant="secondary"
               />

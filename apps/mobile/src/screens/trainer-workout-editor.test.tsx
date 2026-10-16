@@ -253,6 +253,16 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     expect(screen.queryByRole('button', { name: 'Ver treino' })).toBeNull();
   });
 
+  it('mantém o título dos dias e a ação sem compressão em telas estreitas', () => {
+    renderEditor();
+
+    expect(screen.getByTestId('workout-days-header').props.className).toContain('flex-wrap');
+    expect(screen.getByText('Dias do treino').props.className).toContain('shrink-0');
+    expect(screen.getByRole('button', { name: 'Adicionar dia' }).props.className).toContain(
+      'shrink-0',
+    );
+  });
+
   it('mostra aluno inválido sem fazer POST', async () => {
     paramsState.studentId = undefined;
 
