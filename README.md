@@ -81,12 +81,16 @@ O Better Auth é a única fonte de senha, sessão e cookies. A API converte a se
 | `pnpm db:studio` | Abre o Drizzle Studio para inspecionar o banco. |
 | `pnpm db:seed` | Recria os dados de demonstração para testes manuais. |
 | `pnpm mobile:start` | Inicia o servidor de desenvolvimento do Expo. |
+| `pnpm mobile:go` | Inicia o Metro em modo Expo Go; use o QR code ou pressione `a` para abrir no Android. Recursos que exigem módulos nativos ausentes no Expo Go precisam do Development Build. |
 | `pnpm mobile:android` | Abre o app mobile no Android. |
+| `pnpm mobile:android:build` | Compila e instala o Development Build no Android e inicia o Metro, sem login no EAS. Use na primeira execução ou após alterações nativas. |
 | `pnpm mobile:ios` | Abre o app mobile no iOS. |
 | `pnpm mobile:web` | Abre o app mobile no navegador. |
 | `pnpm mobile:test` | Executa os testes do app mobile. |
 | `pnpm mobile:typecheck` | Executa a verificação de tipos do app mobile. |
 | `pnpm mobile:doctor` | Verifica a configuração e as dependências do projeto Expo. |
+
+Para compilar o Android localmente, instale o Android SDK pelo Android Studio e configure `ANDROID_HOME` com o caminho do SDK. Como alternativa, após gerar o diretório `apps/mobile/android`, configure `sdk.dir` em `apps/mobile/android/local.properties` com o caminho local do SDK, usando barras `/`. Esse arquivo é específico da máquina e deve permanecer ignorado pelo Git.
 
 ### Dados de demonstração
 
