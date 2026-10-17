@@ -122,7 +122,7 @@ vi.mock('expo-router', () => ({
     replace: routerState.replace,
   },
   useLocalSearchParams: () => ({ dayId: routerState.dayId }),
-  useNavigation: () => ({ dispatch: navigationState.dispatch }),
+  useNavigation: () => ({ dispatch: navigationState.dispatch, addListener: () => () => undefined }),
 }));
 
 vi.mock('@react-navigation/native', () => ({
@@ -513,7 +513,7 @@ describe('LogWorkoutScreen', () => {
     const focusCallsBeforeDemo = accessibilityState.setAccessibilityFocus.mock.calls.length;
 
     fireEvent.press(screen.getByRole('button', { name: 'Ver execução de Supino inclinado' }));
-    expect(await screen.findByText('Demonstração do exercício')).toBeTruthy();
+    expect(await screen.findByRole('header', { name: 'Supino inclinado' })).toBeTruthy();
     expect(screen.getByTestId('session-status-bar-dark')).toBeTruthy();
     const scrollViews = view.UNSAFE_getAllByType(ScrollView);
     expect(scrollViews).toHaveLength(2);

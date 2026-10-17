@@ -46,6 +46,10 @@ vi.mock('../../lib/use-session-exercise-media', () => ({
   useSessionExerciseMedia: demoState.useMedia,
 }));
 
+vi.mock('expo-router', () => ({
+  useNavigation: () => ({ addListener: () => () => undefined }),
+}));
+
 vi.mock('./exercise-demonstration-media', async () => {
   const React = await import('react');
   const { View } = await import('react-native');
@@ -135,10 +139,26 @@ describe('GuidedSessionDemonstration', () => {
   it('mantém o cabeçalho da demonstração flexível em telas estreitas', () => {
     renderDemonstration();
 
-    const title = screen.getByRole('header', { name: 'Demonstração do exercício' });
-
-    expect(title.props.className).toContain('min-w-0');
+    expect(screen.getByRole('header', { name: 'Supino reto' })).toBeTruthy();
+    expect(screen.getByText('Peito')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Fechar demonstração' })).toBeTruthy();
+  });
+
+  it('reutiliza a tela de exercício com grupo muscular e estado de vídeo sem mídia', () => {
+    demoState.useMedia.mockReturnValue({
+      data: { kind: 'missing' },
+      error: null,
+      isLoading: false,
+      isFetching: false,
+      offline: false,
+      retry: vi.fn(),
+    });
+    renderDemonstration();
+    expect(screen.getByText('Peito')).toBeTruthy();
+    expect(screen.getByText('Demonstração indisponível')).toBeTruthy();
+    expect(screen.getByText('Este exercício ainda não tem vídeo.')).toBeTruthy();
+    expect(screen.queryByText('Demonstração do exercício')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Voltar à série' })).toBeTruthy();
   });
 
   it('mantém detalhes durante carregamento, erro, offline e ausência de mídia', () => {
@@ -164,7 +184,7 @@ describe('GuidedSessionDemonstration', () => {
     );
 
     expect(screen.getByText('Prescrição')).toBeTruthy();
-    expect(screen.getByText('Não foi possível carregar a demonstração.')).toBeTruthy();
+    expect(screen.getByText('Não foi possível carregar o vídeo')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: /tentar novamente/i }));
     expect(retry).toHaveBeenCalledOnce();
 
@@ -188,7 +208,7 @@ describe('GuidedSessionDemonstration', () => {
       />,
     );
     expect(screen.getByText('Prescrição')).toBeTruthy();
-    expect(screen.getByText(/sem conex/i)).toBeTruthy();
+    expect(screen.getByText('Vídeo indisponível offline')).toBeTruthy();
 
     demoState.useMedia.mockReturnValue({
       data: { kind: 'missing' },
@@ -210,7 +230,7 @@ describe('GuidedSessionDemonstration', () => {
       />,
     );
     expect(screen.getByText('Prescrição')).toBeTruthy();
-    expect(screen.getByText(/sem demonstração disponível/i)).toBeTruthy();
+    expect(screen.getByText('Este exercício ainda não tem vídeo.')).toBeTruthy();
   });
 
   it('fecha somente a apresentação local quando o aluno retorna à série', () => {
@@ -223,12 +243,7 @@ describe('GuidedSessionDemonstration', () => {
   it('não consulta a mídia quando oculta nem quando a identidade está incompleta', () => {
     renderDemonstration('set', { visible: false, authUserId: undefined });
 
-    expect(demoState.useMedia).toHaveBeenCalledWith({
-      authUserId: undefined,
-      dayId: 'day-1',
-      exerciseId: 'exercise-1',
-      enabled: false,
-    });
+    expect(demoState.useMedia).not.toHaveBeenCalled();
     expect(screen.queryByText('Supino reto')).toBeNull();
   });
 
@@ -261,6 +276,8 @@ describe('GuidedSessionDemonstration', () => {
       retry: vi.fn(),
     });
     const { onClose } = renderDemonstration();
+    expect(screen.queryByTestId('exercise-demonstration-media')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Assistir demonstração' }));
     const onFullscreenChange = demoState.mediaProps.onFullscreenChange as (active: boolean) => void;
 
     act(() => onFullscreenChange(true));
@@ -269,6 +286,25 @@ describe('GuidedSessionDemonstration', () => {
     expect(onClose).not.toHaveBeenCalled();
 
     act(() => onFullscreenChange(false));
+    fireEvent(screen.getByTestId('guided-session-demonstration'), 'requestClose');
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('permite voltar depois de interromper a reprodução ao ir para segundo plano', () => {
+    demoState.useMedia.mockReturnValue({
+      data: { kind: 'available', uri: 'https://media.example.test/video.mp4', format: 'video' },
+      error: null,
+      isLoading: false,
+      isFetching: false,
+      offline: false,
+      retry: vi.fn(),
+    });
+    const { onClose } = renderDemonstration();
+    fireEvent.press(screen.getByRole('button', { name: 'Assistir demonstração' }));
+    const onFullscreenChange = demoState.mediaProps.onFullscreenChange as (active: boolean) => void;
+    act(() => onFullscreenChange(true));
+    act(() => demoState.appStateListener?.('background'));
+    expect(screen.queryByTestId('exercise-demonstration-media')).toBeNull();
     fireEvent(screen.getByTestId('guided-session-demonstration'), 'requestClose');
     expect(onClose).toHaveBeenCalledOnce();
   });

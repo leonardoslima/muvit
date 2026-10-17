@@ -1,6 +1,6 @@
 import { useNavigation } from 'expo-router';
 import { CircleAlert, Play, VideoOff, WifiOff } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { type Ref, useEffect, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, View } from 'react-native';
 import {
   colors,
@@ -12,11 +12,26 @@ import {
 } from '../../lib/design-system/tokens';
 import { useSessionExerciseMedia } from '../../lib/use-session-exercise-media';
 import { Text } from '../ui/v2/text';
-import { ExerciseDemonstrationMedia } from './exercise-demonstration-media';
+import {
+  ExerciseDemonstrationMedia,
+  type ExerciseDemonstrationMediaRef,
+} from './exercise-demonstration-media';
 
-type Props = { authUserId: string; dayId: string; exerciseId: string };
+type Props = {
+  authUserId: string;
+  dayId: string;
+  exerciseId: string;
+  mediaRef?: Ref<ExerciseDemonstrationMediaRef>;
+  onFullscreenChange?: (active: boolean) => void;
+};
 
-export function WorkoutExerciseVideo({ authUserId, dayId, exerciseId }: Props) {
+export function WorkoutExerciseVideo({
+  authUserId,
+  dayId,
+  exerciseId,
+  mediaRef,
+  onFullscreenChange,
+}: Props) {
   const navigation = useNavigation();
   const [active, setActive] = useState(true);
   const [requested, setRequested] = useState(false);
@@ -47,7 +62,12 @@ export function WorkoutExerciseVideo({ authUserId, dayId, exerciseId }: Props) {
   const loading = media.isLoading || media.isFetching;
   const failed = Boolean(media.error || playbackError);
   const available = media.data?.kind === 'available' ? media.data : undefined;
-  const playing = active && requested && available && !media.offline && !failed && !loading;
+  const playing = Boolean(
+    active && requested && available && !media.offline && !failed && !loading,
+  );
+  useEffect(() => {
+    if (!playing) onFullscreenChange?.(false);
+  }, [playing, onFullscreenChange]);
   const title = media.offline
     ? 'Vídeo indisponível offline'
     : loading
@@ -101,10 +121,11 @@ export function WorkoutExerciseVideo({ authUserId, dayId, exerciseId }: Props) {
     </>
   );
 
-  if (playing)
+  if (playing && available)
     return (
       <View style={styles.player}>
         <ExerciseDemonstrationMedia
+          ref={mediaRef}
           media={available}
           active
           presentation="inline"
@@ -114,7 +135,7 @@ export function WorkoutExerciseVideo({ authUserId, dayId, exerciseId }: Props) {
             setRequested(false);
           }}
           onLoadingChange={setPlayerLoading}
-          onFullscreenChange={() => undefined}
+          onFullscreenChange={(active) => onFullscreenChange?.(active)}
         />
         {playerLoading ? (
           <View pointerEvents="none" style={styles.loadingOverlay}>

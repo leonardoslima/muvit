@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useRef } from 'react';
 import type * as React from 'react';
 import { AccessibilityInfo, View, findNodeHandle } from 'react-native';
@@ -8,15 +7,14 @@ import type { Text as NativeText } from 'react-native';
 import type { WorkoutDay } from '../application/workouts/today-workout';
 import { loadWorkoutDay } from '../application/workouts/today-workout';
 import { Screen } from '../components/ui/screen';
-import { IconButton } from '../components/ui/v2/icon-button';
 import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
-import { Text } from '../components/ui/v2/text';
-import { WorkoutExerciseDetails } from '../components/workouts/workout-exercise-details';
-import { WorkoutExerciseVideo } from '../components/workouts/workout-exercise-video';
+import {
+  WorkoutExerciseContent,
+  WorkoutExerciseHeader,
+} from '../components/workouts/workout-exercise-content';
 import { authClient } from '../lib/auth-client';
-import { colors, spacing } from '../lib/design-system/tokens';
-import { muscleGroupLabel } from '../lib/muscle-groups';
+import { spacing } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
 import {
   type WorkoutExerciseSource,
@@ -122,32 +120,7 @@ export function WorkoutExerciseScreen(): React.JSX.Element {
   };
 
   const header = (
-    <View className="gap-6">
-      <View className="flex-row items-center gap-3">
-        <IconButton
-          accessibilityLabel="Voltar ao treino"
-          icon={<ArrowLeft size={20} color={colors.brand} accessible={false} />}
-          onPress={goBack}
-        />
-        <Text className="text-v2-brand" variant="label">
-          Treino
-        </Text>
-      </View>
-      {query.data ? (
-        <View className="gap-2">
-          <Text ref={titleRef} accessibilityRole="header" variant="screenTitle">
-            {query.data.exercise.exercise.name}
-          </Text>
-          <Text className="text-v2-secondary" variant="body">
-            {muscleGroupLabel(query.data.exercise.exercise.muscleGroup)}
-          </Text>
-        </View>
-      ) : (
-        <Text ref={titleRef} accessibilityRole="header" variant="screenTitle">
-          Exercício
-        </Text>
-      )}
-    </View>
+    <WorkoutExerciseHeader exercise={query.data?.exercise} onBack={goBack} titleRef={titleRef} />
   );
 
   if (!query.data && hasContextParams && (query.isLoading || query.isFetching || query.isPending)) {
@@ -197,15 +170,11 @@ export function WorkoutExerciseScreen(): React.JSX.Element {
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       {header}
-      {authUserId ? (
-        <WorkoutExerciseVideo
-          key={`${authUserId}:${dayId}:${exercise.id}:${exercise.exerciseId}`}
-          authUserId={authUserId}
-          dayId={query.data.day.id}
-          exerciseId={exercise.exerciseId}
-        />
-      ) : null}
-      <WorkoutExerciseDetails exercise={exercise} />
+      <WorkoutExerciseContent
+        exercise={exercise}
+        authUserId={authUserId}
+        dayId={query.data.day.id}
+      />
       {query.error ? (
         <Message
           title="Não foi possível atualizar"
