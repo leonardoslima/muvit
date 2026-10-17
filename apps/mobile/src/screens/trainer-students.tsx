@@ -1,7 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
 import {
   TRAINER_STUDENTS_PAGE_SIZE,
   listTrainerStudents,
@@ -10,6 +9,7 @@ import { StudentListItem } from '../components/trainer/student-list-item';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
 import { Button } from '../components/ui/v2/button';
 import { Field } from '../components/ui/v2/field';
+import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
@@ -103,7 +103,7 @@ export function TrainerStudentsScreen(): React.JSX.Element {
       subtitle={subtitle}
       title="Alunos"
     >
-      <ScrollView
+      <KeyboardScrollView
         className="flex-1"
         contentContainerStyle={{ gap: spacing.md }}
         keyboardShouldPersistTaps="handled"
@@ -186,7 +186,7 @@ export function TrainerStudentsScreen(): React.JSX.Element {
             Todos os alunos carregados
           </Text>
         ) : null}
-      </ScrollView>
+      </KeyboardScrollView>
     </TrainerScreen>
   );
 }

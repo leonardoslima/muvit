@@ -1,15 +1,10 @@
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { useContext } from 'react';
-import {
-  ScrollView,
-  type ScrollViewProps,
-  type StyleProp,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { type ScrollViewProps, type StyleProp, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, tabBarLayout } from '../../lib/design-system/tokens';
 import { Header as V2Header } from './v2/header';
+import { KeyboardScrollView } from './v2/keyboard-scroll-view';
 import { Text as V2Text } from './v2/text';
 
 export type ScreenProps = {
@@ -51,7 +46,7 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
 
   return (
     <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView
+      <KeyboardScrollView
         contentContainerStyle={[
           {
             gap: spacing.lg,
@@ -64,7 +59,7 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
         style={style}
       >
         {children}
-      </ScrollView>
+      </KeyboardScrollView>
     </SafeAreaView>
   );
 }

@@ -1,16 +1,10 @@
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode, Ref } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  type ScrollView as ScrollViewInstance,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import type { ScrollView as ScrollViewInstance, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../lib/design-system/tokens';
+import { KeyboardScrollView } from '../ui/v2/keyboard-scroll-view';
 
 export type GuidedSessionLayoutProps = {
   children: ReactNode;
@@ -36,32 +30,26 @@ export function GuidedSessionLayout({
       style={{ flex: 1, backgroundColor: colors.sessionBackground }}
     >
       {isFocused ? <StatusBar style={statusBarStyle} /> : null}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+      <KeyboardScrollView
+        ref={scrollRef}
+        accessibilityElementsHidden={contentHidden}
+        importantForAccessibility={contentHidden ? 'no-hide-descendants' : 'auto'}
+        keyboardShouldPersistTaps="handled"
+        pointerEvents={contentHidden ? 'none' : 'auto'}
+        contentContainerStyle={[
+          {
+            flexGrow: 1,
+            gap: spacing.xl,
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.xl,
+            paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg,
+          },
+          contentContainerStyle,
+        ]}
         style={{ flex: 1 }}
       >
-        <ScrollView
-          ref={scrollRef}
-          accessibilityElementsHidden={contentHidden}
-          importantForAccessibility={contentHidden ? 'no-hide-descendants' : 'auto'}
-          keyboardShouldPersistTaps="handled"
-          pointerEvents={contentHidden ? 'none' : 'auto'}
-          contentContainerStyle={[
-            {
-              flexGrow: 1,
-              gap: spacing.xl,
-              paddingHorizontal: spacing.lg,
-              paddingTop: spacing.xl,
-              paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg,
-            },
-            contentContainerStyle,
-          ]}
-          style={{ flex: 1 }}
-        >
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {children}
+      </KeyboardScrollView>
     </SafeAreaView>
   );
 }

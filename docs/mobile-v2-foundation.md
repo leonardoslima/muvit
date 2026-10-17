@@ -51,6 +51,8 @@ Os símbolos `Q4dha` (`List/Exercício/Detalhado`) e `RL1fy` (`Media/Exercício/
 
 A área cresce e permite rolagem quando texto, escala de fonte ou teclado exigirem. As dimensões das amostras não devem virar uma altura fixa no runtime. O estado de sucesso aparece apenas no contexto em que o fluxo existente confirma a operação; não substitui todas as telas por uma confirmação genérica.
 
+No app, formulários roláveis compartilham `KeyboardScrollView`: ajusta a área útil com padding no iOS e altura no Android, revela o campo focado após abrir o teclado e repete a verificação ao mudar o layout ou o foco. Isso cobre autenticação, sessão guiada, avaliações, edição de treinos, busca de alunos e a meta semanal nas telas que usam `Screen scroll`. O modal do catálogo ajusta a superfície inteira para manter a busca fora da lista acessível. Não aninhar outro ajuste de teclado nesses formulários; preservar insets, espaçamento e teclado apropriado de cada campo.
+
 ## Verificação desta entrega
 
 Foram registrados 96 tokens, 81 símbolos reutilizáveis e 26 instâncias nas quatro reconstruções. As três molduras de demonstração da carga foram retiradas da lista de símbolos durante a revisão. As variantes são símbolos nomeados ou instâncias com overrides no pen.dev; esta entrega não é uma biblioteca nativa do Figma nem um protótipo navegável.

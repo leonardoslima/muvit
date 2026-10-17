@@ -8,6 +8,7 @@ import {
 } from '../components/navigation/app-tabs';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
 import { Button, Card, Field, Message, SectionTab, StatePanel, Text } from '../components/ui/v2';
+import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { ExerciseCatalogModal } from '../components/workouts/exercise-catalog-modal';
 import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day';
 import { WorkoutEditorExitSheet } from '../components/workouts/workout-editor-exit-sheet';
@@ -189,7 +190,7 @@ function TrainerWorkoutEditorInstance({
       refreshing={controller.refreshing && !controller.loading}
       title={mode === 'create' ? 'Novo treino' : 'Editar treino'}
     >
-      <ScrollView
+      <KeyboardScrollView
         className="flex-1"
         contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxxl }}
         keyboardShouldPersistTaps="handled"
@@ -346,7 +347,7 @@ function TrainerWorkoutEditorInstance({
             />
           </>
         )}
-      </ScrollView>
+      </KeyboardScrollView>
 
       <ExerciseCatalogModal
         disabled={controller.busy}

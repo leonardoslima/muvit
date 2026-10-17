@@ -5,6 +5,7 @@ export type { Action, ControlVariant } from './control';
 export { Field, type FieldProps } from './field';
 export { Header, type HeaderProps } from './header';
 export { IconButton, type IconButtonProps } from './icon-button';
+export { KeyboardScrollView } from './keyboard-scroll-view';
 export { Message, type MessageProps } from './message';
 export { NumericField, type NumericFieldProps } from './numeric-field';
 export { SectionTab, type SectionTabProps } from './section-tab';

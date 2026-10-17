@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EXERCISE_CATALOG_PAGE_SIZE,
@@ -99,7 +99,11 @@ export function ExerciseCatalogModal({
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <View accessibilityViewIsModal className="flex-1 justify-end">
+      <KeyboardAvoidingView
+        accessibilityViewIsModal
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1 justify-end"
+      >
         <View
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
@@ -244,7 +248,7 @@ export function ExerciseCatalogModal({
             ) : null}
           </ScrollView>
         </SheetSurface>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

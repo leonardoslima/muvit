@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { createAssessment } from '../application/assessments/assessment-data';
 import {
   type AssessmentPhotoInput,
@@ -16,6 +16,7 @@ import { TrainerAssessmentPhotos } from '../components/assessments/trainer-asses
 import { TrainerScreen } from '../components/trainer/trainer-screen';
 import { Button } from '../components/ui/v2/button';
 import { Field } from '../components/ui/v2/field';
+import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
@@ -176,191 +177,186 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
 
   const bmi = calculateBmi(values.weightKg, values.heightCm);
   const content = studentId ? (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardScrollView
       className="flex-1"
+      contentContainerStyle={{
+        gap: spacing.xxl,
+        paddingTop: spacing.sm,
+      }}
+      keyboardShouldPersistTaps="handled"
     >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          gap: spacing.xxl,
-          paddingTop: spacing.sm,
-        }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <AssessmentHeading
-          subtitle="Registre medidas e fotos para acompanhar a evolução. Somente a data é obrigatória."
-          title="Nova avaliação"
+      <AssessmentHeading
+        subtitle="Registre medidas e fotos para acompanhar a evolução. Somente a data é obrigatória."
+        title="Nova avaliação"
+      />
+
+      <View className="gap-4">
+        <Text variant="sectionTitle">Métricas principais</Text>
+        <Field
+          label="Data da avaliação"
+          editable={!formDisabled}
+          onChangeText={(value) => setField('date', value)}
+          placeholder="AAAA-MM-DD"
+          value={values.date}
         />
-
-        <View className="gap-4">
-          <Text variant="sectionTitle">Métricas principais</Text>
-          <Field
-            label="Data da avaliação"
-            editable={!formDisabled}
-            onChangeText={(value) => setField('date', value)}
-            placeholder="AAAA-MM-DD"
-            value={values.date}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Peso"
-            editable={!formDisabled}
-            onChangeText={(value) => setField('weightKg', value)}
-            placeholder="Ex.: 70,5"
-            unit="kg"
-            value={values.weightKg}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Altura"
-            editable={!formDisabled}
-            onChangeText={(value) => setField('heightCm', value)}
-            placeholder="Ex.: 170"
-            unit="cm"
-            value={values.heightCm}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Gordura corporal"
-            editable={!formDisabled}
-            onChangeText={(value) => setField('bodyFatPct', value)}
-            placeholder="Ex.: 20,5"
-            unit="%"
-            value={values.bodyFatPct}
-          />
-          <View className="gap-1">
-            <Text variant="label">IMC</Text>
-            <Text className="text-v2-secondary">
-              {bmi === null
-                ? 'Informe peso e altura'
-                : bmi.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  })}
-            </Text>
-          </View>
+        <Field
+          keyboardType="decimal-pad"
+          label="Peso"
+          editable={!formDisabled}
+          onChangeText={(value) => setField('weightKg', value)}
+          placeholder="Ex.: 70,5"
+          unit="kg"
+          value={values.weightKg}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Altura"
+          editable={!formDisabled}
+          onChangeText={(value) => setField('heightCm', value)}
+          placeholder="Ex.: 170"
+          unit="cm"
+          value={values.heightCm}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Gordura corporal"
+          editable={!formDisabled}
+          onChangeText={(value) => setField('bodyFatPct', value)}
+          placeholder="Ex.: 20,5"
+          unit="%"
+          value={values.bodyFatPct}
+        />
+        <View className="gap-1">
+          <Text variant="label">IMC</Text>
+          <Text className="text-v2-secondary">
+            {bmi === null
+              ? 'Informe peso e altura'
+              : bmi.toLocaleString('pt-BR', {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
+          </Text>
         </View>
+      </View>
 
-        <View className="gap-4">
-          <Text variant="sectionTitle">Medidas de circunferência</Text>
-          <Field
-            keyboardType="decimal-pad"
-            label="Peito"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('chest', value)}
-            placeholder="Ex.: 95"
-            unit="cm"
-            value={values.measurements.chest}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Cintura"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('waist', value)}
-            placeholder="Ex.: 80"
-            unit="cm"
-            value={values.measurements.waist}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Quadril"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('hip', value)}
-            placeholder="Ex.: 100"
-            unit="cm"
-            value={values.measurements.hip}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Braço direito"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('armRight', value)}
-            placeholder="Ex.: 32,5"
-            unit="cm"
-            value={values.measurements.armRight}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Braço esquerdo"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('armLeft', value)}
-            placeholder="Ex.: 32,5"
-            unit="cm"
-            value={values.measurements.armLeft}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Coxa direita"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('thighRight', value)}
-            placeholder="Ex.: 55"
-            unit="cm"
-            value={values.measurements.thighRight}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Coxa esquerda"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('thighLeft', value)}
-            placeholder="Ex.: 55"
-            unit="cm"
-            value={values.measurements.thighLeft}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Panturrilha direita"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('calfRight', value)}
-            placeholder="Ex.: 36"
-            unit="cm"
-            value={values.measurements.calfRight}
-          />
-          <Field
-            keyboardType="decimal-pad"
-            label="Panturrilha esquerda"
-            editable={!formDisabled}
-            onChangeText={(value) => setMeasurement('calfLeft', value)}
-            placeholder="Ex.: 36"
-            unit="cm"
-            value={values.measurements.calfLeft}
-          />
-        </View>
+      <View className="gap-4">
+        <Text variant="sectionTitle">Medidas de circunferência</Text>
+        <Field
+          keyboardType="decimal-pad"
+          label="Peito"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('chest', value)}
+          placeholder="Ex.: 95"
+          unit="cm"
+          value={values.measurements.chest}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Cintura"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('waist', value)}
+          placeholder="Ex.: 80"
+          unit="cm"
+          value={values.measurements.waist}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Quadril"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('hip', value)}
+          placeholder="Ex.: 100"
+          unit="cm"
+          value={values.measurements.hip}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Braço direito"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('armRight', value)}
+          placeholder="Ex.: 32,5"
+          unit="cm"
+          value={values.measurements.armRight}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Braço esquerdo"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('armLeft', value)}
+          placeholder="Ex.: 32,5"
+          unit="cm"
+          value={values.measurements.armLeft}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Coxa direita"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('thighRight', value)}
+          placeholder="Ex.: 55"
+          unit="cm"
+          value={values.measurements.thighRight}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Coxa esquerda"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('thighLeft', value)}
+          placeholder="Ex.: 55"
+          unit="cm"
+          value={values.measurements.thighLeft}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Panturrilha direita"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('calfRight', value)}
+          placeholder="Ex.: 36"
+          unit="cm"
+          value={values.measurements.calfRight}
+        />
+        <Field
+          keyboardType="decimal-pad"
+          label="Panturrilha esquerda"
+          editable={!formDisabled}
+          onChangeText={(value) => setMeasurement('calfLeft', value)}
+          placeholder="Ex.: 36"
+          unit="cm"
+          value={values.measurements.calfLeft}
+        />
+      </View>
 
-        <View className="gap-4">
-          <Text variant="sectionTitle">Fotos</Text>
-          <TrainerAssessmentPhotos
-            disabled={formDisabled}
-            onAdd={() => void pickPhoto()}
-            onRemove={removePhoto}
-            photos={photos}
-          />
-        </View>
-
-        <View className="gap-4">
-          <Text variant="sectionTitle">Observações</Text>
-          <Field
-            label="Observações"
-            multiline
-            numberOfLines={4}
-            editable={!formDisabled}
-            onChangeText={(value) => setField('notes', value)}
-            placeholder="Adicione observações sobre a avaliação"
-            value={values.notes}
-          />
-        </View>
-
-        {error ? <Message title={error} variant="error" /> : null}
-        {success ? <Message title="Avaliação salva!" variant="success" /> : null}
-
-        <Button
+      <View className="gap-4">
+        <Text variant="sectionTitle">Fotos</Text>
+        <TrainerAssessmentPhotos
           disabled={formDisabled}
-          label={formDisabled ? 'Salvando avaliação...' : 'Salvar avaliação'}
-          loading={formDisabled}
-          onPress={() => void submit()}
+          onAdd={() => void pickPhoto()}
+          onRemove={removePhoto}
+          photos={photos}
         />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+
+      <View className="gap-4">
+        <Text variant="sectionTitle">Observações</Text>
+        <Field
+          label="Observações"
+          multiline
+          numberOfLines={4}
+          editable={!formDisabled}
+          onChangeText={(value) => setField('notes', value)}
+          placeholder="Adicione observações sobre a avaliação"
+          value={values.notes}
+        />
+      </View>
+
+      {error ? <Message title={error} variant="error" /> : null}
+      {success ? <Message title="Avaliação salva!" variant="success" /> : null}
+
+      <Button
+        disabled={formDisabled}
+        label={formDisabled ? 'Salvando avaliação...' : 'Salvar avaliação'}
+        loading={formDisabled}
+        onPress={() => void submit()}
+      />
+    </KeyboardScrollView>
   ) : (
     <StatePanel
       className="flex-1"

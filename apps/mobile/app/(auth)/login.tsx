@@ -1,6 +1,6 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
 import { AuthBrand } from '../../src/components/auth/auth-brand';
 import { Screen } from '../../src/components/ui/screen';
@@ -42,75 +42,62 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
-      testID="login-keyboard-avoiding-view"
+    <Screen
+      scroll
+      contentContainerStyle={{
+        flexGrow: 1,
+        gap: spacing.xxl,
+        paddingBottom: spacing.xxl,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.xxl + spacing.md,
+      }}
     >
-      <Screen
-        scroll
-        contentContainerStyle={{
-          flexGrow: 1,
-          gap: spacing.xxl,
-          paddingBottom: spacing.xxl,
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.xxl + spacing.md,
-        }}
-      >
-        <AuthBrand />
-        <View
-          testID="login-heading"
-          style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}
-        >
-          <Header title="Entrar" titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold" />
-          <Text className="text-v2-secondary" variant="body">
-            Acesse sua conta para continuar.
-          </Text>
-        </View>
+      <AuthBrand />
+      <View testID="login-heading" style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}>
+        <Header title="Entrar" titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold" />
+        <Text className="text-v2-secondary" variant="body">
+          Acesse sua conta para continuar.
+        </Text>
+      </View>
 
-        <View testID="login-fields" style={{ gap: spacing.xl }}>
-          <Field
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            label="Email"
-            style={{ padding: 0 }}
-            onChangeText={setEmail}
-            placeholder="voce@exemplo.com"
-            size="auth"
-            testID="login-email"
-            value={email}
-          />
-          <Field
-            kind="password"
-            label="Senha"
-            style={{ padding: 0 }}
-            onChangeText={setPassword}
-            placeholder="Sua senha"
-            size="auth"
-            testID="login-password"
-            value={password}
-          />
-        </View>
+      <View testID="login-fields" style={{ gap: spacing.xl }}>
+        <Field
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          label="Email"
+          style={{ padding: 0 }}
+          onChangeText={setEmail}
+          placeholder="voce@exemplo.com"
+          size="auth"
+          testID="login-email"
+          value={email}
+        />
+        <Field
+          kind="password"
+          label="Senha"
+          style={{ padding: 0 }}
+          onChangeText={setPassword}
+          placeholder="Sua senha"
+          size="auth"
+          testID="login-password"
+          value={password}
+        />
+      </View>
 
-        {error ? <Message description={error} variant="error" /> : null}
+      {error ? <Message description={error} variant="error" /> : null}
 
-        <View testID="login-actions" style={{ gap: spacing.md }}>
-          <Button
-            disabled={submitting}
-            label={submitting ? 'Entrando...' : 'Entrar'}
-            loading={submitting}
-            onPress={submitting ? undefined : submit}
-          />
-          <Link href="/(auth)/signup" asChild>
-            <Button
-              label="Criar conta independente"
-              onPress={() => undefined}
-              variant="secondary"
-            />
-          </Link>
-        </View>
-      </Screen>
-    </KeyboardAvoidingView>
+      <View testID="login-actions" style={{ gap: spacing.md }}>
+        <Button
+          disabled={submitting}
+          label={submitting ? 'Entrando...' : 'Entrar'}
+          loading={submitting}
+          onPress={submitting ? undefined : submit}
+        />
+        <Link href="/(auth)/signup" asChild>
+          <Button label="Criar conta independente" onPress={() => undefined} variant="secondary" />
+        </Link>
+      </View>
+    </Screen>
   );
 }

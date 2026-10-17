@@ -39,6 +39,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 ## UI nativa
 
 - Preserve ergonomia mobile: areas tocaveis confortaveis, feedback de toque, safe area e teclado.
+- Formularios rolaveis usam `KeyboardScrollView` de `src/components/ui/v2`, que ajusta a area util no Android/iOS e revela o campo focado ao abrir o teclado ou mudar o layout. Nao aninhe outro `KeyboardAvoidingView` nesses formularios. Modais com busca fora da lista devem ajustar a superficie inteira ao teclado.
 - Texto visivel deve estar em pt-BR e caber em telas pequenas.
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
 - O componente `Screen` deve consumir `BottomTabBarHeightContext` e reservar `tabBarHeight + tabBarLayout.offset + tabBarLayout.contentGap` somente dentro das tabs; `offset` compensa a barra flutuante e `contentGap` mantém 24 dp livres acima dela. A barra usa o mesmo `tabBarLayout.offset` no deslocamento vertical; telas nao devem duplicar esse espacamento.

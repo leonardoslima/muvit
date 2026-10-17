@@ -66,6 +66,11 @@ export const Platform = {
   select: (options: Record<string, unknown>) => options.ios ?? options.native ?? options.default,
 };
 
+export const Keyboard = {
+  isVisible: () => false,
+  addListener: (_event: string, _listener: () => void) => ({ remove: () => undefined }),
+};
+
 export const StyleSheet = {
   create: <T extends Record<string, unknown>>(styles: T) => styles,
   flatten: flattenStyle,

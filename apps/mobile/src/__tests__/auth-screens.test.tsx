@@ -1,6 +1,6 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import React, { type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import LoginScreen from '../../app/(auth)/login';
 import SignupScreen from '../../app/(auth)/signup';
@@ -142,7 +142,7 @@ describe('telas de autenticação mobile', () => {
   it('ajusta o login quando o teclado está aberto', () => {
     render(<LoginScreen />);
 
-    expect(screen.getByTestId('login-keyboard-avoiding-view').props).toMatchObject({
+    expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props).toMatchObject({
       behavior: Platform.OS === 'ios' ? 'padding' : 'height',
       style: { flex: 1 },
     });
@@ -151,7 +151,7 @@ describe('telas de autenticação mobile', () => {
   it('ajusta o cadastro quando o teclado está aberto', () => {
     render(<SignupScreen />);
 
-    expect(screen.getByTestId('signup-keyboard-avoiding-view').props).toMatchObject({
+    expect(screen.UNSAFE_getByType(KeyboardAvoidingView).props).toMatchObject({
       behavior: Platform.OS === 'ios' ? 'padding' : 'height',
       style: { flex: 1 },
     });
