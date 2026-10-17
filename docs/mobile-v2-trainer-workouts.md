@@ -203,8 +203,8 @@ Como a ponte de emulador do Orca estava indisponível, o QA usou ADB no AVD excl
 
 Capturas desta execução:
 
-- [Editor em 320 dp](evidence/muv-40/editor-320dp.png) e [editor em 390 dp](evidence/muv-40/editor-390dp.png), incluindo o texto completo de “Adicionar dia”.
-- [Rascunho salvo na lista](evidence/muv-40/draft-lista-salvo.png), [rascunho retomado após reabrir o app](evidence/muv-40/draft-retomado.png) e [lista após publicação](evidence/muv-40/draft-publicado.png).
+- Editor em 320/390 dp, incluindo o texto completo de “Adicionar dia”: capturas locais `artifacts/muv-40/historico/screenshots/editor-320dp.png` e `editor-390dp.png`.
+- Rascunho salvo, retomado após reabrir o app e lista após publicação: capturas locais `draft-lista-salvo.png`, `draft-retomado.png` e `draft-publicado.png`, no mesmo diretório ignorado. Para revisão compartilhada, use anexos da PR/issue conforme o [fluxo de artefatos de QA](operations/qa-artifacts.md).
 
 O ciclo validado demonstra persistência remota após reinício do processo; não foi feita reinstalação nem teste em segundo aparelho. O restante dos estados de erro, concorrência e saída é coberto pelas suítes automatizadas.
 

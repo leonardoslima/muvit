@@ -20,6 +20,17 @@ export type DemoIdentities = {
   independentStudent: DemoIdentity;
 };
 
+type DemoProfileMedia = {
+  avatarUrl: string | null;
+  assessmentPhotos: string[];
+};
+
+export type DemoMedia = DemoProfileMedia & {
+  independentStudent?: DemoProfileMedia;
+};
+
+const emptyMedia: DemoMedia = { avatarUrl: null, assessmentPhotos: [] };
+
 export type DemoStudent = Omit<NewStudent, 'trainerId'> & {
   email: string;
 };
@@ -117,6 +128,7 @@ const assessmentOffsets = [
   [70, 28],
   [80],
   [65],
+  [90, 60, 30, 7],
 ] as const;
 
 const planStatuses = [
@@ -133,7 +145,7 @@ const planStatuses = [
   'active',
 ] as const;
 
-const logCounts = [7, 7, 6, 6, 5, 5, 2, 2, 0, 0, 1] as const;
+const logCounts = [7, 7, 6, 6, 5, 5, 2, 0, 0, 0, 14] as const;
 
 const exerciseNames = [
   'Agachamento livre',
@@ -148,6 +160,10 @@ const exerciseNames = [
   'Mesa flexora',
   'Hip thrust',
   'Prancha',
+  'Agachamento goblet — demo',
+  'Remada unilateral — demo',
+  'Ponte de glúteos — demo',
+  'Prancha lateral — demo',
 ] as const;
 
 const goals = [
@@ -159,7 +175,7 @@ const goals = [
 ] as const;
 
 const restrictions = [
-  null,
+  'Sem restrições relatadas nesta demonstração.',
   'Evitar impacto alto no joelho direito.',
   'Monitorar desconforto lombar em exercícios de flexão.',
   'Respeitar amplitude confortável do ombro esquerdo.',
@@ -195,7 +211,11 @@ const buildMeasurements = (baseWaist: number, assessmentIndex: number): Assessme
   calfLeft: 36,
 });
 
-const buildStudents = (identities: DemoIdentities, referenceDate: Date): DemoStudent[] => {
+const buildStudents = (
+  identities: DemoIdentities,
+  referenceDate: Date,
+  media: DemoMedia,
+): DemoStudent[] => {
   const managedStudents = studentStatuses.map((status, studentIndex): DemoStudent => {
     const createdOffset = createdOffsets[studentIndex];
     const gender = studentGenders[studentIndex];
@@ -214,7 +234,7 @@ const buildStudents = (identities: DemoIdentities, referenceDate: Date): DemoStu
       goals: fakerPT_BR.helpers.arrayElement(goals),
       restrictions: fakerPT_BR.helpers.arrayElement(restrictions),
       status,
-      avatarUrl: null,
+      avatarUrl: media.avatarUrl,
       expoPushToken: null,
       createdAt: daysBefore(referenceDate, createdOffset),
     };
@@ -228,20 +248,20 @@ const buildStudents = (identities: DemoIdentities, referenceDate: Date): DemoStu
       isIndependent: true,
       name: identities.independentStudent.name,
       email: identities.independentStudent.email,
-      phone: null,
-      birthDate: null,
-      gender: null,
+      phone: '(11) 99999-0011',
+      birthDate: '1994-05-18',
+      gender: 'male',
       goals: 'Manter uma rotina de treinos com autonomia.',
-      restrictions: null,
+      restrictions: 'Sem restrições relatadas nesta demonstração.',
       status: 'active',
-      avatarUrl: null,
+      avatarUrl: (media.independentStudent ?? media).avatarUrl,
       expoPushToken: null,
       createdAt: daysBefore(referenceDate, 45),
     },
   ];
 };
 
-const buildAssessments = (referenceDate: Date): DemoAssessment[] =>
+const buildAssessments = (referenceDate: Date, media: DemoMedia): DemoAssessment[] =>
   assessmentOffsets.flatMap((offsets, studentIndex) => {
     const baseWeight = fakerPT_BR.number.float({ min: 58, max: 96, fractionDigits: 1 });
     const baseBodyFat = fakerPT_BR.number.float({ min: 18, max: 31, fractionDigits: 1 });
@@ -256,7 +276,11 @@ const buildAssessments = (referenceDate: Date): DemoAssessment[] =>
         heightCm: decimal(158 + studentIndex * 2.3, 1),
         bodyFatPct: decimal(baseBodyFat - assessmentIndex * 0.5, 1),
         measurements: buildMeasurements(baseWaist, assessmentIndex),
-        photos: [],
+        photos: [
+          ...(studentIndex === 10
+            ? (media.independentStudent ?? media).assessmentPhotos
+            : media.assessmentPhotos),
+        ],
         notes: fakerPT_BR.helpers.arrayElement([
           'Boa evolução e aderência ao planejamento.',
           'Manter progressão gradual nas próximas semanas.',
@@ -269,12 +293,15 @@ const buildAssessments = (referenceDate: Date): DemoAssessment[] =>
 
 const buildPlans = (referenceDate: Date): DemoPlan[] =>
   planStatuses.map((status, studentIndex) => {
+    const availableExercises = studentIndex === 10 ? exerciseNames.slice(0, 12) : exerciseNames;
     const dayCount = 2 + (studentIndex % 3);
     const days = Array.from({ length: dayCount }, (_, dayIndex): DemoDay => {
       const exerciseCount = 4 + ((studentIndex + dayIndex) % 3);
       const exercises = Array.from({ length: exerciseCount }, (_, exerciseIndex): DemoExercise => {
         const exerciseName =
-          exerciseNames[(studentIndex * 3 + dayIndex * 2 + exerciseIndex) % exerciseNames.length];
+          availableExercises[
+            (studentIndex * 3 + dayIndex * 2 + exerciseIndex) % availableExercises.length
+          ];
         if (!exerciseName) throw new Error('failed to resolve demo exercise name');
 
         return {
@@ -284,8 +311,8 @@ const buildPlans = (referenceDate: Date): DemoPlan[] =>
           reps: fakerPT_BR.helpers.arrayElement(['8-10', '10-12', '12', '15']),
           restSeconds: fakerPT_BR.helpers.arrayElement([60, 75, 90]),
           loadKg: decimal(fakerPT_BR.number.float({ min: 8, max: 72, fractionDigits: 1 }), 1),
-          tempo: exerciseIndex === 0 ? '3010' : undefined,
-          notes: exerciseIndex === 0 ? 'Priorizar técnica e amplitude confortável.' : undefined,
+          tempo: exerciseIndex % 2 === 0 ? '3010' : '2011',
+          notes: 'Prescrição fictícia para QA: priorizar técnica e amplitude confortável.',
         };
       });
 
@@ -300,7 +327,7 @@ const buildPlans = (referenceDate: Date): DemoPlan[] =>
       studentIndex,
       name: `${fakerPT_BR.helpers.arrayElement(planNames)} — ${studentIndex + 1}`,
       startDate: toDateString(daysBefore(referenceDate, 84 - studentIndex * 3)),
-      endDate: status === 'archived' ? toDateString(daysBefore(referenceDate, 10)) : null,
+      endDate: toDateString(daysBefore(referenceDate, status === 'archived' ? 10 : -42)),
       status,
       notes: 'Plano fictício gerado para testes manuais do Muvit.',
       createdAt: daysBefore(referenceDate, 90 - studentIndex * 3),
@@ -317,16 +344,19 @@ const buildLogs = (referenceDate: Date, plans: DemoPlan[]): DemoLog[] =>
       const day = plan.days[logIndex % plan.days.length];
       if (!day) throw new Error(`missing demo day for student ${studentIndex}`);
       const completed = (studentIndex + logIndex) % 5 !== 0;
-      const logDate = daysBefore(referenceDate, 3 + ((studentIndex * 11 + logIndex * 9) % 86));
-      const exercises = day.exercises.slice(0, 2);
-      const sets = exercises.flatMap((exercise) =>
-        [1, 2].map(
-          (setNumber): DemoSet => ({
+      const logDate = daysBefore(
+        referenceDate,
+        (plan.status === 'archived' ? 12 : 2) + logIndex * 3,
+      );
+      const sets = day.exercises.flatMap((exercise) =>
+        Array.from(
+          { length: exercise.sets },
+          (_, setIndex): DemoSet => ({
             exerciseOrder: exercise.exerciseOrder,
-            setNumber,
-            repsDone: Math.max(6, 12 - setNumber - ((studentIndex + logIndex) % 3)),
+            setNumber: setIndex + 1,
+            repsDone: Math.max(6, 11 - setIndex - ((studentIndex + logIndex) % 3)),
             loadKg: exercise.loadKg,
-            completed: completed || setNumber === 1,
+            completed: completed || exercise.exerciseOrder < 3,
           }),
         ),
       );
@@ -350,12 +380,13 @@ const buildLogs = (referenceDate: Date, plans: DemoPlan[]): DemoLog[] =>
 export const buildDemoScenario = (
   identities: DemoIdentities,
   referenceDate: Date = new Date(),
+  media: DemoMedia = emptyMedia,
 ): DemoScenario => {
   fakerPT_BR.seed(DEMO_RANDOM_SEED);
   fakerPT_BR.setDefaultRefDate(referenceDate);
 
-  const students = buildStudents(identities, referenceDate);
-  const assessments = buildAssessments(referenceDate);
+  const students = buildStudents(identities, referenceDate, media);
+  const assessments = buildAssessments(referenceDate, media);
   const plans = buildPlans(referenceDate);
   const logs = buildLogs(referenceDate, plans);
 

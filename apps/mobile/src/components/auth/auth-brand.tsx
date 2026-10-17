@@ -11,8 +11,9 @@ export function AuthBrand(): JSX.Element {
       style={{
         minHeight: 54,
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingLeft: spacing.optical,
+        paddingTop: spacing.sm,
       }}
     >
       <Text
@@ -21,6 +22,8 @@ export function AuthBrand(): JSX.Element {
           color: colors.text,
           fontFamily: fontFamilies.extrabold,
           fontSize: penTokens['font/size/22'],
+          lineHeight: 30,
+          includeFontPadding: false,
         }}
       >
         muvit
@@ -33,6 +36,7 @@ export function AuthBrand(): JSX.Element {
           width: 7,
           height: 7,
           marginLeft: spacing.xs,
+          marginTop: spacing.lg,
           borderRadius: penTokens['radius/4'],
           backgroundColor: colors.primary,
         }}

@@ -54,7 +54,7 @@ export default function LoginScreen() {
           gap: spacing.xxl,
           paddingBottom: spacing.xxl,
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.xxl,
+          paddingTop: spacing.xxl + spacing.md,
         }}
       >
         <AuthBrand />
@@ -74,6 +74,7 @@ export default function LoginScreen() {
             autoComplete="email"
             keyboardType="email-address"
             label="Email"
+            style={{ padding: 0 }}
             onChangeText={setEmail}
             placeholder="voce@exemplo.com"
             size="auth"
@@ -83,6 +84,7 @@ export default function LoginScreen() {
           <Field
             kind="password"
             label="Senha"
+            style={{ padding: 0 }}
             onChangeText={setPassword}
             placeholder="Sua senha"
             size="auth"

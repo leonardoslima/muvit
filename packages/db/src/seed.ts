@@ -1,9 +1,9 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db, schema } from './index.js';
-import { type DemoIdentities, buildDemoScenario } from './seeds/demo.js';
-import { globalExercises } from './seeds/exercises.js';
+import { type DemoIdentities, type DemoMedia, buildDemoScenario } from './seeds/demo.js';
+import { globalExercises, trainerExercises } from './seeds/exercises.js';
 
-export type { DemoIdentities };
+export type { DemoIdentities, DemoMedia };
 
 type PersistedExercise = typeof schema.exercises.$inferSelect;
 type PersistedStudent = typeof schema.students.$inferSelect;
@@ -23,6 +23,7 @@ const workoutExerciseKey = (
 async function clearDemoData(
   transaction: SeedTransaction,
   identities: DemoIdentities,
+  demoStudentEmails: string[],
 ): Promise<void> {
   await transaction
     .delete(schema.students)
@@ -30,6 +31,7 @@ async function clearDemoData(
       and(
         eq(schema.students.trainerId, identities.trainer.profileId),
         eq(schema.students.isIndependent, false),
+        inArray(schema.students.email, demoStudentEmails),
       ),
     );
   await transaction
@@ -57,6 +59,38 @@ async function seedGlobalExercises(transaction: SeedTransaction): Promise<Persis
 
   console.log(`global exercises: ${existing.length} reused, ${inserted.length} inserted`);
 
+  for (const exercise of globalExercises) {
+    await transaction
+      .update(schema.exercises)
+      .set({ instructions: exercise.instructions })
+      .where(
+        and(
+          isNull(schema.exercises.trainerId),
+          eq(schema.exercises.name, exercise.name),
+          isNull(schema.exercises.instructions),
+        ),
+      );
+  }
+
+  return [...existing, ...inserted];
+}
+
+async function seedTrainerExercises(
+  transaction: SeedTransaction,
+  trainerId: string,
+): Promise<PersistedExercise[]> {
+  const existing = await transaction
+    .select()
+    .from(schema.exercises)
+    .where(eq(schema.exercises.trainerId, trainerId));
+  const names = new Set(existing.map((exercise) => exercise.name));
+  const missing = trainerExercises.filter((exercise) => !names.has(exercise.name));
+  const inserted = missing.length
+    ? await transaction
+        .insert(schema.exercises)
+        .values(missing.map((exercise) => ({ ...exercise, trainerId })))
+        .returning()
+    : [];
   return [...existing, ...inserted];
 }
 
@@ -77,8 +111,9 @@ const mapStudentsByEmail = (students: PersistedStudent[]): Map<string, Persisted
 export async function seedDemoData(
   identities: DemoIdentities,
   referenceDate: Date = new Date(),
+  media?: DemoMedia,
 ): Promise<void> {
-  const scenario = buildDemoScenario(identities, referenceDate);
+  const scenario = buildDemoScenario(identities, referenceDate, media);
   const scenarioIndependentStudent = scenario.students.find((student) => student.isIndependent);
   if (!scenarioIndependentStudent) {
     throw new Error('missing independent demo student');
@@ -91,6 +126,8 @@ export async function seedDemoData(
         email: scenario.trainer.email,
         name: scenario.trainer.name,
         plan: 'pro',
+        avatarUrl: media?.avatarUrl ?? null,
+        onboardedAt: referenceDate,
       })
       .where(
         and(
@@ -128,9 +165,16 @@ export async function seedDemoData(
     if (!independentStudent)
       throw new Error('missing provisioned independent demo student profile');
 
-    await clearDemoData(transaction, identities);
-    const exercises = await seedGlobalExercises(transaction);
     const managedScenarioStudents = scenario.students.filter((student) => !student.isIndependent);
+    await clearDemoData(
+      transaction,
+      identities,
+      managedScenarioStudents.map((student) => student.email),
+    );
+    const exercises = [
+      ...(await seedGlobalExercises(transaction)),
+      ...(await seedTrainerExercises(transaction, trainer.id)),
+    ];
 
     const insertedStudents = await transaction
       .insert(schema.students)

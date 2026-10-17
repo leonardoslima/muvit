@@ -1,6 +1,6 @@
 # Aluno — progresso e avaliações v2 — MUV-27
 
-A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta registra a direção A e a foundation do MUV-24; o design foi aprovado pelo usuário em 2026-10-04. A implementação foi entregue no MUV-37 em 2026-10-14. O usuário autorizou adequar app, API e validação para aceitar quantidade ilimitada de fotos, sem preservar o teto antigo de seis. O histórico de validação e os limites da inspeção nativa estão em [`docs/muv-37-validation-report.md`](./muv-37-validation-report.md).
+A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta registra a direção A e a foundation do MUV-24; o design foi aprovado pelo usuário em 2026-10-04. A implementação foi entregue no MUV-37 em 2026-10-14. O usuário autorizou adequar app, API e validação para aceitar quantidade ilimitada de fotos, sem preservar o teto antigo de seis. O relatório completo e os limites da inspeção nativa estão no artefato local ignorado `artifacts/muv-37/2026-10-14-validacao/relatorio.md`; para compartilhar evidências, siga o [fluxo de artefatos de QA](operations/qa-artifacts.md).
 
 ## Status da implementação
 
@@ -110,4 +110,4 @@ A conferência dos 31 frames de topo do MUV-27 (28 telas, dois quadros de compon
 
 Na conferência final de 2026-10-04, o MCP confirmou 31 frames, 165 instâncias, nenhuma sobreposição, nenhum placeholder ativo e nenhum escape Unicode no texto do canvas. A captura de `e34lmL` confirmou a apresentação das fotos selecionadas. Os documentos também passaram por `git diff --check` e busca de escapes Unicode antes do commit.
 
-As capturas Pen documentam a proposta e não substituem a execução do app. O MUV-37 também foi validado em Android; as capturas do histórico e do visor, os comandos e o resultado de cada gate estão em [`docs/muv-37-validation-report.md`](./muv-37-validation-report.md). Os cenários não cobertos pela inspeção visual estão explicitamente listados nesse relatório.
+As capturas Pen documentam a proposta e não substituem a execução do app. O MUV-37 também foi validado em Android; o relatório com comandos, resultados e cenários não reproduzidos fica em `artifacts/muv-37/2026-10-14-validacao/relatorio.md`, com as capturas em `screenshots/` no mesmo diretório. Esses arquivos são locais e ignorados pelo Git; consulte os anexos da PR/issue ou o histórico anterior quando não estiverem disponíveis na worktree.

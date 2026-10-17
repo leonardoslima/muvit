@@ -73,23 +73,25 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           className,
         )}
       >
-        <View className={cn('shrink-0 items-center justify-center', !leading && 'w-[20px]')}>
-          {loading ? (
-            <ActivityIndicator
-              accessible
-              accessibilityRole="progressbar"
-              accessibilityLabel="Carregando"
-              color={spinnerColor}
-              size="small"
-            />
-          ) : (
-            leading
-          )}
-        </View>
+        {loading || leading ? (
+          <View className={cn('shrink-0 items-center justify-center', !leading && 'w-[20px]')}>
+            {loading ? (
+              <ActivityIndicator
+                accessible
+                accessibilityRole="progressbar"
+                accessibilityLabel="Carregando"
+                color={spinnerColor}
+                size="small"
+              />
+            ) : (
+              leading
+            )}
+          </View>
+        ) : null}
         <Text variant="button" className={cn('shrink text-center', labelClassName)}>
           {label}
         </Text>
-        {!leading && <View className="w-[20px] shrink-0" />}
+        {loading && !leading && <View className="w-[20px] shrink-0" />}
       </Pressable>
     </TextClassContext.Provider>
   );

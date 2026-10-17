@@ -1,4 +1,5 @@
 import { db, schema } from '@muvit/db';
+import { seedDemoData } from '@muvit/db/seed';
 import { and, count, eq, isNull } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -138,9 +139,9 @@ describe('demo seed', () => {
       authAccounts: 2,
       trainers: 1,
       students: 11,
-      assessments: 24,
+      assessments: 28,
       plans: 11,
-      logs: 41,
+      logs: 52,
     };
     expect(await readTotals()).toEqual(expectedTotals);
     const firstIds = await readStableIds();
@@ -215,6 +216,110 @@ describe('demo seed', () => {
     expect(conflictingStudent?.trainerId).toBeNull();
   }, 30_000);
 
+  it('preserva aluno manual do professor e reutiliza os exercícios privados no rerun', async () => {
+    await seedDemo(app.auth, referenceDate);
+    const ids = await readStableIds();
+    const [manualStudent] = await db
+      .insert(schema.students)
+      .values({
+        trainerId: ids.trainerProfileId,
+        name: 'Aluno criado manualmente',
+        email: 'manual@example.test',
+        isIndependent: false,
+      })
+      .returning();
+    if (!manualStudent) throw new Error('Aluno manual ausente');
+
+    await seedDemo(app.auth, referenceDate);
+
+    expect(
+      await db.query.students.findFirst({ where: eq(schema.students.id, manualStudent.id) }),
+    ).toMatchObject({ name: manualStudent.name, trainerId: ids.trainerProfileId });
+    const privateExercises = await db
+      .select()
+      .from(schema.exercises)
+      .where(eq(schema.exercises.trainerId, ids.trainerProfileId));
+    expect(privateExercises).toHaveLength(4);
+    expect(privateExercises.every((exercise) => Boolean(exercise.instructions))).toBe(true);
+  }, 30_000);
+
+  it('persiste mídia e histórico completo do independente sem acessar exercícios privados', async () => {
+    await seedDemo(app.auth, referenceDate);
+    const ids = await readStableIds();
+    const media = {
+      avatarUrl: `https://cdn.muvit.test/avatar/${ids.trainerProfileId}/avatar.png`,
+      assessmentPhotos: [
+        `https://cdn.muvit.test/assessment-photo/${ids.trainerProfileId}/frente.png`,
+        `https://cdn.muvit.test/assessment-photo/${ids.trainerProfileId}/perfil.png`,
+        `https://cdn.muvit.test/assessment-photo/${ids.trainerProfileId}/costas.png`,
+      ],
+      independentStudent: {
+        avatarUrl: `https://cdn.muvit.test/avatar/${ids.independentProfileId}/avatar.png`,
+        assessmentPhotos: [
+          `https://cdn.muvit.test/assessment-photo/${ids.independentProfileId}/frente.png`,
+          `https://cdn.muvit.test/assessment-photo/${ids.independentProfileId}/perfil.png`,
+          `https://cdn.muvit.test/assessment-photo/${ids.independentProfileId}/costas.png`,
+        ],
+      },
+    };
+    await seedDemoData(
+      {
+        trainer: {
+          authUserId: ids.trainerAuthUserId,
+          profileId: ids.trainerProfileId,
+          ...demoCredentials.trainer,
+        },
+        independentStudent: {
+          authUserId: ids.independentAuthUserId,
+          profileId: ids.independentProfileId,
+          ...demoCredentials.independentStudent,
+        },
+      },
+      referenceDate,
+      media,
+    );
+    const assessments = await db
+      .select()
+      .from(schema.assessments)
+      .where(eq(schema.assessments.studentId, ids.independentProfileId));
+    expect(assessments).toHaveLength(4);
+    for (const assessment of assessments) {
+      expect(assessment.photos).toEqual(media.independentStudent.assessmentPhotos);
+    }
+    expect(
+      assessments.every(
+        (assessment) => assessment.photos?.[0] === media.independentStudent.assessmentPhotos[0],
+      ),
+    ).toBe(true);
+    const logs = await db
+      .select()
+      .from(schema.workoutLogs)
+      .where(eq(schema.workoutLogs.studentId, ids.independentProfileId));
+    expect(logs).toHaveLength(14);
+    const exercises = await db
+      .select({ trainerId: schema.exercises.trainerId })
+      .from(schema.exercises)
+      .innerJoin(
+        schema.workoutExercises,
+        eq(schema.workoutExercises.exerciseId, schema.exercises.id),
+      )
+      .innerJoin(
+        schema.workoutDays,
+        eq(schema.workoutExercises.workoutDayId, schema.workoutDays.id),
+      )
+      .innerJoin(schema.workoutPlans, eq(schema.workoutDays.planId, schema.workoutPlans.id))
+      .where(eq(schema.workoutPlans.studentId, ids.independentProfileId));
+    expect(exercises.length).toBeGreaterThan(0);
+    expect(exercises.every((exercise) => exercise.trainerId === null)).toBe(true);
+    const profile = await db.query.students.findFirst({
+      where: eq(schema.students.id, ids.independentProfileId),
+    });
+    expect(profile).toMatchObject({
+      avatarUrl: media.independentStudent.avatarUrl,
+      phone: '(11) 99999-0011',
+    });
+  }, 30_000);
+
   it('rejeita identidade demo existente com papel divergente', async () => {
     await seedDemo(app.auth, referenceDate);
     await db
@@ -234,6 +339,10 @@ describe('demo seed', () => {
     });
     if (identity === undefined) throw new Error('Identidade trainer ausente');
 
+    const ids = await readStableIds();
+    await db
+      .delete(schema.workoutPlans)
+      .where(eq(schema.workoutPlans.trainerId, ids.trainerProfileId));
     await db.delete(schema.trainers).where(eq(schema.trainers.authUserId, identity.id));
 
     await expect(seedDemo(app.auth, referenceDate)).rejects.toThrow(

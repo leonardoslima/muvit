@@ -4,6 +4,8 @@ dist
 .turbo
 .worktrees/
 coverage
+# Artefatos locais de QA e outras execuções; consulte docs/operations/qa-artifacts.md.
+/artifacts/
 *.log
 *.tsbuildinfo
 .env
