@@ -41,7 +41,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 - Preserve ergonomia mobile: areas tocaveis confortaveis, feedback de toque, safe area e teclado.
 - Texto visivel deve estar em pt-BR e caber em telas pequenas.
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
-- O componente `Screen` deve consumir `BottomTabBarHeightContext` e adicionar `tabBarHeight + spacing.lg` ao inset somente quando estiver dentro das tabs; telas nao devem duplicar esse espacamento.
+- O componente `Screen` deve consumir `BottomTabBarHeightContext` e reservar `tabBarHeight + tabBarLayout.offset + tabBarLayout.contentGap` somente dentro das tabs; `offset` compensa a barra flutuante e `contentGap` mantém 24 dp livres acima dela. A barra usa o mesmo `tabBarLayout.offset` no deslocamento vertical; telas nao devem duplicar esse espacamento.
 - Use `src/lib/design-system/tokens.ts` como fonte canônica de cores, tipografia, espaçamento, raios e elevação da UI mobile; os identificadores exportados não devem ter prefixo de versão; prefira esses tokens a valores visuais locais.
 - Use `src/components/ui/v2` para primitives compartilhados. Ao migrar ou alterar um fluxo, substitua os imports afetados de `src/lib/styles.ts` e `src/components/ui` pelos equivalentes v2; não crie aliases ou shims para preservar compatibilidade com o legado. Consulte `docs/mobile-v2-foundation.md` e `docs/mobile-v2-design-gate.md` para os contratos aprovados.
 - NativeWind é configurado por Babel/Metro/Tailwind no app e `global.css` é importado uma vez pelo root layout; classes v2 usam tokens `v2-*`. DM Sans é a família tipográfica da foundation v2. A paleta imersiva é contextual, sem dark mode global.

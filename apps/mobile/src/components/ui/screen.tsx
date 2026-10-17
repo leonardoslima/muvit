@@ -8,8 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing } from '../../lib/design-system/tokens';
-import { sharedStyles } from '../../lib/styles';
+import { colors, spacing, tabBarLayout } from '../../lib/design-system/tokens';
 import { Header as V2Header } from './v2/header';
 import { Text as V2Text } from './v2/text';
 
@@ -26,16 +25,19 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   const safeAreaEdges: ('top' | 'right' | 'bottom' | 'left')[] = inTabs
     ? ['top', 'left', 'right']
     : ['top', 'right', 'bottom', 'left'];
-  const tabBarInset = inTabs ? { paddingBottom: tabBarHeight + spacing.lg } : undefined;
+  const tabBarInset = inTabs
+    ? { paddingBottom: tabBarHeight + tabBarLayout.offset + tabBarLayout.contentGap }
+    : undefined;
 
   if (!scroll) {
     return (
       <SafeAreaView
         edges={safeAreaEdges}
         style={[
-          sharedStyles.screen,
           {
+            flex: 1,
             backgroundColor: colors.background,
+            paddingVertical: spacing.xxl,
             paddingHorizontal: spacing.lg,
           },
           style,
@@ -48,10 +50,7 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   }
 
   return (
-    <SafeAreaView
-      edges={safeAreaEdges}
-      style={[sharedStyles.safeArea, { backgroundColor: colors.background }]}
-    >
+    <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={[
           {
@@ -78,7 +77,7 @@ export type ScreenHeaderProps = {
 
 export function ScreenHeader({ eyebrow, subtitle, title }: ScreenHeaderProps) {
   return (
-    <View style={sharedStyles.header}>
+    <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
       {eyebrow ? (
         <V2Text className="text-v2-brand uppercase tracking-[1px]" variant="caption">
           {eyebrow}

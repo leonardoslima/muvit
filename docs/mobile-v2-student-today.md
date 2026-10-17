@@ -20,6 +20,8 @@ O salvamento cancela leituras antigas da meta antes de atualizar seu cache. Inva
 
 ### Mapa de estados
 
+No polimento MUV-9, a Visão geral implementada acompanha `aXvE4`: título de 29 dp, nome do treino de 25 dp, resumo em superfície sutil e exercícios em cards brancos separados por 12 dp. Número e chevron ficam centralizados verticalmente; cada card apresenta nome, prescrição, descanso e acesso aos detalhes, sem repetir o grupo muscular já disponível no resumo e no rótulo acessível. O contrato resumido do treino não informa URL de vídeo; o app mantém “Ver detalhes” e a navegação existente, sem presumir disponibilidade de mídia.
+
 As telas começam em y=16100, crescem para a direita e ocupam cinco linhas. A linha de estados de Hoje sem treino disponível começa em y=17448, reservando espaço para os indicadores na linha anterior. O guia de fluxo fica em x=3500, y=16100. Nomes de quadros, esta tabela e o guia definem seus estados; metadados históricos de cópia não são contrato de renderização ou navegação.
 
 | Tela/estado | Node ID |
@@ -98,6 +100,8 @@ Linhas inteiras são tocáveis; ícone sozinho não delimita o alvo. A tela do e
 Requisito do [PRD no Notion](https://app.notion.com/p/32254a606c3781deae5cc4258140ef18): seção 2.1, vídeo/GIF demonstrativo (P0); seção 4.1, `Exercises.video_url`; seção 7.1, demonstrações desde o primeiro dia.
 
 O vídeo fica na tela própria do exercício, acima da prescrição. **Assistir demonstração** inicia a mídia por ação explícita, sem autoplay ao abrir. Durante a reprodução, usar controles nativos acessíveis para reproduzir/pausar, buscar e abrir/sair de tela cheia; sair de tela cheia retorna ao mesmo exercício. O vídeo não inicia uma sessão, não conclui séries e não modifica o rascunho.
+
+Na implementação MUV-9, `WorkoutExerciseVideo` consulta a mídia pelo ID do catálogo do exercício, reutilizando `useSessionExerciseMedia` e o player existente. Segue `zYpzT` (Carregando vídeo…), `K9WocR` (erro com Tentar novamente), `BudfQ` (Vídeo indisponível offline) e `H6asb` (Demonstração indisponível), incluindo os textos de orientação do Pen. Apenas o erro oferece retry; durante a nova consulta, a ação dá lugar ao loading. O retry atualiza somente mídia, preservando a prescrição. O quadro segue 16:9 e pode crescer para acomodar texto/escala de fonte. A reprodução usa URL real; capas geradas do design não são mídias do runtime. Ao sair da tela ou enviar o app para segundo plano, desmonta o player e exige nova ação para reproduzir. GIF real usa os controles acessíveis de animação já existentes.
 
 Na lista, exercícios com URL de mídia válida usam **Ver vídeo e detalhes**; os demais usam **Ver detalhes**. A capa respeita proporção 16:9, enquanto estados de mídia crescem se o texto exigir. O alvo de reprodução tem no mínimo 48 dp.
 

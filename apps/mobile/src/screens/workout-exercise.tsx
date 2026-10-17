@@ -13,6 +13,7 @@ import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { WorkoutExerciseDetails } from '../components/workouts/workout-exercise-details';
+import { WorkoutExerciseVideo } from '../components/workouts/workout-exercise-video';
 import { authClient } from '../lib/auth-client';
 import { colors, spacing } from '../lib/design-system/tokens';
 import { muscleGroupLabel } from '../lib/muscle-groups';
@@ -196,6 +197,14 @@ export function WorkoutExerciseScreen(): React.JSX.Element {
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       {header}
+      {authUserId ? (
+        <WorkoutExerciseVideo
+          key={`${authUserId}:${dayId}:${exercise.id}:${exercise.exerciseId}`}
+          authUserId={authUserId}
+          dayId={query.data.day.id}
+          exerciseId={exercise.exerciseId}
+        />
+      ) : null}
       <WorkoutExerciseDetails exercise={exercise} />
       {query.error ? (
         <Message

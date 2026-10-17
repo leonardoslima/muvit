@@ -41,72 +41,72 @@ export function StudentExerciseList({
     return navigation.addListener?.('focus', restoreSelectedRowFocus);
   }, [day.id, navigation]);
 
-  return (
-    <Card
-      className={`gap-0 overflow-hidden p-0 ${variant === 'preview' ? 'border-0' : ''}`}
-      style={variant === 'preview' ? styles.previewCard : undefined}
-    >
-      {day.exercises.map((item, index) => {
-        const group = muscleGroupLabel(item.exercise.muscleGroup);
-        const actionLabel = 'Ver detalhes';
-        const accessibilityLabel = `${actionLabel} de ${item.exercise.name}, ${group}`;
+  const rows = day.exercises.map((item, index) => {
+    const group = muscleGroupLabel(item.exercise.muscleGroup);
+    const actionLabel = 'Ver detalhes';
+    const accessibilityLabel = `${actionLabel} de ${item.exercise.name}, ${group}`;
 
-        return (
-          <Pressable
-            accessible
-            accessibilityLabel={accessibilityLabel}
-            accessibilityRole="button"
-            key={item.id}
-            onPress={() => {
-              selectedRow.current = { dayId: day.id, exerciseId: item.id };
-              onExercisePress(item.id);
-            }}
-            ref={(node) => {
-              if (node) rowRefs.current.set(item.id, node);
-              else rowRefs.current.delete(item.id);
-            }}
-            style={[
-              styles.row,
-              variant === 'detailed' && styles.detailedRow,
-              index < day.exercises.length - 1 && styles.divider,
-              variant === 'preview' && styles.previewRow,
-            ]}
+    return (
+      <Pressable
+        accessible
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
+        key={item.id}
+        onPress={() => {
+          selectedRow.current = { dayId: day.id, exerciseId: item.id };
+          onExercisePress(item.id);
+        }}
+        ref={(node) => {
+          if (node) rowRefs.current.set(item.id, node);
+          else rowRefs.current.delete(item.id);
+        }}
+        style={[
+          styles.row,
+          variant === 'detailed' && styles.detailedRow,
+          variant === 'preview' && index < day.exercises.length - 1 && styles.divider,
+          variant === 'preview' && styles.previewRow,
+        ]}
+      >
+        <Text
+          variant="caption"
+          style={[styles.number, variant === 'preview' && styles.previewNumber]}
+        >
+          {String(index + 1).padStart(2, '0')}
+        </Text>
+        <View style={styles.exerciseContent}>
+          <Text
+            variant="label"
+            style={[styles.exerciseName, variant === 'preview' && styles.previewName]}
           >
-            <Text
-              variant="caption"
-              style={[styles.number, variant === 'preview' && styles.previewNumber]}
-            >
-              {String(index + 1).padStart(2, '0')}
-            </Text>
-            <View style={styles.exerciseContent}>
-              <Text
-                variant="label"
-                style={[styles.exerciseName, variant === 'preview' && styles.previewName]}
-              >
-                {item.exercise.name}
+            {item.exercise.name}
+          </Text>
+          {variant === 'detailed' ? (
+            <>
+              <Text style={styles.supportingText}>
+                {item.sets} séries · {item.reps} repetições
               </Text>
-              {variant === 'detailed' ? (
-                <>
-                  <Text style={styles.supportingText}>
-                    {item.sets} séries · {item.reps} repetições
-                  </Text>
-                  <Text style={styles.supportingText}>Descanso: {item.restSeconds ?? 0} s</Text>
-                  <Text style={styles.supportingText}>{group}</Text>
-                  <Text variant="caption" style={styles.actionText}>
-                    {actionLabel}
-                  </Text>
-                </>
-              ) : null}
-            </View>
-            <ChevronRight
-              size={variant === 'preview' ? controlSizes.icon - spacing.xs : controlSizes.icon}
-              color={colors.brand}
-              accessible={false}
-            />
-          </Pressable>
-        );
-      })}
+              <Text style={styles.restText}>Descanso: {item.restSeconds ?? 0} s</Text>
+              <Text variant="caption" style={styles.actionText}>
+                {actionLabel}
+              </Text>
+            </>
+          ) : null}
+        </View>
+        <ChevronRight
+          size={variant === 'preview' ? controlSizes.icon - spacing.xs : controlSizes.icon}
+          color={colors.brand}
+          accessible={false}
+        />
+      </Pressable>
+    );
+  });
+
+  return variant === 'preview' ? (
+    <Card className="gap-0 overflow-hidden border-0 p-0" style={styles.previewCard}>
+      {rows}
     </Card>
+  ) : (
+    <View style={styles.detailedList}>{rows}</View>
   );
 }
 
@@ -128,6 +128,7 @@ const styles = {
   previewName: {
     fontFamily: fontFamilies.semibold,
     fontSize: penTokens['font/size/15'],
+    lineHeight: penTokens['font/size/14'] * 1.4,
   },
   row: {
     alignItems: 'center' as const,
@@ -138,30 +139,44 @@ const styles = {
     paddingVertical: spacing.md,
   },
   detailedRow: {
-    alignItems: 'flex-start' as const,
+    backgroundColor: colors.surface,
+    borderRadius: penTokens['radius/20'],
     paddingVertical: spacing.lg,
   },
+  detailedList: { gap: spacing.md },
   divider: {
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
   },
   number: {
     color: colors.secondary,
-    minWidth: spacing.xxl,
+    fontFamily: fontFamilies.semibold,
+    fontSize: penTokens['font/size/12'],
   },
   exerciseContent: {
     flex: 1,
-    gap: spacing.xs,
+    gap: spacing.optical,
     minWidth: 0,
   },
   exerciseName: {
     color: colors.text,
+    fontSize: penTokens['font/size/17'],
+    lineHeight: penTokens['font/size/17'] * 1.35,
   },
   supportingText: {
     color: colors.secondary,
+    fontSize: penTokens['font/size/14'],
+    lineHeight: penTokens['font/size/14'] * 1.35,
+  },
+  restText: {
+    color: colors.secondary,
+    fontSize: penTokens['font/size/13'],
+    lineHeight: penTokens['font/size/13'] * 1.35,
   },
   actionText: {
     color: colors.brand,
-    marginTop: spacing.xs,
+    fontFamily: fontFamilies.semibold,
+    fontSize: penTokens['font/size/13'],
+    lineHeight: penTokens['font/size/13'] * 1.35,
   },
 };

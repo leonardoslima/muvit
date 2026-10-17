@@ -38,6 +38,29 @@ function createApi(handler: ResponseHandler) {
 }
 
 describe('loadSessionExerciseMedia', () => {
+  it('retorna sem mídia com AbortSignal do React Native que não implementa throwIfAborted', async () => {
+    const controller = new AbortController();
+    Object.defineProperty(controller.signal, 'throwIfAborted', { value: undefined });
+    const { api, calls } = createApi(() => ({ items: [exercise(3)], total: 1 }));
+    await expect(
+      loadSessionExerciseMedia(api, '00000000-0000-4000-8000-000000000003', controller.signal),
+    ).resolves.toEqual({ kind: 'missing' });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('interrompe antes da próxima página com sinal nativo cancelado sem throwIfAborted', async () => {
+    const controller = new AbortController();
+    Object.defineProperty(controller.signal, 'throwIfAborted', { value: undefined });
+    const { api, calls } = createApi(() => {
+      controller.abort();
+      return { items: [exercise(1)], total: 100 };
+    });
+    await expect(
+      loadSessionExerciseMedia(api, '00000000-0000-4000-8000-000000000003', controller.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(calls).toHaveLength(1);
+  });
+
   it('paginates by ID and returns an exact match on the second catalog page', async () => {
     const targetId = '00000000-0000-4000-8000-000000000051';
     const firstPage = Array.from({ length: EXERCISE_CATALOG_PAGE_SIZE }, (_, index) =>

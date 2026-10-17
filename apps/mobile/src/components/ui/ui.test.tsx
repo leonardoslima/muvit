@@ -108,13 +108,13 @@ describe('componentes visuais mobile', () => {
     expect(withTabsStyle).toEqual(
       expect.objectContaining({
         backgroundColor: callerStyle.backgroundColor,
-        paddingBottom: 64 + spacing.lg,
+        paddingBottom: 64 + designSpacing.lg + designSpacing.xxl,
         paddingHorizontal: callerStyle.paddingHorizontal,
       }),
     );
   });
 
-  it('reserva somente o espaçamento padrão com altura de tab bar zero', () => {
+  it('mantém a compensação da barra flutuante e a folga com altura de tab bar zero', () => {
     const callerStyle = {
       backgroundColor: '#ffffff',
       paddingBottom: 8,
@@ -130,7 +130,7 @@ describe('componentes visuais mobile', () => {
     const withZeroTabBarStyle = StyleSheet.flatten(
       withZeroTabBar.UNSAFE_getByType(ScrollView).props.contentContainerStyle,
     );
-    expect(withZeroTabBarStyle.paddingBottom).toBe(spacing.lg);
+    expect(withZeroTabBarStyle.paddingBottom).toBe(designSpacing.lg + designSpacing.xxl);
   });
 
   it('preserva os estilos fornecidos fora das tabs', () => {
@@ -169,7 +169,7 @@ describe('componentes visuais mobile', () => {
     expect(content).toEqual(
       expect.objectContaining({
         gap: designSpacing.lg,
-        paddingBottom: 101 + designSpacing.lg,
+        paddingBottom: 101 + designSpacing.lg + designSpacing.xxl,
         paddingHorizontal: designSpacing.lg,
         paddingVertical: designSpacing.xxl,
       }),
@@ -196,7 +196,7 @@ describe('componentes visuais mobile', () => {
     const style = StyleSheet.flatten(safeArea.props.style);
 
     expect(safeArea.props.edges).toEqual(['top', 'left', 'right']);
-    expect(style.paddingBottom).toBe(101 + designSpacing.lg);
+    expect(style.paddingBottom).toBe(101 + designSpacing.lg + designSpacing.xxl);
   });
 
   it('usa o Header v2 e preserva contexto e subtítulo do cabeçalho compartilhado', () => {

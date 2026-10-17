@@ -6,6 +6,18 @@ import { WorkoutExerciseScreen } from './workout-exercise';
 
 const authState = vi.hoisted(() => ({ userId: 'auth-user-a' as string | null }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
+vi.mock('../lib/use-session-exercise-media', () => ({
+  useSessionExerciseMedia: () => ({
+    data: { kind: 'missing' },
+    offline: false,
+    isLoading: false,
+    isFetching: false,
+    retry: vi.fn(),
+  }),
+}));
+vi.mock('../components/workouts/exercise-demonstration-media', () => ({
+  ExerciseDemonstrationMedia: () => null,
+}));
 const routerState = vi.hoisted(() => ({
   back: vi.fn(),
   canGoBack: vi.fn(),
@@ -59,6 +71,7 @@ vi.mock('react-native', async (importOriginal) => {
   );
   return {
     ...original,
+    AppState: { addEventListener: () => ({ remove: vi.fn() }) },
     AccessibilityInfo: { setAccessibilityFocus: nativeAccessibility.setAccessibilityFocus },
     findNodeHandle: nativeAccessibility.findNodeHandle,
     Text: focusableText,
@@ -200,6 +213,7 @@ describe('WorkoutExerciseScreen', () => {
     expect(screen.getByText('3 séries · 10 repetições')).toBeTruthy();
     expect(screen.getByText('Descanso: 60 s')).toBeTruthy();
     expect(screen.getByText('Controle a descida.')).toBeTruthy();
+    expect(screen.getByText('Demonstração indisponível')).toBeTruthy();
     expect(apiState.request).not.toHaveBeenCalled();
   });
 

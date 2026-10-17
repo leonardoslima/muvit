@@ -18,6 +18,7 @@ import {
   fontFamilies,
   penTokens,
   spacing,
+  tabBarLayout,
   typography,
 } from '../../lib/design-system/tokens';
 
@@ -137,7 +138,7 @@ export function AppTabsLayout({ tabs }: AppTabsLayoutProps) {
           tabBarStyle: {
             position: 'absolute',
             marginHorizontal: spacing.lg,
-            transform: [{ translateY: -spacing.lg }],
+            transform: [{ translateY: -tabBarLayout.offset }],
             height: controlSizes.tabBar + insets.bottom,
             borderRadius: penTokens['radius/33'],
             borderTopWidth: 0,

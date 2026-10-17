@@ -49,6 +49,7 @@ export function useSessionExerciseMedia({
     data: query.data,
     error: query.error,
     isLoading: canLoad && query.isPending,
+    isFetching: query.isFetching,
     offline,
     retry,
   };

@@ -10,6 +10,7 @@ const playerState = vi.hoisted(() => ({
     muted: false,
     playing: false,
     released: false,
+    status: 'loading' as 'loading' | 'error' | 'readyToPlay',
     pause: vi.fn(),
     play: vi.fn(),
     release: vi.fn(),
@@ -77,12 +78,32 @@ const gif: Extract<SessionExerciseMedia, { kind: 'available' }> = {
 };
 
 describe('ExerciseDemonstrationMedia', () => {
+  it('reproduz após a intenção explícita no modo inline, com quadro 16:9 e estado de carregamento', () => {
+    const onLoadingChange = vi.fn();
+    render(
+      <ExerciseDemonstrationMedia
+        media={video}
+        active
+        presentation="inline"
+        playOnMount
+        onLoadingChange={onLoadingChange}
+        onError={vi.fn()}
+        onFullscreenChange={vi.fn()}
+      />,
+    );
+    expect(playerState.player.play).toHaveBeenCalledOnce();
+    expect(playerState.videoProps.style).toMatchObject({ aspectRatio: 16 / 9 });
+    expect(screen.queryByRole('button', { name: 'Reproduzir vídeo' })).toBeNull();
+    act(() => playerState.listeners.statusChange?.({ status: 'readyToPlay' }));
+    expect(onLoadingChange).toHaveBeenLastCalledWith(false);
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     appStateState.addEventListener.mockReturnValue({ remove: vi.fn() });
     playerState.player.muted = false;
     playerState.player.playing = false;
     playerState.player.released = false;
+    playerState.player.status = 'loading';
     playerState.player.pause.mockImplementation(() => {
       if (playerState.player.released) {
         throw new Error('O player já foi liberado.');
@@ -105,6 +126,23 @@ describe('ExerciseDemonstrationMedia', () => {
     );
     playerState.player.replaceAsync.mockResolvedValue(undefined);
     playerState.exitFullscreen.mockResolvedValue(undefined);
+  });
+
+  it('reporta erro nativo que ocorreu antes da inscrição no listener', () => {
+    playerState.player.status = 'error';
+    const onError = vi.fn();
+    render(
+      <ExerciseDemonstrationMedia
+        media={video}
+        active
+        presentation="inline"
+        playOnMount
+        onError={onError}
+        onFullscreenChange={vi.fn()}
+      />,
+    );
+    expect(onError).toHaveBeenCalledOnce();
+    expect(playerState.player.play).not.toHaveBeenCalled();
   });
 
   it('inicia o vídeo pausado e sem áudio, com controles nativos e reprodução explícita', () => {
@@ -159,6 +197,26 @@ describe('ExerciseDemonstrationMedia', () => {
     expect(playerState.player.pause).toHaveBeenCalled();
     unmount();
     expect(playerState.player.pause).toHaveBeenCalled();
+  });
+
+  it('inicia GIF inline somente depois da intenção e do carregamento da imagem real', () => {
+    const onLoadingChange = vi.fn();
+    render(
+      <ExerciseDemonstrationMedia
+        media={gif}
+        active
+        presentation="inline"
+        playOnMount
+        onLoadingChange={onLoadingChange}
+        onError={vi.fn()}
+        onFullscreenChange={vi.fn()}
+      />,
+    );
+    expect(playerState.imageAnimation.startAnimating).not.toHaveBeenCalled();
+    expect(playerState.imageProps.style).toMatchObject({ aspectRatio: 16 / 9 });
+    act(() => (playerState.imageProps.onLoad as () => void)());
+    expect(onLoadingChange).toHaveBeenLastCalledWith(false);
+    expect(playerState.imageAnimation.startAnimating).toHaveBeenCalledOnce();
   });
 
   it('mantém GIF parado até a ação acessível e interrompe ao ficar inativo', () => {

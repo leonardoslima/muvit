@@ -136,12 +136,13 @@ describe('StudentExerciseList', () => {
     expect(onExercisePress).not.toHaveBeenCalledWith('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');
   });
 
-  it('exibe prescrição detalhada com grupo muscular localizado', () => {
+  it('exibe prescrição detalhada e mantém o grupo muscular no rótulo acessível', () => {
     render(<StudentExerciseList day={day} onExercisePress={vi.fn()} variant="detailed" />);
 
     expect(screen.getByText('2 séries · 10 repetições')).toBeTruthy();
     expect(screen.getByText('Descanso: 60 s')).toBeTruthy();
-    expect(screen.getByText('Peito')).toBeTruthy();
+    expect(screen.queryByText('Peito')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ver detalhes de Supino, Peito' })).toBeTruthy();
     expect(screen.queryByText('chest')).toBeNull();
   });
 
