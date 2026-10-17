@@ -78,8 +78,9 @@ export function GuidedSessionDemonstration({
     onClose();
   };
 
+  const restExpired = originPhase === 'rest' && restEndsAtMs !== null && restEndsAtMs <= nowMs;
   const returnLabel =
-    originPhase === 'set'
+    originPhase === 'set' || restExpired
       ? 'Voltar à série'
       : originPhase === 'rest'
         ? 'Voltar ao descanso'

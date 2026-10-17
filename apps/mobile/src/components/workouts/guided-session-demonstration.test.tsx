@@ -89,7 +89,7 @@ function renderDemonstration(
       exercise={exercise}
       originPhase={originPhase}
       originContext="Série 2 de 3"
-      restEndsAtMs={42_000}
+      restEndsAtMs={Date.now() + 42_000}
       onClose={onClose}
       {...overrides}
     />,
@@ -254,7 +254,7 @@ describe('GuidedSessionDemonstration', () => {
     expect(demoState.setAccessibilityFocus).toHaveBeenCalledWith(1);
   });
 
-  it('mantém o descanso em 00:00 quando expira e o app retorna ao primeiro plano', () => {
+  it('mantém a demonstração aberta em 00:00 e oferece voltar à série após expirar', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-14T12:00:00.000Z'));
     renderDemonstration('rest', { restEndsAtMs: Date.now() + 1_000 });
@@ -264,7 +264,7 @@ describe('GuidedSessionDemonstration', () => {
     act(() => demoState.appStateListener?.('active'));
 
     expect(screen.getByText('00:00')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Voltar ao descanso' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Voltar à série' })).toBeTruthy();
   });
 
   it('consome o primeiro retorno em tela cheia e fecha a demonstração no próximo', () => {

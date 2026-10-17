@@ -47,7 +47,12 @@ export function LogWorkoutScreen() {
   const [exitVisible, setExitVisible] = useState(false);
   const [demonstration, setDemonstration] = useState<DemonstrationContext | null>(null);
 
-  const controller = useGuidedWorkoutSession({ api, authUserId, dayId });
+  const controller = useGuidedWorkoutSession({
+    api,
+    authUserId,
+    dayId,
+    deferRestAdvance: exitVisible || Boolean(demonstration),
+  });
   const session = controller.session;
   const day = controller.day;
   const selection = day && session ? selectGuidedSessionView(day, session) : null;

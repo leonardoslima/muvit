@@ -36,10 +36,10 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
   ref,
 ) {
   const control = useControlState(props, loading);
-  const textClass = control.disabled ? 'text-v2-secondary' : controlTextClasses[variant];
-  const spinnerColor = control.disabled
-    ? colors.secondary
-    : variant === 'destructive'
+  const disabledAppearance = control.disabled && !loading;
+  const textClass = controlTextClasses[variant];
+  const spinnerColor =
+    variant === 'destructive'
       ? colors.surface
       : variant === 'immersive'
         ? colors.sessionText
@@ -69,7 +69,7 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
           controlClasses[variant],
           control.pressed && pressedClasses[variant],
           control.focused && 'border-2 border-v2-brand',
-          control.disabled && 'bg-v2-disabled border-v2-disabled',
+          disabledAppearance && 'opacity-50',
           className,
         )}
       >

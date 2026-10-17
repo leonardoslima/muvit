@@ -11,7 +11,7 @@ As 35 telas originais começam em y=21760, em sete colunas e cinco linhas. A ext
 | Série — primeira, com valores digitados | `Zdwrv` |
 | Série — referência anterior | `G1DF1d` |
 | Descanso — em andamento | `Y37JQ` |
-| Descanso — tempo zerado | `mtxt9` |
+| Série — após descanso encerrado | `mtxt9` |
 | Avanço — exercício concluído | `wu584` |
 | Série — última do treino | `COILC` |
 | Finalização — pronta | `SMZP4` |
@@ -23,7 +23,7 @@ As 35 telas originais começam em y=21760, em sete colunas e cinco linhas. A ext
 | Próximo exercício — primeira série | `KBiXJ` |
 | Retomada — série preservada | `XvAak` |
 | Retomada — descanso em andamento | `NfmpI` |
-| Retomada — descanso expirado | `WZfoX` |
+| Retomada — próxima série após descanso expirado | `WZfoX` |
 | Retomada — exercício concluído | `RIPX8` |
 | Retomada — pronta para finalizar | `zXQvi` |
 | Série — registrando | `MJDGS` |
@@ -60,8 +60,10 @@ No polimento MUV-9, o estado `set` implementado acompanha `Zdwrv`: barra de prog
 
 A sessão usa `/session/:dayId`. Início, visão geral e a ação de retomada em Hoje permanecem sob o contrato da MUV-25. As cinco fases existentes em `apps/mobile/src/application/workouts/guided-session.ts` são a autoridade das transições:
 
+Em 2026-10-17, o usuário aprovou no MUV-9 substituir a espera em 00:00 pelo avanço automático à próxima série. O contrato abaixo incorpora essa decisão e prevalece sobre as descrições históricas de descanso preservado nas revisões de design ao final deste documento.
+
 1. **`set`:** apresentar exercício, prescrição, série atual e valores realizados. **Concluir série** registra os valores e a série; enquanto processa, impedir novas ações concorrentes.
-2. **`rest`:** entre séries do mesmo exercício, mostrar o tempo restante, **+15 s** e **Pular descanso**. A extensão adiciona 15 segundos ao horário de término existente. Pular avança para a próxima série. Em 00:00, permanecer nesta fase e conservar as ações; não avançar automaticamente nem criar nova fase.
+2. **`rest`:** entre séries do mesmo exercício, mostrar o tempo restante, **+15 s** e **Pular descanso**. A extensão adiciona 15 segundos ao horário de término existente e o avanço automático respeita esse novo prazo. Pular ou atingir o prazo abre somente a próxima série do mesmo exercício, sem registrá-la como concluída. Descanso zero avança após persistir a conclusão da série atual. O controlador aplica a transição no primeiro plano, usando a mesma persistência serializada das ações; o timer visual apenas apresenta o tempo.
 3. **`exercise-complete`:** a última série de um exercício, quando há outro, apresenta a confirmação do exercício e a prescrição do próximo. **Próximo exercício** abre sua primeira série. Não inserir descanso adicional entre exercícios.
 4. **`ready-to-finish`:** a última série do último exercício apresenta **Pronto para finalizar**. Todas as séries registradas e progresso de 100% não equivalem à conclusão do treino. **Concluir e finalizar treino** executa a conclusão existente.
 5. **`summary`:** depois de registrar a conclusão, apresentar duração, exercícios, séries, volume e **Voltar ao início**. Não criar histórico, novas métricas ou edição retrospectiva das séries.
@@ -72,12 +74,12 @@ Os exemplos usam Treino A: Supino reto, 3 séries de 10 repetições, carga de 4
 
 ## Saída e retomada
 
-- Fechar pelo header, voltar Android e gesto de voltar na sessão usam a mesma proteção de saída enquanto houver rascunho ativo. Fora de tela cheia, retornar da demonstração leva à fase preservada, sem oferecer saída segura. Quando a mídia está em tela cheia, sair primeiro da apresentação ampliada e permanecer na demonstração. Sem rascunho ativo, a navegação segue normalmente. Na conclusão/resumo, voltar não oferece descartar ou retomar.
+- Fechar pelo header, voltar Android e gesto de voltar na sessão usam a mesma proteção de saída enquanto houver rascunho ativo. Fora de tela cheia, retornar da demonstração leva ao contexto preservado, aplicando o avanço se o descanso expirou, sem oferecer saída segura. Quando a mídia está em tela cheia, sair primeiro da apresentação ampliada e permanecer na demonstração. Sem rascunho ativo, a navegação segue normalmente. Na conclusão/resumo, voltar não oferece descartar ou retomar.
 - **Continuar treinando** fecha a confirmação e preserva a sessão. O fechamento permitido da confirmação também corresponde a continuar; não encerra o treino.
 - **Salvar e sair** pausa e persiste a sessão antes de executar a navegação pendente, ou retornar a Hoje quando não há ação pendente. Se falhar, permanecer na confirmação com o aviso e as ações disponíveis após liberar a operação.
 - **Descartar treino** é a apresentação v2 da ação existente **Encerrar treino**: remover o rascunho e abandonar o progresso parcial. Não enviar uma conclusão nem adicionar outra confirmação. Durante o descarte, as outras ações ficam indisponíveis; falha conserva a confirmação e permite tentar novamente.
 - Retomar restaura o snapshot particionado por aluno/dia antes de depender da rede. A tela acompanha a fase recuperada: série, descanso, exercício concluído ou pronta para finalizar. Valores, índices e séries concluídas não reiniciam. As mensagens de retomada descrevem a recuperação existente e não criam uma etapa de confirmação ou uma nova fase.
-- O descanso restaurado conserva o horário original. Se esse horário passou, mostrar 00:00 com as mesmas ações. Não reiniciar o descanso nem descontar automaticamente o período salvo do horário de término.
+- O descanso restaurado conserva o horário original. Se esse horário passou, avançar automaticamente à próxima série ao restaurar. No background, não executar o avanço; ao voltar ao primeiro plano, reconciliar o prazo original. A confirmação de saída adia o avanço: **Continuar treinando** aplica o prazo vencido; **Salvar e sair** persiste a fase pausada antes de navegar, sem avançar enquanto a sessão estiver salva. Não reiniciar o descanso nem registrar séries futuras.
 
 ## Feedback e persistência
 
@@ -93,13 +95,13 @@ Falha ao remover o rascunho depois de concluir não desfaz a conclusão. Manter 
 
 Decisão aprovada pelo usuário em 2026-10-01, depois de pesquisa dos concorrentes e das referências no Notion: disponibilizar **Ver execução** junto à prescrição do exercício em foco e ao contexto do descanso. A ação secundária tem ícone de reprodução e alvo mínimo de 48 dp. A consulta é opcional e não compete com a conclusão da série. No avanço, a ação pertence ao próximo exercício mostrado no card, sem antecipar a transição da sessão.
 
-A ação reutiliza a tela própria do exercício da MUV-25 e o componente `RL1fy`, com vídeo, prescrição e observação quando cadastrada. A tela se abre no contexto da sessão, sem autoplay. O retorno usa **Voltar à série** em `set`, **Voltar ao descanso** em `rest` e **Voltar ao treino** em `exercise-complete`. O estado sem mídia conserva a prescrição e as observações, sem oferecer reprodução. Durante `busy`, o acesso fica indisponível. O quadro de teclado continua priorizando o campo focado e o registro; o acesso faz parte da composição completa do exercício.
+A ação reutiliza a tela própria do exercício da MUV-25 e o componente `RL1fy`, com vídeo, prescrição e observação quando cadastrada. A tela se abre no contexto da sessão, sem autoplay. O retorno usa **Voltar à série** em `set`, **Voltar ao descanso** em `rest` ainda em andamento e **Voltar ao treino** em `exercise-complete`. Ao expirar o descanso, o retorno muda para **Voltar à série**, indicando o destino após fechar a consulta. O estado sem mídia conserva a prescrição e as observações, sem oferecer reprodução. Durante `busy`, o acesso fica indisponível. O quadro de teclado continua priorizando o campo focado e o registro; o acesso faz parte da composição completa do exercício.
 
 No app, `WorkoutExerciseHeader` e `WorkoutExerciseContent` compartilham cabeçalho, grupo muscular, vídeo, prescrição e observação entre a tela de exercício e a demonstração da sessão. Ambos usam `WorkoutExerciseVideo`, incluindo os estados de carregamento, erro, offline e ausência de mídia e a reprodução por ação explícita. O modal é somente o envelope de navegação que mantém a sessão montada, com o contexto de origem, o relógio de descanso e a ação de retorno; não acrescenta cards ou apresentação de mídia próprios. O retorno consome primeiro a saída de tela cheia; quando a reprodução é interrompida ou desmontada, limpa esse estado para permitir voltar ao treino.
 
-Abrir a demonstração não executa salvar/sair, descarte, pausa, conclusão ou avanço. Fora de tela cheia, voltar pelo header, gesto ou botão Android interrompe a mídia e restaura a mesma fase, exercício, série, posição de rolagem e valores em edição, inclusive os que ainda não foram registrados. Não recarregar a sessão nem reconstruir seu controlador ao abrir/fechar a mídia. Preservar também valores vazios; a consulta não registra uma série nem transforma os exemplos preenchidos em valores iniciais. Ao abrir, o foco acessível vai para o título; ao voltar, retorna à ação **Ver execução** do exercício consultado. O nome acessível da ação inclui o nome do exercício.
+Abrir a demonstração não executa salvar/sair, descarte, pausa, conclusão ou avanço. Fora de tela cheia, voltar pelo header, gesto ou botão Android interrompe a mídia e restaura o contexto, posição de rolagem e valores em edição, inclusive os que ainda não foram registrados; somente o descanso expirado aplica o avanço automático descrito abaixo. Não recarregar a sessão nem reconstruir seu controlador ao abrir/fechar a mídia. Preservar também valores vazios; a consulta não registra uma série nem transforma os exemplos preenchidos em valores iniciais. Ao abrir, o foco acessível vai para o título; ao voltar, retorna à ação **Ver execução** do exercício consultado. O nome acessível da ação inclui o nome do exercício.
 
-O descanso continua usando o horário original enquanto a demonstração está aberta. O contexto acompanha o tempo restante; se expirar, mostrar 00:00 e retornar à fase `rest` com **+15 s** e **Pular descanso**, sem iniciar automaticamente a série seguinte. A consulta permanece dentro do tempo ativo da sessão; não equivale a salvar e pausar. Na fase `exercise-complete`, a demonstração pertence ao próximo exercício apresentado no card. `Z4qiJX` mostra o Crucifixo inclinado enquanto a confirmação do Supino reto permanece como origem. **Voltar ao treino** conserva essa confirmação e a ação **Próximo exercício**, sem abrir a primeira série antecipadamente.
+O descanso continua usando o horário original enquanto a demonstração está aberta. O contexto acompanha o tempo restante; se expirar, mostrar 00:00 dentro da demonstração e mantê-la aberta. Ao voltar à sessão, aplicar automaticamente o prazo vencido e abrir a próxima série, sem exigir **Pular descanso**. `hMEyh` representa apenas a consulta ainda aberta após expirar. A consulta permanece dentro do tempo ativo da sessão; não equivale a salvar e pausar. Na fase `exercise-complete`, a demonstração pertence ao próximo exercício apresentado no card. `Z4qiJX` mostra o Crucifixo inclinado enquanto a confirmação do Supino reto permanece como origem. **Voltar ao treino** conserva essa confirmação e a ação **Próximo exercício**, sem abrir a primeira série antecipadamente.
 
 Reprodução, pausa, busca, áudio e tela cheia usam controles nativos acessíveis e compatíveis com o formato recebido. A mídia começa pausada; o exemplo de reprodução usa áudio desativado. Os controles de `PsC4Y` ilustram a função e os alvos de toque, não um player customizado nem a aparência obrigatória do player nativo. Em tela cheia, o primeiro voltar fecha a apresentação ampliada e permanece na mesma demonstração; depois, voltar retorna à origem na sessão. Sair da demonstração interrompe sua reprodução. As capas existentes são imagens de design da MUV-25, sem arquivo de vídeo associado.
 

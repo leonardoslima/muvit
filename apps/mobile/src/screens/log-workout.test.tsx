@@ -566,7 +566,7 @@ describe('LogWorkoutScreen', () => {
     expect(screen.queryByText('Série 1 de 1')).toBeNull();
   });
 
-  it('deixa o descanso expirar durante a demonstração e retorna em 00:00 sem pular', async () => {
+  it('mantém a demonstração aberta ao expirar e avança à próxima série ao voltar', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-14T12:00:00.000Z'));
     const restSession: GuidedSession = {
@@ -593,15 +593,163 @@ describe('LogWorkoutScreen', () => {
       });
 
       expect(screen.getByText('00:00')).toBeTruthy();
-      fireEvent.press(screen.getByRole('button', { name: 'Voltar ao descanso' }));
+      fireEvent.press(screen.getByRole('button', { name: 'Voltar à série' }));
 
-      expect(await screen.findByText('Descanso')).toBeTruthy();
-      expect(screen.getByText('00:00')).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Pular descanso' })).toBeTruthy();
-      expect(storageState.setItem).toHaveBeenCalledTimes(writesBeforeExpiry);
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Pular descanso' })).toBeNull();
+      expect(storageState.setItem.mock.calls.length).toBeGreaterThan(writesBeforeExpiry);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('avança ao retomar descanso expirado sem concluir séries futuras', async () => {
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: Date.now() - 1_000,
+    });
+    renderWithQueryClient();
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    await waitFor(() => {
+      const saved = parseStoredSession(storage.getSerialized() ?? '');
+      expect(saved.phase).toBe('set');
+      expect(saved.currentExerciseIndex).toBe(0);
+      expect(saved.currentSetIndex).toBe(1);
+      expect(saved.sets.map((set) => set.completed)).toEqual([true, false, false]);
+    });
+  });
+
+  it('adia o avanço no background e reconcilia o deadline ao voltar', async () => {
+    let nowMs = Date.now();
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+    mockWorkoutDay();
+    mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: nowMs + 1_000,
+    });
+    try {
+      renderWithQueryClient();
+      await screen.findByText('Descanso');
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('background');
+        }
+      });
+      nowMs += 2_000;
+      expect(screen.getByText('Descanso')).toBeTruthy();
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+      expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('usa o deadline de +15 s e não repete o avanço automático', async () => {
+    let nowMs = Date.now();
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: nowMs + 1_000,
+    });
+    try {
+      renderWithQueryClient();
+      await screen.findByText('Descanso');
+      fireEvent.press(screen.getByRole('button', { name: '+15 s' }));
+      await waitFor(() => expect(screen.getByRole('button', { name: '+15 s' })).toBeEnabled());
+      nowMs += 1_000;
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+      expect(screen.getByText('Descanso')).toBeTruthy();
+      nowMs += 15_000;
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+      await screen.findByText('Série 2 de 2');
+      fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+      expect(await screen.findByText('Supino inclinado concluído')).toBeTruthy();
+      expect(parseStoredSession(storage.getSerialized() ?? '').currentExerciseIndex).toBe(0);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('avança em foreground quando o descanso termina sem depender do timer visual', async () => {
+    mockWorkoutDay();
+    mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: Date.now() + 250,
+    });
+    renderWithQueryClient();
+    await screen.findByText('Descanso');
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+  });
+
+  it('salva o descanso expirado antes de sair e bloqueia avanço após reset da query', async () => {
+    let nowMs = Date.now();
+    const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: nowMs + 1_000,
+    });
+    try {
+      const { queryClient } = renderWithQueryClient();
+      await screen.findByText('Descanso');
+      pressPreventedNavigation();
+      nowMs += 2_000;
+      fireEvent.press(screen.getByRole('button', { name: 'Salvar e sair' }));
+      await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledTimes(1));
+      expect(parseStoredSession(storage.getSerialized() ?? '').activeSinceMs).toBeNull();
+      await act(async () => {
+        await queryClient.resetQueries({ queryKey: ['guided-workout-session'] });
+      });
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 20));
+      expect(parseStoredSession(storage.getSerialized() ?? '').phase).toBe('rest');
+      expect(screen.queryByText('Série 2 de 2')).toBeNull();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('avança após concluir série com descanso zero sem registrar a seguinte', async () => {
+    const plan = planWithExercises(
+      workoutPlan.days[0].exercises.map((exercise) => ({ ...exercise, restSeconds: 0 })),
+    );
+    mockWorkoutDay(plan);
+    const storage = mockStatefulDraftStorage();
+    renderWithQueryClient();
+    await screen.findByText('Série 1 de 2');
+    fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+    await screen.findByText('Série 2 de 2');
+    expect(
+      parseStoredSession(storage.getSerialized() ?? '').sets.map((set) => set.completed),
+    ).toEqual([true, false, false]);
   });
 
   it('exibe treino indisponível e oferece nova tentativa quando o carregamento falha', async () => {

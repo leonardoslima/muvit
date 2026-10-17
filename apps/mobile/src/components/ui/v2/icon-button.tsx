@@ -35,7 +35,7 @@ export const IconButton = forwardRef<View, IconButtonProps>(function IconButton(
         control.pressed && pressedClasses[variant],
         variant === 'secondary' && control.pressed && 'bg-v2-disabled',
         control.focused && 'border-2 border-v2-brand',
-        control.disabled && 'opacity-50',
+        control.disabled && !loading && 'opacity-50',
         className,
       )}
     >

@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { createRef } from 'react';
 import { Text as NativeText, type View } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
+import { colors } from '../../../lib/design-system/tokens';
 import { Button } from './button';
 import { Card } from './card';
 import { Header } from './header';
@@ -112,6 +113,66 @@ describe('ações v2', () => {
     expect(screen.getByText('Salvar').props.className).toContain('text-center');
     expect(screen.getAllByRole('progressbar')).toHaveLength(1);
   });
+
+  it.each(['primary', 'secondary', 'destructive', 'text', 'immersive'] as const)(
+    'preserva fundo, texto e contraste do spinner em %s com loading e disabled juntos',
+    (variant) => {
+      const onPress = vi.fn();
+      const { rerender } = render(<Button label="Salvar" variant={variant} onPress={onPress} />);
+      const background = screen.getByRole('button').props.className;
+      const label = screen.getByText('Salvar').props.className;
+      rerender(<Button label="Salvar" variant={variant} loading disabled onPress={onPress} />);
+      const button = screen.getByRole('button');
+      expect(button.props.className).toBe(background);
+      expect(screen.getByText('Salvar').props.className).toBe(label);
+      expect(screen.getByRole('progressbar').props.color).toBe(
+        variant === 'primary'
+          ? colors.text
+          : variant === 'destructive'
+            ? colors.surface
+            : variant === 'immersive'
+              ? colors.sessionText
+              : colors.brand,
+      );
+      expect(button.props.accessibilityState).toMatchObject({ disabled: true, busy: true });
+      fireEvent.press(button);
+      expect(onPress).not.toHaveBeenCalled();
+      rerender(<Button label="Salvar" variant={variant} disabled />);
+      expect(screen.getByRole('button').props.className).toContain('opacity-50');
+      expect(screen.getByRole('button').props.className).not.toContain('bg-v2-disabled');
+      expect(screen.getByText('Salvar').props.className).toBe(label);
+    },
+  );
+
+  it.each(['primary', 'secondary', 'destructive', 'text', 'immersive'] as const)(
+    'preserva aparência do botão de ícone %s durante loading mesmo desabilitado',
+    (variant) => {
+      const icon = <NativeText>ícone</NativeText>;
+      const onPress = vi.fn();
+      const { rerender } = render(
+        <IconButton accessibilityLabel="Atualizar" variant={variant} icon={icon} />,
+      );
+      const normalClass = screen.getByRole('button').props.className;
+      rerender(
+        <IconButton
+          accessibilityLabel="Atualizar"
+          variant={variant}
+          icon={icon}
+          disabled
+          loading
+          onPress={onPress}
+        />,
+      );
+      expect(screen.getByRole('button').props.className).toBe(normalClass);
+      fireEvent.press(screen.getByRole('button'));
+      expect(onPress).not.toHaveBeenCalled();
+      expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+      rerender(
+        <IconButton accessibilityLabel="Atualizar" variant={variant} icon={icon} disabled />,
+      );
+      expect(screen.getByRole('button').props.className).toContain('opacity-50');
+    },
+  );
 
   it('comunica seleção de tab e mantém eventos de foco', () => {
     const onPress = vi.fn();
