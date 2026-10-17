@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -82,7 +83,12 @@ describe('QueueDrain', () => {
     journalState.drain.mockReturnValue(drainGate.promise);
     apiState.bindCurrentSession.mockReturnValue(requesterA);
 
-    render(<QueueDrain />);
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <QueueDrain />
+      </QueryClientProvider>,
+    );
 
     expect(apiState.bindCurrentSession).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(journalState.drain).toHaveBeenCalledTimes(1));
@@ -93,5 +99,34 @@ describe('QueueDrain', () => {
     expect(bindRequester?.()).toBe(requesterA);
     expect(apiState.bindCurrentSession).toHaveBeenCalledTimes(1);
     drainGate.resolve();
+  });
+
+  it('atualiza somente a evolução do dono capturado após sincronizar', async () => {
+    const gate = deferred();
+    journalState.drain.mockReturnValueOnce(gate.promise);
+    apiState.bindCurrentSession.mockReturnValue({ request: vi.fn() });
+    const client = new QueryClient();
+    client.setQueryData(['workout-evolution', 'user-a', '2026-10-17'], {});
+    client.setQueryData(['workout-evolution', 'user-b', '2026-10-17'], {});
+    const view = render(
+      <QueryClientProvider client={client}>
+        <QueueDrain />
+      </QueryClientProvider>,
+    );
+    authState.session.data = null;
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <QueueDrain />
+      </QueryClientProvider>,
+    );
+    gate.resolve();
+    await waitFor(() =>
+      expect(
+        client.getQueryState(['workout-evolution', 'user-a', '2026-10-17'])?.isInvalidated,
+      ).toBe(true),
+    );
+    expect(client.getQueryState(['workout-evolution', 'user-b', '2026-10-17'])?.isInvalidated).toBe(
+      false,
+    );
   });
 });

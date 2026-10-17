@@ -36,6 +36,10 @@ vi.mock('../lib/query-client', () => ({
   queryClient: queryState,
 }));
 
+vi.mock('../lib/use-api', () => ({
+  useApiClient: () => ({ bindCurrentSession: vi.fn() }),
+}));
+
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
 }));

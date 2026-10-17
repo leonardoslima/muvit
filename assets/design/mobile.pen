@@ -1,5 +1,5 @@
 {
-  "version": "2.20",
+  "version": "2.21",
   "children": [
     {
       "type": "frame",
@@ -23861,7 +23861,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 844,
+      "height": 994,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -23944,12 +23944,20 @@
           "name": "Cabeçalho da tela",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "iE52J",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "mXBN9",
@@ -23957,8 +23965,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -23970,10 +23978,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -23995,10 +24003,10 @@
               "width": "fill_container",
               "descendants": {
                 "l9ySi": {
-                  "content": "Treino A"
+                  "content": "Plano A"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Peito e ombros"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -24015,9 +24023,109 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
+            },
+            {
+              "type": "frame",
+              "id": "C8Efp",
+              "name": "Sua evolução",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fepQl",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "K672Fh",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JoYI4",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "jQ8m3",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "vcJVB",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BG5Uy",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "ac68m",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "VjGkm",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "frame",
@@ -24028,17 +24136,37 @@
               "gap": 12,
               "children": [
                 {
-                  "type": "text",
-                  "id": "b08Z93",
-                  "name": "Seção",
-                  "fill": "$color/text/primary",
-                  "textGrowth": "fixed-width",
+                  "type": "frame",
+                  "id": "eKX5C",
+                  "name": "Cabeçalho dos exercícios",
                   "width": "fill_container",
-                  "content": "Exercícios de hoje",
-                  "lineHeight": 1.35,
-                  "fontFamily": "$font/family",
-                  "fontSize": "$font/size/20",
-                  "fontWeight": "$font/weight/700"
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "b08Z93",
+                      "name": "Seção",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Exercícios de hoje",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font/family",
+                      "fontSize": "$font/size/20",
+                      "fontWeight": "$font/weight/700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "V3S4o",
+                      "name": "Quantidade de exercícios",
+                      "fill": "$color/text/secondary",
+                      "content": "2 exercícios",
+                      "fontFamily": "$font/family",
+                      "fontSize": 12,
+                      "fontWeight": "500"
+                    }
+                  ]
                 },
                 {
                   "id": "ogbPO",
@@ -24048,29 +24176,16 @@
                   "width": "fill_container",
                   "descendants": {
                     "VV56T": {
-                      "icon": "circle-play",
-                      "name": "Abrir vídeo e detalhes de Supino reto"
+                      "icon": "chevron-right",
+                      "name": "Abrir detalhes de Supino reto"
                     },
                     "Nz1xo": {
-                      "icon": "circle-play",
-                      "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                      "icon": "chevron-right",
+                      "name": "Abrir detalhes de Crucifixo inclinado"
                     }
                   }
                 }
               ]
-            },
-            {
-              "type": "text",
-              "id": "BYFyR",
-              "name": "Apoio",
-              "fill": "$color/text/secondary",
-              "textGrowth": "fixed-width",
-              "width": "fill_container",
-              "content": "Veja os detalhes antes de começar.",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
-              "fontWeight": "$font/weight/400"
             }
           ]
         },
@@ -24098,7 +24213,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 1000,
+      "height": 1163,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -24181,12 +24296,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "nNusH",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "QuUJF",
@@ -24194,8 +24317,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -24207,10 +24330,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -24242,7 +24365,7 @@
                   "content": "Treino em andamento"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -24262,7 +24385,7 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
@@ -24329,17 +24452,137 @@
               ]
             },
             {
-              "type": "text",
-              "id": "oh3xH",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "xTm12",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "wz649",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KCaQ1",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "IXTEi",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Xmdw4",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "i8pU4L",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "WUWE9",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "aPH6x",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "hSrhS",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PaBOh",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "oh3xH",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "o0pU9",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "mvCF5",
@@ -24349,12 +24592,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -24384,7 +24627,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 920,
+      "height": 1063,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -24467,12 +24710,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "tIFy4",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "hlPRB",
@@ -24480,8 +24731,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -24493,10 +24744,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -24528,7 +24779,7 @@
                   "content": "Treino concluído"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -24548,7 +24799,7 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
@@ -24570,17 +24821,137 @@
               }
             },
             {
-              "type": "text",
-              "id": "Z6Avc",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "KzLPY",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "A8ZVum",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "P1888V",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E0MjG",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qSrjw",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "Sh6xZ",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "xqgvt",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "u3cWZp",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "toawt",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fsvQl",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Z6Avc",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "ftYiB",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "giNXt",
@@ -24590,12 +24961,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -24625,7 +24996,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 892,
+      "height": 1111,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -24708,12 +25079,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "oqP6g",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "wb7zj",
@@ -24721,8 +25100,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -24734,10 +25113,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -24783,10 +25162,10 @@
                   "content": "HOJE · TREINO A"
                 },
                 "l9ySi": {
-                  "content": "Treino A"
+                  "content": "Plano A"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -24806,22 +25185,142 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
             {
-              "type": "text",
-              "id": "b8Bt2r",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "Wzjag",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "VKYYx",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FalZF",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AIFNS",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "TDA27",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "gIcB7",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gNyoE",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "G5HKL",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "—"
+                        }
+                      }
+                    },
+                    {
+                      "id": "jBGcW",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "—"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "G6cDkC",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "b8Bt2r",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "q3zuak",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "R2xgl",
@@ -24831,12 +25330,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -24866,7 +25365,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 1100,
+      "height": 1268,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -24949,12 +25448,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "mYkvz",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "oijy5",
@@ -24962,8 +25469,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -24975,10 +25482,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -25027,7 +25534,7 @@
                   "content": "Treino em andamento"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -25047,7 +25554,7 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
@@ -25114,17 +25621,137 @@
               ]
             },
             {
-              "type": "text",
-              "id": "nANOJ",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "kLIYp",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "o1BWWa",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KM1PX",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "L8my3",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t84yUr",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "qvE6J",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "X56Hzx",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "Y5DDS",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "—"
+                        }
+                      }
+                    },
+                    {
+                      "id": "Zi9CV",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "—"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SMyj3",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nANOJ",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "YaLtI",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "JgIIl",
@@ -25134,12 +25761,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -25169,7 +25796,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 968,
+      "height": 1155,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -25252,12 +25879,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "Uk6qy",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "EcwcA",
@@ -25265,8 +25900,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -25278,10 +25913,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -25365,10 +26000,10 @@
                   "content": "HOJE · TREINO A"
                 },
                 "l9ySi": {
-                  "content": "Treino A"
+                  "content": "Plano A"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -25388,22 +26023,142 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
             {
-              "type": "text",
-              "id": "GUR2I",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "fTXQX",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yy8ba",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kRYEh",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AE5dR",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "IYuhj",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "oSYzI",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Uqsfc",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "HEFcw",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "OxJoN",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PJ4by",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "GUR2I",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "Xynnt",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "pz2nz",
@@ -25413,12 +26168,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -25437,7 +26192,7 @@
       "type": "frame",
       "id": "GQf0x",
       "x": 0,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Sem plano",
       "metadata": {
         "type": "muv25-screen",
@@ -25531,12 +26286,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "Bdscz",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "P4IMTN",
@@ -25544,8 +26307,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -25557,10 +26320,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -25634,7 +26397,7 @@
       "type": "frame",
       "id": "KJcQR",
       "x": 470,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Dia sem treino",
       "metadata": {
         "type": "muv25-screen",
@@ -25728,12 +26491,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "W0hirZ",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "Fn49f",
@@ -25741,8 +26512,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -25754,10 +26525,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -25831,7 +26602,7 @@
       "type": "frame",
       "id": "UVoa7",
       "x": 940,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Sem plano offline",
       "metadata": {
         "type": "muv25-screen",
@@ -25925,12 +26696,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "h9sQb",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "rj51U",
@@ -25938,8 +26717,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -25951,10 +26730,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -26042,7 +26821,7 @@
       "type": "frame",
       "id": "gpaxa",
       "x": 1410,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Dia sem treino offline",
       "metadata": {
         "type": "muv25-screen",
@@ -26136,12 +26915,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "i4wgC7",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "q2qlwb",
@@ -26149,8 +26936,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -26162,10 +26949,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -26253,7 +27040,7 @@
       "type": "frame",
       "id": "yopRv",
       "x": 1880,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Carregando",
       "metadata": {
         "type": "muv25-screen",
@@ -26347,12 +27134,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "PjA7p",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "RqtZ9",
@@ -26360,8 +27155,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -26373,10 +27168,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -26446,7 +27241,7 @@
       "type": "frame",
       "id": "H3fEs6",
       "x": 2350,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Erro sem dados",
       "metadata": {
         "type": "muv25-screen",
@@ -26540,12 +27335,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "TeJHL",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "C6r423",
@@ -26553,8 +27356,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -26566,10 +27369,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -26642,7 +27445,7 @@
       "type": "frame",
       "id": "M6SGyl",
       "x": 2820,
-      "y": 17220,
+      "y": 17448,
       "name": "MUV-25 · Hoje · Tentando novamente",
       "metadata": {
         "type": "muv25-screen",
@@ -26736,12 +27539,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "sItg8",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "qcIBv",
@@ -26749,8 +27560,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -26762,10 +27573,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -26955,10 +27766,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -27236,10 +28043,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -27429,10 +28232,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -27622,10 +28421,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -27829,10 +28624,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -28664,10 +29455,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -28945,10 +29732,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -29131,7 +29914,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 1050,
+      "height": 1188,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -29214,12 +29997,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "V5hX9H",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "P8XEE",
@@ -29227,8 +30018,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -29240,10 +30031,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -29289,7 +30080,7 @@
                   "content": "Treino concluído"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -29309,7 +30100,7 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
@@ -29331,17 +30122,137 @@
               }
             },
             {
-              "type": "text",
-              "id": "TakKl",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "zDl6R",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OGmFp",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rYsbU",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hEi0N",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Jepyd",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "x5Rgo",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "r5oIY",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "lFm9k",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "—"
+                        }
+                      }
+                    },
+                    {
+                      "id": "GHkmB",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "—"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "C0eN0J",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "TakKl",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "RoIXT",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "S1UuX5",
@@ -29351,12 +30262,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -30924,7 +31835,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 1000,
+      "height": 1144,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -31007,12 +31918,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "CfK9H",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "u34hjL",
@@ -31020,8 +31939,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -31033,10 +31952,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -31068,7 +31987,7 @@
                   "content": "Treino em andamento"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -31088,7 +32007,7 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
@@ -31155,17 +32074,137 @@
               ]
             },
             {
-              "type": "text",
-              "id": "D9h8Td",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "q8Vua",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "PbPAe",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "f9RA3",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i8ejeY",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CHmRQ",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "m4QN7",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "U4zEYr",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "YVfww",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "t7rEb",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "wMr6J",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "D9h8Td",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "qpckv",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "LeaKj",
@@ -31175,12 +32214,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -31210,7 +32249,7 @@
       },
       "clip": true,
       "width": 390,
-      "height": 968,
+      "height": 1155,
       "fill": "$color/bg/default",
       "layout": "vertical",
       "gap": 24,
@@ -31293,12 +32332,20 @@
           "name": "Cabeçalho",
           "width": "fill_container",
           "layout": "vertical",
-          "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
+          "gap": 4,
           "children": [
+            {
+              "type": "text",
+              "id": "r74ml",
+              "name": "Saudação do aluno",
+              "fill": "$color/text/brand",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "BOM DIA, LUCAS",
+              "fontFamily": "$font/family",
+              "fontSize": 11,
+              "fontWeight": "700"
+            },
             {
               "type": "text",
               "id": "r7Zdi",
@@ -31306,8 +32353,8 @@
               "fill": "$color/text/primary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Seu treino de hoje",
-              "lineHeight": 1.35,
+              "content": "Seu ritmo, seu dia.",
+              "lineHeight": 1.2,
               "fontFamily": "$font/family",
               "fontSize": "$font/size/29",
               "fontWeight": "$font/weight/800"
@@ -31319,10 +32366,10 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Encontre seu próximo movimento.",
-              "lineHeight": 1.35,
+              "content": "Quarta, 23 de setembro",
+              "lineHeight": 1.4,
               "fontFamily": "$font/family",
-              "fontSize": "$font/size/14",
+              "fontSize": 13,
               "fontWeight": "$font/weight/400"
             }
           ]
@@ -31407,10 +32454,10 @@
                   "content": "HOJE · TREINO A"
                 },
                 "l9ySi": {
-                  "content": "Treino A"
+                  "content": "Plano A"
                 },
                 "X8EZE9": {
-                  "content": "Plano A · Treino A"
+                  "content": "Peito e ombros"
                 },
                 "HWyYs": {
                   "content": "~11 min"
@@ -31430,22 +32477,142 @@
                   "y": 17
                 },
                 "v4uDq4": {
-                  "enabled": false
+                  "enabled": true
                 }
               }
             },
             {
-              "type": "text",
-              "id": "YPqXw",
-              "name": "Seção de exercícios",
-              "fill": "$color/text/primary",
-              "textGrowth": "fixed-width",
+              "type": "frame",
+              "id": "lBmRk",
+              "name": "Sua evolução",
               "width": "fill_container",
-              "content": "Exercícios de hoje",
-              "lineHeight": 1.35,
-              "fontFamily": "$font/family",
-              "fontSize": "$font/size/20",
-              "fontWeight": "$font/weight/700"
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "uIqFW",
+                  "name": "Cabeçalho da evolução",
+                  "width": "fill_container",
+                  "height": 48,
+                  "gap": 8,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "XZHV7",
+                      "name": "Título da evolução",
+                      "fill": "$color/text/primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "Sua evolução",
+                      "fontFamily": "$font/family",
+                      "fontSize": 20,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mqkAJ",
+                      "name": "Ver histórico de evolução",
+                      "gap": 4,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "JUP5R",
+                          "name": "Ver histórico",
+                          "fill": "$color/text/brand",
+                          "content": "Ver histórico",
+                          "fontFamily": "$font/family",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "icon",
+                          "id": "cJWOQ",
+                          "name": "Seta do histórico",
+                          "width": 14,
+                          "height": 14,
+                          "icon": "arrow-up-right",
+                          "library": "lucide",
+                          "fill": "$color/text/brand"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AGudp",
+                  "name": "Indicadores de evolução",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "id": "sSIe7",
+                      "type": "ref",
+                      "ref": "VrdyZ",
+                      "name": "Sequência de semanas com treino concluído",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Mw2du": {
+                          "content": "03"
+                        }
+                      }
+                    },
+                    {
+                      "id": "e9WK5",
+                      "type": "ref",
+                      "ref": "TsbQ9",
+                      "name": "Treinos concluídos na semana",
+                      "width": "fill_container",
+                      "height": 118,
+                      "descendants": {
+                        "Z1xxc": {
+                          "content": "02"
+                        },
+                        "f1uh5F": {
+                          "content": "treinos"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "RLN2b",
+              "name": "Cabeçalho dos exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "YPqXw",
+                  "name": "Seção de exercícios",
+                  "fill": "$color/text/primary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios de hoje",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": "$font/size/20",
+                  "fontWeight": "$font/weight/700"
+                },
+                {
+                  "type": "text",
+                  "id": "lMNyV",
+                  "name": "Quantidade de exercícios",
+                  "fill": "$color/text/secondary",
+                  "content": "2 exercícios",
+                  "fontFamily": "$font/family",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
             },
             {
               "id": "SVHbf",
@@ -31455,12 +32622,12 @@
               "width": "fill_container",
               "descendants": {
                 "VV56T": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Supino reto"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Supino reto"
                 },
                 "Nz1xo": {
-                  "icon": "circle-play",
-                  "name": "Abrir vídeo e detalhes de Crucifixo inclinado"
+                  "icon": "chevron-right",
+                  "name": "Abrir detalhes de Crucifixo inclinado"
                 }
               }
             }
@@ -31585,10 +32752,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -49229,10 +50392,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -49501,10 +50660,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -49829,10 +50984,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -50063,10 +51214,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -50340,10 +51487,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -50617,10 +51760,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -50894,10 +52033,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -51091,10 +52226,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -51295,10 +52426,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -51495,10 +52622,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -51702,10 +52825,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -52041,10 +53160,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -52557,10 +53672,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -53107,10 +54218,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -53637,10 +54744,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -54183,10 +55286,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -54500,10 +55599,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -54709,10 +55804,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -54951,10 +56042,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -55238,10 +56325,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -55527,10 +56610,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -56054,10 +57133,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -56579,10 +57654,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -56837,10 +57908,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -58899,10 +59966,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -59734,10 +60797,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -61065,10 +62124,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -61330,10 +62385,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -61595,10 +62646,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -61864,10 +62911,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -62158,10 +63201,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -62452,10 +63491,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -62746,10 +63781,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -63040,10 +64071,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -63337,10 +64364,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -63634,10 +64657,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -63935,10 +64954,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -64261,10 +65276,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -64587,10 +65598,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -64913,10 +65920,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -65013,11 +66016,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 44.666666666666664,
+              "x": 44.66666666666667,
               "y": 32.5
             },
             "r3yHij": {
@@ -65025,11 +66028,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 31.666666666666664,
+              "x": 31.666666666666668,
               "y": 32.5
             },
             "hVb6y": {
@@ -65037,11 +66040,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -65154,10 +66157,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -65254,11 +66253,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             },
             "F9JOfv": {
@@ -65266,11 +66265,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 39.166666666666664,
+              "x": 39.16666666666667,
               "y": 32.5
             },
             "zL3XH": {
@@ -65278,11 +66277,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -65419,11 +66418,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 44.666666666666664,
+              "x": 44.66666666666667,
               "y": 32.5
             },
             "r3yHij": {
@@ -65431,11 +66430,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 31.666666666666664,
+              "x": 31.666666666666668,
               "y": 32.5
             },
             "hVb6y": {
@@ -65443,11 +66442,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -65584,11 +66583,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             },
             "F9JOfv": {
@@ -65596,11 +66595,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 39.166666666666664,
+              "x": 39.16666666666667,
               "y": 32.5
             },
             "zL3XH": {
@@ -65608,11 +66607,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -65725,10 +66724,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -65829,11 +66824,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 44.666666666666664,
+              "x": 44.66666666666667,
               "y": 32.5
             },
             "r3yHij": {
@@ -65841,11 +66836,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 31.666666666666664,
+              "x": 31.666666666666668,
               "y": 32.5
             },
             "hVb6y": {
@@ -65853,11 +66848,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -65970,10 +66965,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -66074,11 +67065,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             },
             "F9JOfv": {
@@ -66086,11 +67077,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 39.166666666666664,
+              "x": 39.16666666666667,
               "y": 32.5
             },
             "zL3XH": {
@@ -66098,11 +67089,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -66215,10 +67206,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -66344,11 +67331,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 44.666666666666664,
+              "x": 44.66666666666667,
               "y": 32.5
             },
             "r3yHij": {
@@ -66356,11 +67343,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 31.666666666666664,
+              "x": 31.666666666666668,
               "y": 32.5
             },
             "hVb6y": {
@@ -66368,11 +67355,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -66485,10 +67472,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -66614,11 +67597,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             },
             "F9JOfv": {
@@ -66626,11 +67609,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 39.166666666666664,
+              "x": 39.16666666666667,
               "y": 32.5
             },
             "zL3XH": {
@@ -66638,11 +67621,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -66755,10 +67738,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -66855,11 +67834,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 44.666666666666664,
+              "x": 44.66666666666667,
               "y": 32.5
             },
             "r3yHij": {
@@ -66867,11 +67846,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 31.666666666666664,
+              "x": 31.666666666666668,
               "y": 32.5
             },
             "hVb6y": {
@@ -66879,11 +67858,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -66996,10 +67975,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -67096,11 +68071,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             },
             "F9JOfv": {
@@ -67108,11 +68083,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 39.166666666666664,
+              "x": 39.16666666666667,
               "y": 32.5
             },
             "zL3XH": {
@@ -67120,11 +68095,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 45.666666666666664,
+              "x": 45.66666666666667,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 42.666666666666664,
+              "x": 42.66666666666667,
               "y": 32.5
             }
           }
@@ -67237,10 +68212,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -67502,10 +68473,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -67767,10 +68734,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -68064,10 +69027,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -68361,10 +69320,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -68602,10 +69557,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -68702,11 +69653,11 @@
               "y": 6
             },
             "cXnZG": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "CU8Ry": {
-              "x": 51.333333333333336,
+              "x": 51.33333333333333,
               "y": 32.5
             },
             "r3yHij": {
@@ -68714,11 +69665,11 @@
               "y": 6
             },
             "wqmVZ": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "RqYEW": {
-              "x": 38.333333333333336,
+              "x": 38.33333333333333,
               "y": 32.5
             },
             "hVb6y": {
@@ -68726,11 +69677,11 @@
               "y": 6
             },
             "Xjpio": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "S6OSib": {
-              "x": 49.333333333333336,
+              "x": 49.33333333333333,
               "y": 32.5
             }
           }
@@ -68843,10 +69794,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -69084,10 +70031,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -69184,11 +70127,11 @@
               "y": 6
             },
             "ISZtA": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "F8JKFJ": {
-              "x": 49.333333333333336,
+              "x": 49.33333333333333,
               "y": 32.5
             },
             "F9JOfv": {
@@ -69196,11 +70139,11 @@
               "y": 6
             },
             "FVeDG": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "D2xrW": {
-              "x": 45.833333333333336,
+              "x": 45.83333333333333,
               "y": 32.5
             },
             "zL3XH": {
@@ -69208,11 +70151,11 @@
               "y": 6
             },
             "emfWV": {
-              "x": 52.333333333333336,
+              "x": 52.33333333333333,
               "y": 9.5
             },
             "ROCpG": {
-              "x": 49.333333333333336,
+              "x": 49.33333333333333,
               "y": 32.5
             }
           }
@@ -69325,10 +70268,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -69570,10 +70509,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",
@@ -70665,10 +71600,6 @@
           "width": "fill_container",
           "layout": "vertical",
           "gap": 8,
-          "padding": [
-            0,
-            6
-          ],
           "children": [
             {
               "type": "text",

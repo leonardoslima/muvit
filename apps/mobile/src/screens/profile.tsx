@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { AuthBrand } from '../components/auth/auth-brand';
 import { Screen } from '../components/ui/screen';
 import { Button, Card, Header, Message, StatePanel, Text } from '../components/ui/v2';
+import { StudentWorkoutGoal } from '../components/workouts/student-workout-goal';
 import { authClient } from '../lib/auth-client';
 import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
@@ -12,12 +13,14 @@ export type ProfileScreenProps = {
   accountType?: string;
   fallbackInitials?: string;
   fallbackName?: string;
+  showWorkoutGoal?: boolean;
 };
 
 export function ProfileScreen({
   accountType = 'Aluno independente',
   fallbackInitials = 'AL',
   fallbackName = 'Aluno',
+  showWorkoutGoal = false,
 }: ProfileScreenProps = {}) {
   const session = authClient.useSession();
   const user = session.data?.user;
@@ -104,6 +107,8 @@ export function ProfileScreen({
           {accountType}
         </Text>
       </Card>
+
+      {showWorkoutGoal ? <StudentWorkoutGoal key={user?.id} /> : null}
 
       {logoutError ? (
         <Message description={logoutError} testID="profile-error" variant="error" />

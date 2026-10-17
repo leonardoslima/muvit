@@ -4,7 +4,23 @@ A entrega de design está em `assets/design/mobile.pen`, editada pelo MCP pen.de
 
 ## Quadros
 
-As telas começam em y=16100, crescem para a direita e ocupam cinco linhas. O guia de fluxo fica em x=3500, y=16100. Nomes de quadros, esta tabela e o guia definem seus estados; metadados históricos de cópia não são contrato de renderização ou navegação.
+### Referência de Hoje no polimento MUV-9
+
+As 16 variantes de Hoje e a tela Expo seguem a composição de `vIyJ8` (MUV-24): marca e identidade, saudação, título “Seu ritmo, seu dia.”, data, card de treino e lista com quantidade de exercícios. No app, a saudação usa o primeiro nome da sessão e o período do dia; a data é local. O card destaca o nome real do plano, mantém o dia na legenda e apresenta os grupos musculares abaixo. A ação mantém o texto centralizado e a seta à direita; a lista usa chevrons para abrir os detalhes existentes.
+
+O cabeçalho acompanha o gutter da tela, sem o antigo padding horizontal adicional de 6 dp. Os paddings internos dos cards são preservados. Retomada, conclusão local, offline, loading e retry mantêm suas ações e feedbacks; essa adaptação visual não altera navegação, cache ou regras de treino.
+
+A seção **Sua evolução** aparece entre o resumo do treino e os exercícios nos estados com treino disponível, inclusive retomada e conclusão. Reutiliza a composição de `vIyJ8`: dois cards, “Sequência” com ícone de chama e “Na semana” com ícone de atividade, mais **Ver histórico**, que abre a aba Progresso existente. A referência original `vIyJ8` permanece preservada no Pen.
+
+Os indicadores vêm de `GET /students/me/workout-evolution?date=YYYY-MM-DD`, com requester vinculado à sessão e cache separado por usuário e data local. A API agrega somente registros concluídos até a data consultada, sem paginação de histórico no app. A semana começa na segunda-feira. “Sequência” conta semanas consecutivas com pelo menos uma conclusão; se a semana atual ainda não tiver conclusão, a sequência da semana anterior continua válida até o fim da semana atual. “Na semana” conta conclusões na semana atual. A consulta refaz a leitura ao retornar à tela e após conclusão confirmada ou sincronização da fila offline. Conclusões locais pendentes entram nos números após sincronizar com o servidor. Durante carregamento sem dados, os cards usam “—”; erro oferece atualização e preserva números anteriores quando disponíveis.
+
+A meta semanal é opcional e configurada no Perfil do aluno, de 1 a 7 treinos, com opção de remoção. `GET/PATCH /students/me/workout-goal` consultam e persistem essa preferência; `null` significa sem meta. O segundo card mostra “de XX treinos” apenas quando existe uma meta explícita. Quantidade de dias do plano e semana do plano não são presumidas. Os números do Pen são exemplos de apresentação; no app, usar exclusivamente os dados reais. As rotas são exclusivas do próprio aluno e usam o `profileId` autenticado. Persistência fica na tabela independente `student_workout_goals`, migration `0006_cold_lenny_balinger.sql`, gerada pelo Drizzle; aplicar com `pnpm.cmd --filter @muvit/db migrate:test` antes de `pnpm.cmd --filter @muvit/db migrate` no banco local confirmado.
+
+O salvamento cancela leituras antigas da meta antes de atualizar seu cache. Invalidações dos indicadores capturam o proprietário da operação e não bloqueiam a confirmação do treino ou da meta; falhas de atualização não desfazem uma operação já confirmada. O drain preserva o journal e seus tombstones. Não há processo de background adicional: o resumo é calculado na API e atualizado no app após sincronização e retorno à tela.
+
+### Mapa de estados
+
+As telas começam em y=16100, crescem para a direita e ocupam cinco linhas. A linha de estados de Hoje sem treino disponível começa em y=17448, reservando espaço para os indicadores na linha anterior. O guia de fluxo fica em x=3500, y=16100. Nomes de quadros, esta tabela e o guia definem seus estados; metadados históricos de cópia não são contrato de renderização ou navegação.
 
 | Tela/estado | Node ID |
 | --- | --- |

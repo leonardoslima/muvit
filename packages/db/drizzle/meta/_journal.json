@@ -43,6 +43,13 @@
       "when": 1792099703431,
       "tag": "0005_lucky_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792264837353,
+      "tag": "0006_cold_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }

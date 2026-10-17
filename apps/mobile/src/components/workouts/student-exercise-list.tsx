@@ -4,7 +4,13 @@ import { useEffect, useRef } from 'react';
 import type * as React from 'react';
 import { AccessibilityInfo, Pressable, View, findNodeHandle } from 'react-native';
 import type { WorkoutDay } from '../../application/workouts/today-workout';
-import { colors, controlSizes, spacing } from '../../lib/design-system/tokens';
+import {
+  colors,
+  controlSizes,
+  fontFamilies,
+  penTokens,
+  spacing,
+} from '../../lib/design-system/tokens';
 import { muscleGroupLabel } from '../../lib/muscle-groups';
 import { Card } from '../ui/v2/card';
 import { Text } from '../ui/v2/text';
@@ -36,7 +42,10 @@ export function StudentExerciseList({
   }, [day.id, navigation]);
 
   return (
-    <Card className="gap-0 overflow-hidden p-0">
+    <Card
+      className={`gap-0 overflow-hidden p-0 ${variant === 'preview' ? 'border-0' : ''}`}
+      style={variant === 'preview' ? styles.previewCard : undefined}
+    >
       {day.exercises.map((item, index) => {
         const group = muscleGroupLabel(item.exercise.muscleGroup);
         const actionLabel = 'Ver detalhes';
@@ -60,13 +69,20 @@ export function StudentExerciseList({
               styles.row,
               variant === 'detailed' && styles.detailedRow,
               index < day.exercises.length - 1 && styles.divider,
+              variant === 'preview' && styles.previewRow,
             ]}
           >
-            <Text variant="caption" style={styles.number}>
+            <Text
+              variant="caption"
+              style={[styles.number, variant === 'preview' && styles.previewNumber]}
+            >
               {String(index + 1).padStart(2, '0')}
             </Text>
             <View style={styles.exerciseContent}>
-              <Text variant="label" style={styles.exerciseName}>
+              <Text
+                variant="label"
+                style={[styles.exerciseName, variant === 'preview' && styles.previewName]}
+              >
                 {item.exercise.name}
               </Text>
               {variant === 'detailed' ? (
@@ -82,7 +98,11 @@ export function StudentExerciseList({
                 </>
               ) : null}
             </View>
-            <ChevronRight size={controlSizes.icon} color={colors.brand} accessible={false} />
+            <ChevronRight
+              size={variant === 'preview' ? controlSizes.icon - spacing.xs : controlSizes.icon}
+              color={colors.brand}
+              accessible={false}
+            />
           </Pressable>
         );
       })}
@@ -91,6 +111,24 @@ export function StudentExerciseList({
 }
 
 const styles = {
+  previewCard: {
+    paddingHorizontal: spacing.lg,
+  },
+  previewRow: {
+    borderBottomColor: colors.subtle,
+    minHeight: controlSizes.touch + spacing.md,
+    paddingHorizontal: spacing.none,
+    paddingVertical: spacing.xl,
+  },
+  previewNumber: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: penTokens['font/size/12'],
+    minWidth: spacing.xl,
+  },
+  previewName: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: penTokens['font/size/15'],
+  },
   row: {
     alignItems: 'center' as const,
     flexDirection: 'row' as const,

@@ -21,6 +21,7 @@ import { loadWorkoutDay, normalizeCachedTodayWorkout } from '../application/work
 import { finishWorkoutWithOfflineFallback } from '../application/workouts/workout-log';
 import type { ApiClient } from './api';
 import { isoDateFromTimestamp, todayIsoDate } from './date';
+import { invalidateWorkoutEvolution } from './invalidate-workout-evolution';
 import { createWorkoutLogJournal } from './log-queue';
 import { type WorkoutSessionStorage, createWorkoutSessionStorage } from './workout-session-storage';
 
@@ -1075,6 +1076,9 @@ export function useGuidedWorkoutSession({
           workoutDayId: day.id,
         });
         const finished = markSessionFinished(current, finishedAtMs);
+        if (!result.queued) {
+          void invalidateWorkoutEvolution(queryClient, finishAuthUserId);
+        }
 
         const capturedLifecycle = getSessionLifecycle(finishIdentity);
         const capturedLifecycleWasCurrent = Boolean(
@@ -1143,6 +1147,7 @@ export function useGuidedWorkoutSession({
     isCurrentIdentity,
     isCurrentLogicalIdentity,
     query.data?.day,
+    queryClient,
     sessionStorage,
     workoutLogJournal,
   ]);

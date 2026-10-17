@@ -1,13 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import type { ApiRequester } from '../lib/api';
 import { authClient } from '../lib/auth-client';
+import { invalidateWorkoutEvolution } from '../lib/invalidate-workout-evolution';
 import { createWorkoutLogJournal } from '../lib/log-queue';
 import { useApiClient } from '../lib/use-api';
 
 export function QueueDrain() {
   const api = useApiClient();
+  const client = useQueryClient();
   const authUserId = authClient.useSession().data?.user.id;
 
   useEffect(() => {
@@ -17,6 +20,7 @@ export function QueueDrain() {
     const drain = async (requester: ApiRequester): Promise<void> => {
       try {
         await journal.drain(authUserId, () => requester);
+        await invalidateWorkoutEvolution(client, authUserId);
       } catch {
         // O próximo foreground tenta novamente sem descartar o journal.
       }
@@ -36,7 +40,7 @@ export function QueueDrain() {
     });
 
     return () => subscription.remove();
-  }, [api, authUserId]);
+  }, [api, authUserId, client]);
 
   return null;
 }

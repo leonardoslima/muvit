@@ -2074,7 +2074,7 @@ describe('LogWorkoutScreen', () => {
     expect(events).toEqual(['save:11', 'remove']);
   });
 
-  it('remove o cache ao concluir e mantém o tombstone no remount', async () => {
+  it('confirma a conclusão com evolução pendente e mantém o tombstone no remount', async () => {
     const user = userEvent.setup();
     const updatedAtMs = Date.now();
     const currentReadySession: GuidedSession = {
@@ -2091,6 +2091,11 @@ describe('LogWorkoutScreen', () => {
       defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
     });
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    invalidateSpy.mockImplementation((filters) =>
+      filters?.queryKey?.[0] === 'workout-evolution'
+        ? new Promise<void>(() => {})
+        : Promise.resolve(),
+    );
     const { view } = renderWithQueryClient(queryClient);
 
     expect(await screen.findByText('Pronto para finalizar')).toBeTruthy();
@@ -2172,6 +2177,10 @@ describe('LogWorkoutScreen', () => {
     await waitFor(() => expect(queryClient.getQueryData(guidedSecondKey)).toBeDefined());
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['today-workout', firstUserId] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['workout-evolution', firstUserId] });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({
+      queryKey: ['workout-evolution', secondUserId],
+    });
     expect(screen.getByText('Pronto para finalizar')).toBeTruthy();
     const secondSummaryCallsBeforeRetry = apiState.request.mock.calls.filter(
       ([path]) => path === '/students/me/workout-plans',
