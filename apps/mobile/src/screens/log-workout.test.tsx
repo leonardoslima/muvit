@@ -34,6 +34,19 @@ const accessibilityState = vi.hoisted(() => ({
   setAccessibilityFocus: vi.fn(),
 }));
 const mediaState = vi.hoisted(() => ({ useMedia: vi.fn() }));
+const observeStatePanel = vi.hoisted(() => vi.fn<(title: string) => void>());
+
+vi.mock('../components/ui/v2/state-panel', async (importOriginal) => {
+  const React = await import('react');
+  const original = await importOriginal<typeof import('../components/ui/v2/state-panel')>();
+  return {
+    ...original,
+    StatePanel: (props: ComponentProps<typeof original.StatePanel>) => {
+      observeStatePanel(props.title);
+      return React.createElement(original.StatePanel, props);
+    },
+  };
+});
 
 const apiState = vi.hoisted(() => ({ bindCurrentSession: vi.fn(), request: vi.fn() }));
 const storageState = vi.hoisted(() => ({
@@ -56,6 +69,7 @@ vi.mock('react-native', async (importOriginal) => {
   const native = await importOriginal<typeof import('react-native')>();
   return {
     ...native,
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
     AppState: { addEventListener: appStateState.addEventListener },
     AccessibilityInfo: {
       ...native.AccessibilityInfo,
@@ -388,6 +402,18 @@ function pressPreventedNavigation(action: unknown = { type: 'GO_BACK' }): void {
 }
 
 describe('LogWorkoutScreen', () => {
+  it('mostra erro de carga decimal sem transformar 12,5 em 125 ou alterar a série', async () => {
+    mockWorkoutDay();
+    mockDraftStorage();
+    renderWithQueryClient();
+    await screen.findByText('Série 2 de 2');
+    const input = screen.getByLabelText('Carga utilizada');
+    const original = input.props.value;
+    fireEvent.changeText(input, '12,5');
+    expect(await screen.findByText('Carga deve ser um número inteiro.')).toBeTruthy();
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', original);
+    expect(screen.getByText('Série 2 de 2')).toBeTruthy();
+  });
   beforeAll(async () => {
     ({ LogWorkoutScreen } = await import('./log-workout'));
     ({ TodayWorkoutScreen } = await import('./today-workout'));
@@ -473,9 +499,9 @@ describe('LogWorkoutScreen', () => {
     const { view } = renderWithQueryClient();
 
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
-    fireEvent.changeText(screen.getByLabelText('Carga utilizada'), '0,');
+    fireEvent.changeText(screen.getByLabelText('Carga utilizada'), '0');
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
-    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0,');
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0');
     await act(async () => {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
@@ -502,7 +528,7 @@ describe('LogWorkoutScreen', () => {
     expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
     expect(screen.getByTestId('session-status-bar-light')).toBeTruthy();
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
-    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0,');
+    expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '0');
     expect(apiState.request).toHaveBeenCalledTimes(apiCallsBeforeDemo);
     expect(storageState.getItem).toHaveBeenCalledTimes(storageReadsBeforeDemo);
     expect(storageState.setItem).toHaveBeenCalledTimes(storageWritesBeforeDemo);
@@ -1055,7 +1081,7 @@ describe('LogWorkoutScreen', () => {
     }
   });
 
-  it('sincroniza o cache ao editar e reabre o mesmo rascunho no mesmo QueryClient', async () => {
+  it('reabre o rascunho salvo no mesmo QueryClient sem exibir erro durante a restauração', async () => {
     const user = userEvent.setup();
     mockWorkoutDay();
     const storage = mockStatefulDraftStorage();
@@ -1085,6 +1111,7 @@ describe('LogWorkoutScreen', () => {
     );
 
     expect(await screen.findByLabelText('Repetições realizadas')).toHaveProp('value', '10');
+    expect(observeStatePanel).not.toHaveBeenCalledWith('Treino indisponível');
   });
 
   it('remove o cache ao descartar e não ressuscita o rascunho na remontagem', async () => {

@@ -305,7 +305,7 @@ export function WorkoutEditor({
                     value={ex.loadKg ?? 0}
                     onChange={(v) => updateEx(activeDay, j, 'loadKg', v || undefined)}
                     min={0}
-                    step={2.5}
+                    step={1}
                   />
                   <NumberField
                     label="Descanso (s)"

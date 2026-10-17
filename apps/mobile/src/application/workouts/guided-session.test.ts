@@ -136,3 +136,17 @@ describe('sessão guiada', () => {
     expect(() => getCurrentSet({ ...created, currentSetIndex: 99 })).toThrow();
   });
 });
+
+it.each(['12.5', '12,5'])('não altera nem conclui carga fracionada %s', (loadKg) => {
+  const original = createGuidedSession(day, 1000);
+  expect(() => updateCurrentSet(original, { loadKg }, 2000)).toThrow(
+    'Carga deve ser um número inteiro',
+  );
+  const invalid = {
+    ...original,
+    sets: original.sets.map((set, index) => (index === 0 ? { ...set, loadKg } : set)),
+  };
+  expect(() => completeCurrentSet(invalid, day, 3000)).toThrow('Carga deve ser um número inteiro');
+  expect(original.phase).toBe('set');
+  expect(original.sets[0]?.completed).toBe(false);
+});

@@ -11,6 +11,7 @@ export type NumericFieldProps = Omit<FieldProps, 'kind' | 'leading' | 'trailing'
   onDecrement: () => void;
   incrementLabel?: string;
   decrementLabel?: string;
+  stepperClassName?: string;
 };
 export const NumericField = forwardRef<TextInput, NumericFieldProps>(function NumericField(
   {
@@ -20,6 +21,7 @@ export const NumericField = forwardRef<TextInput, NumericFieldProps>(function Nu
     decrementLabel,
     inputClassName,
     controlClassName,
+    stepperClassName,
     ...props
   },
   ref,
@@ -50,6 +52,7 @@ export const NumericField = forwardRef<TextInput, NumericFieldProps>(function Nu
           onPress={onDecrement}
           disabled={disabled}
           variant={variant}
+          className={stepperClassName}
         />
       }
       trailing={
@@ -59,6 +62,7 @@ export const NumericField = forwardRef<TextInput, NumericFieldProps>(function Nu
           onPress={onIncrement}
           disabled={disabled}
           variant={variant}
+          className={stepperClassName}
         />
       }
     />

@@ -31,6 +31,7 @@ vi.mock('react-native', async (importOriginal) => {
   const native = await importOriginal<typeof import('react-native')>();
   return {
     ...native,
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
     AppState: { addEventListener: appState.addEventListener },
   };
 });
@@ -187,6 +188,9 @@ describe('GuidedSessionContent', () => {
     const { controller, onOpenDemonstration } = renderContent(session);
 
     expect(screen.getByText('Supino reto')).toBeTruthy();
+    expect(screen.getByText('01')).toBeTruthy();
+    expect(screen.getByText('Registre os valores realizados antes de avançar.')).toBeTruthy();
+    expect(screen.getByText('A seguir: Remada baixa')).toBeTruthy();
     expect(screen.getByText(/8 a 12 reps/)).toBeTruthy();
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
     expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '40');

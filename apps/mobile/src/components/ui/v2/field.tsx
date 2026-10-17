@@ -22,6 +22,7 @@ export type FieldProps = Omit<TextInputProps, 'value' | 'onChangeText' | 'readOn
   className?: string;
   inputClassName?: string;
   controlClassName?: string;
+  labelClassName?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
 };
@@ -44,6 +45,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
     className,
     inputClassName,
     controlClassName,
+    labelClassName,
     leading,
     trailing,
     onFocus,
@@ -73,7 +75,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
   };
   return (
     <View className={cn('gap-2', className)}>
-      <Text variant="label" className={immersive ? 'text-v2-sessionSecondary' : undefined}>
+      <Text variant="label" className={cn(immersive && 'text-v2-sessionSecondary', labelClassName)}>
         {label}
       </Text>
       <View

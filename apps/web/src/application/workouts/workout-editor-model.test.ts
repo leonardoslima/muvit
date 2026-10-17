@@ -15,6 +15,15 @@ import {
 const exercise = { id: 'exercise-id', name: 'Supino', muscleGroup: 'chest' as const };
 
 describe('workout editor model', () => {
+  it('rejeita carga decimal e aceita carga inteira no formulário', () => {
+    const days = addWorkoutExercise([createWorkoutDay('Treino A', () => 'a')], 0, exercise);
+    expect(validateWorkoutDraft('Plano', updateWorkoutExercise(days, 0, 0, 'loadKg', 12.5))).toBe(
+      'Carga deve ser um número inteiro entre 0 e 1000 kg.',
+    );
+    expect(
+      validateWorkoutDraft('Plano', updateWorkoutExercise(days, 0, 0, 'loadKg', 13)),
+    ).toBeNull();
+  });
   it('adds the next default day label', () => {
     const day = createWorkoutDay('Treino A', () => 'day-a');
 

@@ -1,5 +1,6 @@
 import { finishWorkoutLogSchema } from '@muvit/validators';
 import { z } from 'zod';
+import { normalizeLegacyWorkoutLoads } from '../application/workouts/workout-load';
 import { ApiError, type ApiRequester } from './api';
 
 const JOURNAL_KEY = 'muvit_workout_log_journal';
@@ -82,7 +83,7 @@ export function createWorkoutLogJournal(storage: QueueStorage): WorkoutLogJourna
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(raw) as unknown;
+      parsed = normalizeLegacyWorkoutLoads(JSON.parse(raw));
     } catch {
       throw new Error('Journal de conclusão inválido.');
     }

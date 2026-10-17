@@ -198,7 +198,7 @@ function draftFixture(): TrainerWorkoutPlanDraft {
               sets: 4,
               reps: '8-10',
               restSeconds: 90,
-              loadKg: 82.5,
+              loadKg: 83,
               tempo: '3010',
               notes: 'Sem falhar',
             },
@@ -388,7 +388,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
     await screen.findByText('Supino reto');
     await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
-    await user.type(screen.getByLabelText('Carga'), '82,5');
+    await user.type(screen.getByLabelText('Carga'), '83');
     await user.type(screen.getByLabelText('Descanso'), '90');
     await user.type(screen.getByLabelText('Observação'), 'Controlar a descida');
     await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
@@ -410,7 +410,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
                 sets: 3,
                 reps: '10',
                 restSeconds: 90,
-                loadKg: 82.5,
+                loadKg: 83,
                 notes: 'Controlar a descida',
               },
             ],
@@ -570,7 +570,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Força');
-    expect(screen.getByLabelText('Carga').props.value).toBe('82.50');
+    expect(screen.getByLabelText('Carga').props.value).toBe('83');
     expect(screen.getByLabelText('Descanso').props.value).toBe('90');
     expect(screen.queryByLabelText('Tempo')).toBeNull();
 
@@ -624,7 +624,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
                   sets: 4,
                   reps: '8-10',
                   restSeconds: 90,
-                  loadKg: 82.5,
+                  loadKg: 83,
                   tempo: '3010',
                   notes: 'Sem falhar',
                 },

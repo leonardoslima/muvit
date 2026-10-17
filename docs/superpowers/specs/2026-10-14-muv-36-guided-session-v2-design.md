@@ -1,5 +1,7 @@
 # MUV-36 — Aluno: sessão guiada de treino v2
 
+> Atualização de 17/10/2026: a decisão posterior de usar cargas inteiras substitui as referências históricas abaixo à aceitação de decimais. Veja o [plano de cargas inteiras](../plans/2026-10-17-integer-workout-loads.md) e o [contrato atual da sessão](../../mobile-v2-student-session.md).
+
 ## Objetivo e autorização
 
 Migrar somente a sessão guiada do aluno para a UI/UX aprovada da MUV-26, preservando transições, valores, persistência, retomada, conclusão e sincronização existentes. O fluxo está implementado; o trabalho é uma evolução delimitada de apresentação com demonstração contextual do exercício. Este documento registra as decisões do brainstorming exigido pela execução autônoma, sem reabrir decisões de produto já aprovadas. A autorização da execução dispensa aprovação intermediária; implementação, revisão e publicação continuam sob responsabilidade do coordenador.

@@ -1,4 +1,5 @@
 import type { MuscleGroup } from '@/lib/muscle-groups';
+import { workoutExerciseInputSchema } from '@muvit/validators';
 
 export type ExerciseLite = { id: string; name: string; muscleGroup: MuscleGroup };
 
@@ -161,6 +162,15 @@ export function validateWorkoutDraft(name: string, days: WorkoutDayState[]): str
   if (!name.trim()) return 'Informe um nome para o treino.';
   if (days.some((day) => day.exercises.length === 0)) {
     return 'Cada dia precisa ter ao menos 1 exercicio.';
+  }
+  if (
+    days.some((day) =>
+      day.exercises.some(
+        (exercise) => !workoutExerciseInputSchema.shape.loadKg.safeParse(exercise.loadKg).success,
+      ),
+    )
+  ) {
+    return 'Carga deve ser um número inteiro entre 0 e 1000 kg.';
   }
   return null;
 }

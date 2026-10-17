@@ -313,7 +313,7 @@ function SessionHeader({
   onClose: () => void;
 }): React.JSX.Element {
   return (
-    <View className="gap-4">
+    <View className="gap-5">
       <Header
         title={title}
         variant="session"
@@ -325,10 +325,7 @@ function SessionHeader({
         </V2Text>
       ) : null}
       {progress ? (
-        <View className="gap-2">
-          <V2Text className="text-v2-sessionSecondary" variant="support">
-            {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
-          </V2Text>
+        <View className="min-h-[48px] gap-3">
           <View
             accessibilityRole="progressbar"
             accessibilityValue={{
@@ -337,7 +334,7 @@ function SessionHeader({
               now: progress.completedExerciseCount,
               text: `${progress.completedExerciseCount} de ${progress.totalExerciseCount} exercícios concluídos`,
             }}
-            className="h-2 overflow-hidden rounded-full bg-v2-sessionSurface"
+            className="h-[6px] overflow-hidden rounded-full bg-v2-sessionBorder"
           >
             <View
               style={{
@@ -348,6 +345,9 @@ function SessionHeader({
               }}
             />
           </View>
+          <V2Text className="font-v2-bold text-v2-primary" variant="body">
+            {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
+          </V2Text>
         </View>
       ) : null}
     </View>

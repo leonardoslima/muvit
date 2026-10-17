@@ -18,6 +18,18 @@ const identities: DemoIdentities = {
 };
 
 describe('buildDemoScenario', () => {
+  it('gera somente cargas inteiras em prescrições e séries, preservando medidas decimais', () => {
+    const scenario = buildDemoScenario(identities, referenceDate);
+    const exercises = scenario.plans.flatMap((plan) => plan.days.flatMap((day) => day.exercises));
+    const sets = scenario.logs.flatMap((log) => log.sets);
+
+    expect(exercises.every((exercise) => /^\d+$/.test(exercise.loadKg))).toBe(true);
+    expect(sets.every((set) => /^\d+$/.test(set.loadKg))).toBe(true);
+    expect(
+      scenario.assessments.some((assessment) => !Number.isInteger(Number(assessment.weightKg))),
+    ).toBe(true);
+  });
+
   it('gera as mesmas identidades e distribuições com a mesma referência', () => {
     const first = buildDemoScenario(identities, referenceDate);
     const second = buildDemoScenario(identities, referenceDate);

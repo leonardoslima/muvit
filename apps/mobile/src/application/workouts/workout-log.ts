@@ -2,6 +2,7 @@ import type { finishWorkoutLogSchema } from '@muvit/validators';
 import type { z } from 'zod';
 import type { ApiRequester } from '../../lib/api';
 import type { WorkoutLogJournal, WorkoutLogOperation } from '../../lib/log-queue';
+import { assertWorkoutLoad } from './workout-load';
 
 type FinishWorkoutLogInput = z.infer<typeof finishWorkoutLogSchema>;
 
@@ -25,7 +26,7 @@ export function buildInitialSets(exercises: WorkoutExerciseForSets[]): WorkoutSe
       workoutExerciseId: exercise.id,
       setNumber: index + 1,
       repsDone: '',
-      loadKg: exercise.loadKg === null ? '' : String(exercise.loadKg),
+      loadKg: exercise.loadKg === null ? '' : String(Math.round(Number(exercise.loadKg))),
       completed: false,
     })),
   );
@@ -50,6 +51,7 @@ export function buildFinishWorkoutLogInput(
   sets: WorkoutSetState[],
   durationMin: number,
 ): FinishWorkoutLogInput {
+  for (const set of sets) assertWorkoutLoad(set.loadKg);
   return {
     durationMin,
     completed: true,

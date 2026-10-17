@@ -1204,7 +1204,7 @@ export function useGuidedWorkoutSession({
         : query.isError && !session
           ? 'error'
           : !session
-            ? 'error'
+            ? 'loading'
             : 'ready';
 
   return {

@@ -310,7 +310,7 @@ const buildPlans = (referenceDate: Date): DemoPlan[] =>
           sets: 3 + ((studentIndex + exerciseIndex) % 2),
           reps: fakerPT_BR.helpers.arrayElement(['8-10', '10-12', '12', '15']),
           restSeconds: fakerPT_BR.helpers.arrayElement([60, 75, 90]),
-          loadKg: decimal(fakerPT_BR.number.float({ min: 8, max: 72, fractionDigits: 1 }), 1),
+          loadKg: String(fakerPT_BR.number.int({ min: 8, max: 72 })),
           tempo: exerciseIndex % 2 === 0 ? '3010' : '2011',
           notes: 'Prescrição fictícia para QA: priorizar técnica e amplitude confortável.',
         };

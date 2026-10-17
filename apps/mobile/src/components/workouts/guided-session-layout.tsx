@@ -50,9 +50,9 @@ export function GuidedSessionLayout({
           contentContainerStyle={[
             {
               flexGrow: 1,
-              gap: spacing.lg,
+              gap: spacing.xl,
               paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
+              paddingTop: spacing.xl,
               paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg,
             },
             contentContainerStyle,

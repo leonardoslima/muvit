@@ -87,6 +87,39 @@ function memoryStorage(seed: Record<string, string> = {}) {
 }
 
 describe('workoutSessionStorage', () => {
+  it('restaura cargas legadas arredondadas preservando o descanso e o progresso', async () => {
+    const record = {
+      kind: 'active',
+      version: 2,
+      ownerAuthUserId: 'user-a',
+      day: {
+        ...day,
+        exercises: day.exercises.map((exercise) => ({ ...exercise, loadKg: '39.4' })),
+      },
+      session: {
+        ...sessionV2,
+        phase: 'rest',
+        restEndsAtMs: 9000,
+        sets: sessionV2.sets.map((set) => ({ ...set, loadKg: '39,8', completed: true })),
+      },
+    };
+    const storage = memoryStorage({
+      [workoutSessionKey('user-a', day.id)]: JSON.stringify(record),
+    });
+    const restored = await createWorkoutSessionStorage(storage).load('user-a', day.id);
+    expect(restored).toEqual({
+      ...record,
+      day: {
+        ...record.day,
+        exercises: record.day.exercises.map((exercise) => ({ ...exercise, loadKg: '39' })),
+      },
+      session: {
+        ...record.session,
+        sets: record.session.sets.map((set) => ({ ...set, loadKg: '40' })),
+      },
+    });
+    expect(storage.removeItem).not.toHaveBeenCalled();
+  });
   it('salva e restaura sessão ativa com proprietário e snapshot validado', async () => {
     const storage = memoryStorage();
     const adapter = createWorkoutSessionStorage(storage);

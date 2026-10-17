@@ -7,6 +7,7 @@ import {
 import { z } from 'zod';
 import { ApiTransportError } from '../../lib/api';
 import type { GuidedSession } from './guided-session';
+import { normalizeLegacyWorkoutLoads } from './workout-load';
 
 type WorkoutPlanSummary = z.infer<typeof workoutPlanSummarySchema>;
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
@@ -237,7 +238,7 @@ function parseWorkoutPlan(value: unknown): WorkoutPlan | undefined {
   if (!parsed.data.days.every((day) => isValidWorkoutDay(day, parsed.data.id))) {
     return undefined;
   }
-  return parsed.data;
+  return workoutPlanFullSchema.parse(normalizeLegacyWorkoutLoads(parsed.data));
 }
 
 function parseOnlineWorkoutPlan(value: unknown, expectedPlanId: string): WorkoutPlan {

@@ -138,7 +138,7 @@ function validEditorState(name = 'Força') {
             sets: '4',
             reps: '8-10',
             restSeconds: '90',
-            loadKg: '82.5',
+            loadKg: '83',
             notes: 'Sem falhar',
             tempo: '3010',
           },

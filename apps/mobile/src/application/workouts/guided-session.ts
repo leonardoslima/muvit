@@ -1,3 +1,4 @@
+import { assertWorkoutLoad } from './workout-load';
 import { type WorkoutSetState, buildInitialSets } from './workout-log';
 
 export type GuidedSessionPhase =
@@ -113,6 +114,8 @@ export function updateCurrentSet(
   const currentSet = getCurrentSet(session);
   if (!currentSet) throw new Error('série atual não encontrada');
 
+  if (values.loadKg !== undefined) assertWorkoutLoad(values.loadKg);
+
   return {
     ...session,
     updatedAtMs,
@@ -129,6 +132,7 @@ export function completeCurrentSet(
   const currentSet = getCurrentSet(session);
   if (!currentSet) throw new Error('série atual não encontrada');
 
+  assertWorkoutLoad(currentSet.loadKg);
   const completedSets = session.sets.map((set) =>
     isSameSet(set, currentSet) ? { ...set, completed: true } : set,
   );

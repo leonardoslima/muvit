@@ -58,7 +58,7 @@ describe('WorkoutEditorDayView', () => {
     expect(screen.getByLabelText('Descanso')).toBeTruthy();
     expect(screen.getByLabelText('Observação')).toBeTruthy();
     expect(screen.queryByText('3010')).toBeNull();
-    expect(screen.getByLabelText('Carga').props.keyboardType).toBe('decimal-pad');
+    expect(screen.getByLabelText('Carga').props.keyboardType).toBe('number-pad');
     expect(screen.getByLabelText('Séries').props.keyboardType).toBe('numeric');
     expect(screen.getByLabelText('Repetições').props.keyboardType).toBe('default');
     expect(screen.getByLabelText('Descanso').props.keyboardType).toBe('numeric');

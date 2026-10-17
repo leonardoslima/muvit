@@ -201,7 +201,7 @@ function EditorExerciseCard({
         <Field
           className="flex-1"
           editable={!disabled}
-          keyboardType="decimal-pad"
+          keyboardType="number-pad"
           label="Carga"
           onChangeText={change('loadKg')}
           unit="kg"

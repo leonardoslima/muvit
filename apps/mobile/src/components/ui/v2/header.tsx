@@ -35,6 +35,7 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
               {...backAction}
               accessibilityLabel={backAction.label}
               variant={session ? 'immersive' : 'secondary'}
+              className={session ? 'bg-v2-sessionRaised' : undefined}
               icon={<BackIcon size={controlSizes.icon} color={color} />}
             />
           )}

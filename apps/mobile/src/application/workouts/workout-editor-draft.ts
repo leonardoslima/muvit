@@ -47,7 +47,7 @@ export function hydrateWorkoutDraftEditorState(
         sets: String(exercise.sets),
         reps: exercise.reps,
         restSeconds: exercise.restSeconds === undefined ? '' : String(exercise.restSeconds),
-        loadKg: exercise.loadKg === undefined ? '' : String(exercise.loadKg),
+        loadKg: exercise.loadKg === undefined ? '' : String(Math.round(exercise.loadKg)),
         notes: exercise.notes ?? '',
         tempo: exercise.tempo,
       };
