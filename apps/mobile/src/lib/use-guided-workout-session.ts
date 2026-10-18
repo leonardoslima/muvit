@@ -30,6 +30,17 @@ import { type WorkoutSessionStorage, createWorkoutSessionStorage } from './worko
 export type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 export type WorkoutDay = WorkoutPlan['days'][number];
 export type GuidedWorkoutState = 'loading' | 'error' | 'ready' | 'completed';
+type GuidedFieldErrors = { loadKg?: string; repsDone?: string };
+
+function fieldErrorScope(identity: string | null, session: GuidedSession | null): string {
+  return JSON.stringify([
+    identity,
+    session?.startedAtMs,
+    session?.currentExerciseIndex,
+    session?.currentSetIndex,
+    session?.phase,
+  ]);
+}
 
 type GuidedWorkoutInput = {
   api: ApiClient;
@@ -46,6 +57,7 @@ export type GuidedWorkoutController = {
   session: GuidedSession | null;
   error: Error | null;
   actionError: string | null;
+  fieldErrors?: GuidedFieldErrors;
   canRetryFinish: boolean;
   storageError: string | null;
   queued: boolean;
@@ -373,6 +385,10 @@ export function useGuidedWorkoutSession({
   const [session, setSession] = useState<GuidedSession | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [fieldErrorState, setFieldErrorState] = useState<{
+    scope: string;
+    errors: GuidedFieldErrors;
+  } | null>(null);
   const [canRetryFinish, setCanRetryFinish] = useState(false);
   const [queued, setQueued] = useState(false);
   const [draftActive, setDraftActive] = useState(false);
@@ -971,10 +987,19 @@ export function useGuidedWorkoutSession({
       const current = sessionRef.current;
       const day = query.data?.day ?? dayRef.current;
       if (!current || !day) return;
+      const errorScope = fieldErrorScope(identity, current);
 
       try {
         bumpSessionRevision(identity);
         const next = updateCurrentSet(current, values, nowRef.current());
+        setFieldErrorState((state) => ({
+          scope: errorScope,
+          errors: {
+            ...(state?.scope === errorScope ? state.errors : {}),
+            ...(values.loadKg !== undefined ? { loadKg: undefined } : {}),
+            ...(values.repsDone !== undefined ? { repsDone: undefined } : {}),
+          },
+        }));
         sessionRef.current = next;
         setSession(next);
         syncSessionCache(next);
@@ -983,7 +1008,15 @@ export function useGuidedWorkoutSession({
         await enqueueEdit(next, day);
       } catch (error) {
         if (isCurrentIdentity()) {
-          setActionError(getErrorMessage(error));
+          const message = getErrorMessage(error);
+          setFieldErrorState((state) => ({
+            scope: errorScope,
+            errors: {
+              ...(state?.scope === errorScope ? state.errors : {}),
+              ...(values.loadKg !== undefined ? { loadKg: message } : { repsDone: message }),
+            },
+          }));
+          setActionError(null);
           setCanRetryFinish(false);
         }
       }
@@ -1278,6 +1311,10 @@ export function useGuidedWorkoutSession({
 
   return {
     actionError,
+    fieldErrors:
+      identityReady && fieldErrorState?.scope === fieldErrorScope(identity, visibleSession)
+        ? fieldErrorState.errors
+        : {},
     canRetryFinish,
     addRestTime,
     completeSet,

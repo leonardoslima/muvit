@@ -511,11 +511,11 @@ describe('LogWorkoutScreen', () => {
     await cleanupAsync();
     renderWithQueryClient();
     await screen.findByText('Pronto para finalizar');
-    expect(screen.getByText('1 série realizada · 2 puladas')).toBeTruthy();
+    expect(screen.getByText('1 exercício · 1 série registrada · 2 puladas')).toBeTruthy();
     mockSuccessfulFinish();
     fireEvent.press(screen.getByRole('button', { name: 'Finalizar treino' }));
-    await screen.findByText('Volume total: 220 kg');
-    expect(screen.getByText('Séries puladas: 2')).toBeTruthy();
+    await screen.findByLabelText('Volume total: 220 kg');
+    expect(screen.getByText('1 série realizada · 2 puladas nesta sessão.')).toBeTruthy();
   });
 
   it('pula só as séries restantes e finaliza preservando duas séries já realizadas de quatro', async () => {
@@ -550,8 +550,12 @@ describe('LogWorkoutScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
     await screen.findByText('Pronto para finalizar');
     fireEvent.press(screen.getByRole('button', { name: 'Finalizar treino' }));
-    await screen.findByText('Volume total: 520 kg');
-    expect(screen.getByText('Séries puladas: 2')).toBeTruthy();
+    await screen.findByLabelText('Volume total: 520 kg');
+    expect(screen.getByText('3 séries realizadas · 2 puladas nesta sessão.')).toBeTruthy();
+    expect(screen.getByText('Resumo do treino')).toBeTruthy();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Fechar sessão' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Voltar' })).toBeTruthy();
     const finishCall = apiState.request.mock.calls.find(([path]) =>
       String(path).endsWith('/finish'),
     );
@@ -582,8 +586,18 @@ describe('LogWorkoutScreen', () => {
     const original = input.props.value;
     fireEvent.changeText(input, '12,5');
     expect(await screen.findByText('Carga deve ser um número inteiro.')).toBeTruthy();
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByTestId('guided-load-surface').props.className).toContain('border-v2-error');
+    expect(screen.getByTestId('guided-repetitions-surface').props.className).not.toContain(
+      'border-v2-error',
+    );
     expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', original);
     expect(screen.getByText('Série 2 de 2')).toBeTruthy();
+    fireEvent.changeText(screen.getByLabelText('Carga utilizada'), '25');
+    await waitFor(() => expect(screen.queryByText('Carga deve ser um número inteiro.')).toBeNull());
+    expect(screen.getByTestId('guided-load-surface').props.className).not.toContain(
+      'border-v2-error',
+    );
   });
   beforeAll(async () => {
     ({ LogWorkoutScreen } = await import('./log-workout'));
@@ -1069,11 +1083,11 @@ describe('LogWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Duração total: 2 min')).toBeTruthy();
+    expect(await screen.findByLabelText('Duração total: 2 min')).toBeTruthy();
     expect(screen.getAllByText('Treino concluído').length).toBeGreaterThan(0);
-    expect(screen.getByRole('button', { name: 'Fechar sessão' })).toBeTruthy();
-    await userEvent.setup().press(screen.getByRole('button', { name: 'Fechar sessão' }));
-    expect(routerState.back).toHaveBeenCalledOnce();
+    expect(screen.getByRole('button', { name: 'Voltar' })).toBeTruthy();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Voltar' }));
+    expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
     expect(apiState.request).not.toHaveBeenCalled();
   });
@@ -1289,7 +1303,7 @@ describe('LogWorkoutScreen', () => {
 
       nowMs = 3_720_000;
       await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
-      expect(await screen.findByText('Duração total: 2 min')).toBeTruthy();
+      expect(await screen.findByLabelText('Duração total: 2 min')).toBeTruthy();
 
       const finishCall = apiState.request.mock.calls.find(([path]) =>
         String(path).endsWith('/finish'),
@@ -2702,7 +2716,7 @@ describe('LogWorkoutScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Concluir série' }));
     await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
 
-    expect(await screen.findByText('Treino salvo para sincronização')).toBeTruthy();
+    expect(await screen.findByText('Salvo neste aparelho')).toBeTruthy();
     expect(storageState.removeItem).toHaveBeenCalledWith(
       `muvit_workout_session:${authState.data.user.id}:${routerState.dayId}`,
     );
@@ -2878,7 +2892,8 @@ describe('LogWorkoutScreen', () => {
     const pending = createDeferred<unknown>();
     apiState.request.mockReset().mockImplementation(() => pending.promise);
     await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
-    await user.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
+    expect(screen.getByRole('button', { name: 'Finalizando…' })).toBeDisabled();
+    await user.press(screen.getByRole('button', { name: 'Finalizando…' }));
 
     expect(apiState.request).toHaveBeenCalledOnce();
     expect(storageState.removeItem).not.toHaveBeenCalledWith(

@@ -22,6 +22,7 @@ export type FieldProps = Omit<TextInputProps, 'value' | 'onChangeText' | 'readOn
   className?: string;
   inputClassName?: string;
   controlClassName?: string;
+  surfaceClassName?: string;
   labelClassName?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
@@ -45,6 +46,7 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
     className,
     inputClassName,
     controlClassName,
+    surfaceClassName,
     labelClassName,
     leading,
     trailing,
@@ -73,8 +75,8 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
     setFocused(false);
     onBlur?.(event);
   };
-  return (
-    <View className={cn('gap-2', className)}>
+  const controlContent = (
+    <>
       <Text variant="label" className={cn(immersive && 'text-v2-sessionSecondary', labelClassName)}>
         {label}
       </Text>
@@ -86,10 +88,10 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           immersive
             ? 'bg-v2-sessionSurface border-v2-sessionBorder'
             : 'bg-v2-surface border-v2-border',
-          focused && !blocked && 'border-2 border-v2-brand',
-          error && 'border-v2-error',
-          blocked && 'opacity-50',
           controlClassName,
+          !surfaceClassName && focused && !blocked && 'border-2 border-v2-brand',
+          !surfaceClassName && error && 'border-v2-error',
+          !surfaceClassName && blocked && 'opacity-50',
         )}
       >
         {leading ??
@@ -111,9 +113,12 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           aria-disabled={blocked}
           aria-busy={loading || accessibilityState?.busy || props['aria-busy']}
           accessibilityLabel={props.accessibilityLabel ?? label}
-          accessibilityHint={
-            props.accessibilityHint ?? [unit, error || hint].filter(Boolean).join('. ')
-          }
+          accessibilityHint={[
+            props.accessibilityHint ?? unit,
+            error || (!props.accessibilityHint && hint),
+          ]
+            .filter(Boolean)
+            .join('. ')}
           accessibilityState={{
             ...accessibilityState,
             disabled: blocked,
@@ -133,10 +138,17 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
           placeholderTextColor={
             props.placeholderTextColor ?? (immersive ? colors.sessionSecondary : colors.secondary)
           }
+          selectionColor={
+            props.selectionColor ?? (immersive && surfaceClassName ? colors.primary : undefined)
+          }
+          cursorColor={
+            props.cursorColor ?? (immersive && surfaceClassName ? colors.primary : undefined)
+          }
           className={cn(
             'min-w-0 flex-1 py-3 font-v2-regular text-[14px] leading-[19.6px]',
             immersive ? 'text-v2-sessionText' : 'text-v2-text',
             inputClassName,
+            immersive && surfaceClassName && blocked && 'text-v2-sessionSecondary',
           )}
         />
         {unit && (
@@ -149,12 +161,32 @@ export const Field = forwardRef<TextInput, FieldProps>(function Field(
         )}
         {trailing}
       </View>
+    </>
+  );
+  return (
+    <View className={cn('gap-2', className)}>
+      {surfaceClassName ? (
+        <View
+          testID={testID ? `${testID}-surface` : undefined}
+          className={cn(
+            surfaceClassName,
+            focused &&
+              !blocked &&
+              (immersive ? 'border-2 border-v2-primary' : 'border-2 border-v2-brand'),
+            error && !blocked && 'border-2 border-v2-error',
+          )}
+        >
+          {controlContent}
+        </View>
+      ) : (
+        controlContent
+      )}
       {error ? (
         <Text
           variant="support"
           accessibilityRole="alert"
           accessibilityLiveRegion="polite"
-          className="text-v2-error"
+          className={immersive && surfaceClassName ? 'text-v2-errorBg' : 'text-v2-error'}
         >
           {error}
         </Text>

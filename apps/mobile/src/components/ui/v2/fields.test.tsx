@@ -6,6 +6,66 @@ import { Field } from './field';
 import { NumericField } from './numeric-field';
 
 describe('campos v2', () => {
+  it('NumericField imersivo destaca a superfície inteira no foco, prioriza erro e restaura após blur', () => {
+    const onFocus = vi.fn();
+    const onBlur = vi.fn();
+    const props = {
+      label: 'Carga',
+      value: '40',
+      variant: 'immersive' as const,
+      onChangeText: vi.fn(),
+      onIncrement: vi.fn(),
+      onDecrement: vi.fn(),
+      onFocus,
+      onBlur,
+      testID: 'carga',
+    };
+    const view = render(<NumericField {...props} />);
+    fireEvent(screen.getByLabelText('Carga'), 'focus', { nativeEvent: {} });
+    expect(screen.getByTestId('carga-surface').props.className).toContain('border-v2-primary');
+    expect(screen.getByTestId('carga-surface').props.className).toContain('border-2');
+    expect(onFocus).toHaveBeenCalledOnce();
+    view.rerender(<NumericField {...props} error="Informe uma carga válida em kg." />);
+    expect(screen.getByTestId('carga-surface').props.className).toContain('border-v2-error');
+    expect(screen.getByTestId('carga-surface').props.className).not.toContain('border-v2-primary');
+    expect(screen.getByRole('alert').props.className).toContain('text-v2-errorBg');
+    view.rerender(<NumericField {...props} />);
+    fireEvent(screen.getByLabelText('Carga'), 'blur', { nativeEvent: {} });
+    expect(onBlur).toHaveBeenCalledOnce();
+    expect(screen.getByTestId('carga-surface').props.className).toContain(
+      'border-v2-sessionBorder',
+    );
+    expect(screen.getByTestId('carga-surface').props.className).not.toContain('border-2');
+  });
+
+  it('NumericField imersivo desabilitado mantém a paleta do design e bloqueia digitação e passos', () => {
+    const change = vi.fn();
+    const step = vi.fn();
+    const props = {
+      label: 'Carga',
+      value: '40',
+      variant: 'immersive' as const,
+      onChangeText: change,
+      onIncrement: step,
+      onDecrement: step,
+      testID: 'carga',
+    };
+    const view = render(<NumericField {...props} />);
+    fireEvent(screen.getByLabelText('Carga'), 'focus', { nativeEvent: {} });
+    view.rerender(<NumericField {...props} editable={false} />);
+    const surface = screen.getByTestId('carga-surface');
+    expect(surface.props.className).not.toContain('border-v2-primary');
+    expect(surface.props.className).not.toContain('opacity-50');
+    expect(screen.getByLabelText('Carga').props.className).toContain('text-v2-sessionSecondary');
+    const increase = screen.getByRole('button', { name: 'Aumentar Carga' });
+    expect(increase.props.className).toContain('bg-v2-sessionSurface');
+    expect(increase.props.className).toContain('opacity-100');
+    fireEvent.changeText(screen.getByLabelText('Carga'), '50');
+    fireEvent.press(increase);
+    expect(change).not.toHaveBeenCalled();
+    expect(step).not.toHaveBeenCalled();
+  });
+
   it('preserva label, valor controlado, unidade e erro local', () => {
     const onChangeText = vi.fn();
     render(

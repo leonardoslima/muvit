@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Keyboard, View, findNodeHandle } from 'react-native';
 import { mobileRoutes } from '../application/navigation/role-navigation';
@@ -323,16 +324,19 @@ export function LogWorkoutScreen() {
       >
         <SessionHeader
           busy={controller.busy}
-          onClose={requestClose}
-          progress={progress}
-          subtitle={isResumedSession ? 'Treino em andamento' : undefined}
-          title={
+          onClose={
             session.phase === 'summary'
-              ? session.sets.some((set) => set.skipped)
-                ? 'Treino finalizado'
-                : 'Treino concluído'
-              : day.label
+              ? () => router.replace(mobileRoutes.studentHome)
+              : requestClose
           }
+          progress={session.phase === 'summary' ? undefined : progress}
+          subtitle={
+            isResumedSession && session.phase !== 'summary' && session.phase !== 'ready-to-finish'
+              ? 'Treino em andamento'
+              : undefined
+          }
+          title={session.phase === 'summary' ? 'Resumo do treino' : day.label}
+          summary={session.phase === 'summary'}
         />
 
         <GuidedSessionContent
@@ -380,12 +384,14 @@ function SessionHeader({
   progress,
   busy,
   onClose,
+  summary = false,
 }: {
   title: string;
   subtitle?: string;
   progress?: ReturnType<typeof getWorkoutDraftProgress>;
   busy: boolean;
   onClose: () => void;
+  summary?: boolean;
 }): React.JSX.Element {
   const hasSkipped = progress?.resolvedExerciseCount !== undefined;
   const progressCount = progress?.resolvedExerciseCount ?? progress?.completedExerciseCount ?? 0;
@@ -397,7 +403,12 @@ function SessionHeader({
       <Header
         title={title}
         variant="session"
-        backAction={{ label: 'Fechar sessão', onPress: onClose, disabled: busy }}
+        backAction={{
+          label: summary ? 'Voltar' : 'Fechar sessão',
+          onPress: onClose,
+          disabled: busy,
+        }}
+        backIcon={summary ? <ArrowLeft color={v2Colors.sessionText} size={22} /> : undefined}
       />
       {subtitle ? (
         <V2Text className="text-v2-sessionSecondary" variant="body">

@@ -6,6 +6,7 @@ import { adjustSessionValue } from '../../application/workouts/guided-session-pr
 import { colors, fontFamilies, penTokens } from '../../lib/design-system/tokens';
 import type { GuidedWorkoutController, WorkoutDay } from '../../lib/use-guided-workout-session';
 import { Button, Card, Message, NumericField, Text } from '../ui/v2';
+import { GuidedSessionFinishContent } from './guided-session-finish-content';
 
 export type GuidedSessionContentProps = {
   controller: GuidedWorkoutController;
@@ -26,13 +27,11 @@ export function GuidedSessionContent({
 }: GuidedSessionContentProps): React.JSX.Element | null {
   const { width, fontScale } = useWindowDimensions();
   const stackFields = width < 360 || fontScale >= 1.2;
-  const fieldClassName = `${stackFields ? 'w-full' : 'min-w-0 flex-1'} gap-5 rounded-v2-field border border-v2-sessionBorder bg-v2-sessionSurface p-2 pt-4`;
+  const fieldClassName = stackFields ? 'w-full' : 'min-w-0 flex-1';
   const numericPresentation = {
     className: fieldClassName,
     labelClassName: 'ml-2 text-[13px] leading-[17.55px]',
-    controlClassName: 'min-h-[48px] border-0 bg-transparent px-0',
     inputClassName: 'min-w-[40px] py-0 text-[28px] leading-[37.8px]',
-    stepperClassName: 'border-0 bg-v2-sessionRaised p-0',
   };
   const session = controller.session;
   if (!session) return null;
@@ -41,9 +40,6 @@ export function GuidedSessionContent({
   const currentSet = selection.currentSet;
   const exercisePosition = session.currentExerciseIndex + 1;
   const setPosition = session.currentSetIndex + 1;
-  const summary = controller.summary;
-  const skippedSetCount = session.sets.filter((set) => set.skipped && !set.completed).length;
-  const completedSetCount = session.sets.filter((set) => set.completed).length;
   const skipButton = (
     <Button
       disabled={controller.busy}
@@ -52,6 +48,16 @@ export function GuidedSessionContent({
       variant="immersive"
     />
   );
+
+  if (session.phase === 'ready-to-finish' || session.phase === 'summary') {
+    return (
+      <GuidedSessionFinishContent
+        controller={controller}
+        selection={selection}
+        onBackHome={onBackHome}
+      />
+    );
+  }
 
   return (
     <View className="gap-5 pb-4">
@@ -132,6 +138,8 @@ export function GuidedSessionContent({
             <NumericField
               {...numericPresentation}
               accessibilityLabel="Repetições realizadas"
+              testID="guided-repetitions"
+              error={controller.fieldErrors?.repsDone}
               accessibilityHint="Informe a quantidade de repetições realizadas"
               decrementLabel="Diminuir Repetições realizadas"
               editable={!controller.busy}
@@ -156,6 +164,8 @@ export function GuidedSessionContent({
             <NumericField
               {...numericPresentation}
               accessibilityLabel="Carga utilizada"
+              testID="guided-load"
+              error={controller.fieldErrors?.loadKg}
               accessibilityHint="Informe a carga usada no exercício"
               decrementLabel="Diminuir Carga utilizada"
               editable={!controller.busy}
@@ -266,71 +276,6 @@ export function GuidedSessionContent({
             loading={controller.busy}
             onPress={() => void controller.continueAfterExercise()}
           />
-        </View>
-      ) : null}
-
-      {session.phase === 'ready-to-finish' ? (
-        <View className="gap-4">
-          <Text className="text-v2-sessionSecondary" variant="body">
-            {skippedSetCount ? 'Percurso do treino finalizado' : 'Última série do treino'}
-          </Text>
-          <Text className="text-v2-sessionText" variant="sectionTitle">
-            Pronto para finalizar
-          </Text>
-          <Text className="text-v2-sessionSecondary" variant="body">
-            {skippedSetCount
-              ? `${completedSetCount} ${completedSetCount === 1 ? 'série realizada' : 'séries realizadas'} · ${skippedSetCount} puladas`
-              : `${selection.progress.progressPercent}% do treino concluído`}
-          </Text>
-          <Button
-            disabled={controller.busy || completedSetCount === 0}
-            label={skippedSetCount ? 'Finalizar treino' : 'Concluir e finalizar treino'}
-            loading={controller.busy}
-            onPress={() => void controller.finishWorkout()}
-          />
-          {completedSetCount === 0 ? (
-            <Text className="text-v2-sessionSecondary" variant="body">
-              Nenhuma série registrada. Saia da sessão para descartar este treino.
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {session.phase === 'summary' && summary ? (
-        <View className="gap-4">
-          <Text className="text-v2-sessionText text-center" variant="sectionTitle">
-            {skippedSetCount ? 'Treino finalizado' : 'Treino concluído'}
-          </Text>
-          <Text className="text-v2-sessionSecondary text-center" variant="body">
-            {skippedSetCount
-              ? 'As séries realizadas foram preservadas no seu registro.'
-              : 'Parabéns! Você concluiu a sessão.'}
-          </Text>
-          <Card className="gap-3" variant="immersive">
-            <Text className="text-v2-sessionText" variant="body">
-              Duração total: {summary.durationMin} min
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Exercícios: {summary.exerciseCount}
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Séries: {summary.completedSetCount}
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Volume total: {summary.volumeKg} kg
-            </Text>
-            {summary.skippedSetCount ? (
-              <Text className="text-v2-sessionText" variant="body">
-                Séries puladas: {summary.skippedSetCount}
-              </Text>
-            ) : null}
-          </Card>
-          <Text className="text-v2-sessionSecondary" variant="support">
-            {controller.queued
-              ? 'Treino salvo para sincronização'
-              : 'Resumo salvo no seu acompanhamento.'}
-          </Text>
-          <Button disabled={controller.busy} label="Voltar ao início" onPress={onBackHome} />
         </View>
       ) : null}
     </View>

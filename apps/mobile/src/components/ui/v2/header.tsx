@@ -1,5 +1,5 @@
 import { ArrowLeft, RotateCw, X } from 'lucide-react-native';
-import { forwardRef } from 'react';
+import { type ReactNode, forwardRef } from 'react';
 import { View, type ViewProps } from 'react-native';
 import { cn } from '../../../lib/design-system/cn';
 import { colors, controlSizes } from '../../../lib/design-system/tokens';
@@ -11,12 +11,13 @@ export type HeaderProps = ViewProps & {
   title: string;
   variant?: 'default' | 'contextual' | 'session';
   backAction?: Action;
+  backIcon?: ReactNode;
   action?: Action;
   className?: string;
   titleClassName?: string;
 };
 export const Header = forwardRef<View, HeaderProps>(function Header(
-  { title, variant = 'default', backAction, action, className, titleClassName, ...props },
+  { title, variant = 'default', backAction, backIcon, action, className, titleClassName, ...props },
   ref,
 ) {
   const session = variant === 'session';
@@ -36,7 +37,7 @@ export const Header = forwardRef<View, HeaderProps>(function Header(
               accessibilityLabel={backAction.label}
               variant={session ? 'immersive' : 'secondary'}
               className={session ? 'bg-v2-sessionRaised' : undefined}
-              icon={<BackIcon size={controlSizes.icon} color={color} />}
+              icon={backIcon ?? <BackIcon size={controlSizes.icon} color={color} />}
             />
           )}
         </View>
