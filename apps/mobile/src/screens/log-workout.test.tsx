@@ -1,6 +1,14 @@
-import type { workoutPlanFullSchema } from '@muvit/validators';
+import { finishWorkoutLogSchema, type workoutPlanFullSchema } from '@muvit/validators';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  cleanupAsync,
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { type ComponentProps, type ReactNode, StrictMode, useLayoutEffect } from 'react';
 import { ScrollView } from 'react-native';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -69,6 +77,7 @@ vi.mock('react-native', async (importOriginal) => {
   const native = await importOriginal<typeof import('react-native')>();
   return {
     ...native,
+    Keyboard: { ...native.Keyboard, dismiss: vi.fn() },
     useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
     AppState: { addEventListener: appStateState.addEventListener },
     AccessibilityInfo: {
@@ -402,6 +411,168 @@ function pressPreventedNavigation(action: unknown = { type: 'GO_BACK' }): void {
 }
 
 describe('LogWorkoutScreen', () => {
+  it('não registra treino concluído se todos os exercícios foram pulados sem realizar séries', async () => {
+    mockWorkoutDay();
+    mockStatefulDraftStorage({
+      ...draftSession,
+      currentSetIndex: 0,
+      sets: draftSession.sets.map((set) => ({ ...set, completed: false })),
+    });
+    renderWithQueryClient();
+    await screen.findByText('Série 1 de 2');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Pular exercício?');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Série 1 de 1');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Pular exercício?');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Pronto para finalizar');
+    expect(screen.getByRole('button', { name: 'Finalizar treino' })).toBeDisabled();
+    expect(
+      screen.getByText('Nenhuma série registrada. Saia da sessão para descartar este treino.'),
+    ).toBeTruthy();
+    expect(apiState.request.mock.calls.some(([path]) => String(path).endsWith('/finish'))).toBe(
+      false,
+    );
+  });
+
+  it('cancela pular exercício sem modificar as séries já registradas', async () => {
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage(draftSession);
+    renderWithQueryClient();
+    await screen.findByText('Série 2 de 2');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    expect(await screen.findByText('1 de 2 séries concluídas.')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Continuar neste exercício' }));
+    expect(await screen.findByText('Série 2 de 2')).toBeTruthy();
+    expect(parseStoredSession(storage.getSerialized() ?? '').sets).toEqual(draftSession.sets);
+    expect(screen.queryByText('Pular exercício?')).toBeNull();
+  });
+
+  it('mantém confirmação ao expirar descanso e pula somente o restante do exercício confirmado', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T12:00:00.000Z'));
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage({
+      ...draftSession,
+      phase: 'rest',
+      currentSetIndex: 0,
+      restEndsAtMs: Date.now() + 1_000,
+    });
+    try {
+      renderWithQueryClient();
+      await screen.findByText('Descanso');
+      fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+      await screen.findByText('Pular exercício?');
+      vi.setSystemTime(Date.now() + 1_000);
+      act(() => {
+        for (const [event, listener] of appStateState.addEventListener.mock.calls) {
+          if (event === 'change') listener('active');
+        }
+      });
+      expect(screen.getByText('Pular exercício?')).toBeTruthy();
+      fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+      await screen.findByText('Tríceps corda');
+      await waitFor(() => {
+        const saved = parseStoredSession(storage.getSerialized() ?? '');
+        expect(saved.sets[0]).toEqual(draftSession.sets[0]);
+        expect(saved.sets[1]).toEqual({ ...draftSession.sets[1], skipped: true });
+        expect(saved.sets[2]).toEqual(draftSession.sets[2]);
+        expect(saved.currentExerciseIndex).toBe(1);
+        expect(saved.restEndsAtMs).toBeNull();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('retoma o último exercício parcial e finaliza mantendo carga e repetições já feitas', async () => {
+    mockWorkoutDay();
+    const storage = mockStatefulDraftStorage({
+      ...draftSession,
+      currentExerciseIndex: 1,
+      currentSetIndex: 0,
+      sets: [
+        draftSession.sets[0],
+        { ...draftSession.sets[1], skipped: true },
+        draftSession.sets[2],
+      ],
+    });
+    renderWithQueryClient();
+    await screen.findByText('Tríceps corda');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Pular exercício?');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Pronto para finalizar');
+    await waitFor(() =>
+      expect(parseStoredSession(storage.getSerialized() ?? '').phase).toBe('ready-to-finish'),
+    );
+    await cleanupAsync();
+    renderWithQueryClient();
+    await screen.findByText('Pronto para finalizar');
+    expect(screen.getByText('1 série realizada · 2 puladas')).toBeTruthy();
+    mockSuccessfulFinish();
+    fireEvent.press(screen.getByRole('button', { name: 'Finalizar treino' }));
+    await screen.findByText('Volume total: 220 kg');
+    expect(screen.getByText('Séries puladas: 2')).toBeTruthy();
+  });
+
+  it('pula só as séries restantes e finaliza preservando duas séries já realizadas de quatro', async () => {
+    const first = workoutPlan.days[0].exercises[0];
+    const partialPlan = planWithExercises([
+      { ...first, sets: 4 },
+      workoutPlan.days[0].exercises[1],
+    ]);
+    const partial: GuidedSession = {
+      ...draftSession,
+      currentSetIndex: 2,
+      sets: [
+        { ...draftSession.sets[0] },
+        { ...draftSession.sets[0], setNumber: 2, repsDone: '12', loadKg: '25' },
+        { ...draftSession.sets[1], setNumber: 3 },
+        { ...draftSession.sets[1], setNumber: 4 },
+        { ...draftSession.sets[2] },
+      ],
+    };
+    mockWorkoutDay(partialPlan);
+    const storage = mockStatefulDraftStorage(partial);
+    renderWithQueryClient();
+    await screen.findByText('Série 3 de 4');
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    expect(await screen.findByText('2 de 4 séries concluídas.')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Pular exercício' }));
+    await screen.findByText('Tríceps corda');
+    expect(screen.getByText(/1 parcial/)).toBeTruthy();
+    await waitFor(() => expect(storage.getSerialized()).toContain('"skipped":true'));
+    fireEvent.changeText(screen.getByLabelText('Repetições realizadas'), '12');
+    mockSuccessfulFinish();
+    fireEvent.press(screen.getByRole('button', { name: 'Concluir série' }));
+    await screen.findByText('Pronto para finalizar');
+    fireEvent.press(screen.getByRole('button', { name: 'Finalizar treino' }));
+    await screen.findByText('Volume total: 520 kg');
+    expect(screen.getByText('Séries puladas: 2')).toBeTruthy();
+    const finishCall = apiState.request.mock.calls.find(([path]) =>
+      String(path).endsWith('/finish'),
+    );
+    const payload = finishWorkoutLogSchema.parse(JSON.parse(String(finishCall?.[1]?.body)));
+    expect(payload.sets).toHaveLength(5);
+    expect(payload.sets.slice(0, 2)).toEqual([
+      { workoutExerciseId: first.id, setNumber: 1, repsDone: 10, loadKg: 22, completed: true },
+      { workoutExerciseId: first.id, setNumber: 2, repsDone: 12, loadKg: 25, completed: true },
+    ]);
+    expect(payload.sets[2]).toEqual({
+      workoutExerciseId: first.id,
+      setNumber: 3,
+      completed: false,
+    });
+    expect(payload.sets[3]).toEqual({
+      workoutExerciseId: first.id,
+      setNumber: 4,
+      completed: false,
+    });
+  });
+
   it('mostra erro de carga decimal sem transformar 12,5 em 125 ou alterar a série', async () => {
     mockWorkoutDay();
     mockDraftStorage();

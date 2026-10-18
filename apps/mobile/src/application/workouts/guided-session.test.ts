@@ -9,6 +9,7 @@ import {
   markSessionFinished,
   pauseGuidedSession,
   resumeGuidedSession,
+  skipCurrentExercise,
   skipRest,
   updateCurrentSet,
 } from './guided-session';
@@ -149,4 +150,104 @@ it.each(['12.5', '12,5'])('não altera nem conclui carga fracionada %s', (loadKg
   expect(() => completeCurrentSet(invalid, day, 3000)).toThrow('Carga deve ser um número inteiro');
   expect(original.phase).toBe('set');
   expect(original.sets[0]?.completed).toBe(false);
+});
+
+describe('pular exercício na sessão atual', () => {
+  const skipDay = {
+    ...day,
+    exercises: day.exercises.map((exercise) => ({ ...exercise, sets: 4 })),
+  };
+
+  it('pula todas as séries ainda não feitas e avança sem alterar o plano', () => {
+    const original = createGuidedSession(skipDay, 1_000);
+    const originalDay = structuredClone(skipDay);
+    const skipped = skipCurrentExercise(original, skipDay, 2_000);
+    expect(skipped).toMatchObject({
+      currentExerciseIndex: 1,
+      currentSetIndex: 0,
+      phase: 'set',
+      restEndsAtMs: null,
+      updatedAtMs: 2_000,
+    });
+    expect(skipped.sets.slice(0, 4).every((set) => set.skipped && !set.completed)).toBe(true);
+    expect(skipped.sets.map((set) => [set.workoutExerciseId, set.setNumber])).toEqual(
+      original.sets.map((set) => [set.workoutExerciseId, set.setNumber]),
+    );
+    expect(original.sets.every((set) => !set.skipped)).toBe(true);
+    expect(skipped.sets[4]).toBe(original.sets[4]);
+    expect(skipDay).toEqual(originalDay);
+    expect(buildSessionSummary(skipped, 2_000)).toEqual({
+      durationMin: 1,
+      exerciseCount: 0,
+      completedSetCount: 0,
+      skippedSetCount: 4,
+      volumeKg: 0,
+    });
+  });
+
+  it.each(['set', 'rest'] as const)(
+    'preserva duas séries feitas de quatro ao pular na fase %s',
+    (phase) => {
+      let session = createGuidedSession(skipDay, 1_000);
+      session = completeCurrentSet(
+        updateCurrentSet(session, { repsDone: '10', loadKg: '22' }, 1_100),
+        skipDay,
+        1_200,
+      );
+      session = skipRest(session, skipDay, 1_300);
+      session = completeCurrentSet(
+        updateCurrentSet(session, { repsDone: '8', loadKg: '24' }, 1_400),
+        skipDay,
+        1_500,
+      );
+      if (phase === 'set') session = skipRest(session, skipDay, 1_600);
+      const before = structuredClone(session);
+      const skipped = skipCurrentExercise(session, skipDay, 2_000);
+      expect(skipped.sets.slice(0, 2)).toEqual(before.sets.slice(0, 2));
+      expect(skipped.sets[0]).toBe(session.sets[0]);
+      expect(skipped.sets.slice(2, 4).every((set) => set.skipped && !set.completed)).toBe(true);
+      expect(session).toEqual(before);
+      expect(buildSessionSummary(skipped, 2_000)).toEqual({
+        durationMin: 1,
+        exerciseCount: 1,
+        completedSetCount: 2,
+        skippedSetCount: 2,
+        volumeKg: 412,
+      });
+      const resumed = resumeGuidedSession(pauseGuidedSession(skipped, 2_100), 3_000);
+      expect(resumed.sets).toEqual(skipped.sets);
+      expect(getCurrentSet(resumed)).toEqual(skipped.sets[4]);
+    },
+  );
+
+  it('prepara a finalização ao pular o último parcialmente realizado', () => {
+    const firstSkipped = skipCurrentExercise(createGuidedSession(skipDay, 1_000), skipDay, 1_100);
+    const resting = completeCurrentSet(
+      updateCurrentSet(firstSkipped, { repsDone: '12', loadKg: '5' }, 1_200),
+      skipDay,
+      1_300,
+    );
+    const skipped = skipCurrentExercise(resting, skipDay, 1_400);
+    expect(skipped).toMatchObject({
+      currentExerciseIndex: 1,
+      currentSetIndex: 3,
+      phase: 'ready-to-finish',
+      restEndsAtMs: null,
+    });
+    expect(buildSessionSummary(markSessionFinished(skipped, 1_500), 1_500)).toEqual({
+      durationMin: 1,
+      exerciseCount: 1,
+      completedSetCount: 1,
+      skippedSetCount: 7,
+      volumeKg: 60,
+    });
+  });
+
+  it.each(['exercise-complete', 'ready-to-finish', 'summary'] as const)(
+    'rejeita a fase %s',
+    (phase) => {
+      const session = { ...createGuidedSession(skipDay, 1_000), phase };
+      expect(() => skipCurrentExercise(session, skipDay, 2_000)).toThrow();
+    },
+  );
 });

@@ -12,6 +12,7 @@ export type WorkoutSetState = {
   repsDone: string;
   loadKg: string;
   completed: boolean;
+  skipped?: boolean;
 };
 
 type WorkoutExerciseForSets = {
@@ -51,17 +52,27 @@ export function buildFinishWorkoutLogInput(
   sets: WorkoutSetState[],
   durationMin: number,
 ): FinishWorkoutLogInput {
-  for (const set of sets) assertWorkoutLoad(set.loadKg);
+  for (const set of sets) {
+    if (!set.skipped) assertWorkoutLoad(set.loadKg);
+  }
   return {
     durationMin,
     completed: true,
-    sets: sets.map((set) => ({
-      workoutExerciseId: set.workoutExerciseId,
-      setNumber: set.setNumber,
-      repsDone: toOptionalNumber(set.repsDone),
-      loadKg: toOptionalNumber(set.loadKg),
-      completed: set.completed,
-    })),
+    sets: sets.map((set) =>
+      set.skipped
+        ? {
+            workoutExerciseId: set.workoutExerciseId,
+            setNumber: set.setNumber,
+            completed: false,
+          }
+        : {
+            workoutExerciseId: set.workoutExerciseId,
+            setNumber: set.setNumber,
+            repsDone: toOptionalNumber(set.repsDone),
+            loadKg: toOptionalNumber(set.loadKg),
+            completed: set.completed,
+          },
+    ),
   };
 }
 

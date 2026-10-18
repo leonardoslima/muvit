@@ -185,6 +185,10 @@ export type WorkoutDraftProgress = {
   completedExerciseCount: number;
   totalExerciseCount: number;
   progressPercent: number;
+  skippedExerciseCount?: number;
+  partialExerciseCount?: number;
+  resolvedExerciseCount?: number;
+  resolvedProgressPercent?: number;
   next: {
     exerciseName: string;
     setNumber: number;
@@ -204,7 +208,37 @@ export function getWorkoutDraftProgress(
   const progressPercent =
     totalExerciseCount === 0 ? 0 : Math.round((completedExerciseCount / totalExerciseCount) * 100);
 
+  const hasSkippedSets = session.sets.some((set) => set.skipped);
+  const resolvedExercises = executableExercises.filter((exercise) =>
+    Array.from({ length: exercise.sets }, (_, index) => index + 1).every((setNumber) =>
+      session.sets.some(
+        (set) =>
+          set.workoutExerciseId === exercise.id &&
+          set.setNumber === setNumber &&
+          (set.completed || set.skipped),
+      ),
+    ),
+  );
+  const skippedExerciseCount = resolvedExercises.filter(
+    (exercise) =>
+      !session.sets.some((set) => set.workoutExerciseId === exercise.id && set.completed),
+  ).length;
+  const resolvedExerciseCount = resolvedExercises.length;
+  const partialExerciseCount =
+    resolvedExerciseCount - completedExerciseCount - skippedExerciseCount;
+
   return {
+    ...(hasSkippedSets
+      ? {
+          skippedExerciseCount,
+          partialExerciseCount,
+          resolvedExerciseCount,
+          resolvedProgressPercent:
+            totalExerciseCount === 0
+              ? 0
+              : Math.round((resolvedExerciseCount / totalExerciseCount) * 100),
+        }
+      : {}),
     completedExerciseCount,
     totalExerciseCount,
     progressPercent,
@@ -293,8 +327,10 @@ function findNextWorkoutStep(
     const sets = session.sets.filter((set) => set.workoutExerciseId === exercise.id);
 
     for (let setNumber = 1; setNumber <= exercise.sets; setNumber += 1) {
-      const completed = sets.some((set) => set.setNumber === setNumber && set.completed);
-      if (!completed) {
+      const resolved = sets.some(
+        (set) => set.setNumber === setNumber && (set.completed || set.skipped),
+      );
+      if (!resolved) {
         return {
           exerciseName: exercise.exercise.name,
           setNumber,

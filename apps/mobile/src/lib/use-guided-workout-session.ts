@@ -15,6 +15,7 @@ import {
   markSessionFinished,
   pauseGuidedSession,
   resumeGuidedSession,
+  skipCurrentExercise,
   skipRest,
   updateCurrentSet,
 } from '../application/workouts/guided-session';
@@ -55,6 +56,7 @@ export type GuidedWorkoutController = {
   completeSet: () => Promise<void>;
   addRestTime: () => Promise<void>;
   skipRest: () => Promise<void>;
+  skipExercise: () => Promise<void>;
   continueAfterExercise: () => Promise<void>;
   finishWorkout: () => Promise<void>;
   discard: () => Promise<boolean>;
@@ -997,6 +999,14 @@ export function useGuidedWorkoutSession({
     await transition((current, _day, at) => extendRest(current, at));
   }, [transition]);
 
+  const skipExercise = useCallback(async () => {
+    await transition((current, day, at) =>
+      current.phase === 'set' || current.phase === 'rest'
+        ? skipCurrentExercise(current, day, at)
+        : current,
+    );
+  }, [transition]);
+
   const skipRestAction = useCallback(async () => {
     await transition((current, day, at) =>
       current.phase === 'rest' ? skipRest(current, day, at) : current,
@@ -1111,8 +1121,15 @@ export function useGuidedWorkoutSession({
         const current = sessionRef.current;
         const day = query.data?.day ?? dayRef.current;
         if (!current || !day || !isCurrentIdentity()) return;
-        if (current.phase !== 'ready-to-finish' || current.sets.some((set) => !set.completed)) {
+        if (
+          current.phase !== 'ready-to-finish' ||
+          current.sets.some((set) => !set.completed && !set.skipped)
+        ) {
           setActionError('O treino ainda não está pronto para finalizar.');
+          return;
+        }
+        if (!current.sets.some((set) => set.completed)) {
+          setActionError('Registre ao menos uma série antes de finalizar o treino.');
           return;
         }
         const finishedAtMs = nowRef.current();
@@ -1281,6 +1298,7 @@ export function useGuidedWorkoutSession({
     saveDraft,
     session: visibleSession,
     skipRest: skipRestAction,
+    skipExercise,
     state,
     storageError,
     summary,

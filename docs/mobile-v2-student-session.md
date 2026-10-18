@@ -4,7 +4,7 @@ A entrega de design está em `assets/design/mobile.pen`, editada pelo MCP pen.de
 
 ## Quadros
 
-As 35 telas originais começam em y=21760, em sete colunas e cinco linhas. A extensão aprovada de demonstração tem dez telas a partir de x=2880, y=29045, com a segunda linha em y=30165, totalizando 45 telas. O quadro de preparação do próximo exercício `Z4qiJX` fica em x=3840, y=30165. O guia `tnkmS` fica em x=3500, y=21760. Os nomes dos quadros e esta tabela identificam os estados; metadados herdados de cópias não devem orientar a implementação.
+As 35 telas originais começam em y=21760, em sete colunas e cinco linhas. A extensão aprovada de demonstração tem dez telas a partir de x=2880, y=29045, com a segunda linha em y=30165, totalizando 45 telas antes da extensão de Pular exercício. A extensão MUV-9 de 2026-10-17 acrescenta três quadros (confirmação parcial, finalização com séries puladas e resumo parcial), totalizando 48 telas. O quadro de preparação do próximo exercício `Z4qiJX` fica em x=3840, y=30165. O guia `tnkmS` fica em x=3500, y=21760. Os nomes dos quadros e esta tabela identificam os estados; metadados herdados de cópias não devem orientar a implementação.
 
 | Tela/estado | Node ID |
 | --- | --- |
@@ -29,6 +29,9 @@ As 35 telas originais começam em y=21760, em sete colunas e cinco linhas. A ext
 | Série — registrando | `MJDGS` |
 | Série — falha ao salvar progresso | `D76TD` |
 | Série — falha ao avançar | `J225Zp` |
+| Pular exercício — confirmação parcial | `QHf1b` |
+| Finalização — séries puladas | `Kj8MA` |
+| Resumo — séries puladas | `z2Zp9` |
 | Saída segura — decisão | `a3DQOn` |
 | Saída segura — salvando | `q46Q3` |
 | Saída segura — falha ao salvar | `L7h41Y` |
@@ -65,12 +68,26 @@ Em 2026-10-17, o usuário aprovou no MUV-9 substituir a espera em 00:00 pelo ava
 1. **`set`:** apresentar exercício, prescrição, série atual e valores realizados. **Concluir série** registra os valores e a série; enquanto processa, impedir novas ações concorrentes.
 2. **`rest`:** entre séries do mesmo exercício, mostrar o tempo restante, **+15 s** e **Pular descanso**. A extensão adiciona 15 segundos ao horário de término existente e o avanço automático respeita esse novo prazo. Pular ou atingir o prazo abre somente a próxima série do mesmo exercício, sem registrá-la como concluída. Descanso zero avança após persistir a conclusão da série atual. O controlador aplica a transição no primeiro plano, usando a mesma persistência serializada das ações; o timer visual apenas apresenta o tempo.
 3. **`exercise-complete`:** a última série de um exercício, quando há outro, apresenta a confirmação do exercício e a prescrição do próximo. **Próximo exercício** abre sua primeira série. Não inserir descanso adicional entre exercícios.
-4. **`ready-to-finish`:** a última série do último exercício apresenta **Pronto para finalizar**. Todas as séries registradas e progresso de 100% não equivalem à conclusão do treino. **Concluir e finalizar treino** executa a conclusão existente.
+4. **`ready-to-finish`:** concluir ou pular as séries restantes do último exercício apresenta **Pronto para finalizar**. Na sessão com séries puladas, informar quantas foram realizadas e puladas, sem dizer que todas foram concluídas. Resolver todos os exercícios e atingir 100% do fluxo não equivalem à conclusão do treino. **Concluir e finalizar treino** executa a conclusão existente.
 5. **`summary`:** depois de registrar a conclusão, apresentar duração, exercícios, séries, volume e **Voltar ao início**. Não criar histórico, novas métricas ou edição retrospectiva das séries.
 
-O progresso representa exercícios cujas séries foram concluídas, não séries/total. A referência anterior é a última série concluída do mesmo exercício nesta sessão; não é o último treino histórico. A primeira série não apresenta referência anterior.
+Sem séries puladas, o progresso representa exercícios cujas séries foram concluídas, não séries/total. Quando houver séries puladas, a barra pode apresentar exercícios resolvidos (completos, parciais ou inteiramente pulados), com legenda que explicite essa composição. `completedExerciseCount` e `progressPercent` continuam representando somente os exercícios com todas as séries realizadas; `resolvedExerciseCount` e `resolvedProgressPercent` representam o avanço no fluxo. Exercício parcial tem séries realizadas e puladas, sem nenhuma pendente; exercício pulado não tem série realizada e tem todas puladas. Não apresentar resolvidos como concluídos. A referência anterior é a última série concluída do mesmo exercício nesta sessão; não é o último treino histórico. A primeira série não apresenta referência anterior.
 
 Os exemplos usam Treino A: Supino reto, 3 séries de 10 repetições, carga de 40 kg e descanso de 60 s; Crucifixo inclinado, 3 séries de 12 repetições, carga de 16 kg e descanso de 45 s. Os valores realizados nos quadros preenchidos representam digitação pelo aluno, sem definir preenchimento automático. `SigiQ` representa repetições inicialmente vazias. O resumo é ilustrativo: 12 minutos, 2 exercícios, 6 séries e 1.776 kg de volume. A duração real vem dos intervalos ativos da sessão e exclui o período entre salvar/pausar e retomar.
+
+## Pular exercício na sessão atual
+
+Decisão aprovada pelo usuário em 2026-10-17: **Pular exercício** é uma ação secundária imersiva abaixo de **Concluir série** em `set` e abaixo das ações de descanso em `rest`. O acesso não depende de informar repetições/carga da série que será pulada. Enquanto uma operação estiver em andamento, a ação fica indisponível, como em `MJDGS`. Não oferecer a ação em `exercise-complete`, na finalização ou no resumo.
+
+O toque abre a confirmação `QHf1b`: **Pular exercício?**, **2 de 4 séries concluídas.** e **As séries já realizadas serão mantidas. As restantes serão puladas nesta sessão.** A contagem acompanha o exercício real. **Continuar neste exercício** fecha a confirmação; **Pular exercício** confirma. Voltar ou fechar a confirmação equivale a continuar. A confirmação suspende o avanço automático do descanso; ao continuar, reconciliar o prazo vencido, sem reiniciar o timer.
+
+Confirmar preserva integralmente cada série já concluída, inclusive carga, repetições, identidade e volume, e marca somente as restantes como `skipped: true`, mantendo `completed: false`. Duas séries realizadas de quatro continuam sendo duas realizadas e duas puladas. Valores de uma série não concluída não contam como realização. O plano, a prescrição, as quantidades e a ordem dos exercícios permanecem intactos. A decisão vale somente para a sessão atual.
+
+O fluxo abre a primeira série do próximo exercício; ao pular no último, abre `ready-to-finish` (`Kj8MA`), sem registrar automaticamente a conclusão do treino. Se nenhuma série tiver sido realizada, **Concluir e finalizar treino** fica indisponível e apresenta **Nenhuma série registrada. Saia da sessão para descartar este treino.** O controlador também impede enviar uma conclusão vazia. O rascunho mantém todas as séries e o marcador opcional de pulo no snapshot v2; registros anteriores sem esse campo continuam válidos. Salvar e retomar preserva essa decisão e não retorna ao exercício pulado. Hoje apresenta exercícios completos, parciais e pulados separadamente ao retomar, preservando a contagem real de concluídos. Se a persistência falhar, o estado avançado e as séries realizadas permanecem em memória, acompanhados de aviso de salvamento. O usuário pode tentar salvar novamente por **Salvar e sair**; o aviso não confirma segurança do rascunho em disco.
+
+No resumo parcial `z2Zp9`, informar separadamente séries realizadas e puladas. Exercícios realizados são os que têm ao menos uma série concluída; séries e volume incluem somente o realizado. O payload de conclusão mantém as séries puladas como `completed: false`, sem carga, repetições ou campo `skipped`. O exemplo parcial tem um exercício completo de três séries e outro com duas realizadas de quatro: dois exercícios realizados, cinco séries realizadas e duas puladas. O exemplo de volume de 1.200 kg é ilustrativo e deve ser calculado a partir dos registros efetivos.
+
+Os quadros `Zdwrv`, `Y37JQ`, `QHf1b`, `Kj8MA` e `z2Zp9` foram exportados e inspecionados pelo Pen CLI. A verificação de persistência reabriu `mobile.pen` em nova sessão da CLI com saída em `artifacts/muv-9/2026-10-17-pular-exercicio-pen/`. Essa inspeção do design não constitui QA visual do app ou validação em dispositivo.
 
 ## Saída e retomada
 

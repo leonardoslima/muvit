@@ -139,6 +139,7 @@ function makeController(
     completeSet: vi.fn(async () => undefined),
     addRestTime: vi.fn(async () => undefined),
     skipRest: vi.fn(async () => undefined),
+    skipExercise: vi.fn(async () => undefined),
     continueAfterExercise: vi.fn(async () => undefined),
     finishWorkout: vi.fn(async () => undefined),
     discard: vi.fn(async () => true),
@@ -160,6 +161,7 @@ function renderContent(
       controller={controller}
       onBackHome={onBackHome}
       selection={selectGuidedSessionView(day, session)}
+      onRequestSkipExercise={vi.fn()}
       onOpenDemonstration={onOpenDemonstration}
     />,
   );
@@ -259,6 +261,7 @@ describe('GuidedSessionContent', () => {
           controller={makeController(session)}
           onBackHome={vi.fn()}
           selection={selectGuidedSessionView(day, session)}
+          onRequestSkipExercise={vi.fn()}
           onOpenDemonstration={vi.fn()}
           demonstrationActionRef={actionRef}
         />,

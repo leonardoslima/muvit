@@ -263,6 +263,12 @@ function ResumeProgress({ day, session }: { day: WorkoutDay; session: GuidedSess
       <Text className="text-v2-surface" variant="label">
         {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
       </Text>
+      {progress.resolvedExerciseCount !== undefined ? (
+        <Text style={{ color: colors.onBrandSecondary }} variant="body">
+          {progress.partialExerciseCount ?? 0} com séries realizadas e restantes puladas ·{' '}
+          {progress.skippedExerciseCount ?? 0} pulados
+        </Text>
+      ) : null}
       <View
         accessibilityLabel="Progresso do treino"
         accessibilityRole="progressbar"

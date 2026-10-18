@@ -45,6 +45,7 @@ const workoutSetStateSchema = z
     repsDone: z.string(),
     loadKg: z.string(),
     completed: z.boolean(),
+    skipped: z.boolean().optional(),
   })
   .strict();
 

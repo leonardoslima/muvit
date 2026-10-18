@@ -33580,6 +33580,23 @@
           }
         },
         {
+          "id": "mtp6n",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "XPa87",
           "name": "Próximo passo",
@@ -34003,6 +34020,23 @@
           }
         },
         {
+          "id": "ZstKF",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "apmou",
           "name": "Próximo passo",
@@ -34309,6 +34343,23 @@
               }
             }
           ]
+        },
+        {
+          "id": "hgbrX",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
         },
         {
           "type": "text",
@@ -34740,6 +34791,23 @@
             "GT4tX": {
               "content": "Concluir série",
               "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "id": "cmsSU",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "textAlign": "center"
@@ -35462,6 +35530,23 @@
             "GT4tX": {
               "content": "Concluir série",
               "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "id": "OD5jr",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "textAlign": "center"
@@ -37575,6 +37660,23 @@
           }
         },
         {
+          "id": "O8S85C",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "b8HGRX",
           "name": "Próximo passo",
@@ -38018,6 +38120,23 @@
           }
         },
         {
+          "id": "Q0cK3r",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "W7Pz2",
           "name": "Próximo passo",
@@ -38344,6 +38463,23 @@
               }
             }
           ]
+        },
+        {
+          "id": "IohXf",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
         },
         {
           "type": "text",
@@ -38795,6 +38931,23 @@
             "GT4tX": {
               "content": "Concluir série",
               "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "id": "AcxSx",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "textAlign": "center"
@@ -39789,6 +39942,23 @@
           }
         },
         {
+          "id": "en2Ac",
+          "type": "ref",
+          "ref": "dgzzT",
+          "name": "Pular exercício · indisponível durante registro",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "Bp4D5": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "XIYfT",
           "name": "Próximo passo",
@@ -40232,6 +40402,23 @@
           }
         },
         {
+          "id": "Xl8q3",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "Ei27H",
           "name": "Próximo passo",
@@ -40668,6 +40855,23 @@
             "GT4tX": {
               "content": "Concluir série",
               "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "id": "LQ2Tl",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "textAlign": "center"
@@ -44207,6 +44411,23 @@
           }
         },
         {
+          "id": "dAZCz",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "gIGY0",
           "name": "Próximo passo",
@@ -44623,6 +44844,23 @@
             "GT4tX": {
               "content": "Concluir série",
               "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "id": "iqSki",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "textAlign": "center"
@@ -45059,6 +45297,23 @@
           }
         },
         {
+          "id": "l6ImH",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 19,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "c10Oo",
           "name": "Próximo passo",
@@ -45443,6 +45698,23 @@
           }
         },
         {
+          "id": "BRyW0",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "text",
           "id": "yG0fm",
           "name": "Próximo passo",
@@ -45685,6 +45957,23 @@
           }
         },
         {
+          "id": "lVV5l",
+          "type": "ref",
+          "ref": "hbHXq",
+          "name": "Pular exercício · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "aJONC": {
+              "content": "Pular exercício",
+              "fontSize": 15,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
           "type": "frame",
           "id": "GI8Ti",
           "name": "Área reservada ao teclado nativo · anotação de design",
@@ -45801,7 +46090,7 @@
               "fill": "$color/text/secondary",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "Concluir série → descanso → próxima série automaticamente ao zerar o relógio. Pular descanso antecipa o avanço. +15 s estende o horário de término original. A transição avança uma única série, sem registrar valores ou concluir a série seguinte.",
+              "content": "Concluir série → descanso → próxima série automaticamente ao zerar o relógio. Pular descanso antecipa o avanço. +15 s estende o horário de término original. A transição avança uma única série, sem registrar valores ou concluir a série seguinte. Pular exercício em série ou descanso exige confirmação. Preserva as séries já realizadas e pula somente as restantes nesta sessão. Avança ao próximo exercício; no último, prepara a finalização. O progresso resolvido inclui parciais e pulados; exercícios concluídos e volume representam somente o realizado.",
               "lineHeight": 1.35,
               "fontFamily": "$font/family",
               "fontSize": 17,
@@ -134771,6 +135060,1067 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "QHf1b",
+      "x": 0,
+      "y": 29024,
+      "name": "MUV-26 · Pular exercício · confirmação parcial",
+      "metadata": {
+        "type": "muv26-screen",
+        "key": "exit"
+      },
+      "clip": true,
+      "width": 390,
+      "height": 1040,
+      "fill": "$color/session/bg",
+      "layout": "none",
+      "children": [
+        {
+          "type": "frame",
+          "id": "NG3on",
+          "x": 0,
+          "y": 0,
+          "name": "Sessão preservada ao fundo",
+          "metadata": {
+            "type": "muv26-screen",
+            "key": "set-previous"
+          },
+          "clip": true,
+          "width": 390,
+          "height": 1040,
+          "fill": "$color/session/bg",
+          "layout": "vertical",
+          "gap": 20,
+          "padding": [
+            0,
+            16,
+            34,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "GBB3a",
+              "name": "Barra de status · referência 62 dp",
+              "width": "fill_container",
+              "height": 62,
+              "padding": [
+                0,
+                6
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ABIst",
+                  "name": "Hora",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": 60,
+                  "content": "9:41",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "frame",
+                  "id": "cYqy3",
+                  "name": "Indicadores do sistema",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "H2N0Wo",
+                      "name": "Sistema · signal",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "signal",
+                      "library": "lucide",
+                      "fill": "$color/session/text"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "LJsZo",
+                      "name": "Sistema · wifi",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "wifi",
+                      "library": "lucide",
+                      "fill": "$color/session/text"
+                    },
+                    {
+                      "type": "icon",
+                      "id": "wl7rl",
+                      "name": "Sistema · battery-full",
+                      "width": 18,
+                      "height": 18,
+                      "icon": "battery-full",
+                      "library": "lucide",
+                      "fill": "$color/session/text"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "YhmCh",
+              "type": "ref",
+              "ref": "EyQ6K",
+              "name": "Sair · abre confirmação",
+              "width": "fill_container",
+              "height": 48,
+              "descendants": {
+                "VLyvw": {
+                  "width": 230,
+                  "content": "Treino A",
+                  "fontSize": 17
+                }
+              }
+            },
+            {
+              "id": "C9EUb",
+              "type": "ref",
+              "ref": "wkcvs",
+              "name": "Progresso · exercícios concluídos",
+              "width": "fill_container",
+              "height": 48,
+              "descendants": {
+                "KHZIL": {
+                  "width": 358
+                },
+                "KxQBG": {
+                  "width": 0
+                },
+                "cG6hv": {
+                  "content": "0 de 2 exercícios concluídos",
+                  "fontSize": 14,
+                  "textGrowth": "fixed-width",
+                  "width": 358
+                },
+                "XLPNE": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "id": "HwExe",
+              "type": "ref",
+              "ref": "n83VQ",
+              "name": "Exercício atual",
+              "width": "fill_container",
+              "layout": "vertical",
+              "padding": 20,
+              "gap": 10,
+              "height": "fit_content",
+              "fill": "$color/session/surface",
+              "cornerRadius": 24,
+              "stroke": "$color/session/border",
+              "strokeWidth": 1,
+              "descendants": {
+                "yAnbW": {
+                  "enabled": false
+                },
+                "G4Ys8": {
+                  "content": "01",
+                  "fontSize": 64,
+                  "textGrowth": "auto"
+                },
+                "ZKwSn": {
+                  "content": "Exercício 1 de 2",
+                  "fontSize": 14,
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container"
+                },
+                "u9wXl": {
+                  "content": "Supino reto",
+                  "fontSize": 28,
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container"
+                },
+                "q9HJ3": {
+                  "width": "fill_container"
+                },
+                "A1ylm": {
+                  "enabled": false
+                },
+                "aruuq": {
+                  "type": "frame",
+                  "id": "hAwnc",
+                  "name": "Prescrição e acesso à demonstração",
+                  "width": 318,
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "P5pSSE",
+                      "name": "Prescrição do exercício",
+                      "fill": "$color/session/text",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "4 séries · 10 reps · descanso de 60 s",
+                      "lineHeight": 1.35,
+                      "fontFamily": "$font/family",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "id": "lannT",
+                      "type": "ref",
+                      "ref": "hbHXq",
+                      "name": "Ver execução · abrir demonstração",
+                      "width": "fill_container",
+                      "height": 48,
+                      "padding": [
+                        10,
+                        12
+                      ],
+                      "fill": "$color/session/raised",
+                      "opacity": 1,
+                      "descendants": {
+                        "aJONC": {
+                          "type": "frame",
+                          "id": "Ko8h6",
+                          "name": "Ícone e rótulo da demonstração",
+                          "width": "fill_container",
+                          "gap": 8,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon",
+                              "id": "a1yy7",
+                              "name": "Reprodução",
+                              "width": 20,
+                              "height": 20,
+                              "icon": "play",
+                              "library": "lucide",
+                              "fill": "$color/action/primary"
+                            },
+                            {
+                              "type": "text",
+                              "id": "X0HYQ",
+                              "name": "Ver execução",
+                              "fill": "$color/session/text",
+                              "content": "Ver execução",
+                              "fontFamily": "$font/family",
+                              "fontSize": 15,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                },
+                "nEwKl": {
+                  "enabled": false
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "nTbNk",
+              "name": "Série atual",
+              "fill": "$color/session/text",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Série 3 de 4",
+              "lineHeight": 1.35,
+              "fontFamily": "$font/family",
+              "fontSize": 26,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "Cgx00",
+              "name": "Última série registrada nesta sessão",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 6,
+              "padding": [
+                12,
+                4
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JQyxH",
+                  "name": "Referência anterior",
+                  "fill": "$color/session/text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Última série registrada",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "YDz2O",
+                  "name": "Valores anteriores",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "10 reps · 40 kg",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 20,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Kw8vp",
+              "name": "Valores realizados · edição direta e passos de 1",
+              "width": "fill_container",
+              "gap": 12,
+              "children": [
+                {
+                  "id": "bEGOj",
+                  "type": "ref",
+                  "ref": "Wbi6r",
+                  "name": "Repetições",
+                  "width": 173,
+                  "height": 112,
+                  "descendants": {
+                    "aeuw2": {
+                      "width": 173,
+                      "height": 112,
+                      "stroke": "$color/session/border",
+                      "strokeWidth": 1
+                    },
+                    "q7V8d": {
+                      "fontSize": 13
+                    },
+                    "Ycx0I": {
+                      "content": "10",
+                      "width": 61,
+                      "x": 56,
+                      "y": 56,
+                      "fontSize": 28,
+                      "textGrowth": "fixed-width-height",
+                      "height": 48
+                    },
+                    "u1RoNL": {
+                      "x": 8,
+                      "y": 56
+                    },
+                    "wxBjg": {
+                      "x": 117,
+                      "y": 56
+                    }
+                  }
+                },
+                {
+                  "id": "nWSYZ",
+                  "type": "ref",
+                  "ref": "nE3zB",
+                  "name": "Carga em kg",
+                  "width": 173,
+                  "height": 112,
+                  "descendants": {
+                    "YWaw8": {
+                      "width": 173,
+                      "height": 112,
+                      "stroke": "$color/session/border",
+                      "strokeWidth": 1
+                    },
+                    "u6ChoL": {
+                      "fontSize": 13
+                    },
+                    "X3nlN": {
+                      "content": "40",
+                      "width": 61,
+                      "x": 56,
+                      "y": 56,
+                      "fontSize": 28,
+                      "textGrowth": "fixed-width-height",
+                      "height": 48
+                    },
+                    "V8Yybm": {
+                      "x": 8,
+                      "y": 56
+                    },
+                    "FaVHe": {
+                      "x": 117,
+                      "y": 56
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "U3jElR",
+              "name": "Orientação de edição",
+              "fill": "$color/session/text-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "Registre os valores realizados antes de avançar.",
+              "lineHeight": 1.35,
+              "fontFamily": "$font/family",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "id": "ngDOo",
+              "type": "ref",
+              "ref": "QCbOZ",
+              "name": "Concluir série",
+              "width": "fill_container",
+              "height": 58,
+              "descendants": {
+                "GT4tX": {
+                  "content": "Concluir série",
+                  "fontSize": 16,
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "textAlign": "center"
+                }
+              }
+            },
+            {
+              "type": "text",
+              "id": "DYOWO",
+              "name": "Próximo passo",
+              "fill": "$color/session/text-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "A seguir: Crucifixo inclinado",
+              "lineHeight": 1.35,
+              "fontFamily": "$font/family",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "rectangle",
+          "id": "DRZo7",
+          "x": 0,
+          "y": 0,
+          "name": "Scrim · bloqueia interação com sessão",
+          "fill": "$color/scrim",
+          "width": 390,
+          "height": 1040
+        },
+        {
+          "id": "gpk2y",
+          "type": "ref",
+          "ref": "A571l",
+          "name": "Confirmar pulo do exercício",
+          "y": 708,
+          "width": 390,
+          "x": 0,
+          "height": "fit_content",
+          "padding": [
+            24,
+            24,
+            34,
+            24
+          ],
+          "descendants": {
+            "tYUOO": {
+              "content": "Pular exercício?"
+            },
+            "X4NKXd": {
+              "content": "2 de 4 séries concluídas.\nAs séries já realizadas serão mantidas. As restantes serão puladas nesta sessão.",
+              "fill": "$color/text/secondary"
+            },
+            "SAtlF": {
+              "height": 58,
+              "opacity": 1
+            },
+            "SAtlF/GT4tX": {
+              "content": "Continuar neste exercício",
+              "fontSize": 16
+            },
+            "v46Ph": {
+              "height": 58
+            },
+            "v46Ph/F3bdaD": {
+              "content": "Pular exercício",
+              "fontSize": 16
+            },
+            "q5A6M9": {
+              "enabled": false,
+              "height": 0,
+              "opacity": 1,
+              "width": 342,
+              "padding": 0
+            },
+            "q5A6M9/IHjRY": {
+              "content": "Descartar treino",
+              "fontSize": 16,
+              "enabled": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Kj8MA",
+      "x": 470,
+      "y": 29024,
+      "name": "MUV-26 · Finalização · séries puladas",
+      "metadata": {
+        "type": "muv26-screen",
+        "key": "ready"
+      },
+      "clip": true,
+      "width": 390,
+      "fill": "$color/session/bg",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": [
+        0,
+        16,
+        34,
+        16
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "YkHKP",
+          "name": "Barra de status · referência 62 dp",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            6
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "YIeuA",
+              "name": "Hora",
+              "fill": "$color/session/text",
+              "textGrowth": "fixed-width",
+              "width": 60,
+              "content": "9:41",
+              "lineHeight": 1.35,
+              "fontFamily": "$font/family",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "AfnRT",
+              "name": "Indicadores do sistema",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "v9TPWU",
+                  "name": "Sistema · signal",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                },
+                {
+                  "type": "icon",
+                  "id": "l5jchg",
+                  "name": "Sistema · wifi",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                },
+                {
+                  "type": "icon",
+                  "id": "oZZHL",
+                  "name": "Sistema · battery-full",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "battery-full",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "vYomV",
+          "type": "ref",
+          "ref": "EyQ6K",
+          "name": "Sair · abre confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "VLyvw": {
+              "width": 230,
+              "content": "Treino A",
+              "fontSize": 17
+            }
+          }
+        },
+        {
+          "id": "WVvs3",
+          "type": "ref",
+          "ref": "wkcvs",
+          "name": "Progresso · exercícios concluídos",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "KHZIL": {
+              "width": 358
+            },
+            "KxQBG": {
+              "width": 358
+            },
+            "cG6hv": {
+              "content": "2 de 2 exercícios resolvidos",
+              "fontSize": 14,
+              "textGrowth": "fixed-width",
+              "width": 358
+            },
+            "XLPNE": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "type": "icon",
+          "id": "HHF7S",
+          "name": "Séries registradas",
+          "width": 48,
+          "height": 48,
+          "icon": "flag",
+          "library": "lucide",
+          "fill": "$color/action/primary"
+        },
+        {
+          "type": "text",
+          "id": "aQ1eW",
+          "name": "Título",
+          "fill": "$color/session/text",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Pronto para finalizar",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 32,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "FpRX7",
+          "name": "Descrição",
+          "fill": "$color/session/text-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "As séries restantes foram puladas nesta sessão.",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 17,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "text",
+          "id": "GFCPQ",
+          "name": "Último exercício",
+          "fill": "$color/session/text",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Crucifixo inclinado · 2 séries feitas e 2 puladas",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 20,
+          "fontWeight": "600"
+        },
+        {
+          "type": "text",
+          "id": "GBYWC",
+          "name": "Contexto",
+          "fill": "$color/session/text-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "1 exercício completo · 1 parcial · 5 séries realizadas",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 16,
+          "fontWeight": "normal"
+        },
+        {
+          "id": "pw3fJ",
+          "type": "ref",
+          "ref": "QCbOZ",
+          "name": "Concluir e finalizar treino",
+          "width": "fill_container",
+          "height": 58,
+          "descendants": {
+            "GT4tX": {
+              "content": "Concluir e finalizar treino",
+              "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
+        },
+        {
+          "type": "text",
+          "id": "NElOl",
+          "name": "Nota de finalização",
+          "fill": "$color/session/text-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "A conclusão será registrada ao finalizar.",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 14,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "z2Zp9",
+      "x": 6230,
+      "y": 29024,
+      "name": "MUV-26 · Resumo · séries puladas",
+      "metadata": {
+        "type": "muv26-screen",
+        "key": "summary-synced"
+      },
+      "clip": true,
+      "width": 390,
+      "fill": "$color/session/bg",
+      "layout": "vertical",
+      "gap": 20,
+      "padding": [
+        0,
+        16,
+        34,
+        16
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "NHO8p",
+          "name": "Barra de status · referência 62 dp",
+          "width": "fill_container",
+          "height": 62,
+          "padding": [
+            0,
+            6
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "G7b5Hj",
+              "name": "Hora",
+              "fill": "$color/session/text",
+              "textGrowth": "fixed-width",
+              "width": 60,
+              "content": "9:41",
+              "lineHeight": 1.35,
+              "fontFamily": "$font/family",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "tSF8z",
+              "name": "Indicadores do sistema",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "x2zzcd",
+                  "name": "Sistema · signal",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "signal",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                },
+                {
+                  "type": "icon",
+                  "id": "osnL7",
+                  "name": "Sistema · wifi",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "wifi",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                },
+                {
+                  "type": "icon",
+                  "id": "j4Y01K",
+                  "name": "Sistema · battery-full",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "battery-full",
+                  "library": "lucide",
+                  "fill": "$color/session/text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "l9qj2A",
+          "type": "ref",
+          "ref": "EyQ6K",
+          "name": "Voltar ao início · sem confirmação",
+          "width": "fill_container",
+          "height": 48,
+          "descendants": {
+            "X12pWN": {
+              "icon": "arrow-left"
+            },
+            "VLyvw": {
+              "width": 230,
+              "content": "Resumo do treino",
+              "fontSize": 17
+            }
+          }
+        },
+        {
+          "type": "icon",
+          "id": "tGvL9",
+          "name": "Conclusão confirmada localmente",
+          "width": 48,
+          "height": 48,
+          "icon": "circle-check",
+          "library": "lucide",
+          "fill": "$color/action/primary"
+        },
+        {
+          "type": "text",
+          "id": "SIwHj",
+          "name": "Título",
+          "fill": "$color/session/text",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Treino concluído",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 32,
+          "fontWeight": "700"
+        },
+        {
+          "type": "text",
+          "id": "e9fj8",
+          "name": "Descrição",
+          "fill": "$color/session/text-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "5 séries realizadas · 2 puladas nesta sessão.",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 17,
+          "fontWeight": "normal"
+        },
+        {
+          "type": "frame",
+          "id": "m8dgok",
+          "name": "Resumo da sessão",
+          "width": "fill_container",
+          "fill": "$color/session/surface",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "OrXoW",
+              "name": "Duração total",
+              "width": "fill_container",
+              "gap": 12,
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "az2WX",
+                  "name": "Duração total",
+                  "fill": "$color/session/text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Duração total",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "B6Mpw",
+                  "name": "Duração total · valor",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": 100,
+                  "content": "12 min",
+                  "lineHeight": 1.35,
+                  "textAlign": "right",
+                  "fontFamily": "$font/family",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KLnQE",
+              "name": "Exercícios",
+              "width": "fill_container",
+              "gap": 12,
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qsSRI",
+                  "name": "Exercícios",
+                  "fill": "$color/session/text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Exercícios realizados",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "Bp3Wa",
+                  "name": "Exercícios · valor",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": 100,
+                  "content": "2",
+                  "lineHeight": 1.35,
+                  "textAlign": "right",
+                  "fontFamily": "$font/family",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Lchvb",
+              "name": "Séries",
+              "width": "fill_container",
+              "gap": 12,
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "PomWV",
+                  "name": "Séries",
+                  "fill": "$color/session/text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Séries realizadas",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "VLoUU",
+                  "name": "Séries · valor",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": 100,
+                  "content": "5",
+                  "lineHeight": 1.35,
+                  "textAlign": "right",
+                  "fontFamily": "$font/family",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Rmu5z",
+              "name": "Volume total",
+              "width": "fill_container",
+              "gap": 12,
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tYwXo",
+                  "name": "Volume total",
+                  "fill": "$color/session/text-secondary",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "Volume total",
+                  "lineHeight": 1.35,
+                  "fontFamily": "$font/family",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "RJrFI",
+                  "name": "Volume total · valor",
+                  "fill": "$color/session/text",
+                  "textGrowth": "fixed-width",
+                  "width": 100,
+                  "content": "1.200 kg",
+                  "lineHeight": 1.35,
+                  "textAlign": "right",
+                  "fontFamily": "$font/family",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "zWCIp",
+          "name": "Confirmação",
+          "fill": "$color/session/text-secondary",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Resumo salvo no seu acompanhamento.",
+          "lineHeight": 1.35,
+          "fontFamily": "$font/family",
+          "fontSize": 16,
+          "fontWeight": "normal"
+        },
+        {
+          "id": "lBxQC",
+          "type": "ref",
+          "ref": "QCbOZ",
+          "name": "Voltar ao início",
+          "width": "fill_container",
+          "height": 58,
+          "descendants": {
+            "GT4tX": {
+              "content": "Voltar ao início",
+              "fontSize": 16,
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "textAlign": "center"
+            }
+          }
         }
       ]
     }

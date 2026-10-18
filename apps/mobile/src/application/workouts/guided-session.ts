@@ -26,6 +26,7 @@ export type GuidedSessionSummary = {
   durationMin: number;
   exerciseCount: number;
   completedSetCount: number;
+  skippedSetCount?: number;
   volumeKg: number;
 };
 
@@ -200,6 +201,32 @@ export function skipRest(
   };
 }
 
+export function skipCurrentExercise(
+  session: GuidedSession,
+  day: GuidedSessionDay,
+  updatedAtMs: number,
+): GuidedSession {
+  if (session.phase !== 'set' && session.phase !== 'rest') {
+    throw new Error(`ação inválida na fase ${session.phase}; esperado set ou rest`);
+  }
+  const exercise = getCurrentExercise(day, session);
+  const isLastExercise = session.currentExerciseIndex >= day.exercises.length - 1;
+
+  return {
+    ...session,
+    sets: session.sets.map((set) =>
+      set.workoutExerciseId === exercise.id && !set.completed ? { ...set, skipped: true } : set,
+    ),
+    currentExerciseIndex: isLastExercise
+      ? session.currentExerciseIndex
+      : session.currentExerciseIndex + 1,
+    currentSetIndex: isLastExercise ? exercise.sets - 1 : 0,
+    phase: isLastExercise ? 'ready-to-finish' : 'set',
+    restEndsAtMs: null,
+    updatedAtMs,
+  };
+}
+
 export function continueAfterExercise(
   session: GuidedSession,
   day: GuidedSessionDay,
@@ -236,7 +263,8 @@ export function buildSessionSummary(
   finishedAtMs: number,
 ): GuidedSessionSummary {
   const completedSets = session.sets.filter((set) => set.completed);
-  const exerciseIds = new Set(session.sets.map((set) => set.workoutExerciseId));
+  const exerciseIds = new Set(completedSets.map((set) => set.workoutExerciseId));
+  const skippedSetCount = session.sets.filter((set) => set.skipped).length;
   const volumeKg = completedSets.reduce(
     (total, set) => total + parseNumber(set.loadKg) * parseNumber(set.repsDone),
     0,
@@ -249,6 +277,7 @@ export function buildSessionSummary(
     durationMin: Math.min(600, Math.max(1, Math.ceil(activeDurationMs / 60_000))),
     exerciseCount: exerciseIds.size,
     completedSetCount: completedSets.length,
+    ...(skippedSetCount > 0 ? { skippedSetCount } : {}),
     volumeKg,
   };
 }

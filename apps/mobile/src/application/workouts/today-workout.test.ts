@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiClient, ApiError, ApiTransportError } from '../../lib/api';
-import type { GuidedSession, GuidedSessionPhase } from './guided-session';
+import { type GuidedSession, type GuidedSessionPhase, createGuidedSession } from './guided-session';
 import {
   InvalidTodayWorkoutPayloadError,
   estimateWorkoutDuration,
@@ -614,4 +614,42 @@ describe('loadWorkoutDay', () => {
 
     await expect(loadWorkoutDay({ api, dayId: 'day-a' })).rejects.toThrow('sem plano');
   });
+});
+
+it('separa exercícios completos, parciais e pulados e encontra a próxima série pendente', () => {
+  const day = {
+    ...cachedDay,
+    exercises: ['complete', 'partial', 'skipped', 'next'].map((id) => ({
+      ...cachedExercise,
+      id,
+      sets: 2,
+      exercise: { ...cachedExercise.exercise, name: id },
+    })),
+  };
+  const initial = createGuidedSession(day, 1_000);
+  const session = {
+    ...initial,
+    sets: initial.sets.map((set) => ({
+      ...set,
+      completed:
+        set.workoutExerciseId === 'complete' ||
+        (set.workoutExerciseId === 'partial' && set.setNumber === 1),
+      skipped:
+        set.workoutExerciseId === 'skipped' ||
+        (set.workoutExerciseId === 'partial' && set.setNumber === 2),
+    })),
+  };
+  expect(getWorkoutDraftProgress(day, session)).toEqual({
+    completedExerciseCount: 1,
+    totalExerciseCount: 4,
+    progressPercent: 25,
+    partialExerciseCount: 1,
+    skippedExerciseCount: 1,
+    resolvedExerciseCount: 3,
+    resolvedProgressPercent: 75,
+    next: { exerciseName: 'next', setNumber: 1, totalSets: 2 },
+  });
+  expect(
+    getWorkoutDraftProgress({ ...day, exercises: day.exercises.slice(0, 3) }, session).next,
+  ).toBeNull();
 });

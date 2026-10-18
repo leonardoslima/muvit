@@ -13,6 +13,7 @@ export type GuidedSessionContentProps = {
   onOpenDemonstration: (exercise: WorkoutDay['exercises'][number]) => void;
   demonstrationActionRef?: Ref<View>;
   onBackHome: () => void;
+  onRequestSkipExercise: () => void;
 };
 
 export function GuidedSessionContent({
@@ -21,6 +22,7 @@ export function GuidedSessionContent({
   onOpenDemonstration,
   demonstrationActionRef,
   onBackHome,
+  onRequestSkipExercise,
 }: GuidedSessionContentProps): React.JSX.Element | null {
   const { width, fontScale } = useWindowDimensions();
   const stackFields = width < 360 || fontScale >= 1.2;
@@ -40,6 +42,16 @@ export function GuidedSessionContent({
   const exercisePosition = session.currentExerciseIndex + 1;
   const setPosition = session.currentSetIndex + 1;
   const summary = controller.summary;
+  const skippedSetCount = session.sets.filter((set) => set.skipped && !set.completed).length;
+  const completedSetCount = session.sets.filter((set) => set.completed).length;
+  const skipButton = (
+    <Button
+      disabled={controller.busy}
+      label="Pular exercício"
+      onPress={onRequestSkipExercise}
+      variant="immersive"
+    />
+  );
 
   return (
     <View className="gap-5 pb-4">
@@ -175,6 +187,7 @@ export function GuidedSessionContent({
             onPress={() => void controller.completeSet()}
             labelClassName="text-[16px]"
           />
+          {skipButton}
           {selection.nextExercise ? (
             <Text className="text-v2-sessionSecondary text-[16px]" variant="body">
               A seguir: {selection.nextExercise.exercise.name}
@@ -225,6 +238,7 @@ export function GuidedSessionContent({
               variant="immersive"
             />
           </View>
+          {skipButton}
         </View>
       ) : null}
 
@@ -258,30 +272,39 @@ export function GuidedSessionContent({
       {session.phase === 'ready-to-finish' ? (
         <View className="gap-4">
           <Text className="text-v2-sessionSecondary" variant="body">
-            Última série do treino
+            {skippedSetCount ? 'Percurso do treino finalizado' : 'Última série do treino'}
           </Text>
           <Text className="text-v2-sessionText" variant="sectionTitle">
             Pronto para finalizar
           </Text>
           <Text className="text-v2-sessionSecondary" variant="body">
-            {selection.progress.progressPercent}% do treino concluído
+            {skippedSetCount
+              ? `${completedSetCount} ${completedSetCount === 1 ? 'série realizada' : 'séries realizadas'} · ${skippedSetCount} puladas`
+              : `${selection.progress.progressPercent}% do treino concluído`}
           </Text>
           <Button
-            disabled={controller.busy}
-            label="Concluir e finalizar treino"
+            disabled={controller.busy || completedSetCount === 0}
+            label={skippedSetCount ? 'Finalizar treino' : 'Concluir e finalizar treino'}
             loading={controller.busy}
             onPress={() => void controller.finishWorkout()}
           />
+          {completedSetCount === 0 ? (
+            <Text className="text-v2-sessionSecondary" variant="body">
+              Nenhuma série registrada. Saia da sessão para descartar este treino.
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
       {session.phase === 'summary' && summary ? (
         <View className="gap-4">
           <Text className="text-v2-sessionText text-center" variant="sectionTitle">
-            Treino concluído
+            {skippedSetCount ? 'Treino finalizado' : 'Treino concluído'}
           </Text>
           <Text className="text-v2-sessionSecondary text-center" variant="body">
-            Parabéns! Você concluiu a sessão.
+            {skippedSetCount
+              ? 'As séries realizadas foram preservadas no seu registro.'
+              : 'Parabéns! Você concluiu a sessão.'}
           </Text>
           <Card className="gap-3" variant="immersive">
             <Text className="text-v2-sessionText" variant="body">
@@ -296,6 +319,11 @@ export function GuidedSessionContent({
             <Text className="text-v2-sessionText" variant="body">
               Volume total: {summary.volumeKg} kg
             </Text>
+            {summary.skippedSetCount ? (
+              <Text className="text-v2-sessionText" variant="body">
+                Séries puladas: {summary.skippedSetCount}
+              </Text>
+            ) : null}
           </Card>
           <Text className="text-v2-sessionSecondary" variant="support">
             {controller.queued
