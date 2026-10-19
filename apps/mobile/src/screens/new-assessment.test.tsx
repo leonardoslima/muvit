@@ -69,6 +69,8 @@ describe('NewAssessmentScreen', () => {
 
     render(<NewAssessmentScreen />);
 
+    expect(screen.getByLabelText('Data da avaliação').props.value).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
     const addButton = screen.getByRole('button', { name: 'Adicionar fotos' });
     await user.press(addButton);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
@@ -100,7 +102,9 @@ describe('NewAssessmentScreen', () => {
     render(<NewAssessmentScreen />);
 
     await user.clear(screen.getByLabelText('Data da avaliação'));
-    await user.type(screen.getByLabelText('Data da avaliação'), '2026-06-12');
+    await user.type(screen.getByLabelText('Data da avaliação'), '12/06/2026');
+    expect(screen.getByLabelText('Data da avaliação')).toHaveProp('value', '12/06/2026');
+    expect(screen.getByPlaceholderText('DD/MM/AAAA')).toBeTruthy();
     await user.type(screen.getByLabelText('Peso'), '80,5');
     await user.type(screen.getByLabelText('Gordura corporal'), '19,2');
     await user.type(screen.getByLabelText('Observações'), 'Evoluiu');

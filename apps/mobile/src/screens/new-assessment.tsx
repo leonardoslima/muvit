@@ -10,6 +10,7 @@ import { Header } from '../components/ui/v2/header';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { Message } from '../components/ui/v2/message';
 import { Text } from '../components/ui/v2/text';
+import { formatDateInput, parseDateInput } from '../lib/date';
 import { spacing } from '../lib/design-system/tokens';
 import { useNewAssessment } from '../lib/use-new-assessment';
 
@@ -53,9 +54,11 @@ export function NewAssessmentScreen(): React.JSX.Element {
         <View className="gap-4">
           <Field
             label="Data da avaliação"
-            onChangeText={(value) => setField('date', value)}
-            placeholder="AAAA-MM-DD"
-            value={values.date}
+            onChangeText={(value) => setField('date', parseDateInput(value))}
+            placeholder="DD/MM/AAAA"
+            keyboardType="number-pad"
+            maxLength={10}
+            value={formatDateInput(values.date)}
           />
           <Field
             keyboardType="decimal-pad"

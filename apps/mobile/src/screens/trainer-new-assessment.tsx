@@ -20,7 +20,7 @@ import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
-import { todayIsoDate } from '../lib/date';
+import { formatDateInput, parseDateInput, todayIsoDate } from '../lib/date';
 import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
 import { uploadAssessmentPhoto } from '../lib/uploads';
@@ -195,9 +195,11 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
         <Field
           label="Data da avaliação"
           editable={!formDisabled}
-          onChangeText={(value) => setField('date', value)}
-          placeholder="AAAA-MM-DD"
-          value={values.date}
+          onChangeText={(value) => setField('date', parseDateInput(value))}
+          placeholder="DD/MM/AAAA"
+          keyboardType="number-pad"
+          maxLength={10}
+          value={formatDateInput(values.date)}
         />
         <Field
           keyboardType="decimal-pad"

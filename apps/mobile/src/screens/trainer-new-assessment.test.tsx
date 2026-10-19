@@ -69,13 +69,15 @@ beforeEach(() => {
 });
 
 describe('TrainerNewAssessmentScreen', () => {
-  it('inicia com todayIsoDate e não mostra IMC sem peso e altura', () => {
+  it('apresenta a data local de hoje no formato brasileiro e não mostra IMC sem peso e altura', () => {
     renderTrainerNewAssessment();
 
     expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
-    expect(screen.getByLabelText('Data da avaliação').props.value).toBe(todayIsoDate());
+    expect(screen.getByLabelText('Data da avaliação').props.value).toBe(
+      todayIsoDate().split('-').reverse().join('/'),
+    );
     expect(screen.getByText('IMC')).toBeTruthy();
     expect(screen.getByText('Informe peso e altura')).toBeTruthy();
     expect(screen.queryByText('26,0')).toBeNull();
@@ -122,7 +124,9 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.clear(screen.getByLabelText('Data da avaliação'));
-    await user.type(screen.getByLabelText('Data da avaliação'), '2026-09-03');
+    await user.type(screen.getByLabelText('Data da avaliação'), '03/09/2026');
+    expect(screen.getByLabelText('Data da avaliação')).toHaveProp('value', '03/09/2026');
+    expect(screen.getByPlaceholderText('DD/MM/AAAA')).toBeTruthy();
     await user.type(screen.getByLabelText('Peso'), '82,5');
     await user.type(screen.getByLabelText('Altura'), '178');
     await user.type(screen.getByLabelText('Gordura corporal'), '18,4');
