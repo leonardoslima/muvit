@@ -1,5 +1,7 @@
 # Aluno — progresso e avaliações v2 — MUV-27
 
+O visor compartilhado de fotos permite pinça temporária de 1× a 4×, retornando suavemente ao tamanho original em 180 ms ao soltar ou cancelar. Trocar de imagem ou fechar descarta a escala. Não há arraste ou toque duplo; os controles de fechar e navegar permanecem fora da ampliação.
+
 Atualização de 2026-10-19: a grade compartilhada usa miniaturas uniformes de proporção 1:1, fundo neutro `subtle` e borda. As imagens usam `contain`, preservando a foto inteira sem distorção; os espaços livres fazem parte do card. O X fica fixo no canto do card. Adicionar fotos usa um botão secundário compacto abaixo da grade, com o texto de apoio separado. O toque na foto abre o visor existente em tela cheia. Esta regra substitui a altura variável pela proporção original descrita abaixo e também se aplica à leitura pela grade compartilhada. O arquivo enviado permanece inteiro.
 
 A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta registra a direção A e a foundation do MUV-24; o design foi aprovado pelo usuário em 2026-10-04. A implementação foi entregue no MUV-37 em 2026-10-14. O usuário autorizou adequar app, API e validação para aceitar quantidade ilimitada de fotos, sem preservar o teto antigo de seis. O relatório completo e os limites da inspeção nativa estão no artefato local ignorado `artifacts/muv-37/2026-10-14-validacao/relatorio.md`; para compartilhar evidências, siga o [fluxo de artefatos de QA](operations/qa-artifacts.md).

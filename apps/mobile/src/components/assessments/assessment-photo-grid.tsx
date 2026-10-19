@@ -17,6 +17,7 @@ export type AssessmentPhotoGridProps = {
   emptyHint?: string;
   description?: string;
   testID?: string;
+  getPhotoAccessibilityLabel?: (index: number) => string;
 };
 
 const PHOTO_ASPECT_RATIO = 1;
@@ -39,6 +40,7 @@ export function AssessmentPhotoGrid({
   emptyHint,
   description,
   testID = 'assessment-photo-grid',
+  getPhotoAccessibilityLabel,
 }: AssessmentPhotoGridProps): React.JSX.Element {
   const [columnWidth, setColumnWidth] = useState<number>();
   const columnStyle = { width: columnWidth ?? FALLBACK_COLUMN_WIDTH };
@@ -84,7 +86,9 @@ export function AssessmentPhotoGrid({
               <View className="relative">
                 <Image
                   accessible={onOpen === undefined}
-                  accessibilityLabel={`Prévia da foto ${index + 1}`}
+                  accessibilityLabel={
+                    getPhotoAccessibilityLabel?.(index) ?? `Prévia da foto ${index + 1}`
+                  }
                   resizeMode="contain"
                   source={{ uri: photo.uri }}
                   style={{

@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react-native';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { describe, expect, it, vi } from 'vitest';
 import { AssessmentMeasurementsCard } from './assessment-measurements-card';
 import { AssessmentMetric } from './assessment-metric';
 import { AssessmentPhotoList } from './assessment-photo-list';
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));
 
 describe('AssessmentMetric', () => {
   it('exibe o label e o valor recebidos sem truncamento', () => {
@@ -35,7 +37,7 @@ describe('AssessmentMeasurementsCard', () => {
 });
 
 describe('AssessmentPhotoList', () => {
-  it('rotula cada foto pela ordem e data e usa enquadramento contain em 4:3', () => {
+  it('mostra miniaturas quadradas em grade e preserva a foto inteira', () => {
     render(
       <AssessmentPhotoList
         dateLabel="03/09/2026"
@@ -46,8 +48,30 @@ describe('AssessmentPhotoList', () => {
     const firstPhoto = screen.getByLabelText('Foto 1 da avaliação de 03/09/2026');
     const secondPhoto = screen.getByLabelText('Foto 2 da avaliação de 03/09/2026');
     expect(firstPhoto.props.resizeMode).toBe('contain');
-    expect(firstPhoto.props.style.aspectRatio).toBe(4 / 3);
+    expect(firstPhoto.props.style.aspectRatio).toBe(1);
     expect(secondPhoto.props.accessibilityLabel).toBe('Foto 2 da avaliação de 03/09/2026');
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByTestId('assessment-photo-grid')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remover foto 1' })).toBeNull();
+  });
+
+  it('amplia a foto tocada e permite navegar e fechar', () => {
+    render(
+      <AssessmentPhotoList
+        dateLabel="03/09/2026"
+        photos={['https://cdn.test/front.jpg', 'https://cdn.test/back.jpg']}
+      />,
+    );
+    fireEvent.press(screen.getByRole('button', { name: 'Abrir foto 2' }));
+    expect(screen.getByLabelText('Prévia ampliada da foto 2').props.source.uri).toBe(
+      'https://cdn.test/back.jpg',
+    );
+    expect(screen.getByLabelText('Prévia ampliada da foto 2').props.resizeMode).toBe('contain');
+    fireEvent.press(screen.getByRole('button', { name: 'Foto anterior' }));
+    expect(screen.getByLabelText('Prévia ampliada da foto 1').props.source.uri).toBe(
+      'https://cdn.test/front.jpg',
+    );
+    fireEvent.press(screen.getByRole('button', { name: 'Fechar fotos' }));
+    expect(screen.queryByLabelText('Prévia ampliada da foto 1')).toBeNull();
   });
 });

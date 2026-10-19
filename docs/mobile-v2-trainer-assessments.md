@@ -84,11 +84,13 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-assessment-detail.tsx`, `ass
 - Peso, altura e gordura ausentes usam Não informado. As circunferências aparecem somente quando a chave foi recebida: peito, cintura, quadril, braços direito/esquerdo, coxas direita/esquerda e panturrilhas direita/esquerda. Sem circunferências, apresentar Não informado na seção.
 - IMC não aparece no detalhe, pois não faz parte da apresentação atual dessa tela. O cálculo existente permanece apenas no formulário.
 - Sem fotos válidas, a seção Fotos não aparece. Com fotos, mostrar todas as URLs não vazias retornadas, sem limitar a leitura às três permitidas na seleção do professor. O layout cresce com o conjunto recebido.
-- Fotos preservam a referência de 4:3. As imagens de amostra do canvas reutilizam `assets/design/assessment-photo-samples/assessment-views.png`; não são fotos de um aluno real nem especificam poses obrigatórias.
+- Por solicitação de 2026-10-19, o detalhe usa a grade compartilhada com miniaturas menores, quadradas, em duas colunas. Cada foto aparece inteira (`contain`), com fundo neutro e borda. Tocar abre o visor compartilhado em tela cheia, permitindo navegar pelas fotos e fechar; não há remoção no histórico. As imagens de amostra do canvas reutilizam `assets/design/assessment-photo-samples/assessment-views.png`; não são fotos de um aluno real nem especificam poses obrigatórias.
 - Observações ausentes ou em branco usam Não informado. Texto extenso cresce e permite rolagem.
 - Loading, erro inicial, 404 e identificador inválido preservam o contexto de retorno e o reload visível no header. O erro inicial recuperável usa somente esse reload; consulta em andamento ou contexto indisponível mantém o controle estático/desativado. Falha de atualização conserva a avaliação com mensagem contextual; o 404 tem prioridade sobre conteúdo anterior.
 
-Não criar visor de fotos, carousel, remoção de anexos registrados, compartilhamento, edição ou exclusão.
+O visor de conferência foi autorizado posteriormente pelo usuário em 2026-10-19. Não criar carousel automático, remoção de anexos registrados, compartilhamento, edição ou exclusão.
+
+O visor compartilhado permite ampliar com pinça enquanto o gesto estiver ativo, entre 1× e 4×. Ao soltar ou cancelar, a imagem retorna a 1× em 180 ms; trocar de foto ou fechar também descarta o zoom. Não há arraste ou toque duplo. O reconhecimento fica dentro de um `GestureHandlerRootView` na janela do modal, usando Gesture Handler e Reanimated já instalados; somente a imagem é escalada, com recorte pela área do visor e controles fora da transformação.
 
 ## Nova avaliação
 

@@ -1,6 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Modal } from 'react-native';
+import { Modal, StyleSheet } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import { withTiming } from 'react-native-reanimated';
 import { describe, expect, it, vi } from 'vitest';
+import type { MockPinchGesture } from '../../../test/gesture-animation.mock';
 import { AssessmentPhotoViewer } from './assessment-photo-viewer';
 
 vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));
@@ -20,6 +23,48 @@ function renderViewer(index: number | null, onIndexChange = vi.fn(), onClose = v
 }
 
 describe('AssessmentPhotoViewer', () => {
+  it('amplia durante a pinça e volta ao tamanho normal ao soltar ou cancelar', () => {
+    renderViewer(0);
+    const gesture: MockPinchGesture = screen.UNSAFE_getByType(GestureDetector).props.gesture;
+    const image = screen.getByLabelText('Prévia ampliada da foto 1');
+    const scale = () => StyleSheet.flatten(image.props.style).transform;
+    expect(scale()).toEqual([{ scale: 1 }]);
+    gesture.handlers.start?.();
+    gesture.handlers.update?.({ scale: 2.5 });
+    expect(scale()).toEqual([{ scale: 2.5 }]);
+    gesture.handlers.finalize?.(true);
+    expect(withTiming).toHaveBeenCalledWith(1, { duration: 180 });
+    expect(scale()).toEqual([{ scale: 1 }]);
+    gesture.handlers.update?.({ scale: 3 });
+    gesture.handlers.finalize?.(false);
+    expect(scale()).toEqual([{ scale: 1 }]);
+  });
+
+  it('limita a ampliação e inicia a próxima foto sem zoom', () => {
+    const { rerender } = renderViewer(0);
+    const gesture: MockPinchGesture = screen.UNSAFE_getByType(GestureDetector).props.gesture;
+    gesture.handlers.update?.({ scale: 8 });
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Prévia ampliada da foto 1').props.style).transform,
+    ).toEqual([{ scale: 4 }]);
+    gesture.handlers.update?.({ scale: 0.5 });
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Prévia ampliada da foto 1').props.style).transform,
+    ).toEqual([{ scale: 1 }]);
+    gesture.handlers.update?.({ scale: 3 });
+    rerender(
+      <AssessmentPhotoViewer
+        index={1}
+        onClose={() => undefined}
+        onIndexChange={() => undefined}
+        photos={photos}
+      />,
+    );
+    expect(
+      StyleSheet.flatten(screen.getByLabelText('Prévia ampliada da foto 2').props.style).transform,
+    ).toEqual([{ scale: 1 }]);
+  });
+
   it('identifica a posição da foto no cabeçalho e exibe a imagem em contain', () => {
     renderViewer(0);
 
