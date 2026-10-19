@@ -1,4 +1,5 @@
 export { Badge, type BadgeProps } from './badge';
+export { ActionFeedback, type ActionFeedbackProps } from './action-feedback';
 export { Button, type ButtonProps } from './button';
 export { Card, type CardProps } from './card';
 export type { Action, ControlVariant } from './control';
@@ -14,3 +15,4 @@ export { Skeleton, type SkeletonProps } from './skeleton';
 export { StatePanel, type StatePanelProps } from './state-panel';
 export { Surface, type SurfaceProps, type SurfaceVariant } from './surface';
 export { Text, TextClassContext, type TextProps } from './text';
+export { ToastProvider, useToast } from './toast';

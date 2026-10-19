@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { spacing } from '../../lib/design-system/tokens';
 import { useWorkoutGoal } from '../../lib/use-workout-goal';
-import { Button, Card, Message, NumericField, Text } from '../ui/v2';
+import { ActionFeedback, Button, Card, NumericField, Text } from '../ui/v2';
 
 export function StudentWorkoutGoal() {
   const { query, save, saving } = useWorkoutGoal();
@@ -47,7 +47,9 @@ export function StudentWorkoutGoal() {
       </Text>
       {query.isPending ? <Text accessibilityLiveRegion="polite">Carregando meta…</Text> : null}
       {query.isError ? (
-        <Message
+        <ActionFeedback
+          inline={!query.data}
+          eventKey={query.errorUpdatedAt}
           variant="error"
           description="Não foi possível carregar sua meta."
           action={{
@@ -97,7 +99,7 @@ export function StudentWorkoutGoal() {
         </>
       ) : null}
       {feedback ? (
-        <Message
+        <ActionFeedback
           variant={feedback === 'success' ? 'success' : 'error'}
           description={
             feedback === 'success'

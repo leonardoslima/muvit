@@ -7,7 +7,15 @@ import {
   useRegisterAppTabPressGuard,
 } from '../components/navigation/app-tabs';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
-import { Button, Card, Field, Message, SectionTab, StatePanel, Text } from '../components/ui/v2';
+import {
+  ActionFeedback,
+  Button,
+  Card,
+  Field,
+  SectionTab,
+  StatePanel,
+  Text,
+} from '../components/ui/v2';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { ExerciseCatalogModal } from '../components/workouts/exercise-catalog-modal';
 import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day';
@@ -241,17 +249,17 @@ function TrainerWorkoutEditorInstance({
         ) : (
           <>
             {controller.draftRecovered ? (
-              <Message title="Rascunho recuperado da sua conta" variant="info" />
+              <ActionFeedback title="Rascunho recuperado da sua conta" variant="info" />
             ) : null}
             {controller.loadError ? (
-              <Message
+              <ActionFeedback
                 description="Os dados anteriores continuam disponíveis. Tente atualizar novamente."
                 title="Não foi possível atualizar o treino"
-                variant="warning"
+                variant="error"
               />
             ) : null}
             {controller.feedback ? (
-              <Message
+              <ActionFeedback
                 description={controller.feedback.message}
                 variant={controller.feedback.tone}
               />

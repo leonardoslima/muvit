@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, renderHook, screen, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../../../test/render-with-toast';
 import { useWorkoutGoal } from '../../lib/use-workout-goal';
 import { StudentWorkoutGoal } from './student-workout-goal';
 
@@ -208,3 +209,5 @@ describe('StudentWorkoutGoal com hook e cache reais', () => {
     expect(client.getQueryData(['workout-goal', 'aluno-b'])).toEqual({ weeklyGoal: 2 });
   });
 });
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));

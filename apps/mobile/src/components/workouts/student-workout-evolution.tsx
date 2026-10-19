@@ -9,8 +9,8 @@ import {
   spacing,
 } from '../../lib/design-system/tokens';
 import { useWorkoutEvolution } from '../../lib/use-workout-evolution';
+import { ActionFeedback } from '../ui/v2/action-feedback';
 import { Card } from '../ui/v2/card';
-import { Message } from '../ui/v2/message';
 import { Text } from '../ui/v2/text';
 
 export function StudentWorkoutEvolution() {
@@ -75,7 +75,9 @@ export function StudentWorkoutEvolution() {
         </Card>
       </View>
       {query.isError ? (
-        <Message
+        <ActionFeedback
+          inline={!query.data}
+          eventKey={query.errorUpdatedAt}
           variant="error"
           title="Não foi possível atualizar sua evolução"
           description="Tente novamente para consultar seus treinos concluídos."

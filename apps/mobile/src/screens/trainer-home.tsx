@@ -5,8 +5,8 @@ import { type LayoutChangeEvent, ScrollView, View } from 'react-native';
 import { getTrainerSummary } from '../application/trainer/trainer-data';
 import { TrainerMetricCard } from '../components/trainer/trainer-metric-card';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { spacing } from '../lib/design-system/tokens';
@@ -75,7 +75,11 @@ export function TrainerHomeScreen(): React.JSX.Element {
     >
       <ScrollView className="flex-1" contentContainerStyle={{ gap: spacing.md }}>
         {query.isRefetchError ? (
-          <Message title="Não foi possível atualizar a visão geral." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar a visão geral."
+            variant="error"
+          />
         ) : null}
 
         {summary.students.total === 0 ? (

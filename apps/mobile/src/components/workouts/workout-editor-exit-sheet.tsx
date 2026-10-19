@@ -1,10 +1,11 @@
 import { Modal, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../lib/design-system/tokens';
+import { ActionFeedback } from '../ui/v2/action-feedback';
 import { Button } from '../ui/v2/button';
-import { Message } from '../ui/v2/message';
 import { SheetSurface } from '../ui/v2/sheet-surface';
 import { Text } from '../ui/v2/text';
+import { ToastProvider } from '../ui/v2/toast';
 
 export type WorkoutEditorExitSheetProps = {
   visible: boolean;
@@ -34,62 +35,66 @@ export function WorkoutEditorExitSheet({
       transparent
       visible={visible}
     >
-      <View accessibilityViewIsModal style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Pressable
-          accessibilityLabel="Fechar e continuar editando"
-          accessibilityRole="button"
-          disabled={busy}
-          onPress={onContinue}
-          style={{
-            backgroundColor: colors.scrim,
-            bottom: 0,
-            left: 0,
-            position: 'absolute',
-            right: 0,
-            top: 0,
-          }}
-        />
-        <SheetSurface style={{ paddingBottom: Math.max(insets.bottom, spacing.xxl) }}>
-          <View className="gap-2">
-            <Text accessibilityRole="header" variant="sectionTitle">
-              Sair do editor?
-            </Text>
-            <Text className="text-v2-secondary" variant="body">
-              Suas alterações ainda não foram salvas.
-            </Text>
-          </View>
-          {error ? (
-            <Message
-              title="Não foi possível salvar o rascunho"
-              description={error}
-              variant="error"
+      {visible ? (
+        <ToastProvider modal safeAreaView={SafeAreaView}>
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <Pressable
+              accessibilityLabel="Fechar e continuar editando"
+              accessibilityRole="button"
+              disabled={busy}
+              onPress={onContinue}
+              style={{
+                backgroundColor: colors.scrim,
+                bottom: 0,
+                left: 0,
+                position: 'absolute',
+                right: 0,
+                top: 0,
+              }}
             />
-          ) : null}
-          <Button
-            disabled={busy}
-            label="Continuar editando"
-            onPress={onContinue}
-            variant="secondary"
-          />
-          <Button
-            disabled={busy}
-            label={
-              busy
-                ? 'Salvando rascunho...'
-                : error
-                  ? 'Tentar salvar e sair'
-                  : 'Salvar rascunho e sair'
-            }
-            onPress={onSave}
-          />
-          <Button
-            disabled={busy}
-            label="Descartar e sair"
-            onPress={onDiscard}
-            variant="destructive"
-          />
-        </SheetSurface>
-      </View>
+            <SheetSurface style={{ paddingBottom: Math.max(insets.bottom, spacing.xxl) }}>
+              <View className="gap-2">
+                <Text accessibilityRole="header" variant="sectionTitle">
+                  Sair do editor?
+                </Text>
+                <Text className="text-v2-secondary" variant="body">
+                  Suas alterações ainda não foram salvas.
+                </Text>
+              </View>
+              {error ? (
+                <ActionFeedback
+                  title="Não foi possível salvar o rascunho"
+                  description={error}
+                  variant="error"
+                />
+              ) : null}
+              <Button
+                disabled={busy}
+                label="Continuar editando"
+                onPress={onContinue}
+                variant="secondary"
+              />
+              <Button
+                disabled={busy}
+                label={
+                  busy
+                    ? 'Salvando rascunho...'
+                    : error
+                      ? 'Tentar salvar e sair'
+                      : 'Salvar rascunho e sair'
+                }
+                onPress={onSave}
+              />
+              <Button
+                disabled={busy}
+                label="Descartar e sair"
+                onPress={onDiscard}
+                variant="destructive"
+              />
+            </SheetSurface>
+          </View>
+        </ToastProvider>
+      ) : null}
     </Modal>
   );
 }

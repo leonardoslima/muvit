@@ -6,8 +6,8 @@ import {
   listTrainerWorkoutPlans,
 } from '../application/workouts/trainer-workout-data';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { WorkoutPlanListItem } from '../components/workouts/workout-plan-list-item';
@@ -177,7 +177,11 @@ export function TrainerWorkoutsScreen(): React.JSX.Element {
         ))}
 
         {hasRefreshError ? (
-          <Message title="Não foi possível atualizar os treinos." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar os treinos."
+            variant="error"
+          />
         ) : null}
       </ScrollView>
     );

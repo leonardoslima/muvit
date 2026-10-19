@@ -9,8 +9,8 @@ import {
 import { AssessmentHeading } from '../components/assessments/assessment-heading';
 import { AssessmentListItem } from '../components/assessments/assessment-list-item';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { ApiError } from '../lib/api';
 import { spacing } from '../lib/design-system/tokens';
@@ -156,11 +156,19 @@ export function TrainerAssessmentsScreen(): React.JSX.Element {
         ))}
 
         {hasRefreshError ? (
-          <Message title="Não foi possível atualizar as avaliações." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar as avaliações."
+            variant="error"
+          />
         ) : null}
 
         {hasPaginationError ? (
-          <Message title="Não foi possível carregar mais avaliações." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível carregar mais avaliações."
+            variant="error"
+          />
         ) : null}
 
         {query.hasNextPage ? (

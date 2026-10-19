@@ -9,9 +9,9 @@ import {
   getWorkoutDraftProgress,
 } from '../application/workouts/today-workout';
 import { Screen } from '../components/ui/screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Card } from '../components/ui/v2/card';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { StudentExerciseList } from '../components/workouts/student-exercise-list';
@@ -85,7 +85,8 @@ export function TodayWorkoutScreen() {
         <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
         {stale ? <OfflineMessage /> : null}
         {hasRefreshError ? (
-          <Message
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
             action={{
               label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
               onPress: retry,
@@ -124,7 +125,8 @@ export function TodayWorkoutScreen() {
       <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
       {stale ? <OfflineMessage /> : null}
       {hasRefreshError ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           action={{
             label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
             onPress: retry,
@@ -169,7 +171,8 @@ export function TodayWorkoutScreen() {
       </Card>
 
       {completedLocal ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           description="A conclusão está salva neste dispositivo e será sincronizada quando necessário."
           title="Conclusão salva"
           variant="success"
@@ -247,7 +250,7 @@ function StudentTodayHeader({ firstName, initials }: { firstName?: string; initi
 
 function OfflineMessage() {
   return (
-    <Message
+    <ActionFeedback
       description="Mostrando os dados salvos neste dispositivo."
       title="Treino carregado offline"
       variant="info"

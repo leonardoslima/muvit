@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { type ComponentProps, createRef } from 'react';
 import type { View } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../../../test/render-with-toast';
 import type { GuidedSession } from '../../application/workouts/guided-session';
 import { createGuidedSession } from '../../application/workouts/guided-session';
 import { selectGuidedSessionView } from '../../application/workouts/guided-session-presentation';
@@ -376,3 +377,5 @@ describe('GuidedSessionContent', () => {
     ).toBe(true);
   });
 });
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));

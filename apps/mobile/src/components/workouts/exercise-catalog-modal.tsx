@@ -1,7 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   EXERCISE_CATALOG_PAGE_SIZE,
   type Exercise,
@@ -11,13 +11,14 @@ import {
 import { colors, controlSizes, spacing } from '../../lib/design-system/tokens';
 import { MUSCLE_GROUP_LABEL, type MuscleGroup, muscleGroupLabel } from '../../lib/muscle-groups';
 import { useApiClient } from '../../lib/use-api';
+import { ActionFeedback } from '../ui/v2/action-feedback';
 import { Button } from '../ui/v2/button';
 import { Card } from '../ui/v2/card';
 import { Field } from '../ui/v2/field';
-import { Message } from '../ui/v2/message';
 import { SheetSurface } from '../ui/v2/sheet-surface';
 import { StatePanel } from '../ui/v2/state-panel';
 import { Text } from '../ui/v2/text';
+import { ToastProvider } from '../ui/v2/toast';
 
 export type ExerciseCatalogModalProps = {
   visible: boolean;
@@ -99,156 +100,167 @@ export function ExerciseCatalogModal({
 
   return (
     <Modal animationType="slide" onRequestClose={onClose} transparent visible={visible}>
-      <KeyboardAvoidingView
-        accessibilityViewIsModal
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1 justify-end"
-      >
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          className="absolute inset-0"
-          style={{ backgroundColor: colors.scrim }}
-        />
-        <SheetSurface
-          className="gap-3"
-          style={{ maxHeight: '92%', paddingBottom: Math.max(insets.bottom, spacing.xxl) }}
-          testID="exercise-catalog-sheet"
-        >
-          <View className="gap-3">
-            <View className="flex-row items-center justify-between gap-3">
-              <Text variant="sectionTitle" className="min-w-0 flex-1">
-                Adicionar exercício
-              </Text>
-              <Button compact label="Fechar catálogo" onPress={onClose} variant="secondary" />
-            </View>
-
-            <Field
-              editable={!isBusy}
-              kind="search"
-              label="Buscar exercício"
-              onChangeText={setDraftSearch}
-              onSubmitEditing={applySearch}
-              placeholder="Nome do exercício"
-              value={draftSearch}
-            />
-            <Button compact disabled={isBusy} label="Buscar" onPress={applySearch} />
-            {draftSearch || appliedSearch ? (
-              <Button
-                compact
-                disabled={isBusy}
-                label="Limpar busca"
-                onPress={clearSearch}
-                variant="secondary"
-              />
-            ) : null}
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View className="flex-row gap-2">
-              <MuscleGroupFilter
-                disabled={isBusy}
-                label="Todos"
-                onPress={() => selectMuscleGroup(undefined)}
-                selected={!muscleGroup}
-              />
-              {MUSCLE_GROUPS.map((group) => (
-                <MuscleGroupFilter
-                  disabled={isBusy}
-                  key={group}
-                  label={MUSCLE_GROUP_LABEL[group]}
-                  onPress={() => selectMuscleGroup(group)}
-                  selected={muscleGroup === group}
-                />
-              ))}
-            </View>
-          </ScrollView>
-
-          <ScrollView
-            className="shrink"
-            contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xxxl }}
+      {visible ? (
+        <ToastProvider modal safeAreaView={SafeAreaView}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="flex-1 justify-end"
           >
-            {query.isPending ? (
-              <StatePanel
-                description="Estamos buscando exercícios disponíveis para sua conta."
-                kind="loading"
-                title="Carregando exercícios"
-              />
-            ) : null}
-
-            {isInitialError ? (
-              <StatePanel
-                action={{
-                  label: 'Tentar novamente',
-                  onPress: () => void query.refetch(),
-                  disabled: isBusy,
-                }}
-                description="Verifique sua conexão e tente novamente."
-                kind="error"
-                title="Não foi possível carregar os exercícios"
-              />
-            ) : null}
-
-            {isEmpty ? (
-              <StatePanel
-                description="Tente outro nome ou grupo muscular."
-                kind="empty"
-                title="Nenhum exercício encontrado"
-              />
-            ) : null}
-
-            {items.map((exercise) => (
-              <Card
-                action={{
-                  label: `Selecionar ${exercise.name}, ${muscleGroupLabel(exercise.muscleGroup)}`,
-                  onPress: () => selectExercise(exercise),
-                  disabled: isBusy,
-                }}
-                key={exercise.id}
-              >
-                <Text variant="label">{exercise.name}</Text>
-                <Text className="text-v2-secondary" variant="support">
-                  {muscleGroupLabel(exercise.muscleGroup)}
-                </Text>
-                {exercise.equipment ? (
-                  <Text className="text-v2-secondary" variant="support">
-                    {exercise.equipment}
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              className="absolute inset-0"
+              style={{ backgroundColor: colors.scrim }}
+            />
+            <SheetSurface
+              className="gap-3"
+              style={{ maxHeight: '92%', paddingBottom: Math.max(insets.bottom, spacing.xxl) }}
+              testID="exercise-catalog-sheet"
+            >
+              <View className="gap-3">
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text variant="sectionTitle" className="min-w-0 flex-1">
+                    Adicionar exercício
                   </Text>
-                ) : null}
-              </Card>
-            ))}
+                  <Button compact label="Fechar catálogo" onPress={onClose} variant="secondary" />
+                </View>
 
-            {hasRefreshError ? (
-              <Message title="Não foi possível atualizar os exercícios." variant="error" />
-            ) : null}
-
-            {hasPaginationError ? (
-              <>
-                <Message title="Não foi possível carregar mais exercícios." variant="error" />
-                <Button
-                  compact
-                  disabled={isBusy}
-                  label="Tentar carregar mais"
-                  loading={query.isFetchingNextPage}
-                  onPress={() => void query.fetchNextPage()}
-                  variant="secondary"
+                <Field
+                  editable={!isBusy}
+                  kind="search"
+                  label="Buscar exercício"
+                  onChangeText={setDraftSearch}
+                  onSubmitEditing={applySearch}
+                  placeholder="Nome do exercício"
+                  value={draftSearch}
                 />
-              </>
-            ) : null}
+                <Button compact disabled={isBusy} label="Buscar" onPress={applySearch} />
+                {draftSearch || appliedSearch ? (
+                  <Button
+                    compact
+                    disabled={isBusy}
+                    label="Limpar busca"
+                    onPress={clearSearch}
+                    variant="secondary"
+                  />
+                ) : null}
+              </View>
 
-            {query.hasNextPage && !hasPaginationError ? (
-              <Button
-                compact
-                disabled={isBusy}
-                label="Carregar mais"
-                loading={query.isFetchingNextPage}
-                onPress={() => void query.fetchNextPage()}
-                variant="secondary"
-              />
-            ) : null}
-          </ScrollView>
-        </SheetSurface>
-      </KeyboardAvoidingView>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View className="flex-row gap-2">
+                  <MuscleGroupFilter
+                    disabled={isBusy}
+                    label="Todos"
+                    onPress={() => selectMuscleGroup(undefined)}
+                    selected={!muscleGroup}
+                  />
+                  {MUSCLE_GROUPS.map((group) => (
+                    <MuscleGroupFilter
+                      disabled={isBusy}
+                      key={group}
+                      label={MUSCLE_GROUP_LABEL[group]}
+                      onPress={() => selectMuscleGroup(group)}
+                      selected={muscleGroup === group}
+                    />
+                  ))}
+                </View>
+              </ScrollView>
+
+              <ScrollView
+                className="shrink"
+                contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xxxl }}
+              >
+                {query.isPending ? (
+                  <StatePanel
+                    description="Estamos buscando exercícios disponíveis para sua conta."
+                    kind="loading"
+                    title="Carregando exercícios"
+                  />
+                ) : null}
+
+                {isInitialError ? (
+                  <StatePanel
+                    action={{
+                      label: 'Tentar novamente',
+                      onPress: () => void query.refetch(),
+                      disabled: isBusy,
+                    }}
+                    description="Verifique sua conexão e tente novamente."
+                    kind="error"
+                    title="Não foi possível carregar os exercícios"
+                  />
+                ) : null}
+
+                {isEmpty ? (
+                  <StatePanel
+                    description="Tente outro nome ou grupo muscular."
+                    kind="empty"
+                    title="Nenhum exercício encontrado"
+                  />
+                ) : null}
+
+                {items.map((exercise) => (
+                  <Card
+                    action={{
+                      label: `Selecionar ${exercise.name}, ${muscleGroupLabel(exercise.muscleGroup)}`,
+                      onPress: () => selectExercise(exercise),
+                      disabled: isBusy,
+                    }}
+                    key={exercise.id}
+                  >
+                    <Text variant="label">{exercise.name}</Text>
+                    <Text className="text-v2-secondary" variant="support">
+                      {muscleGroupLabel(exercise.muscleGroup)}
+                    </Text>
+                    {exercise.equipment ? (
+                      <Text className="text-v2-secondary" variant="support">
+                        {exercise.equipment}
+                      </Text>
+                    ) : null}
+                  </Card>
+                ))}
+
+                {hasRefreshError ? (
+                  <ActionFeedback
+                    eventKey={query.errorUpdatedAt}
+                    title="Não foi possível atualizar os exercícios."
+                    variant="error"
+                  />
+                ) : null}
+
+                {hasPaginationError ? (
+                  <>
+                    <ActionFeedback
+                      eventKey={query.errorUpdatedAt}
+                      title="Não foi possível carregar mais exercícios."
+                      variant="error"
+                    />
+                    <Button
+                      compact
+                      disabled={isBusy}
+                      label="Tentar carregar mais"
+                      loading={query.isFetchingNextPage}
+                      onPress={() => void query.fetchNextPage()}
+                      variant="secondary"
+                    />
+                  </>
+                ) : null}
+
+                {query.hasNextPage && !hasPaginationError ? (
+                  <Button
+                    compact
+                    disabled={isBusy}
+                    label="Carregar mais"
+                    loading={query.isFetchingNextPage}
+                    onPress={() => void query.fetchNextPage()}
+                    variant="secondary"
+                  />
+                ) : null}
+              </ScrollView>
+            </SheetSurface>
+          </KeyboardAvoidingView>
+        </ToastProvider>
+      ) : null}
     </Modal>
   );
 }

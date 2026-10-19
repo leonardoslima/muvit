@@ -5,7 +5,7 @@ import type { GuidedSessionView } from '../../application/workouts/guided-sessio
 import { adjustSessionValue } from '../../application/workouts/guided-session-presentation';
 import { colors, fontFamilies, penTokens } from '../../lib/design-system/tokens';
 import type { GuidedWorkoutController, WorkoutDay } from '../../lib/use-guided-workout-session';
-import { Button, Card, Message, NumericField, Text } from '../ui/v2';
+import { ActionFeedback, Button, Card, NumericField, Text } from '../ui/v2';
 import { GuidedSessionFinishContent } from './guided-session-finish-content';
 
 export type GuidedSessionContentProps = {
@@ -62,15 +62,15 @@ export function GuidedSessionContent({
   return (
     <View className="gap-5 pb-4">
       {controller.storageError ? (
-        <Message
+        <ActionFeedback
           description={controller.storageError}
           title="Aviso ao salvar seu progresso"
           variant="warning"
         />
       ) : null}
       {controller.actionError ? (
-        <View className="gap-3">
-          <Message
+        <>
+          <ActionFeedback
             description={controller.actionError}
             title="Não foi possível atualizar o treino"
             variant="error"
@@ -84,7 +84,7 @@ export function GuidedSessionContent({
               variant="immersive"
             />
           ) : null}
-        </View>
+        </>
       ) : null}
 
       {session.phase === 'set' && exercise && currentSet ? (

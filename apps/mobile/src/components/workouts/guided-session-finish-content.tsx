@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import type { GuidedSessionView } from '../../application/workouts/guided-session-presentation';
 import { colors, fontFamilies, penTokens } from '../../lib/design-system/tokens';
 import type { GuidedWorkoutController } from '../../lib/use-guided-workout-session';
-import { Button, Card, Message, Text } from '../ui/v2';
+import { ActionFeedback, Button, Card, Text } from '../ui/v2';
 
 type GuidedSessionFinishContentProps = {
   controller: GuidedWorkoutController;
@@ -61,7 +61,7 @@ export function GuidedSessionFinishContent({
             </Text>
           ) : null}
           {controller.actionError ? (
-            <Message
+            <ActionFeedback
               title="Não foi possível concluir o treino"
               description={
                 retryFinish
@@ -73,7 +73,7 @@ export function GuidedSessionFinishContent({
             />
           ) : null}
           {controller.storageError ? (
-            <Message
+            <ActionFeedback
               title="Aviso ao salvar seu progresso"
               description={controller.storageError}
               variant="warning"
@@ -140,7 +140,7 @@ export function GuidedSessionFinishContent({
             />
           </Card>
           {controller.queued ? (
-            <Message
+            <ActionFeedback
               title="Salvo neste aparelho"
               description="Seu treino está salvo para sincronização. Você pode voltar ao início."
               variant="warning"
@@ -152,7 +152,7 @@ export function GuidedSessionFinishContent({
             </Text>
           )}
           {controller.storageError || controller.actionError ? (
-            <Message
+            <ActionFeedback
               title="Treino concluído"
               description={controller.storageError ?? controller.actionError ?? undefined}
               variant="warning"

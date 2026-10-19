@@ -8,7 +8,7 @@ import { AssessmentMeasurementsCard } from '../components/assessments/assessment
 import { AssessmentMetric } from '../components/assessments/assessment-metric';
 import { AssessmentPhotoList } from '../components/assessments/assessment-photo-list';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
-import { Message } from '../components/ui/v2/message';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { ApiError } from '../lib/api';
@@ -163,7 +163,11 @@ export function TrainerAssessmentDetailScreen(): React.JSX.Element {
         </View>
 
         {query.isRefetchError ? (
-          <Message title="Não foi possível atualizar a avaliação." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar a avaliação."
+            variant="error"
+          />
         ) : null}
       </ScrollView>
     );

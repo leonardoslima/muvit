@@ -13,10 +13,10 @@ import { toSupportedContentType } from '../application/assessments/new-assessmen
 import { AssessmentHeading } from '../components/assessments/assessment-heading';
 import { TrainerAssessmentPhotos } from '../components/assessments/trainer-assessment-photos';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Field } from '../components/ui/v2/field';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { AssessmentPhotoPickerError, pickAssessmentPhotos } from '../lib/assessment-photo-picker';
@@ -381,8 +381,8 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
         />
       </View>
 
-      {error ? <Message title={error} variant="error" /> : null}
-      {success ? <Message title="Avaliação salva!" variant="success" /> : null}
+      {error ? <ActionFeedback title={error} variant="error" /> : null}
+      {success ? <ActionFeedback title="Avaliação salva!" variant="success" /> : null}
 
       <Button
         disabled={formDisabled}

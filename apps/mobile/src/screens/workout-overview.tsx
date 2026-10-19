@@ -6,9 +6,9 @@ import type * as React from 'react';
 import { View } from 'react-native';
 import { estimateWorkoutDuration, loadWorkoutDay } from '../application/workouts/today-workout';
 import { Screen } from '../components/ui/screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { IconButton } from '../components/ui/v2/icon-button';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Surface } from '../components/ui/v2/surface';
 import { Text } from '../components/ui/v2/text';
@@ -97,7 +97,8 @@ export function WorkoutOverviewScreen(): React.JSX.Element {
     <Screen scroll contentContainerStyle={styles.content}>
       {header}
       {hasRefreshError ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           action={{
             label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
             onPress: retry,

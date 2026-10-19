@@ -8,11 +8,11 @@ import {
 } from '../application/trainer/trainer-data';
 import { StudentListItem } from '../components/trainer/student-list-item';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Field } from '../components/ui/v2/field';
 import { IconButton } from '../components/ui/v2/icon-button';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { colors, spacing } from '../lib/design-system/tokens';
@@ -165,11 +165,19 @@ export function TrainerStudentsScreen(): React.JSX.Element {
         ) : null}
 
         {hasRefreshError ? (
-          <Message title="Não foi possível atualizar a lista." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar a lista."
+            variant="error"
+          />
         ) : null}
         {hasPaginationError ? (
           <>
-            <Message title="Não foi possível carregar mais alunos." variant="error" />
+            <ActionFeedback
+              eventKey={query.errorUpdatedAt}
+              title="Não foi possível carregar mais alunos."
+              variant="error"
+            />
             <Button
               compact
               disabled={query.isFetching}

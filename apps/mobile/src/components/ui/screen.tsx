@@ -6,6 +6,7 @@ import { colors, spacing, tabBarLayout } from '../../lib/design-system/tokens';
 import { Header as V2Header } from './v2/header';
 import { KeyboardScrollView } from './v2/keyboard-scroll-view';
 import { Text as V2Text } from './v2/text';
+import { ToastProvider } from './v2/toast';
 
 export type ScreenProps = {
   children: React.ReactNode;
@@ -26,41 +27,45 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
 
   if (!scroll) {
     return (
-      <SafeAreaView
-        edges={safeAreaEdges}
-        style={[
-          {
-            flex: 1,
-            backgroundColor: colors.background,
-            paddingVertical: spacing.xxl,
-            paddingHorizontal: spacing.lg,
-          },
-          style,
-          tabBarInset,
-        ]}
-      >
-        {children}
-      </SafeAreaView>
+      <ToastProvider safeAreaView={SafeAreaView}>
+        <SafeAreaView
+          edges={safeAreaEdges}
+          style={[
+            {
+              flex: 1,
+              backgroundColor: colors.background,
+              paddingVertical: spacing.xxl,
+              paddingHorizontal: spacing.lg,
+            },
+            style,
+            tabBarInset,
+          ]}
+        >
+          {children}
+        </SafeAreaView>
+      </ToastProvider>
     );
   }
 
   return (
-    <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardScrollView
-        contentContainerStyle={[
-          {
-            gap: spacing.lg,
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.xxl,
-          },
-          contentContainerStyle,
-          tabBarInset,
-        ]}
-        style={style}
-      >
-        {children}
-      </KeyboardScrollView>
-    </SafeAreaView>
+    <ToastProvider safeAreaView={SafeAreaView}>
+      <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
+        <KeyboardScrollView
+          contentContainerStyle={[
+            {
+              gap: spacing.lg,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.xxl,
+            },
+            contentContainerStyle,
+            tabBarInset,
+          ]}
+          style={style}
+        >
+          {children}
+        </KeyboardScrollView>
+      </SafeAreaView>
+    </ToastProvider>
   );
 }
 

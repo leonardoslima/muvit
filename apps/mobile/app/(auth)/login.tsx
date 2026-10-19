@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
 import { AuthBrand } from '../../src/components/auth/auth-brand';
 import { Screen } from '../../src/components/ui/screen';
-import { Button, Field, Header, Message, Text } from '../../src/components/ui/v2';
+import { ActionFeedback, Button, Field, Header, Text } from '../../src/components/ui/v2';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
 import { spacing } from '../../src/lib/design-system/tokens';
@@ -85,7 +85,7 @@ export default function LoginScreen() {
         />
       </View>
 
-      {error ? <Message description={error} variant="error" /> : null}
+      {error ? <ActionFeedback description={error} variant="error" /> : null}
 
       <View testID="login-actions" style={{ gap: spacing.md }}>
         <Button

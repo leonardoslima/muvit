@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { authClient } from '../../lib/auth-client';
 import { queryClient } from '../../lib/query-client';
-import { InlineMessage } from '../ui/inline-message';
 import { Screen } from '../ui/screen';
-import { StatePanel } from '../ui/state-panel';
+import { ActionFeedback } from '../ui/v2/action-feedback';
+import { StatePanel } from '../ui/v2/state-panel';
 
 export function UnsupportedRoleBoundary() {
   const [error, setError] = useState<string>();
@@ -31,13 +31,16 @@ export function UnsupportedRoleBoundary() {
   return (
     <Screen>
       <StatePanel
-        actionLabel={loggingOut ? 'Saindo...' : 'Sair e voltar ao login'}
+        action={{
+          label: loggingOut ? 'Saindo...' : 'Sair e voltar ao login',
+          onPress: () => void logoutUnsupportedSession(),
+          disabled: loggingOut,
+        }}
         description="Este perfil não pode acessar o aplicativo mobile."
-        onAction={() => void logoutUnsupportedSession()}
         title="Perfil não reconhecido"
-        tone="error"
+        kind="error"
       />
-      {error ? <InlineMessage message={error} tone="error" /> : null}
+      {error ? <ActionFeedback description={error} variant="error" /> : null}
     </Screen>
   );
 }

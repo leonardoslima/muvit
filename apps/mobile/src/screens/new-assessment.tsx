@@ -4,11 +4,11 @@ import { View } from 'react-native';
 import { AssessmentPhotoGrid } from '../components/assessments/assessment-photo-grid';
 import { AssessmentPhotoViewer } from '../components/assessments/assessment-photo-viewer';
 import { Screen } from '../components/ui/screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Field } from '../components/ui/v2/field';
 import { Header } from '../components/ui/v2/header';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
-import { Message } from '../components/ui/v2/message';
 import { Text } from '../components/ui/v2/text';
 import { formatDateInput, parseDateInput } from '../lib/date';
 import { spacing } from '../lib/design-system/tokens';
@@ -102,8 +102,8 @@ export function NewAssessmentScreen(): React.JSX.Element {
           />
         </View>
 
-        {error ? <Message title={error} variant="error" /> : null}
-        {success ? <Message title="Avaliação salva!" variant="success" /> : null}
+        {error ? <ActionFeedback title={error} variant="error" /> : null}
+        {success ? <ActionFeedback title="Avaliação salva!" variant="success" /> : null}
 
         <Button
           disabled={formActionsDisabled}

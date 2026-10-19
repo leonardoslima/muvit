@@ -1,6 +1,7 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { screen, userEvent } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../../../test/render-with-toast';
 import type { WorkoutEvolution } from '../../application/workouts/workout-evolution';
 import { StudentWorkoutEvolution } from './student-workout-evolution';
 
@@ -65,3 +66,5 @@ describe('StudentWorkoutEvolution', () => {
     expect(evolutionState.refetch).toHaveBeenCalledOnce();
   });
 });
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));

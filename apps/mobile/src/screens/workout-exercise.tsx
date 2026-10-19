@@ -7,7 +7,7 @@ import type { Text as NativeText } from 'react-native';
 import type { WorkoutDay } from '../application/workouts/today-workout';
 import { loadWorkoutDay } from '../application/workouts/today-workout';
 import { Screen } from '../components/ui/screen';
-import { Message } from '../components/ui/v2/message';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import {
   WorkoutExerciseContent,
@@ -176,7 +176,8 @@ export function WorkoutExerciseScreen(): React.JSX.Element {
         dayId={query.data.day.id}
       />
       {query.error ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           title="Não foi possível atualizar"
           description="A prescrição continua disponível nesta tela."
           variant="error"

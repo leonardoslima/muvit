@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { AuthBrand } from '../components/auth/auth-brand';
 import { Screen } from '../components/ui/screen';
-import { Button, Card, Header, Message, StatePanel, Text } from '../components/ui/v2';
+import { ActionFeedback, Button, Card, Header, StatePanel, Text } from '../components/ui/v2';
 import { StudentWorkoutGoal } from '../components/workouts/student-workout-goal';
 import { authClient } from '../lib/auth-client';
 import { spacing } from '../lib/design-system/tokens';
@@ -111,7 +111,7 @@ export function ProfileScreen({
       {showWorkoutGoal ? <StudentWorkoutGoal key={user?.id} /> : null}
 
       {logoutError ? (
-        <Message description={logoutError} testID="profile-error" variant="error" />
+        <ActionFeedback description={logoutError} testID="profile-error" variant="error" />
       ) : null}
       <Button
         disabled={loggingOut}

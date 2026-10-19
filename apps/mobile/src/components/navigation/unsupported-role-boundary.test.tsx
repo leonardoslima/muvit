@@ -1,7 +1,7 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { screen, userEvent, waitFor } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
-import { Pressable, Text } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
+import { render } from '../../../test/render-with-toast';
 import { UnsupportedRoleBoundary } from './unsupported-role-boundary';
 
 const authState = vi.hoisted(() => ({ signOut: vi.fn() }));
@@ -19,39 +19,6 @@ vi.mock('../../lib/query-client', () => ({
 
 vi.mock('../ui/screen', () => ({
   Screen: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
-
-vi.mock('../ui/state-panel', () => ({
-  StatePanel: ({
-    actionLabel,
-    description,
-    onAction,
-    title,
-  }: {
-    actionLabel?: string;
-    description: string;
-    onAction?: () => void;
-    title: string;
-  }) => (
-    <>
-      <Text>{title}</Text>
-      <Text>{description}</Text>
-      {actionLabel && onAction ? (
-        <Pressable
-          accessible
-          accessibilityLabel={actionLabel}
-          accessibilityRole="button"
-          onPress={onAction}
-        >
-          <Text>{actionLabel}</Text>
-        </Pressable>
-      ) : null}
-    </>
-  ),
-}));
-
-vi.mock('../ui/inline-message', () => ({
-  InlineMessage: ({ message }: { message: string }) => <Text>{message}</Text>,
 }));
 
 describe('UnsupportedRoleBoundary', () => {
@@ -111,3 +78,5 @@ describe('UnsupportedRoleBoundary', () => {
     expect(queryState.clear).toHaveBeenCalledOnce();
   });
 });
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));

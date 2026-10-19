@@ -46,7 +46,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 - Use `src/lib/design-system/tokens.ts` como fonte canônica de cores, tipografia, espaçamento, raios e elevação da UI mobile; os identificadores exportados não devem ter prefixo de versão; prefira esses tokens a valores visuais locais.
 - Use `src/components/ui/v2` para primitives compartilhados. Ao migrar ou alterar um fluxo, substitua os imports afetados de `src/lib/styles.ts` e `src/components/ui` pelos equivalentes v2; não crie aliases ou shims para preservar compatibilidade com o legado. Consulte `docs/mobile-v2-foundation.md` e `docs/mobile-v2-design-gate.md` para os contratos aprovados.
 - NativeWind é configurado por Babel/Metro/Tailwind no app e `global.css` é importado uma vez pelo root layout; classes v2 usam tokens `v2-*`. DM Sans é a família tipográfica da foundation v2. A paleta imersiva é contextual, sem dark mode global.
-- Reutilize `InlineMessage` para feedback de erro, sucesso e aviso de operacoes ja existentes, sem mover a regra de estado para o componente visual.
+- Use `ActionFeedback` de `src/components/ui/v2` para falhas de ações: a variante `error` mostra toast flutuante no `ToastProvider` da `Screen` ou de `GuidedSessionLayout`. Modais nativos com essas falhas precisam de um `ToastProvider` dentro da janela e montado somente enquanto visível. Passe `eventKey={query.errorUpdatedAt}` para falhas repetidas de consultas. Preserve validação junto ao campo e `StatePanel` para falhas sem conteúdo disponível; sucessos, avisos persistentes e contexto offline continuam inline com `Message`. A regra de estado permanece fora do componente visual.
 
 ## Verificacao
 

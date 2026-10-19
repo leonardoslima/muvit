@@ -46,6 +46,7 @@ describe('WorkoutEditorExitSheet', () => {
     );
 
     expect(screen.getByText('Não foi possível salvar o rascunho.')).toBeTruthy();
+    expect(screen.getByTestId('toast-overlay')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar salvar e sair' })).toBeTruthy();
   });
 

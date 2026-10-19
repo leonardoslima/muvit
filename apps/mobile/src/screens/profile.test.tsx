@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TrainerProfileScreen from '../../app/(trainer)/trainer/profile';
+import { colors } from '../lib/design-system/tokens';
 import { ProfileScreen } from './profile';
 
 type SessionUser = { id: string; name: string; email: string; role: string };
@@ -257,7 +258,7 @@ describe('ProfileScreen', () => {
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(screen.queryByText('Erro')).toBeNull();
     expect(screen.getByText('Ana Aluna')).toBeTruthy();
-    expect(screen.getByTestId('profile-error').props.className).toContain('bg-v2-errorBg');
+    expect(screen.getByTestId('profile-error').props.style.backgroundColor).toBe(colors.errorBg);
     expect(queryState.clear).toHaveBeenCalledOnce();
     expect(routerState.replace).not.toHaveBeenCalled();
 
