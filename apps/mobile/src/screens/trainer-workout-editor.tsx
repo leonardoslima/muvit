@@ -1,5 +1,6 @@
 import { useIsFocused } from '@react-navigation/native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { Plus } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import {
@@ -7,22 +8,14 @@ import {
   useRegisterAppTabPressGuard,
 } from '../components/navigation/app-tabs';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
-import {
-  ActionFeedback,
-  Button,
-  Card,
-  Field,
-  SectionTab,
-  StatePanel,
-  Text,
-} from '../components/ui/v2';
+import { ActionFeedback, Button, Field, SectionTab, StatePanel, Text } from '../components/ui/v2';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { ExerciseCatalogModal } from '../components/workouts/exercise-catalog-modal';
 import { WorkoutEditorDayView } from '../components/workouts/workout-editor-day';
-import { WorkoutEditorExitSheet } from '../components/workouts/workout-editor-exit-sheet';
+import { WorkoutEditorExitDialog } from '../components/workouts/workout-editor-exit-dialog';
 import { ApiError } from '../lib/api';
 import { authClient } from '../lib/auth-client';
-import { spacing } from '../lib/design-system/tokens';
+import { colors, spacing } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
 import { usePreventRemove } from '../lib/use-prevent-remove';
 import { useTrainerWorkoutEditor } from '../lib/use-trainer-workout-editor';
@@ -78,6 +71,7 @@ function TrainerWorkoutEditorInstance({
   const [exitVisible, setExitVisible] = useState(false);
   const [leaveAfterConfirmation, setLeaveAfterConfirmation] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [compactHeading, setCompactHeading] = useState(false);
   const controller = useTrainerWorkoutEditor({
     api,
     authUserId,
@@ -190,23 +184,35 @@ function TrainerWorkoutEditorInstance({
   return (
     <TrainerScreen
       backDisabled={controller.busy}
-      backLabel="Voltar para treinos"
+      backLabel={invalidStudent ? 'Voltar para alunos' : 'Voltar para treinos'}
       contextual
       onBack={requestClose}
       onRefresh={() => void controller.refresh()}
       refreshDisabled={refreshDisabled}
       refreshing={controller.refreshing && !controller.loading}
-      title={mode === 'create' ? 'Novo treino' : 'Editar treino'}
+      title={invalidStudent ? 'Alunos' : archived ? 'Treino' : 'Treinos'}
+      titleClassName="font-v2-bold text-v2-brand leading-[21px]"
     >
       <KeyboardScrollView
         className="flex-1"
-        contentContainerStyle={{ gap: spacing.lg, paddingBottom: spacing.xxxl }}
+        contentContainerStyle={{
+          gap: spacing.xxl,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.xxxl,
+        }}
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
+        onLayout={(event) => setCompactHeading(event.nativeEvent.layout.width <= 288)}
       >
+        <Text
+          accessibilityRole="header"
+          variant="screenTitle"
+          className={`font-v2-bold ${compactHeading ? 'text-[26px] leading-[36.4px]' : 'leading-[42px]'}`}
+        >
+          {mode === 'create' ? 'Novo treino' : 'Editar treino'}
+        </Text>
         {controller.contextError ? (
           <StatePanel
-            action={{ label: 'Voltar para treinos', onPress: requestClose }}
             description={controller.contextError}
             kind={archived ? 'empty' : 'error'}
             title={contextTitle}
@@ -223,31 +229,27 @@ function TrainerWorkoutEditorInstance({
           />
         ) : unavailable ? (
           <StatePanel
-            action={{
-              label: 'Tentar novamente',
-              onPress: () => void controller.refresh(),
-              disabled: controller.refreshing,
-            }}
             description="Verifique sua conexão e tente novamente."
             kind="error"
             title="Não foi possível carregar o treino"
           />
         ) : mode === 'edit' && !draftId && !controller.plan ? (
           <StatePanel
-            action={{ label: 'Voltar para treinos', onPress: requestClose }}
             description="Este treino não está disponível para sua conta."
             kind="error"
             title="Treino não encontrado"
           />
         ) : !studentId ? (
           <StatePanel
-            action={{ label: 'Voltar para alunos', onPress: requestClose }}
             description="Não foi possível identificar o aluno solicitado."
             kind="error"
             title="Aluno inválido"
           />
         ) : (
           <>
+            <Text className="text-v2-secondary">
+              Monte a rotina com os exercícios e parâmetros de cada dia.
+            </Text>
             {controller.draftRecovered ? (
               <ActionFeedback title="Rascunho recuperado da sua conta" variant="info" />
             ) : null}
@@ -265,7 +267,7 @@ function TrainerWorkoutEditorInstance({
               />
             ) : null}
 
-            <Card className="gap-4">
+            <View className="gap-4">
               <Field
                 editable={!controller.busy}
                 label="Nome do treino"
@@ -276,29 +278,33 @@ function TrainerWorkoutEditorInstance({
                 editable={!controller.busy}
                 label="Notas"
                 multiline
+                controlClassName="min-h-[86px]"
+                inputClassName="min-h-[84px]"
+                textAlignVertical="center"
                 onChangeText={(value) => controller.changePlanField('notes', value)}
                 value={controller.editor.notes}
               />
-            </Card>
+            </View>
 
             <View className="flex-row flex-wrap items-center gap-3" testID="workout-days-header">
-              <Text className="shrink-0" variant="sectionTitle">
+              <Text className="shrink-0 text-[19px] leading-[26.6px]" variant="sectionTitle">
                 Dias do treino
               </Text>
               <Button
-                className="ml-auto shrink-0"
+                className="ml-auto min-h-[48px] shrink-0 px-0"
                 compact
                 disabled={controller.busy || controller.editor.days.length >= 7}
                 label="Adicionar dia"
-                labelClassName="shrink-0"
+                labelClassName="shrink-0 text-[14px] leading-[19.6px]"
+                leading={<Plus accessible={false} color={colors.brand} size={16} />}
                 onPress={addDay}
-                variant="secondary"
+                variant="text"
               />
             </View>
 
             <ScrollView
               horizontal
-              contentContainerStyle={{ gap: spacing.sm }}
+              contentContainerStyle={{ gap: spacing.sm, flexGrow: 1 }}
               showsHorizontalScrollIndicator={false}
             >
               {controller.editor.days.map((day) => (
@@ -307,38 +313,35 @@ function TrainerWorkoutEditorInstance({
                   key={day.localId}
                   label={day.label}
                   selected={day.localId === controller.activeDayId}
+                  disabled={controller.busy}
+                  className={`min-h-[48px] min-w-[120px] basis-0 grow rounded-[16px] border-0 ${day.localId === controller.activeDayId ? 'bg-v2-brand' : 'bg-v2-subtle'}`}
+                  labelClassName={
+                    day.localId === controller.activeDayId ? 'text-v2-background' : undefined
+                  }
                   onPress={() => controller.setActiveDay(day.localId)}
                 />
               ))}
             </ScrollView>
 
             {activeDay ? (
-              <>
-                <Text className="text-v2-secondary" variant="support">
-                  {activeDay.exercises.length}{' '}
-                  {activeDay.exercises.length === 1 ? 'exercício' : 'exercícios'}
-                </Text>
-                <WorkoutEditorDayView
-                  canRemoveDay={controller.editor.days.length > 1}
-                  day={activeDay}
-                  disabled={controller.busy}
-                  dirtyExerciseIds={controller.dirtyExerciseIds}
-                  focusedExerciseId={controller.focusedExerciseId}
-                  onAddExercise={() => setCatalogOpen(true)}
-                  onChangeExercise={(exerciseId, field, value) =>
-                    controller.changeExerciseField(activeDay.localId, exerciseId, field, value)
-                  }
-                  onChangeLabel={(value) => controller.changeDayLabel(activeDay.localId, value)}
-                  onFocusExercise={(exerciseId) => controller.setFocusedExercise(exerciseId)}
-                  onMoveExercise={(exerciseId, direction) =>
-                    controller.moveExercise(activeDay.localId, exerciseId, direction)
-                  }
-                  onRemoveDay={() => controller.removeDay(activeDay.localId)}
-                  onRemoveExercise={(exerciseId) =>
-                    controller.removeExercise(activeDay.localId, exerciseId)
-                  }
-                />
-              </>
+              <WorkoutEditorDayView
+                canRemoveDay={controller.editor.days.length > 1}
+                day={activeDay}
+                disabled={controller.busy}
+                dirtyExerciseIds={controller.dirtyExerciseIds}
+                onAddExercise={() => setCatalogOpen(true)}
+                onChangeExercise={(exerciseId, field, value) =>
+                  controller.changeExerciseField(activeDay.localId, exerciseId, field, value)
+                }
+                onFocusExercise={(exerciseId) => controller.setFocusedExercise(exerciseId)}
+                onMoveExercise={(exerciseId, direction) =>
+                  controller.moveExercise(activeDay.localId, exerciseId, direction)
+                }
+                onRemoveDay={() => controller.removeDay(activeDay.localId)}
+                onRemoveExercise={(exerciseId) =>
+                  controller.removeExercise(activeDay.localId, exerciseId)
+                }
+              />
             ) : null}
 
             <Button
@@ -371,7 +374,7 @@ function TrainerWorkoutEditorInstance({
         visible={catalogOpen}
       />
 
-      <WorkoutEditorExitSheet
+      <WorkoutEditorExitDialog
         busy={controller.busy}
         error={controller.feedback?.tone === 'error' ? controller.feedback.message : undefined}
         onContinue={continueEditing}

@@ -11,6 +11,7 @@ import {
 } from '../application/assessments/assessment-form';
 import { toSupportedContentType } from '../application/assessments/new-assessment';
 import { AssessmentHeading } from '../components/assessments/assessment-heading';
+import { AssessmentPhotoSourceSheet } from '../components/assessments/assessment-photo-source-sheet';
 import { TrainerAssessmentPhotos } from '../components/assessments/trainer-assessment-photos';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
 import { ActionFeedback } from '../components/ui/v2/action-feedback';
@@ -19,7 +20,11 @@ import { Field } from '../components/ui/v2/field';
 import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
-import { AssessmentPhotoPickerError, pickAssessmentPhotos } from '../lib/assessment-photo-picker';
+import {
+  AssessmentPhotoPickerError,
+  type AssessmentPhotoSource,
+  pickAssessmentPhotos,
+} from '../lib/assessment-photo-picker';
 import { formatDateInput, parseDateInput, todayIsoDate } from '../lib/date';
 import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
@@ -29,6 +34,7 @@ import { useApiClient } from '../lib/use-api';
 const MAX_PHOTOS = 3;
 
 export function TrainerNewAssessmentScreen(): React.JSX.Element {
+  const [choosingPhotoSource, setChoosingPhotoSource] = useState(false);
   const api = useApiClient();
   const params = useLocalSearchParams<{ studentId?: string | string[] }>();
   const studentId = firstParam(params.studentId);
@@ -95,7 +101,7 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
     }));
   }
 
-  async function pickPhoto(): Promise<void> {
+  async function pickPhoto(source: AssessmentPhotoSource): Promise<void> {
     if (photos.length >= MAX_PHOTOS || formDisabled || pickerLockedRef.current) return;
     pickerLockedRef.current = true;
     const generation = pickerGenerationRef.current + 1;
@@ -107,7 +113,7 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
     setPicking(true);
     setError(undefined);
     try {
-      const result = await pickAssessmentPhotos('choose', {
+      const result = await pickAssessmentPhotos(source, {
         libraryOptions: { allowsEditing: true, quality: 0.7 },
         isCurrent,
       });
@@ -362,7 +368,7 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
         <Text variant="sectionTitle">Fotos</Text>
         <TrainerAssessmentPhotos
           disabled={formDisabled || picking}
-          onAdd={() => void pickPhoto()}
+          onAdd={() => setChoosingPhotoSource(true)}
           onRemove={removePhoto}
           photos={photos}
         />
@@ -410,6 +416,11 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
       title={studentId ? 'Avaliações' : 'Alunos'}
     >
       {content}
+      <AssessmentPhotoSourceSheet
+        visible={choosingPhotoSource}
+        onClose={() => setChoosingPhotoSource(false)}
+        onSelect={(source) => void pickPhoto(source)}
+      />
     </TrainerScreen>
   );
 }

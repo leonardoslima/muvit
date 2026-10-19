@@ -1,5 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { todayIsoDate } from '../lib/date';
 import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
@@ -63,10 +62,19 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   };
 }
 
-beforeEach(() => {
-  vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-    buttons?.find((button) => button.text === 'Escolher da biblioteca')?.onPress?.();
+let photoSourceChoice = 'Escolher da biblioteca';
+async function selectPhotoSource(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const modal = screen.queryByTestId('assessment-photo-source-modal');
+  if (!modal) return;
+  const dismiss = modal.props.onDismiss;
+  await user.press(screen.getByRole('button', { name: photoSourceChoice }));
+  await act(async () => {
+    dismiss();
   });
+}
+
+beforeEach(() => {
+  photoSourceChoice = 'Escolher da biblioteca';
   pickerState.launchCameraAsync.mockReset();
   pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   apiState.request.mockReset();
@@ -81,19 +89,20 @@ beforeEach(() => {
 describe('TrainerNewAssessmentScreen', () => {
   it('permite capturar até três fotos na câmera e preserva o limite do professor', async () => {
     const user = userEvent.setup();
-    vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-      buttons?.find((button) => button.text === 'Tirar foto')?.onPress?.();
-    });
+    photoSourceChoice = 'Tirar foto';
     pickerState.launchCameraAsync
       .mockResolvedValueOnce(validPickerResult('file:///camera-1.jpg', 'image/jpeg'))
       .mockResolvedValueOnce(validPickerResult('file:///camera-2.jpg', 'image/jpeg'))
       .mockResolvedValueOnce(validPickerResult('file:///camera-3.jpg', 'image/jpeg'));
     renderTrainerNewAssessment();
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await screen.findByText('Foto 1');
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await screen.findByText('Foto 2');
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await screen.findByText('Foto 3');
     expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
     expect(pickerState.launchCameraAsync).toHaveBeenCalledTimes(3);
@@ -173,7 +182,9 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(screen.getByText('26,0')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     await waitFor(() => {
@@ -225,6 +236,7 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.type(screen.getByLabelText('Peso'), 'abc');
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
@@ -243,6 +255,7 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('A foto informada deve ser uma URL válida.')).toBeTruthy();
@@ -259,6 +272,7 @@ describe('TrainerNewAssessmentScreen', () => {
 
     renderTrainerNewAssessment();
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('Não foi possível enviar as fotos da avaliação.')).toBeTruthy();
@@ -292,7 +306,9 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.queryByText('Foto 2')).toBeNull();
@@ -309,6 +325,7 @@ describe('TrainerNewAssessmentScreen', () => {
 
     renderTrainerNewAssessment();
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
 
     expect(await screen.findByText('Selecione uma imagem JPEG ou PNG.')).toBeTruthy();
     expect(screen.queryByText('Foto 1')).toBeNull();
@@ -325,8 +342,11 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.getByText('Foto 2')).toBeTruthy();
@@ -343,6 +363,7 @@ describe('TrainerNewAssessmentScreen', () => {
 
     renderTrainerNewAssessment();
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     expect(screen.getByRole('button', { name: 'Remover foto 1' })).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Remover foto 1' }));
@@ -379,6 +400,7 @@ describe('TrainerNewAssessmentScreen', () => {
     renderTrainerNewAssessment();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
     await waitFor(() => {
       expect(apiState.request).toHaveBeenCalledTimes(1);
@@ -392,6 +414,7 @@ describe('TrainerNewAssessmentScreen', () => {
     expect(screen.getByText('Foto 1')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
 
     await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
@@ -416,6 +439,7 @@ describe('TrainerNewAssessmentScreen', () => {
 
     renderTrainerNewAssessment();
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
     await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledTimes(2));
 
@@ -433,6 +457,7 @@ describe('TrainerNewAssessmentScreen', () => {
 
     await user.type(weightField, '82,5');
     await user.press(addButton);
+    await selectPhotoSource(user);
     await user.press(removeButton);
     await user.press(backButton);
     await user.press(submitButton);
@@ -463,6 +488,7 @@ describe('TrainerNewAssessmentScreen', () => {
     await user.type(screen.getByLabelText('Peso'), '82,5');
     await user.type(screen.getByLabelText('Observações'), 'Continuar acompanhamento');
     await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('Não foi possível salvar a avaliação.')).toBeTruthy();

@@ -1,28 +1,11 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Alert } from 'react-native';
 
 export type AssessmentPhotoSource = 'camera' | 'library';
-export type AssessmentPhotoRequest = AssessmentPhotoSource | 'choose';
 
 export class AssessmentPhotoPickerError extends Error {}
 
-export function chooseAssessmentPhotoSource(): Promise<AssessmentPhotoSource | null> {
-  return new Promise((resolve) => {
-    Alert.alert(
-      'Adicionar foto',
-      'Como deseja adicionar a foto?',
-      [
-        { text: 'Tirar foto', onPress: () => resolve('camera') },
-        { text: 'Escolher da biblioteca', onPress: () => resolve('library') },
-        { text: 'Cancelar', style: 'cancel', onPress: () => resolve(null) },
-      ],
-      { cancelable: true, onDismiss: () => resolve(null) },
-    );
-  });
-}
-
 export async function pickAssessmentPhotos(
-  request: AssessmentPhotoRequest,
+  source: AssessmentPhotoSource,
   {
     libraryOptions,
     isCurrent,
@@ -32,8 +15,6 @@ export async function pickAssessmentPhotos(
   },
 ): Promise<ImagePicker.ImagePickerResult | null> {
   if (!isCurrent()) return null;
-  const source = request === 'choose' ? await chooseAssessmentPhotoSource() : request;
-  if (!source || !isCurrent()) return null;
 
   try {
     if (source === 'library') return await ImagePicker.launchImageLibraryAsync(libraryOptions);

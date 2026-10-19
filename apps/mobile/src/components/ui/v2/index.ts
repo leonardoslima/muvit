@@ -2,6 +2,8 @@ export { Badge, type BadgeProps } from './badge';
 export { ActionFeedback, type ActionFeedbackProps } from './action-feedback';
 export { Button, type ButtonProps } from './button';
 export { Card, type CardProps } from './card';
+export { ConfirmationDialog, type ConfirmationDialogProps } from './confirmation-dialog';
+export { Dialog, type DialogProps } from './dialog';
 export type { Action, ControlVariant } from './control';
 export { Field, type FieldProps } from './field';
 export { Header, type HeaderProps } from './header';

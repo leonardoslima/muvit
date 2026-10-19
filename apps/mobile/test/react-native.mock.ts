@@ -67,6 +67,7 @@ export const Platform = {
 };
 
 export const Keyboard = {
+  dismiss: () => undefined,
   isVisible: () => false,
   addListener: (_event: string, _listener: () => void) => ({ remove: () => undefined }),
 };

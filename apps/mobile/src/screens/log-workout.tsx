@@ -14,9 +14,9 @@ import {
   GuidedSessionDemonstration,
   type GuidedSessionDemonstrationPhase,
 } from '../components/workouts/guided-session-demonstration';
-import { GuidedSessionExitSheet } from '../components/workouts/guided-session-exit-sheet';
+import { GuidedSessionExitDialog } from '../components/workouts/guided-session-exit-dialog';
 import { GuidedSessionLayout } from '../components/workouts/guided-session-layout';
-import { GuidedSessionSkipSheet } from '../components/workouts/guided-session-skip-sheet';
+import { GuidedSessionSkipDialog } from '../components/workouts/guided-session-skip-dialog';
 import { authClient } from '../lib/auth-client';
 import { radii, colors as v2Colors } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
@@ -242,7 +242,7 @@ export function LogWorkoutScreen() {
     ? `${currentExercise.exercise.name} · Série ${(session?.currentSetIndex ?? 0) + 1}`
     : 'Treino em andamento';
   const exitSheet = (
-    <GuidedSessionExitSheet
+    <GuidedSessionExitDialog
       context={exitContext}
       storageError={controller.storageError}
       onContinue={continueAfterExit}
@@ -349,7 +349,7 @@ export function LogWorkoutScreen() {
         />
       </GuidedSessionLayout>
       {exitSheet}
-      <GuidedSessionSkipSheet
+      <GuidedSessionSkipDialog
         visible={skipVisible}
         busy={controller.busy}
         exerciseName={currentExercise?.exercise.name ?? ''}

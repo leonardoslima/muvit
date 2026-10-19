@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { AssessmentPhotoGrid } from '../components/assessments/assessment-photo-grid';
+import { AssessmentPhotoSourceSheet } from '../components/assessments/assessment-photo-source-sheet';
 import { AssessmentPhotoViewer } from '../components/assessments/assessment-photo-viewer';
 import { Screen } from '../components/ui/screen';
 import { ActionFeedback } from '../components/ui/v2/action-feedback';
@@ -18,6 +19,7 @@ export function NewAssessmentScreen(): React.JSX.Element {
   const { values, submitting, picking, success, error, setField, addPhotos, removePhoto, submit } =
     useNewAssessment();
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [choosingPhotoSource, setChoosingPhotoSource] = useState(false);
   const formActionsDisabled = submitting || success;
   const photos = values.photos.map(({ uri }) => uri);
   const photosDescription =
@@ -95,7 +97,7 @@ export function NewAssessmentScreen(): React.JSX.Element {
             description={photosDescription}
             disabled={formActionsDisabled || picking}
             emptyHint="Selecione imagens JPEG ou PNG."
-            onAdd={() => void addPhotos('choose')}
+            onAdd={() => setChoosingPhotoSource(true)}
             onOpen={setViewerIndex}
             onRemove={removePhoto}
             photos={values.photos}
@@ -118,6 +120,11 @@ export function NewAssessmentScreen(): React.JSX.Element {
         index={viewerIndex}
         onIndexChange={setViewerIndex}
         onClose={() => setViewerIndex(null)}
+      />
+      <AssessmentPhotoSourceSheet
+        visible={choosingPhotoSource}
+        onClose={() => setChoosingPhotoSource(false)}
+        onSelect={(source) => void addPhotos(source)}
       />
     </Screen>
   );

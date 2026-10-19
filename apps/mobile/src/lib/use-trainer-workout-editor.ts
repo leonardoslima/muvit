@@ -24,7 +24,6 @@ import {
   moveWorkoutEditorExercise,
   removeWorkoutEditorDay,
   removeWorkoutEditorExercise,
-  updateWorkoutEditorDayLabel,
   updateWorkoutEditorExerciseField,
   updateWorkoutEditorPlanField,
 } from '../application/workouts/workout-editor';
@@ -80,7 +79,6 @@ export type TrainerWorkoutEditorController = {
   removeDay: (dayId: string) => void;
   removeExercise: (dayId: string, exerciseId: string) => void;
   moveExercise: (dayId: string, exerciseId: string, direction: -1 | 1) => void;
-  changeDayLabel: (dayId: string, value: string) => void;
   changeExerciseField: (
     dayId: string,
     exerciseId: string,
@@ -339,13 +337,6 @@ export function useTrainerWorkoutEditor({
     [updateEditor],
   );
 
-  const changeDayLabel = useCallback(
-    (dayId: string, value: string) => {
-      updateEditor((current) => updateWorkoutEditorDayLabel(current, dayId, value));
-    },
-    [updateEditor],
-  );
-
   const changeExerciseField = useCallback(
     (
       dayId: string,
@@ -587,7 +578,6 @@ export function useTrainerWorkoutEditor({
     removeDay,
     removeExercise,
     moveExercise,
-    changeDayLabel,
     changeExerciseField,
     changePlanField,
     discardChanges,

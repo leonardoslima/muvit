@@ -1,5 +1,6 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -15,6 +16,7 @@ import { ActionFeedback } from '../ui/v2/action-feedback';
 import { Button } from '../ui/v2/button';
 import { Card } from '../ui/v2/card';
 import { Field } from '../ui/v2/field';
+import { IconButton } from '../ui/v2/icon-button';
 import { SheetSurface } from '../ui/v2/sheet-surface';
 import { StatePanel } from '../ui/v2/state-panel';
 import { Text } from '../ui/v2/text';
@@ -47,12 +49,22 @@ export function ExerciseCatalogModal({
   visible,
 }: ExerciseCatalogModalProps): React.JSX.Element {
   const api = useApiClient();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const [draftSearch, setDraftSearch] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup | undefined>();
+  const search = draftSearch.trim();
+  const isSearchChanging = search !== appliedSearch;
+
+  useEffect(() => {
+    if (!visible || !isSearchChanging) return;
+    const timeout = setTimeout(() => setAppliedSearch(search), 400);
+    return () => clearTimeout(timeout);
+  }, [visible, isSearchChanging, search]);
+
   const query = useInfiniteQuery({
-    enabled: visible,
+    enabled: visible && !isSearchChanging,
     queryKey: ['trainer', 'exercise-catalog', appliedSearch, muscleGroup ?? 'all'],
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) =>
@@ -69,23 +81,24 @@ export function ExerciseCatalogModal({
     },
   });
 
-  const isBusy = disabled || query.isFetching;
-  const items = query.data?.pages.flatMap((page) => page.items) ?? [];
-  const hasData = Boolean(query.data);
-  const isInitialError = query.isError && !hasData;
-  const hasPaginationError = query.isFetchNextPageError;
-  const hasRefreshError = query.isRefetchError && !hasPaginationError;
+  const isBusy = disabled || query.isFetching || isSearchChanging;
+  const items = isSearchChanging ? [] : (query.data?.pages.flatMap((page) => page.items) ?? []);
+  const hasData = Boolean(query.data) && !isSearchChanging;
+  const isInitialError = query.isError && !hasData && !isSearchChanging;
+  const hasPaginationError = query.isFetchNextPageError && !isSearchChanging;
+  const hasRefreshError = query.isRefetchError && !hasPaginationError && !isSearchChanging;
   const isEmpty = hasData && items.length === 0;
 
-  function applySearch(): void {
-    if (isBusy) return;
-    setAppliedSearch(draftSearch.trim());
-  }
-
-  function clearSearch(): void {
-    if (isBusy) return;
-    setDraftSearch('');
-    setAppliedSearch('');
+  function changeSearch(value: string): void {
+    if (disabled) return;
+    if (value.trim() !== appliedSearch) {
+      void queryClient.cancelQueries({
+        queryKey: ['trainer', 'exercise-catalog', appliedSearch, muscleGroup ?? 'all'],
+        exact: true,
+      });
+    }
+    setDraftSearch(value);
+    if (!value.trim()) setAppliedSearch('');
   }
 
   function selectMuscleGroup(nextGroup: MuscleGroup | undefined): void {
@@ -113,40 +126,56 @@ export function ExerciseCatalogModal({
               style={{ backgroundColor: colors.scrim }}
             />
             <SheetSurface
-              className="gap-3"
-              style={{ maxHeight: '92%', paddingBottom: Math.max(insets.bottom, spacing.xxl) }}
+              className="mx-4 gap-4 p-4"
+              style={{
+                height: '92%',
+                maxHeight: '92%',
+                paddingBottom: Math.max(insets.bottom, spacing.xxl),
+              }}
               testID="exercise-catalog-sheet"
             >
-              <View className="gap-3">
+              <View className="shrink-0 gap-4">
                 <View className="flex-row items-center justify-between gap-3">
-                  <Text variant="sectionTitle" className="min-w-0 flex-1">
+                  <Text
+                    variant="sectionTitle"
+                    className="min-w-0 flex-1 text-[22px] leading-[30.8px]"
+                  >
                     Adicionar exercício
                   </Text>
-                  <Button compact label="Fechar catálogo" onPress={onClose} variant="secondary" />
+                  <IconButton
+                    accessibilityLabel="Fechar catálogo"
+                    icon={<X accessible={false} color={colors.brand} size={22} />}
+                    onPress={onClose}
+                  />
                 </View>
 
                 <Field
-                  editable={!isBusy}
+                  editable={!disabled}
                   kind="search"
                   label="Buscar exercício"
-                  onChangeText={setDraftSearch}
-                  onSubmitEditing={applySearch}
+                  onChangeText={changeSearch}
                   placeholder="Nome do exercício"
                   value={draftSearch}
+                  trailing={
+                    draftSearch ? (
+                      <IconButton
+                        accessibilityLabel="Limpar busca"
+                        disabled={disabled}
+                        icon={<X accessible={false} color={colors.secondary} size={20} />}
+                        onPress={() => changeSearch('')}
+                        variant="text"
+                      />
+                    ) : null
+                  }
                 />
-                <Button compact disabled={isBusy} label="Buscar" onPress={applySearch} />
-                {draftSearch || appliedSearch ? (
-                  <Button
-                    compact
-                    disabled={isBusy}
-                    label="Limpar busca"
-                    onPress={clearSearch}
-                    variant="secondary"
-                  />
-                ) : null}
               </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <ScrollView
+                horizontal
+                style={{ flexGrow: 0, flexShrink: 0 }}
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={false}
+              >
                 <View className="flex-row gap-2">
                   <MuscleGroupFilter
                     disabled={isBusy}
@@ -167,10 +196,11 @@ export function ExerciseCatalogModal({
               </ScrollView>
 
               <ScrollView
-                className="shrink"
+                className="flex-1"
+                keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ gap: spacing.md, paddingBottom: spacing.xxxl }}
               >
-                {query.isPending ? (
+                {query.isPending || isSearchChanging ? (
                   <StatePanel
                     description="Estamos buscando exercícios disponíveis para sua conta."
                     kind="loading"
@@ -201,6 +231,7 @@ export function ExerciseCatalogModal({
 
                 {items.map((exercise) => (
                   <Card
+                    className="gap-2 border-0"
                     action={{
                       label: `Selecionar ${exercise.name}, ${muscleGroupLabel(exercise.muscleGroup)}`,
                       onPress: () => selectExercise(exercise),
@@ -208,12 +239,14 @@ export function ExerciseCatalogModal({
                     }}
                     key={exercise.id}
                   >
-                    <Text variant="label">{exercise.name}</Text>
-                    <Text className="text-v2-secondary" variant="support">
+                    <Text variant="label" className="text-[19px] leading-[26.6px]">
+                      {exercise.name}
+                    </Text>
+                    <Text className="text-v2-secondary" variant="body">
                       {muscleGroupLabel(exercise.muscleGroup)}
                     </Text>
                     {exercise.equipment ? (
-                      <Text className="text-v2-secondary" variant="support">
+                      <Text className="text-v2-secondary" variant="body">
                         {exercise.equipment}
                       </Text>
                     ) : null}
@@ -236,7 +269,6 @@ export function ExerciseCatalogModal({
                       variant="error"
                     />
                     <Button
-                      compact
                       disabled={isBusy}
                       label="Tentar carregar mais"
                       loading={query.isFetchingNextPage}
@@ -246,9 +278,8 @@ export function ExerciseCatalogModal({
                   </>
                 ) : null}
 
-                {query.hasNextPage && !hasPaginationError ? (
+                {query.hasNextPage && !hasPaginationError && !isSearchChanging ? (
                   <Button
-                    compact
                     disabled={isBusy}
                     label="Carregar mais"
                     loading={query.isFetchingNextPage}
@@ -281,14 +312,14 @@ function MuscleGroupFilter({
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled, selected }}
-      className={`justify-center rounded-full border px-3 py-2 ${
+      className={`min-w-[104px] items-center justify-center rounded-v2-field border px-4 py-3 ${
         selected ? 'border-v2-brand bg-v2-subtle' : 'border-v2-border bg-v2-surface'
       } ${disabled ? 'opacity-50' : ''}`}
       disabled={disabled}
       onPress={onPress}
       style={{ minHeight: controlSizes.touch }}
     >
-      <Text className={selected ? 'text-v2-brand' : 'text-v2-secondary'} variant="support">
+      <Text className="text-v2-brand" variant="label">
         {label}
       </Text>
     </Pressable>

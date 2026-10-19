@@ -1,20 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { WorkoutEditorExitSheet } from './workout-editor-exit-sheet';
+import { WorkoutEditorExitDialog } from './workout-editor-exit-dialog';
 
 vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
   useSafeAreaInsets: () => ({ bottom: 0, left: 0, right: 0, top: 0 }),
 }));
 
-describe('WorkoutEditorExitSheet', () => {
+describe('WorkoutEditorExitDialog', () => {
   it('mantém valores sob controle do editor e oferece continuar, salvar e descartar', () => {
     const onContinue = vi.fn();
     const onSave = vi.fn();
     const onDiscard = vi.fn();
 
     render(
-      <WorkoutEditorExitSheet
+      <WorkoutEditorExitDialog
         visible
         busy={false}
         error={undefined}
@@ -33,9 +33,9 @@ describe('WorkoutEditorExitSheet', () => {
     expect(onDiscard).toHaveBeenCalledOnce();
   });
 
-  it('preserva a sheet e permite tentar novamente depois de falha', () => {
+  it('preserva o modal e permite tentar novamente depois de falha', () => {
     render(
-      <WorkoutEditorExitSheet
+      <WorkoutEditorExitDialog
         visible
         busy={false}
         error="Não foi possível salvar o rascunho."
@@ -56,7 +56,7 @@ describe('WorkoutEditorExitSheet', () => {
     const onDiscard = vi.fn();
 
     render(
-      <WorkoutEditorExitSheet
+      <WorkoutEditorExitDialog
         visible
         busy
         error={undefined}

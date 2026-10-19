@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
 import type {
   WorkoutEditorDay,
@@ -33,7 +32,6 @@ function renderDay(props: Partial<React.ComponentProps<typeof WorkoutEditorDayVi
   const callbacks = {
     onAddExercise: vi.fn(),
     onChangeExercise: vi.fn(),
-    onChangeLabel: vi.fn(),
     onFocusExercise: vi.fn(),
     onMoveExercise: vi.fn(),
     onRemoveDay: vi.fn(),
@@ -49,9 +47,12 @@ describe('WorkoutEditorDayView', () => {
   it('renderiza o dia, campos do exercício e omite tempo', () => {
     renderDay();
 
-    expect(screen.getByLabelText('Nome do dia').props.value).toBe('Treino A');
+    expect(screen.getByRole('header', { name: 'Treino A' })).toBeTruthy();
+    expect(screen.queryByLabelText('Nome do dia')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Editar nome de Treino A' })).toBeNull();
     expect(screen.getByText('Supino reto')).toBeTruthy();
-    expect(screen.getByText('Peito')).toBeTruthy();
+    expect(screen.getByText('Peito · Exercício 01')).toBeTruthy();
+    expect(screen.getByText('1 exercício cadastrado')).toBeTruthy();
     expect(screen.getByLabelText('Séries').props.value).toBe('3');
     expect(screen.getByLabelText('Repetições').props.value).toBe('10');
     expect(screen.getByLabelText('Carga')).toBeTruthy();
@@ -68,7 +69,7 @@ describe('WorkoutEditorDayView', () => {
     const user = userEvent.setup();
     const { callbacks } = renderDay({ day: dayFixture([]) });
 
-    expect(screen.getByText('Nenhum exercício neste dia')).toBeTruthy();
+    expect(screen.getByText('Nenhum exercício cadastrado')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
 
     expect(callbacks.onAddExercise).toHaveBeenCalledOnce();
@@ -77,14 +78,12 @@ describe('WorkoutEditorDayView', () => {
   it('emite alterações com o localId do dia e do exercício', () => {
     const { callbacks } = renderDay();
 
-    fireEvent.changeText(screen.getByLabelText('Nome do dia'), 'Força');
     fireEvent.changeText(screen.getByLabelText('Séries'), '4');
     fireEvent.changeText(screen.getByLabelText('Repetições'), '8-10');
     fireEvent.changeText(screen.getByLabelText('Carga'), '80,5');
     fireEvent.changeText(screen.getByLabelText('Descanso'), '90');
     fireEvent.changeText(screen.getByLabelText('Observação'), 'Controlar a descida');
 
-    expect(callbacks.onChangeLabel).toHaveBeenCalledWith('Força');
     expect(callbacks.onChangeExercise).toHaveBeenNthCalledWith(1, 'exercise-1', 'sets', '4');
     expect(callbacks.onChangeExercise).toHaveBeenNthCalledWith(2, 'exercise-1', 'reps', '8-10');
     expect(callbacks.onChangeExercise).toHaveBeenNthCalledWith(3, 'exercise-1', 'loadKg', '80,5');
@@ -121,13 +120,22 @@ describe('WorkoutEditorDayView', () => {
 
     expect(callbacks.onMoveExercise).toHaveBeenNthCalledWith(1, 'exercise-2', -1);
     expect(callbacks.onMoveExercise).toHaveBeenNthCalledWith(2, 'exercise-1', 1);
-    expect(callbacks.onRemoveExercise).toHaveBeenCalledWith('exercise-1');
+    expect(screen.getByText('Remover exercício?')).toBeTruthy();
+    expect(
+      screen.getByText('O exercício Supino reto será removido deste dia de treino.'),
+    ).toBeTruthy();
+    expect(callbacks.onRemoveExercise).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByText('Remover exercício?')).toBeNull();
+    expect(callbacks.onRemoveExercise).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Remover Supino reto' }));
+    await user.press(screen.getByRole('button', { name: 'Remover exercício' }));
+    expect(callbacks.onRemoveExercise).toHaveBeenCalledExactlyOnceWith('exercise-1');
   });
 
   it('bloqueia todos os controles quando desabilitado', () => {
     renderDay({ disabled: true });
 
-    expect(screen.getByLabelText('Nome do dia').props.editable).toBe(false);
     for (const label of [
       'Adicionar exercício',
       'Mover Supino reto para cima',
@@ -140,26 +148,26 @@ describe('WorkoutEditorDayView', () => {
     }
   });
 
-  it('foca exercício pelo lápis e mostra o estado de foco', async () => {
-    const user = userEvent.setup();
+  it('permite editar diretamente pelo campo sem lápis ou estado de edição no cartão', () => {
     const { callbacks } = renderDay();
 
-    await user.press(screen.getByRole('button', { name: 'Editar exercício Supino reto' }));
+    fireEvent(screen.getByLabelText('Carga'), 'focus', { nativeEvent: {} });
+    fireEvent.changeText(screen.getByLabelText('Carga'), '40');
 
     expect(callbacks.onFocusExercise).toHaveBeenCalledWith('exercise-1');
-    expect(screen.getByText('Editando exercício')).toBeTruthy();
+    expect(callbacks.onChangeExercise).toHaveBeenCalledWith('exercise-1', 'loadKg', '40');
+    expect(screen.queryByRole('button', { name: 'Editar exercício Supino reto' })).toBeNull();
+    expect(screen.queryByText('Editando exercício')).toBeNull();
   });
 
-  it('prioriza alteração não salva sobre foco e oculta o indicador ao restaurar o baseline', () => {
+  it('oculta o indicador de alteração não salva ao restaurar o baseline', () => {
     const { rerender } = render(
       <WorkoutEditorDayView
         canRemoveDay={false}
         day={dayFixture()}
         dirtyExerciseIds={['exercise-1']}
-        focusedExerciseId="exercise-1"
         onAddExercise={vi.fn()}
         onChangeExercise={vi.fn()}
-        onChangeLabel={vi.fn()}
         onFocusExercise={vi.fn()}
         onMoveExercise={vi.fn()}
         onRemoveDay={vi.fn()}
@@ -175,10 +183,8 @@ describe('WorkoutEditorDayView', () => {
         canRemoveDay={false}
         day={dayFixture()}
         dirtyExerciseIds={[]}
-        focusedExerciseId="exercise-1"
         onAddExercise={vi.fn()}
         onChangeExercise={vi.fn()}
-        onChangeLabel={vi.fn()}
         onFocusExercise={vi.fn()}
         onMoveExercise={vi.fn()}
         onRemoveDay={vi.fn()}
@@ -186,36 +192,38 @@ describe('WorkoutEditorDayView', () => {
       />,
     );
 
-    expect(screen.getByText('Editando exercício')).toBeTruthy();
+    expect(screen.queryByText('Editando exercício')).toBeNull();
     expect(screen.queryByText('Alterações não salvas')).toBeNull();
   });
 
-  it('remove dia vazio diretamente sem pedir confirmação', async () => {
+  it('confirma a remoção do dia vazio e mantém o dia ao cancelar', async () => {
     const user = userEvent.setup();
-    const alert = vi.spyOn(Alert, 'alert');
     const { callbacks } = renderDay({ day: dayFixture([]), canRemoveDay: true });
 
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
 
+    expect(screen.getByText('Remover dia?')).toBeTruthy();
+    expect(callbacks.onRemoveDay).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByText('Remover dia?')).toBeNull();
+    expect(callbacks.onRemoveDay).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
+    await user.press(screen.getByRole('button', { name: 'Remover dia' }));
     expect(callbacks.onRemoveDay).toHaveBeenCalledOnce();
-    expect(alert).not.toHaveBeenCalled();
   });
 
-  it('pede confirmação nativa para remover dia preenchido e impede remover o último dia', async () => {
+  it('mostra confirmação do design para remover dia preenchido e impede remover o último dia', async () => {
     const user = userEvent.setup();
-    const alert = vi.spyOn(Alert, 'alert');
     const { callbacks } = renderDay({ canRemoveDay: true });
 
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
 
-    expect(alert).toHaveBeenCalledWith(
-      'Remover dia?',
-      'O dia Treino A e seus exercícios serão removidos deste treino.',
-      expect.any(Array),
-    );
+    expect(screen.getByText('Remover dia?')).toBeTruthy();
+    expect(
+      screen.getByText('O dia Treino A e seus exercícios serão removidos deste treino.'),
+    ).toBeTruthy();
     expect(callbacks.onRemoveDay).not.toHaveBeenCalled();
-    const buttons = alert.mock.calls[0]?.[2];
-    await buttons?.[1]?.onPress?.();
+    await user.press(screen.getByRole('button', { name: 'Remover dia' }));
     expect(callbacks.onRemoveDay).toHaveBeenCalledOnce();
 
     renderDay({ canRemoveDay: false });

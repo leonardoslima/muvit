@@ -3,7 +3,15 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { AuthBrand } from '../components/auth/auth-brand';
 import { Screen } from '../components/ui/screen';
-import { ActionFeedback, Button, Card, Header, StatePanel, Text } from '../components/ui/v2';
+import {
+  ActionFeedback,
+  Button,
+  Card,
+  ConfirmationDialog,
+  Header,
+  StatePanel,
+  Text,
+} from '../components/ui/v2';
 import { StudentWorkoutGoal } from '../components/workouts/student-workout-goal';
 import { authClient } from '../lib/auth-client';
 import { spacing } from '../lib/design-system/tokens';
@@ -26,6 +34,7 @@ export function ProfileScreen({
   const user = session.data?.user;
   const [logoutError, setLogoutError] = useState<string>();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   async function logout() {
     if (loggingOut) return;
@@ -117,8 +126,20 @@ export function ProfileScreen({
         disabled={loggingOut}
         label={loggingOut ? 'Saindo...' : 'Sair'}
         loading={loggingOut}
-        onPress={loggingOut ? undefined : () => void logout()}
+        onPress={() => setConfirmingLogout(true)}
         variant="secondary"
+      />
+      <ConfirmationDialog
+        visible={confirmingLogout}
+        title="Sair da conta?"
+        description="Você precisará entrar novamente para acessar sua conta."
+        confirmLabel="Sair da conta"
+        disabled={loggingOut}
+        onCancel={() => setConfirmingLogout(false)}
+        onConfirm={() => {
+          setConfirmingLogout(false);
+          void logout();
+        }}
       />
     </Screen>
   );

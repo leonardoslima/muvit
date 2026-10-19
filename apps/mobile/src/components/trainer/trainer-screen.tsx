@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, type LayoutChangeEvent, View } from 'react-native';
+import { cn } from '../../lib/design-system/cn';
 import { colors } from '../../lib/design-system/tokens';
 import { Screen } from '../ui/screen';
 import { Header } from '../ui/v2/header';
@@ -9,6 +10,7 @@ export type TrainerScreenProps = {
   title: string;
   subtitle?: string;
   contextual?: boolean;
+  titleClassName?: string;
   backLabel?: string;
   backDisabled?: boolean;
   onBack?: () => void;
@@ -22,6 +24,7 @@ export function TrainerScreen({
   title,
   subtitle,
   contextual = false,
+  titleClassName: customTitleClassName,
   backLabel = 'Voltar para alunos',
   backDisabled = false,
   onBack,
@@ -60,7 +63,7 @@ export function TrainerScreen({
           }
           className="min-h-[48px]"
           title={title}
-          titleClassName={titleClassName}
+          titleClassName={cn(titleClassName, customTitleClassName)}
           variant={contextual ? 'contextual' : 'default'}
         />
         {subtitle ? <Text className="text-v2-secondary">{subtitle}</Text> : null}

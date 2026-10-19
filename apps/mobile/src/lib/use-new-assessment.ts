@@ -7,7 +7,7 @@ import {
 } from '../application/assessments/new-assessment';
 import {
   AssessmentPhotoPickerError,
-  type AssessmentPhotoRequest,
+  type AssessmentPhotoSource,
   pickAssessmentPhotos,
 } from './assessment-photo-picker';
 import { todayIsoDate } from './date';
@@ -24,7 +24,7 @@ export type UseNewAssessmentResult = {
   success: boolean;
   error: string | undefined;
   setField: (field: AssessmentFormField, value: string) => void;
-  addPhotos: (source?: AssessmentPhotoRequest) => Promise<void>;
+  addPhotos: (source?: AssessmentPhotoSource) => Promise<void>;
   removePhoto: (index: number) => void;
   submit: () => Promise<void>;
 };
@@ -81,7 +81,7 @@ export function useNewAssessment(): UseNewAssessmentResult {
     updateValues(nextValues);
   }
 
-  async function addPhotos(source: AssessmentPhotoRequest = 'library'): Promise<void> {
+  async function addPhotos(source: AssessmentPhotoSource = 'library'): Promise<void> {
     if (pickerLockedRef.current || submittingRef.current || successRef.current) return;
 
     pickerLockedRef.current = true;

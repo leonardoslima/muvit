@@ -1,5 +1,5 @@
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { Alert, KeyboardAvoidingView, Modal, ScrollView } from 'react-native';
+import { KeyboardAvoidingView, Modal, ScrollView } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewAssessmentScreen } from './new-assessment';
 
@@ -56,10 +56,19 @@ function pickerResult(uris: readonly string[]) {
   };
 }
 
-beforeEach(() => {
-  vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-    buttons?.find((button) => button.text === 'Escolher da biblioteca')?.onPress?.();
+let photoSourceChoice = 'Escolher da biblioteca';
+async function selectPhotoSource(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const modal = screen.queryByTestId('assessment-photo-source-modal');
+  if (!modal) return;
+  const dismiss = modal.props.onDismiss;
+  await user.press(screen.getByRole('button', { name: photoSourceChoice }));
+  await act(async () => {
+    dismiss();
   });
+}
+
+beforeEach(() => {
+  photoSourceChoice = 'Escolher da biblioteca';
   pickerState.launchCameraAsync.mockReset();
   pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   routerState.back.mockReset();
@@ -78,11 +87,11 @@ describe('NewAssessmentScreen', () => {
     pickerState.launchCameraAsync.mockResolvedValueOnce(pickerResult(['file:///camera.jpg']));
     render(<NewAssessmentScreen />);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await screen.findByText('Foto 1');
-    vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-      buttons?.find((button) => button.text === 'Tirar foto')?.onPress?.();
-    });
+    photoSourceChoice = 'Tirar foto';
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await screen.findByText('Foto 2');
     expect(pickerState.requestCameraPermissionsAsync).toHaveBeenCalledOnce();
     expect(pickerState.launchCameraAsync).toHaveBeenCalledOnce();
@@ -105,7 +114,9 @@ describe('NewAssessmentScreen', () => {
 
     const addButton = screen.getByRole('button', { name: 'Adicionar fotos' });
     await user.press(addButton);
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.queryByText('Foto 2')).toBeNull();
@@ -141,7 +152,9 @@ describe('NewAssessmentScreen', () => {
     await user.type(screen.getByLabelText('Gordura corporal'), '19,2');
     await user.type(screen.getByLabelText('Observações'), 'Evoluiu');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.getByText('Foto 9')).toBeTruthy();
@@ -198,6 +211,7 @@ describe('NewAssessmentScreen', () => {
 
     await user.type(screen.getByLabelText('Peso'), '78,5');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Abrir foto 2' }));
 
     expect(screen.getByRole('header', { name: 'Foto 2 de 2' })).toBeTruthy();
@@ -248,6 +262,7 @@ describe('NewAssessmentScreen', () => {
     await user.type(screen.getByLabelText('Peso'), '80');
     await user.type(screen.getByLabelText('Observações'), 'Continuar acompanhamento');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('Não foi possível salvar sua avaliação.')).toBeTruthy();

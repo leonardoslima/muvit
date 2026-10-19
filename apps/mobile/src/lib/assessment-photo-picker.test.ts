@@ -1,6 +1,5 @@
-import { Alert } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { chooseAssessmentPhotoSource, pickAssessmentPhotos } from './assessment-photo-picker';
+import { pickAssessmentPhotos } from './assessment-photo-picker';
 
 const picker = vi.hoisted(() => ({
   requestCameraPermissionsAsync: vi.fn(),
@@ -22,43 +21,6 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('fotos da avaliação', () => {
-  it.each([
-    ['Tirar foto', 'camera'],
-    ['Escolher da biblioteca', 'library'],
-    ['Cancelar', null],
-  ])('oferece %s sem abrir a câmera ou biblioteca antes da escolha', async (label, source) => {
-    const alert = vi.spyOn(Alert, 'alert');
-    const choice = chooseAssessmentPhotoSource();
-    const buttons = alert.mock.calls[0]?.[2];
-    expect(buttons?.map((button) => button.text)).toEqual([
-      'Tirar foto',
-      'Escolher da biblioteca',
-      'Cancelar',
-    ]);
-    expect(picker.launchCameraAsync).not.toHaveBeenCalled();
-    expect(picker.launchImageLibraryAsync).not.toHaveBeenCalled();
-    buttons?.find((button) => button.text === label)?.onPress?.();
-    expect(await choice).toBe(source);
-  });
-
-  it('trata o fechamento do menu pelo sistema como cancelamento', async () => {
-    const alert = vi.spyOn(Alert, 'alert');
-    const choice = chooseAssessmentPhotoSource();
-    alert.mock.calls[0]?.[3]?.onDismiss?.();
-    expect(await choice).toBeNull();
-  });
-
-  it('ignora uma escolha feita depois de sair da tela, sem solicitar permissão', async () => {
-    const alert = vi.spyOn(Alert, 'alert');
-    let current = true;
-    const pending = pickAssessmentPhotos('choose', { ...options, isCurrent: () => current });
-    current = false;
-    alert.mock.calls[0]?.[2]?.find((button) => button.text === 'Tirar foto')?.onPress?.();
-    expect(await pending).toBeNull();
-    expect(picker.requestCameraPermissionsAsync).not.toHaveBeenCalled();
-    expect(picker.launchCameraAsync).not.toHaveBeenCalled();
-  });
-
   it('pede permissão e captura somente imagens quando autorizado', async () => {
     expect(await pickAssessmentPhotos('camera', options)).toEqual(captured);
     expect(picker.requestCameraPermissionsAsync).toHaveBeenCalledOnce();
