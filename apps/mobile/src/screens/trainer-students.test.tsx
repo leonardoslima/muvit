@@ -1,5 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  userEvent,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrainerStudent } from '../application/trainer/trainer-data';
 import { TrainerStudentsScreen } from './trainer-students';
@@ -82,49 +90,142 @@ describe('TrainerStudentsScreen', () => {
     });
   });
 
-  it('só aplica a busca quando o usuário submete', async () => {
+  it('busca após 400 ms sem digitar e limpa pelo X dentro do campo', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ total: 0, items: [] })
-      .mockResolvedValueOnce({ total: 0, items: [] });
+      .mockResolvedValueOnce({
+        total: 2,
+        items: [
+          studentFixture({ name: 'Ana Júlia' }),
+          studentFixture({ id: 'student-2', name: 'Bruna Lima' }),
+        ],
+      })
+      .mockResolvedValueOnce({ total: 1, items: [studentFixture({ name: 'Ana Júlia' })] })
+      .mockResolvedValueOnce({
+        total: 2,
+        items: [
+          studentFixture({ name: 'Ana Júlia' }),
+          studentFixture({ id: 'student-2', name: 'Bruna Lima' }),
+        ],
+      });
 
     renderTrainerStudents();
 
-    await screen.findByText('Nenhum aluno vinculado');
-    await user.type(screen.getByLabelText('Buscar aluno'), 'Ana Júlia');
-
-    expect(apiState.request).toHaveBeenCalledTimes(1);
-
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
+    await screen.findByText('Bruna Lima');
+    vi.useFakeTimers();
+    try {
+      fireEvent.changeText(screen.getByLabelText('Buscar aluno'), 'an');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      fireEvent.changeText(screen.getByLabelText('Buscar aluno'), 'ana');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(399);
+      });
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
 
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(apiState.request).toHaveBeenLastCalledWith(
-      '/students?q=Ana%20J%C3%BAlia&limit=25&offset=0',
+      '/students?q=ana&limit=25&offset=0',
+      expect.any(Object),
+    );
+    await waitFor(() => expect(screen.queryByText('Bruna Lima')).toBeNull());
+    expect(screen.queryByText('Bruna Lima')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Buscar' })).toBeNull();
+    const clear = screen.getByRole('button', { name: 'Limpar busca' });
+    expect(
+      within(screen.getByTestId('trainer-students-search-control')).getByRole('button', {
+        name: 'Limpar busca',
+      }),
+    ).toBe(clear);
+    await user.press(clear);
+    expect(screen.getByLabelText('Buscar aluno').props.value).toBe('');
+    expect(await screen.findByText('Bruna Lima')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Limpar busca' })).toBeNull();
+    expect(apiState.request).toHaveBeenLastCalledWith(
+      '/students?limit=25&offset=0',
       expect.any(Object),
     );
   });
 
-  it('aplica a busca ao enviar o teclado', async () => {
-    const user = userEvent.setup();
+  it('cancela a busca anterior e ignora sua resposta tardia', async () => {
+    const previousSearch = deferred<{ total: number; items: TrainerStudent[] }>();
     apiState.request
       .mockResolvedValueOnce({ total: 0, items: [] })
-      .mockResolvedValueOnce({ total: 1, items: [studentFixture()] });
+      .mockReturnValueOnce(previousSearch.promise)
+      .mockResolvedValueOnce({ total: 1, items: [studentFixture({ name: 'Bruna Lima' })] });
+
+    renderTrainerStudents();
+    await screen.findByText('Nenhum aluno vinculado');
+    fireEvent.changeText(screen.getByLabelText('Buscar aluno'), 'Ana');
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+    const previousSignal = apiState.request.mock.calls[1]?.[1]?.signal;
+    expect(previousSignal).toBeInstanceOf(AbortSignal);
+    expect(previousSignal.aborted).toBe(false);
+
+    fireEvent.changeText(screen.getByLabelText('Buscar aluno'), 'Bruna');
+    expect(previousSignal.aborted).toBe(true);
+    expect(await screen.findByText('Bruna Lima')).toBeTruthy();
+    await act(async () => {
+      previousSearch.resolve({ total: 1, items: [studentFixture({ name: 'Ana Lima' })] });
+    });
+    expect(screen.queryByText('Ana Lima')).toBeNull();
+    expect(screen.getByText('Bruna Lima')).toBeTruthy();
+    expect(apiState.request).toHaveBeenLastCalledWith(
+      '/students?q=Bruna&limit=25&offset=0',
+      expect.any(Object),
+    );
+  });
+
+  it('limpar antes dos 400 ms impede a busca pendente', async () => {
+    apiState.request.mockResolvedValue({ total: 1, items: [studentFixture()] });
+    renderTrainerStudents();
+    await screen.findByText('Ana Lima');
+    vi.useFakeTimers();
+    try {
+      fireEvent.changeText(screen.getByLabelText('Buscar aluno'), 'Carlos');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+      fireEvent.press(screen.getByRole('button', { name: 'Limpar busca' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByLabelText('Buscar aluno').props.value).toBe('');
+      expect(
+        apiState.request.mock.calls.every(([path]) => path === '/students?limit=25&offset=0'),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('enviar pelo teclado não duplica a busca automática', async () => {
+    const user = userEvent.setup();
+    apiState.request.mockResolvedValue({ total: 1, items: [studentFixture()] });
 
     renderTrainerStudents();
 
-    await screen.findByText('Nenhum aluno vinculado');
+    await screen.findByText('Ana Lima');
     const searchField = screen.getByLabelText('Buscar aluno');
     await user.type(searchField, 'Ana');
     fireEvent(searchField, 'submitEditing');
 
-    expect(await screen.findByText('Ana Lima')).toBeTruthy();
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/students?q=Ana&limit=25&offset=0',
       expect.any(Object),
     );
+    expect(apiState.request).toHaveBeenCalledTimes(2);
   });
 
-  it('remove espaços da busca e reinicia o offset depois de carregar páginas', async () => {
+  it('reinicia a paginação ao pesquisar e pagina os resultados da API', async () => {
     const user = userEvent.setup();
     apiState.request
       .mockResolvedValueOnce({ total: 3, items: [studentFixture()] })
@@ -133,8 +234,12 @@ describe('TrainerStudentsScreen', () => {
         items: [studentFixture({ id: 'student-2', name: 'Bruna Lima' })],
       })
       .mockResolvedValueOnce({
-        total: 1,
+        total: 2,
         items: [studentFixture({ id: 'student-3', name: 'Ana Júlia Souza' })],
+      })
+      .mockResolvedValueOnce({
+        total: 2,
+        items: [studentFixture({ id: 'student-4', name: 'Ana Júlia Lima' })],
       });
 
     renderTrainerStudents();
@@ -142,11 +247,17 @@ describe('TrainerStudentsScreen', () => {
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
     expect(await screen.findByText('Bruna Lima')).toBeTruthy();
     await user.type(screen.getByLabelText('Buscar aluno'), '  Ana Júlia  ');
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
-
+    expect(apiState.request).toHaveBeenCalledTimes(2);
     expect(await screen.findByText('Ana Júlia Souza')).toBeTruthy();
+    expect(screen.queryByText('Bruna Lima')).toBeNull();
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/students?q=Ana%20J%C3%BAlia&limit=25&offset=0',
+      expect.any(Object),
+    );
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    expect(await screen.findByText('Ana Júlia Lima')).toBeTruthy();
+    expect(apiState.request).toHaveBeenLastCalledWith(
+      '/students?q=Ana%20J%C3%BAlia&limit=25&offset=1',
       expect.any(Object),
     );
   });
@@ -182,15 +293,14 @@ describe('TrainerStudentsScreen', () => {
   it('diferencia carteira vazia de busca sem resultado e permite limpar', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ total: 0, items: [] })
+      .mockResolvedValueOnce({ total: 1, items: [studentFixture()] })
       .mockResolvedValueOnce({ total: 0, items: [] })
       .mockResolvedValueOnce({ total: 1, items: [studentFixture()] });
 
     renderTrainerStudents();
-    expect(await screen.findByText('Nenhum aluno vinculado')).toBeTruthy();
+    expect(await screen.findByText('Ana Lima')).toBeTruthy();
 
     await user.type(screen.getByLabelText('Buscar aluno'), 'Ninguém');
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
     expect(await screen.findByText('Nenhum aluno encontrado')).toBeTruthy();
     expect(screen.getAllByRole('button', { name: 'Limpar busca' })).toHaveLength(1);
     expect(screen.getByText('0 alunos encontrados')).toBeTruthy();
@@ -202,14 +312,14 @@ describe('TrainerStudentsScreen', () => {
   it('mantém a busca aplicada ao atualizar', async () => {
     const user = userEvent.setup();
     apiState.request
-      .mockResolvedValueOnce({ total: 0, items: [] })
+      .mockResolvedValueOnce({ total: 1, items: [studentFixture()] })
       .mockResolvedValueOnce({ total: 1, items: [studentFixture()] })
       .mockResolvedValueOnce({ total: 1, items: [studentFixture()] });
 
     renderTrainerStudents();
-    await screen.findByText('Nenhum aluno vinculado');
+    await screen.findByText('Ana Lima');
     await user.type(screen.getByLabelText('Buscar aluno'), 'Ana');
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('Ana Lima')).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Atualizar' }));
