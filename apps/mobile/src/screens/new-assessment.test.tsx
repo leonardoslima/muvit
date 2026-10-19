@@ -1,12 +1,16 @@
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { KeyboardAvoidingView, Modal, ScrollView } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, ScrollView } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NewAssessmentScreen } from './new-assessment';
 
 const routerState = vi.hoisted(() => ({ back: vi.fn() }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
-const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
+const pickerState = vi.hoisted(() => ({
+  launchImageLibraryAsync: vi.fn(),
+  launchCameraAsync: vi.fn(),
+  requestCameraPermissionsAsync: vi.fn(),
+}));
 const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
 
 vi.mock('expo-router', () => ({
@@ -53,6 +57,11 @@ function pickerResult(uris: readonly string[]) {
 }
 
 beforeEach(() => {
+  vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+    buttons?.find((button) => button.text === 'Escolher da biblioteca')?.onPress?.();
+  });
+  pickerState.launchCameraAsync.mockReset();
+  pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   routerState.back.mockReset();
   apiState.request.mockReset().mockResolvedValue(undefined);
   queryState.invalidateQueries.mockReset().mockResolvedValue(undefined);
@@ -61,6 +70,29 @@ beforeEach(() => {
 });
 
 describe('NewAssessmentScreen', () => {
+  it('adiciona uma captura da câmera sem perder as fotos escolhidas antes na biblioteca', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      pickerResult(['file:///library.jpg']),
+    );
+    pickerState.launchCameraAsync.mockResolvedValueOnce(pickerResult(['file:///camera.jpg']));
+    render(<NewAssessmentScreen />);
+    await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await screen.findByText('Foto 1');
+    vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((button) => button.text === 'Tirar foto')?.onPress?.();
+    });
+    await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await screen.findByText('Foto 2');
+    expect(pickerState.requestCameraPermissionsAsync).toHaveBeenCalledOnce();
+    expect(pickerState.launchCameraAsync).toHaveBeenCalledOnce();
+    expect(screen.getByLabelText('Prévia da foto 1')).toHaveProp('source', {
+      uri: 'file:///library.jpg',
+    });
+    expect(screen.getByLabelText('Prévia da foto 2')).toHaveProp('source', {
+      uri: 'file:///camera.jpg',
+    });
+  });
   it('mantém a seleção anterior quando a biblioteca é cancelada', async () => {
     const user = userEvent.setup();
     pickerState.launchImageLibraryAsync

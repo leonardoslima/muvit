@@ -29,6 +29,17 @@
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store", "sentry-expo"]
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "sentry-expo",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permita que o Muvit use a câmera para tirar fotos da avaliação.",
+          "photosPermission": "Permita que o Muvit acesse suas fotos para adicionar imagens à avaliação."
+        }
+      ]
+    ]
   }
 }

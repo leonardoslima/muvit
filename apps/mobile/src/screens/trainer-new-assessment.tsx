@@ -1,6 +1,5 @@
-import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { createAssessment } from '../application/assessments/assessment-data';
 import {
@@ -20,6 +19,7 @@ import { KeyboardScrollView } from '../components/ui/v2/keyboard-scroll-view';
 import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
+import { AssessmentPhotoPickerError, pickAssessmentPhotos } from '../lib/assessment-photo-picker';
 import { formatDateInput, parseDateInput, todayIsoDate } from '../lib/date';
 import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
@@ -45,7 +45,21 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string>();
   const [success, setSuccess] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const pickerLockedRef = useRef(false);
+  const pickerGenerationRef = useRef(0);
+  const mountedRef = useRef(false);
+  const pickerOwnerRef = useRef(studentId);
   const formDisabled = submitting || success;
+
+  useEffect(() => {
+    pickerOwnerRef.current = studentId;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      pickerGenerationRef.current += 1;
+    };
+  }, [studentId]);
 
   useEffect(() => {
     if (!success || !studentId) return;
@@ -82,27 +96,43 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
   }
 
   async function pickPhoto(): Promise<void> {
-    if (photos.length >= MAX_PHOTOS || formDisabled) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      quality: 0.7,
-    });
-    if (result.canceled) return;
-
-    const asset = result.assets?.[0];
-    const contentType = toSupportedContentType(asset?.mimeType);
-
-    if (!asset?.uri || !contentType) {
-      setError('Selecione uma imagem JPEG ou PNG.');
-      return;
-    }
-
+    if (photos.length >= MAX_PHOTOS || formDisabled || pickerLockedRef.current) return;
+    pickerLockedRef.current = true;
+    const generation = pickerGenerationRef.current + 1;
+    pickerGenerationRef.current = generation;
+    const isCurrent = () =>
+      mountedRef.current &&
+      pickerOwnerRef.current === studentId &&
+      pickerGenerationRef.current === generation;
+    setPicking(true);
     setError(undefined);
-    setPhotos((current) => {
-      if (current.length >= MAX_PHOTOS) return current;
-      return [...current, { uri: asset.uri, contentType }];
-    });
+    try {
+      const result = await pickAssessmentPhotos('choose', {
+        libraryOptions: { allowsEditing: true, quality: 0.7 },
+        isCurrent,
+      });
+      if (!isCurrent() || !result || result.canceled) return;
+      const asset = result.assets?.[0];
+      const contentType = toSupportedContentType(asset?.mimeType);
+      if (!asset?.uri || !contentType) {
+        setError('Selecione uma imagem JPEG ou PNG.');
+        return;
+      }
+      setPhotos((current) =>
+        current.length >= MAX_PHOTOS ? current : [...current, { uri: asset.uri, contentType }],
+      );
+    } catch (error) {
+      if (isCurrent()) {
+        setError(
+          error instanceof AssessmentPhotoPickerError
+            ? error.message
+            : 'Não foi possível adicionar a foto. Tente novamente.',
+        );
+      }
+    } finally {
+      pickerLockedRef.current = false;
+      if (mountedRef.current) setPicking(false);
+    }
   }
 
   function removePhoto(index: number): void {
@@ -123,6 +153,8 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
       return;
     }
 
+    pickerGenerationRef.current += 1;
+    setPicking(false);
     setSubmitting(true);
 
     try {
@@ -329,7 +361,7 @@ export function TrainerNewAssessmentScreen(): React.JSX.Element {
       <View className="gap-4">
         <Text variant="sectionTitle">Fotos</Text>
         <TrainerAssessmentPhotos
-          disabled={formDisabled}
+          disabled={formDisabled || picking}
           onAdd={() => void pickPhoto()}
           onRemove={removePhoto}
           photos={photos}

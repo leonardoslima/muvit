@@ -91,11 +91,11 @@ export function NewAssessmentScreen(): React.JSX.Element {
         <View className="gap-3">
           <Text variant="sectionTitle">Fotos</Text>
           <AssessmentPhotoGrid
-            addLabel={picking ? 'Abrindo biblioteca...' : 'Adicionar fotos'}
+            addLabel={picking ? 'Selecionando fotos...' : 'Adicionar fotos'}
             description={photosDescription}
             disabled={formActionsDisabled || picking}
             emptyHint="Selecione imagens JPEG ou PNG."
-            onAdd={() => void addPhotos()}
+            onAdd={() => void addPhotos('choose')}
             onOpen={setViewerIndex}
             onRemove={removePhoto}
             photos={values.photos}

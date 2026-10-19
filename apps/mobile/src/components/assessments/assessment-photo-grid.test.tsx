@@ -17,8 +17,6 @@ describe('AssessmentPhotoGrid', () => {
     ).toHaveLength(8);
     const addButton = screen.getByRole('button', { name: 'Adicionar foto' });
     expect(addButton).toBeTruthy();
-    expect(addButton.props.children[0].props.style.backgroundColor).toBe(colors.primary);
-    expect(addButton.props.children[0].props.children.props.color).toBe(colors.brand);
     fireEvent.press(addButton);
     expect(onAdd).toHaveBeenCalledOnce();
   });
@@ -97,29 +95,21 @@ describe('AssessmentPhotoGrid', () => {
     expect(onRemove).toHaveBeenCalledWith(1);
   });
 
-  it.each([
-    { label: 'zero', source: { width: 0, height: 200 } },
-    { label: 'NaN', source: { width: Number.NaN, height: 200 } },
-    { label: 'dimensões ausentes', source: {} },
-  ])(
-    'mantém a proporção de fallback 1:2 com dimensões de imagem inválidas: $label',
-    ({ source }) => {
-      render(<AssessmentPhotoGrid photos={photos(1)} />);
-      const image = screen.getByLabelText('Prévia da foto 1');
+  it('mostra a foto inteira com fundo e borda e mantém adicionar fora da grade', () => {
+    render(<AssessmentPhotoGrid onAdd={() => undefined} photos={photos(1)} />);
+    fireEvent(screen.getByTestId('assessment-photo-grid'), 'layout', {
+      nativeEvent: { layout: { width: 370 } },
+    });
 
-      fireEvent(image, 'load', { nativeEvent: { source } });
-
-      expect(screen.getByLabelText('Prévia da foto 1').props.style.aspectRatio).toBe(0.5);
-    },
-  );
-
-  it('atualiza a proporção depois de carregar dimensões válidas', () => {
-    render(<AssessmentPhotoGrid photos={photos(1)} />);
     const image = screen.getByLabelText('Prévia da foto 1');
-
-    fireEvent(image, 'load', { nativeEvent: { source: { width: 300, height: 200 } } });
-
-    expect(screen.getByLabelText('Prévia da foto 1').props.style.aspectRatio).toBe(1.5);
+    const upload = screen.getByRole('button', { name: 'Adicionar foto' });
+    expect(image.props.style.backgroundColor).toBe(colors.subtle);
+    expect(image.props.style.borderColor).toBe(colors.border);
+    expect(upload.props.style).toBeUndefined();
+    expect(image.props.style.aspectRatio).toBe(1);
+    expect(upload.parent).not.toBe(screen.getByTestId('assessment-photo-grid'));
+    expect(image.props.resizeMode).toBe('contain');
+    expect(image.props.onLoad).toBeUndefined();
   });
 
   it('bloqueia abertura, adição e remoção enquanto disabled', () => {

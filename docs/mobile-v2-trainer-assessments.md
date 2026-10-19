@@ -1,5 +1,7 @@
 # Professor — avaliações de alunos v2 — MUV-30
 
+Atualização de 2026-10-19: a grade compartilhada usa miniaturas uniformes de proporção 1:1, fundo neutro `subtle` e borda. A imagem usa `contain`, preservando o conteúdo inteiro sem distorção. O X fica fixo no canto do card e o botão secundário compacto de adicionar fica abaixo da grade, com apoio separado. O toque na foto abre o visor compartilhado em tela cheia, com navegação e fechamento. Esta regra substitui a altura variável pela proporção original descrita abaixo; seleção, limite de três fotos, contagem e envio permanecem iguais.
+
 A fonte visual é `assets/design/mobile.pen`, editada pelo MCP do Pen. Esta entrega estende a foundation MUV-24 e a jornada da carteira MUV-29 para consulta e criação de avaliações do professor. Dados, datas e fotos das amostras são ilustrativos. A implementação Expo pertence à MUV-39.
 
 O usuário aprovou o design inicial em 2026-10-06 e, depois, solicitou ajustes nas fotos e na organização do canvas. As correções estão registradas abaixo. Após revisar o resultado final, confirmou o salvamento do Pen e autorizou commit, integração e publicação de develop, exclusão da branch de trabalho e conclusão da MUV-30. A aprovação cobre o artefato visual e os contratos documentados; não valida a implementação nativa.
@@ -101,7 +103,7 @@ Fontes funcionais: `apps/mobile/src/screens/trainer-new-assessment.tsx`, `src/ap
 
 ### Fotos do professor
 
-Adicionar foto abre a biblioteca nativa, com seleção de uma imagem por vez, edição habilitada e qualidade atual de 0,7. Cancelar preserva a seleção anterior. O suporte atual é JPEG ou PNG; formato inválido produz Selecione uma imagem JPEG ou PNG.
+Adicionar foto oferece **Tirar foto**, **Escolher da biblioteca** e **Cancelar**, conforme extensão solicitada no MUV-9 em 2026-10-19. A biblioteca conserva seleção de uma imagem por vez, edição habilitada e qualidade de 0,7. A câmera pede permissão no ponto de uso e captura somente imagem, sem recorte, com a mesma qualidade. Cancelar preserva a seleção anterior. O suporte atual é JPEG ou PNG; formato inválido produz Selecione uma imagem JPEG ou PNG. O seletor compartilhado e o tratamento de permissão são descritos na [avaliação do aluno](mobile-v2-student-progress.md).
 
 O formulário do professor aceita até três fotos selecionadas. A ação Adicionar foto usa o componente de upload `S8jXyf`: com nenhuma foto, ocupa a primeira posição da grade; com uma ou duas, aparece logo após a última foto; ao atingir três, fica oculta. O label permanece no singular, o texto de apoio se refere à evolução do aluno e a biblioteca mantém a seleção de uma imagem por vez. A seleção segue o frame `FVzOO` da MUV-27, com contagem e miniaturas em duas colunas; cada imagem reutiliza o componente `CfWyw`. Uma foto ocupa toda a largura de sua coluna, sem se expandir por toda a seção; sua altura acompanha a proporção real, sem faixas laterais ou corte do corpo. A terceira inicia uma nova linha. A amostra do canvas tem proporção 1:2 por foto: 173 × 346 dp em 390 dp, 138 × 276 dp em 320 dp e 193 × 386 dp em 430 dp; outras imagens devem preservar suas próprias proporções.
 
@@ -109,7 +111,7 @@ As 13 telas do professor com upload são `yFUlq`, `bCfoT`, `iKraZ`, `UN17U`, `iR
 
 Cada miniatura tem o rótulo Foto N abaixo da imagem e o X de remoção dentro dela, no canto superior direito, com círculo verde sólido de 28 dp e ícone branco de 16 dp, sem transparência. A área de toque de 48 dp é transparente e não aumenta o círculo visível. O label acessível Remover foto N identifica a ação sem criar um botão largo. A remoção atua somente antes do envio; retirar a última foto volta à apresentação sem fotos. Durante envio e sucesso, o ícone e a ação de adicionar ficam desabilitados; o X permanece legível em verde escuro sobre fundo de ação desabilitada, sem redução de opacidade. A orientação de toque para conferir, presente no símbolo do aluno, fica oculta nesta instância porque este card não introduz um visor de fotos.
 
-Esse limite de três é do formulário atual; o schema compartilhado aceita até seis URLs. Esta entrega não altera nenhum desses contratos e não replica o requisito novo de fotos sem limite do fluxo do aluno na MUV-27. Não criar câmera, seleção múltipla simultânea ou um visor de conferência neste card.
+Esse limite de três pertence ao formulário do professor; o schema compartilhado atual aceita uma lista de URLs sem teto de itens. A extensão de câmera mantém o limite de três no formulário e não altera API, upload ou payload. Seleção múltipla simultânea e visor de conferência continuam fora do escopo do professor. Resultados atrasados da escolha, permissão ou captura são ignorados após trocar de aluno, sair da tela ou iniciar o envio.
 
 ### Envio e feedback
 

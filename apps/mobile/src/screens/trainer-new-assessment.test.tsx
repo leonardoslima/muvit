@@ -1,10 +1,15 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { todayIsoDate } from '../lib/date';
 import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
+const pickerState = vi.hoisted(() => ({
+  launchImageLibraryAsync: vi.fn(),
+  launchCameraAsync: vi.fn(),
+  requestCameraPermissionsAsync: vi.fn(),
+}));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
 const routerState = vi.hoisted(() => ({ dismissTo: vi.fn() }));
 const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
@@ -59,6 +64,11 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 }
 
 beforeEach(() => {
+  vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+    buttons?.find((button) => button.text === 'Escolher da biblioteca')?.onPress?.();
+  });
+  pickerState.launchCameraAsync.mockReset();
+  pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   apiState.request.mockReset();
   pickerState.launchImageLibraryAsync.mockReset();
   queryState.invalidateQueries.mockReset();
@@ -69,6 +79,26 @@ beforeEach(() => {
 });
 
 describe('TrainerNewAssessmentScreen', () => {
+  it('permite capturar até três fotos na câmera e preserva o limite do professor', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((button) => button.text === 'Tirar foto')?.onPress?.();
+    });
+    pickerState.launchCameraAsync
+      .mockResolvedValueOnce(validPickerResult('file:///camera-1.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///camera-2.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///camera-3.jpg', 'image/jpeg'));
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await screen.findByText('Foto 1');
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await screen.findByText('Foto 2');
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await screen.findByText('Foto 3');
+    expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
+    expect(pickerState.launchCameraAsync).toHaveBeenCalledTimes(3);
+    expect(pickerState.launchImageLibraryAsync).not.toHaveBeenCalled();
+  });
   it('apresenta a data local de hoje no formato brasileiro e não mostra IMC sem peso e altura', () => {
     renderTrainerNewAssessment();
 
