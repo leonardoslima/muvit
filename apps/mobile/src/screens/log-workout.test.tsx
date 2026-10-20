@@ -20,6 +20,45 @@ import { ApiTransportError } from '../lib/api';
 let LogWorkoutScreen: typeof import('./log-workout').LogWorkoutScreen;
 let TodayWorkoutScreen: typeof import('./today-workout').TodayWorkoutScreen;
 
+vi.mock('lucide-react-native', () => {
+  const MockIcon = () => null;
+  const iconNames = [
+    'Activity',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowUp',
+    'ArrowUpRight',
+    'Camera',
+    'Check',
+    'ChevronLeft',
+    'ChevronRight',
+    'CircleAlert',
+    'CircleCheck',
+    'CircleDot',
+    'CircleX',
+    'ClipboardList',
+    'Clock3',
+    'Dumbbell',
+    'Flame',
+    'Images',
+    'Inbox',
+    'Info',
+    'Minus',
+    'Play',
+    'Plus',
+    'RotateCw',
+    'Search',
+    'Trash2',
+    'TriangleAlert',
+    'Upload',
+    'VideoOff',
+    'WifiOff',
+    'X',
+  ] as const;
+
+  return Object.fromEntries(iconNames.map((name) => [name, MockIcon]));
+});
+
 type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 type PreventRemoveEvent = { data: { action: unknown } };
 
