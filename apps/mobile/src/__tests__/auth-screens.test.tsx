@@ -22,6 +22,7 @@ const routerState = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 const authState = vi.hoisted(() => ({
+  refetchSession: vi.fn(),
   signInEmail: vi.fn(),
   signOut: vi.fn(),
   signUpEmail: vi.fn(),
@@ -46,6 +47,9 @@ vi.mock('react-native-safe-area-context', () => ({
 
 vi.mock('../lib/auth-client', () => ({
   authClient: {
+    $store: {
+      atoms: { session: { get: () => ({ refetch: authState.refetchSession }) } },
+    },
     signIn: { email: authState.signInEmail },
     signOut: authState.signOut,
     signUp: { email: authState.signUpEmail },
@@ -63,6 +67,7 @@ vi.mock('@expo/vector-icons', () => ({
 
 describe('telas de autenticação mobile', () => {
   beforeEach(() => {
+    authState.refetchSession.mockReset();
     authState.signInEmail.mockReset();
     authState.signOut.mockReset();
     authState.signUpEmail.mockReset();
@@ -292,6 +297,57 @@ describe('telas de autenticação mobile', () => {
 
     await waitFor(() => {
       expect(authState.signOut).not.toHaveBeenCalled();
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.trainerHome);
+    });
+  });
+
+  it.each([
+    { role: 'trainer', destination: mobileRoutes.trainerHome },
+    { role: 'student', destination: mobileRoutes.studentHome },
+  ])('aguarda a atualização explícita da sessão de $role antes de navegar', async (scenario) => {
+    const user = userEvent.setup();
+    const pendingSession = createDeferred<void>();
+    authState.signInEmail.mockResolvedValueOnce({
+      data: { user: { role: scenario.role } },
+      error: null,
+    });
+    authState.refetchSession.mockReturnValueOnce(pendingSession.promise);
+
+    render(<LoginScreen />);
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    await waitFor(() => expect(authState.refetchSession).toHaveBeenCalledOnce());
+    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Entrando...' }).props.disabled).toBe(true);
+
+    pendingSession.resolve();
+    await waitFor(() => {
+      expect(routerState.replace).toHaveBeenCalledWith(scenario.destination);
+    });
+  });
+
+  it('preserva o login e permite tentar novamente se a atualização da sessão rejeitar', async () => {
+    const user = userEvent.setup();
+    authState.signInEmail.mockResolvedValue({
+      data: { user: { role: 'trainer' } },
+      error: null,
+    });
+    authState.refetchSession.mockRejectedValueOnce(new Error('network unavailable'));
+
+    render(<LoginScreen />);
+    await user.type(screen.getByLabelText('Email'), 'treinador@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'senha-segura');
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(
+      await screen.findByText('Não foi possível concluir a solicitação. Tente novamente.'),
+    ).toBeTruthy();
+    expect(routerState.replace).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Email').props.value).toBe('treinador@example.com');
+    expect(screen.getByLabelText('Senha').props.value).toBe('senha-segura');
+
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+    await waitFor(() => {
       expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.trainerHome);
     });
   });

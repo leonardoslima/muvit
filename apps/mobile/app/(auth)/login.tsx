@@ -33,6 +33,7 @@ export default function LoginScreen() {
         return;
       }
 
+      await authClient.$store.atoms.session.get().refetch();
       router.replace(destination);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'login'));
