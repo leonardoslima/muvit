@@ -11,6 +11,7 @@ import {
   closeDrizzleDemoSeedConnection,
   createDrizzleDemoIdentityRepository,
 } from './modules/auth/repositories/drizzle-demo-identity-repository.js';
+import { publishDemoMedia } from './seed-media.js';
 
 export const demoCredentials = {
   password: '12345678',
@@ -132,8 +133,18 @@ export function printSeedSummary(write: (message: string) => void = console.log)
 
 async function main(): Promise<void> {
   try {
-    await seedDemo(createSeedAuth());
+    if (env.NODE_ENV === 'production') {
+      throw new Error('O seed demo deve ser executado em ambiente de desenvolvimento.');
+    }
+    await seedDemo(createSeedAuth(), new Date(), {
+      ...createDefaultDependencies(),
+      seedData: async (identities: DemoIdentities, referenceDate: Date): Promise<void> => {
+        const media = await publishDemoMedia(identities);
+        await seedDemoData(identities, referenceDate, media);
+      },
+    });
     printSeedSummary();
+    console.log('Imagens de demonstração publicadas no R2 e verificadas por GET público.');
   } finally {
     await closeDrizzleDemoSeedConnection();
   }

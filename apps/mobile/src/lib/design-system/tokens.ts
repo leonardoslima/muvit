@@ -143,6 +143,11 @@ export const spacing = {
   huge: penTokens['space/64'],
 } as const;
 
+export const tabBarLayout = {
+  offset: spacing.lg,
+  contentGap: spacing.xxl,
+} as const;
+
 export const radii = {
   field: penTokens['radius/20'],
   card: penTokens['radius/20'],

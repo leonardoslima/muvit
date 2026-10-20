@@ -95,7 +95,7 @@ export function hydrateWorkoutEditorState(
         sets: String(item.sets),
         reps: item.reps,
         restSeconds: item.restSeconds === null ? '' : String(item.restSeconds),
-        loadKg: item.loadKg === null ? '' : String(item.loadKg),
+        loadKg: item.loadKg === null ? '' : String(Math.round(Number(item.loadKg))),
         notes: item.notes ?? '',
         tempo: item.tempo ?? undefined,
       })),
@@ -398,7 +398,7 @@ function buildWorkoutDays(
       const sets = parseRequiredInteger('Séries', exercise.sets, 1, 20);
       if (!sets.ok) return sets;
 
-      const loadKg = parseOptionalDecimal('Carga', exercise.loadKg, 0, 1000);
+      const loadKg = parseOptionalInteger('Carga', exercise.loadKg, 0, 1000, 'kg');
       if (!loadKg.ok) return loadKg;
 
       const restSeconds = parseOptionalInteger(
@@ -457,29 +457,6 @@ function parseRequiredInteger(
     return {
       ok: false,
       message: `${label} deve estar entre ${min} e ${max}${unit ? ` ${unit}` : ''}.`,
-    };
-  }
-
-  return { ok: true, value };
-}
-
-function parseOptionalDecimal(
-  label: string,
-  raw: string,
-  min: number,
-  max: number,
-): { ok: true; value?: number } | { ok: false; message: string } {
-  const normalized = raw.replace(',', '.').trim();
-  if (!normalized) return { ok: true, value: undefined };
-
-  const value = Number(normalized);
-  if (!Number.isFinite(value)) {
-    return { ok: false, message: `${label} deve ser um número válido.` };
-  }
-  if (value < min || value > max) {
-    return {
-      ok: false,
-      message: `${label} deve estar entre ${min} e ${max}${label === 'Carga' ? ' kg' : ''}.`,
     };
   }
 

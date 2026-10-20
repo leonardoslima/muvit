@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -6,6 +5,11 @@ import {
   normalizeAssessmentPhotoSelection,
   submitAssessment,
 } from '../application/assessments/new-assessment';
+import {
+  AssessmentPhotoPickerError,
+  type AssessmentPhotoSource,
+  pickAssessmentPhotos,
+} from './assessment-photo-picker';
 import { todayIsoDate } from './date';
 import { queryClient } from './query-client';
 import { uploadAssessmentPhoto } from './uploads';
@@ -20,7 +24,7 @@ export type UseNewAssessmentResult = {
   success: boolean;
   error: string | undefined;
   setField: (field: AssessmentFormField, value: string) => void;
-  addPhotos: () => Promise<void>;
+  addPhotos: (source?: AssessmentPhotoSource) => Promise<void>;
   removePhoto: (index: number) => void;
   submit: () => Promise<void>;
 };
@@ -77,7 +81,7 @@ export function useNewAssessment(): UseNewAssessmentResult {
     updateValues(nextValues);
   }
 
-  async function addPhotos(): Promise<void> {
+  async function addPhotos(source: AssessmentPhotoSource = 'library'): Promise<void> {
     if (pickerLockedRef.current || submittingRef.current || successRef.current) return;
 
     pickerLockedRef.current = true;
@@ -87,15 +91,23 @@ export function useNewAssessment(): UseNewAssessmentResult {
     setError(undefined);
 
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: true,
-        selectionLimit: 0,
-        allowsEditing: false,
-        quality: 0.7,
+      const result = await pickAssessmentPhotos(source, {
+        libraryOptions: {
+          mediaTypes: ['images'],
+          allowsMultipleSelection: true,
+          selectionLimit: 0,
+          allowsEditing: false,
+          quality: 0.7,
+        },
+        isCurrent: () =>
+          mountedRef.current &&
+          pickerGenerationRef.current === pickerGeneration &&
+          !submittingRef.current &&
+          !successRef.current,
       });
 
       if (
+        !result ||
         !mountedRef.current ||
         pickerGenerationRef.current !== pickerGeneration ||
         submittingRef.current ||
@@ -116,9 +128,9 @@ export function useNewAssessment(): UseNewAssessmentResult {
         ...valuesRef.current,
         photos: [...valuesRef.current.photos, ...selectedPhotos],
       });
-    } catch {
+    } catch (error) {
       if (mountedRef.current && pickerGenerationRef.current === pickerGeneration) {
-        setError(PICKER_ERROR);
+        setError(error instanceof AssessmentPhotoPickerError ? error.message : PICKER_ERROR);
       }
     } finally {
       pickerLockedRef.current = false;

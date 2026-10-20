@@ -8,9 +8,10 @@ export type SectionTabProps = Omit<PressableProps, 'children'> & {
   label: string;
   selected?: boolean;
   className?: string;
+  labelClassName?: string;
 };
 export const SectionTab = forwardRef<View, SectionTabProps>(function SectionTab(
-  { label, selected = false, className, ...props },
+  { label, selected = false, className, labelClassName, ...props },
   ref,
 ) {
   const control = useControlState(props);
@@ -34,7 +35,7 @@ export const SectionTab = forwardRef<View, SectionTabProps>(function SectionTab(
         className,
       )}
     >
-      <Text variant="label" className="text-v2-brand text-center">
+      <Text variant="label" className={cn('text-v2-brand text-center', labelClassName)}>
         {label}
       </Text>
     </Pressable>

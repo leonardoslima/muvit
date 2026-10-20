@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '../application/exercises/exercise-catalog';
 import type {
@@ -198,7 +197,7 @@ function draftFixture(): TrainerWorkoutPlanDraft {
               sets: 4,
               reps: '8-10',
               restSeconds: 90,
-              loadKg: 82.5,
+              loadKg: 83,
               tempo: '3010',
               notes: 'Sem falhar',
             },
@@ -278,7 +277,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
 
     expect(screen.getByText('Novo treino')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Selecionar Treino A' })).toBeTruthy();
-    expect(screen.getByText('Nenhum exercício neste dia')).toBeTruthy();
+    expect(screen.getByText('Nenhum exercício cadastrado')).toBeTruthy();
 
     for (let index = 0; index < 6; index += 1) {
       await user.press(screen.getByRole('button', { name: 'Adicionar dia' }));
@@ -298,19 +297,16 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.type(screen.getByLabelText('Nome do treino'), 'Hipertrofia');
     await user.press(screen.getByRole('button', { name: 'Adicionar dia' }));
     await user.press(screen.getByRole('tab', { name: 'Selecionar Treino A' }));
-    await user.clear(screen.getByLabelText('Nome do dia'));
-    await user.type(screen.getByLabelText('Nome do dia'), 'Força');
     await user.press(screen.getByRole('tab', { name: 'Selecionar Treino B' }));
 
-    expect(screen.getByLabelText('Nome do dia').props.value).toBe('Treino B');
-    await user.press(screen.getByRole('tab', { name: 'Selecionar Força' }));
+    expect(screen.getByRole('header', { name: 'Treino B' })).toBeTruthy();
+    await user.press(screen.getByRole('tab', { name: 'Selecionar Treino A' }));
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Hipertrofia');
-    expect(screen.getByLabelText('Nome do dia').props.value).toBe('Força');
+    expect(screen.getByRole('header', { name: 'Treino A' })).toBeTruthy();
   });
 
-  it('confirma remoção de dia com conteúdo e remove dia vazio diretamente', async () => {
+  it('confirma remoção do dia e preserva seu conteúdo ao cancelar', async () => {
     const user = userEvent.setup();
-    const alert = vi.spyOn(Alert, 'alert');
     apiState.request.mockResolvedValue({ items: [exerciseFixture()], total: 1 });
 
     renderEditor();
@@ -321,19 +317,14 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.press(screen.getByRole('tab', { name: 'Selecionar Treino A' }));
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
 
-    expect(alert).toHaveBeenCalledWith(
-      'Remover dia?',
-      'O dia Treino A e seus exercícios serão removidos deste treino.',
-      expect.any(Array),
-    );
-    const buttons = alert.mock.calls[0]?.[2];
-    expect(buttons).toBeDefined();
-    await act(async () => buttons?.[0]?.onPress?.());
+    expect(
+      screen.getByText('O dia Treino A e seus exercícios serão removidos deste treino.'),
+    ).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.getByRole('tab', { name: 'Selecionar Treino A' })).toBeTruthy();
 
     await user.press(screen.getByRole('button', { name: 'Remover Treino A' }));
-    const secondButtons = alert.mock.calls[1]?.[2];
-    await act(async () => secondButtons?.[1]?.onPress?.());
+    await user.press(screen.getByRole('button', { name: 'Remover dia' }));
     expect(screen.queryByRole('tab', { name: 'Selecionar Treino A' })).toBeNull();
     expect(screen.getByRole('tab', { name: 'Selecionar Treino B' })).toBeTruthy();
   });
@@ -388,7 +379,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
     await user.press(screen.getByRole('button', { name: 'Adicionar exercício' }));
     await screen.findByText('Supino reto');
     await user.press(screen.getByRole('button', { name: /Selecionar Supino reto/ }));
-    await user.type(screen.getByLabelText('Carga'), '82,5');
+    await user.type(screen.getByLabelText('Carga'), '83');
     await user.type(screen.getByLabelText('Descanso'), '90');
     await user.type(screen.getByLabelText('Observação'), 'Controlar a descida');
     await user.press(screen.getByRole('button', { name: 'Salvar treino' }));
@@ -410,7 +401,7 @@ describe('TrainerWorkoutEditorScreen em criação', () => {
                 sets: 3,
                 reps: '10',
                 restSeconds: 90,
-                loadKg: 82.5,
+                loadKg: 83,
                 notes: 'Controlar a descida',
               },
             ],
@@ -506,14 +497,15 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     expect(await screen.findByText('Treino não encontrado')).toBeTruthy();
   });
 
-  it('permite retry depois de erro genérico', async () => {
+  it('permite retry pelo cabeçalho sem duplicar ações após erro genérico', async () => {
     apiState.request
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValueOnce(editablePlanFixture());
     renderEditor('edit');
     const user = userEvent.setup();
     expect(await screen.findByText('Não foi possível carregar o treino')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Atualizar' }));
     expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
   });
 
@@ -570,7 +562,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(await screen.findByLabelText('Nome do treino')).toBeTruthy();
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Força');
-    expect(screen.getByLabelText('Carga').props.value).toBe('82.50');
+    expect(screen.getByLabelText('Carga').props.value).toBe('83');
     expect(screen.getByLabelText('Descanso').props.value).toBe('90');
     expect(screen.queryByLabelText('Tempo')).toBeNull();
 
@@ -583,7 +575,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(screen.getByLabelText('Nome do treino').props.value).toBe('Nome local');
     await user.press(screen.getByRole('tab', { name: 'Selecionar Treino B' }));
-    expect(screen.getByLabelText('Nome do dia').props.value).toBe('Treino B');
+    expect(screen.getByRole('header', { name: 'Treino B' })).toBeTruthy();
   });
 
   it('faz PATCH completo, limpa notas e atualiza os caches', async () => {
@@ -624,7 +616,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
                   sets: 4,
                   reps: '8-10',
                   restSeconds: 90,
-                  loadKg: 82.5,
+                  loadKg: 83,
                   tempo: '3010',
                   notes: 'Sem falhar',
                 },
@@ -689,7 +681,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
 
     expect(guardState.enabled).toBe(true);
     act(() => guardState.callback?.({ data: { action } }));
-    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    expect(screen.getByText('Sair sem salvar?')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
 
     await waitFor(() => expect(navigationState.dispatch).toHaveBeenCalledOnce());
@@ -722,7 +714,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     const resumeHomeNavigation = vi.fn();
     act(() => appTabGuardState.guard?.requestLeave(resumeProfileNavigation));
     act(() => appTabGuardState.guard?.requestLeave(resumeHomeNavigation));
-    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    expect(screen.getByText('Sair sem salvar?')).toBeTruthy();
     await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
 
     await waitFor(() => expect(resumeHomeNavigation).toHaveBeenCalledOnce());
@@ -757,7 +749,7 @@ describe('TrainerWorkoutEditorScreen em edição', () => {
     const resumeProfile = vi.fn();
     act(() => appTabGuardState.guard?.requestLeave(resumeProfile));
     await user.press(screen.getByRole('button', { name: 'Salvar rascunho e sair' }));
-    expect(screen.getByText('Sair do editor?')).toBeTruthy();
+    expect(screen.getByText('Sair sem salvar?')).toBeTruthy();
     await waitFor(() => expect(appTabGuardState.guard?.busy).toBe(true));
     expect(resumeProfile).not.toHaveBeenCalled();
     await act(async () => resolveDraftSave(draftFixture()));

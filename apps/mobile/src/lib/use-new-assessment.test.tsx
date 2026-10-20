@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useNewAssessment } from './use-new-assessment';
 
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
-const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
+const pickerState = vi.hoisted(() => ({
+  launchImageLibraryAsync: vi.fn(),
+  launchCameraAsync: vi.fn(),
+  requestCameraPermissionsAsync: vi.fn(),
+}));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
 const routerState = vi.hoisted(() => ({ back: vi.fn() }));
 const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
@@ -62,6 +66,8 @@ function pickerResult(uris: readonly string[]) {
 beforeEach(() => {
   apiState.request.mockReset();
   pickerState.launchImageLibraryAsync.mockReset();
+  pickerState.launchCameraAsync.mockReset();
+  pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   queryState.invalidateQueries.mockReset().mockResolvedValue(undefined);
   routerState.back.mockReset();
   uploadState.uploadAssessmentPhoto.mockReset();
@@ -69,6 +75,47 @@ beforeEach(() => {
 });
 
 describe('useNewAssessment', () => {
+  it('mantém as fotos anteriores ao cancelar uma captura da câmera', async () => {
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(pickerResult(['file:///kept.jpg']));
+    pickerState.launchCameraAsync.mockResolvedValueOnce({ canceled: true, assets: [] });
+    const { result } = renderHook(() => useNewAssessment());
+    await act(async () => {
+      await result.current.addPhotos();
+    });
+    await act(async () => {
+      await result.current.addPhotos('camera');
+    });
+    expect(result.current.values.photos.map(({ uri }) => uri)).toEqual(['file:///kept.jpg']);
+    expect(result.current.error).toBeUndefined();
+    expect(result.current.picking).toBe(false);
+  });
+
+  it('explica permissão negada sem perder as fotos e permite continuar pela biblioteca', async () => {
+    pickerState.launchImageLibraryAsync
+      .mockResolvedValueOnce(pickerResult(['file:///kept.jpg']))
+      .mockResolvedValueOnce(pickerResult(['file:///another.jpg']));
+    pickerState.requestCameraPermissionsAsync.mockResolvedValueOnce({
+      granted: false,
+      canAskAgain: false,
+    });
+    const { result } = renderHook(() => useNewAssessment());
+    await act(async () => {
+      await result.current.addPhotos();
+    });
+    await act(async () => {
+      await result.current.addPhotos('camera');
+    });
+    expect(result.current.error).toBe(
+      'Ative a permissão da câmera nas configurações do aparelho para tirar fotos da avaliação.',
+    );
+    expect(pickerState.launchCameraAsync).not.toHaveBeenCalled();
+    expect(result.current.values.photos).toHaveLength(1);
+    await act(async () => {
+      await result.current.addPhotos();
+    });
+    expect(result.current.values.photos).toHaveLength(2);
+    expect(result.current.error).toBeUndefined();
+  });
   it('adiciona uma segunda seleção em ordem e usa o picker sem teto e sem crop', async () => {
     const firstUris = Array.from({ length: 8 }, (_, index) => `file:///photo-${index + 1}.jpg`);
     pickerState.launchImageLibraryAsync

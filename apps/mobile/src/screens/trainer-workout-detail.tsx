@@ -3,9 +3,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView } from 'react-native';
 import { getTrainerWorkoutPlan } from '../application/workouts/trainer-workout-data';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Card } from '../components/ui/v2/card';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { WorkoutDayCard } from '../components/workouts/workout-day-card';
@@ -139,7 +139,11 @@ export function TrainerWorkoutDetailScreen(): React.JSX.Element {
         ))}
 
         {query.isRefetchError ? (
-          <Message title="Não foi possível atualizar o treino." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar o treino."
+            variant="error"
+          />
         ) : null}
 
         {plan.status !== 'archived' ? (

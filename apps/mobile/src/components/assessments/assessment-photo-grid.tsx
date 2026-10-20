@@ -1,7 +1,8 @@
 import { Upload, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Image, type ImageProps, type LayoutChangeEvent, Pressable, View } from 'react-native';
+import { Image, type LayoutChangeEvent, Pressable, View } from 'react-native';
 import { colors, controlSizes, radii, spacing } from '../../lib/design-system/tokens';
+import { Button } from '../ui/v2/button';
 import { Text } from '../ui/v2/text';
 
 export type AssessmentPhotoGridProps = {
@@ -16,10 +17,10 @@ export type AssessmentPhotoGridProps = {
   emptyHint?: string;
   description?: string;
   testID?: string;
-  appearance?: 'student' | 'trainer';
+  getPhotoAccessibilityLabel?: (index: number) => string;
 };
 
-const FALLBACK_ASPECT_RATIO = 1 / 2;
+const PHOTO_ASPECT_RATIO = 1;
 const PHOTO_GRID_GAP = spacing.md;
 const FALLBACK_COLUMN_WIDTH = '47%' as const;
 
@@ -39,15 +40,10 @@ export function AssessmentPhotoGrid({
   emptyHint,
   description,
   testID = 'assessment-photo-grid',
-  appearance = 'student',
+  getPhotoAccessibilityLabel,
 }: AssessmentPhotoGridProps): React.JSX.Element {
   const [columnWidth, setColumnWidth] = useState<number>();
-  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
   const columnStyle = { width: columnWidth ?? FALLBACK_COLUMN_WIDTH };
-  const uploadStyle =
-    columnWidth === undefined
-      ? { ...columnStyle, aspectRatio: FALLBACK_ASPECT_RATIO }
-      : { ...columnStyle, minHeight: columnWidth / FALLBACK_ASPECT_RATIO };
   const canAddPhoto = onAdd !== undefined && (maxPhotos === undefined || photos.length < maxPhotos);
 
   function handleGridLayout(event: LayoutChangeEvent): void {
@@ -57,25 +53,6 @@ export function AssessmentPhotoGrid({
 
     const nextColumnWidth = Math.max(0, availableWidth / 2 - columnInset);
     setColumnWidth((current) => (current === nextColumnWidth ? current : nextColumnWidth));
-  }
-
-  function handleImageLoad(
-    key: string,
-    event: Parameters<NonNullable<ImageProps['onLoad']>>[0],
-  ): void {
-    const { width, height } = event.nativeEvent.source;
-    if (
-      typeof width !== 'number' ||
-      typeof height !== 'number' ||
-      !Number.isFinite(width) ||
-      !Number.isFinite(height) ||
-      width <= 0 ||
-      height <= 0
-    ) {
-      return;
-    }
-
-    setAspectRatios((current) => ({ ...current, [key]: width / height }));
   }
 
   function openPhoto(index: number): void {
@@ -103,18 +80,25 @@ export function AssessmentPhotoGrid({
       >
         {photos.map((photo, index) => {
           const key = photoKey(photo.uri, index);
-          const aspectRatio = aspectRatios[key] ?? FALLBACK_ASPECT_RATIO;
 
           return (
             <View className="gap-2" key={key} style={columnStyle}>
               <View className="relative">
                 <Image
                   accessible={onOpen === undefined}
-                  accessibilityLabel={`Prévia da foto ${index + 1}`}
-                  onLoad={(event) => handleImageLoad(key, event)}
-                  resizeMode="cover"
+                  accessibilityLabel={
+                    getPhotoAccessibilityLabel?.(index) ?? `Prévia da foto ${index + 1}`
+                  }
+                  resizeMode="contain"
                   source={{ uri: photo.uri }}
-                  style={{ aspectRatio, borderRadius: radii.field, width: '100%' }}
+                  style={{
+                    aspectRatio: PHOTO_ASPECT_RATIO,
+                    backgroundColor: colors.subtle,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                    borderRadius: radii.field,
+                    width: '100%',
+                  }}
                 />
                 {onOpen ? (
                   <Pressable
@@ -153,40 +137,24 @@ export function AssessmentPhotoGrid({
             </View>
           );
         })}
-
-        {canAddPhoto ? (
-          <Pressable
-            accessible
-            accessibilityLabel={addLabel}
-            accessibilityRole="button"
-            accessibilityState={{ disabled }}
-            aria-disabled={disabled}
-            className="items-center justify-center gap-2 rounded-v2-field border border-dashed border-v2-border bg-v2-surface px-3 py-4"
-            disabled={disabled}
-            onPress={addPhoto}
-            style={uploadStyle}
-          >
-            {appearance === 'trainer' ? (
-              <Upload color={disabled ? colors.secondary : colors.brand} size={22} />
-            ) : (
-              <View
-                className="h-12 w-12 items-center justify-center rounded-full"
-                style={{ backgroundColor: colors.primary }}
-              >
-                <Upload color={colors.brand} size={22} />
-              </View>
-            )}
-            <Text className="text-center text-v2-brand" variant="button">
-              {addLabel}
-            </Text>
-            {emptyHint ? (
-              <Text className="text-center text-v2-secondary" variant="support">
-                {emptyHint}
-              </Text>
-            ) : null}
-          </Pressable>
-        ) : null}
       </View>
+      {canAddPhoto ? (
+        <View className="gap-2">
+          <Button
+            compact
+            variant="secondary"
+            disabled={disabled}
+            label={addLabel}
+            leading={<Upload color={colors.brand} size={22} />}
+            onPress={addPhoto}
+          />
+          {emptyHint ? (
+            <Text className="text-v2-secondary" variant="support">
+              {emptyHint}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
       {description ? (
         <Text className="text-v2-secondary" variant="support">
           {description}

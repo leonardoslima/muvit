@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Exercise } from '../../application/exercises/exercise-catalog';
 import { controlSizes } from '../../lib/design-system/tokens';
@@ -138,7 +138,7 @@ describe('ExerciseCatalogModal', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('aplica busca somente ao submeter e permite limpar', async () => {
+  it('busca automaticamente após uma pausa e permite limpar pelo campo', async () => {
     const user = userEvent.setup();
     apiState.request
       .mockResolvedValueOnce({ items: [exerciseFixture()], total: 1 })
@@ -150,7 +150,7 @@ describe('ExerciseCatalogModal', () => {
     await user.type(screen.getByLabelText('Buscar exercício'), '  remada  ');
 
     expect(apiState.request).toHaveBeenCalledTimes(1);
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
+    expect(screen.queryByRole('button', { name: 'Buscar' })).toBeNull();
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/exercises?scope=all&q=remada&limit=50&offset=0',
@@ -182,6 +182,87 @@ describe('ExerciseCatalogModal', () => {
     );
   });
 
+  it('espera 400 ms desde a última alteração e descarta a busca pendente ao limpar', async () => {
+    apiState.request.mockResolvedValue({ items: [exerciseFixture()], total: 1 });
+    renderModal();
+    await screen.findByText('Supino reto');
+    vi.useFakeTimers();
+    try {
+      fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 're');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 'remada');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(399);
+      });
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(apiState.request).toHaveBeenLastCalledWith(
+        '/exercises?scope=all&q=remada&limit=50&offset=0',
+        expect.any(Object),
+      );
+
+      fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 'agachamento');
+      fireEvent.press(screen.getByRole('button', { name: 'Limpar busca' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+      expect(screen.getByLabelText('Buscar exercício').props.value).toBe('');
+      expect(apiState.request.mock.calls.some(([path]) => path.includes('agachamento'))).toBe(
+        false,
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancela a busca anterior ao digitar e ignora a resposta antiga', async () => {
+    const previous = deferred<{ items: Exercise[]; total: number }>();
+    apiState.request
+      .mockResolvedValueOnce({ items: [], total: 0 })
+      .mockReturnValueOnce(previous.promise)
+      .mockResolvedValueOnce({ items: [exerciseFixture({ name: 'Remada baixa' })], total: 1 });
+    renderModal();
+    await screen.findByText('Nenhum exercício encontrado');
+    fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 'supino');
+    await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
+    const signal = apiState.request.mock.calls[1]?.[1]?.signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 'remada');
+    expect(signal.aborted).toBe(true);
+    expect(await screen.findByText('Remada baixa')).toBeTruthy();
+    await act(async () => {
+      previous.resolve({ items: [exerciseFixture()], total: 1 });
+    });
+    expect(screen.queryByText('Supino reto')).toBeNull();
+  });
+
+  it('reinicia a paginação ao mudar a busca e não mostra itens do termo anterior', async () => {
+    const user = userEvent.setup();
+    apiState.request
+      .mockResolvedValueOnce({ items: [exerciseFixture()], total: 2 })
+      .mockResolvedValueOnce({
+        items: [exerciseFixture({ id: SECOND_EXERCISE_ID, name: 'Agachamento' })],
+        total: 2,
+      })
+      .mockResolvedValueOnce({ items: [exerciseFixture({ name: 'Remada baixa' })], total: 1 });
+    renderModal();
+    await screen.findByText('Supino reto');
+    await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
+    await screen.findByText('Agachamento');
+    fireEvent.changeText(screen.getByLabelText('Buscar exercício'), 'remada');
+    expect(screen.queryByText('Agachamento')).toBeNull();
+    await screen.findByText('Remada baixa');
+    expect(apiState.request).toHaveBeenLastCalledWith(
+      '/exercises?scope=all&q=remada&limit=50&offset=0',
+      expect.any(Object),
+    );
+    expect(screen.queryByText('Supino reto')).toBeNull();
+  });
+
   it('preserva o grupo muscular ao limpar somente o termo de busca', async () => {
     const user = userEvent.setup();
     apiState.request
@@ -200,7 +281,6 @@ describe('ExerciseCatalogModal', () => {
     expect(filter.props.accessibilityState).toEqual(expect.objectContaining({ selected: true }));
 
     await user.type(screen.getByLabelText('Buscar exercício'), '  supino  ');
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(3));
     expect(apiState.request).toHaveBeenLastCalledWith(
       '/exercises?scope=all&q=supino&muscleGroup=chest&limit=50&offset=0',
@@ -297,7 +377,7 @@ describe('ExerciseCatalogModal', () => {
     expect(await screen.findByText('Nenhum exercício encontrado')).toBeTruthy();
   });
 
-  it('bloqueia busca, filtros e seleção durante fetch concorrente sem bloquear fechar', async () => {
+  it('mantém busca e fechamento disponíveis e bloqueia seleção durante paginação', async () => {
     const request = deferred<{ items: Exercise[]; total: number }>();
     const user = userEvent.setup();
     const onSelect = vi.fn();
@@ -310,9 +390,10 @@ describe('ExerciseCatalogModal', () => {
     await user.press(screen.getByRole('button', { name: 'Carregar mais' }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Buscar' }).props.accessibilityState).toEqual(
-        expect.objectContaining({ disabled: true }),
-      );
+      expect(screen.getByLabelText('Buscar exercício').props.editable).toBe(true);
+      expect(
+        screen.getByRole('button', { name: 'Carregar mais' }).props.accessibilityState,
+      ).toEqual(expect.objectContaining({ disabled: true }));
     });
     expect(screen.getByLabelText('Peito').props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true }),
@@ -324,7 +405,6 @@ describe('ExerciseCatalogModal', () => {
       screen.getByRole('button', { name: 'Selecionar Supino reto, Peito' }).props
         .accessibilityState,
     ).toEqual(expect.objectContaining({ disabled: true }));
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
     await user.press(screen.getByLabelText('Peito'));
     await user.press(screen.getByRole('button', { name: 'Selecionar Supino reto, Peito' }));
     expect(apiState.request).toHaveBeenCalledTimes(2);
@@ -351,7 +431,6 @@ describe('ExerciseCatalogModal', () => {
     const { onClose, onSelect, queryClient, rerender } = renderModal();
     await screen.findByText('Supino reto');
     await user.type(screen.getByLabelText('Buscar exercício'), '  remada  ');
-    await user.press(screen.getByRole('button', { name: 'Buscar' }));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(2));
     await user.press(screen.getByLabelText('Costas'));
     await waitFor(() => expect(apiState.request).toHaveBeenCalledTimes(3));
@@ -374,11 +453,11 @@ describe('ExerciseCatalogModal', () => {
     expect(await screen.findByText('Supino reto')).toBeTruthy();
   });
 
-  it('renderiza SheetSurface com altura máxima de 92 por cento', () => {
+  it('reserva altura de 92 por cento para a SheetSurface independentemente dos resultados', () => {
     renderModal();
 
     expect(screen.getByTestId('exercise-catalog-sheet').props.style).toEqual(
-      expect.objectContaining({ maxHeight: '92%' }),
+      expect.objectContaining({ height: '92%', maxHeight: '92%' }),
     );
   });
 });

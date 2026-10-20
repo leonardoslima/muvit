@@ -23,6 +23,10 @@ vi.mock('../lib/query-client', () => ({
   },
 }));
 
+vi.mock('../lib/use-api', () => ({
+  useApiClient: () => ({ bindCurrentSession: vi.fn() }),
+}));
+
 vi.mock('expo-router', () => ({
   router: {
     replace: vi.fn(),

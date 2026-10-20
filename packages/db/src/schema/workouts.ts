@@ -66,7 +66,7 @@ export const workoutExercises = pgTable(
     sets: integer('sets').notNull(),
     reps: varchar('reps', { length: 20 }).notNull(),
     restSeconds: integer('rest_seconds'),
-    loadKg: decimal('load_kg', { precision: 5, scale: 1 }),
+    loadKg: decimal('load_kg', { precision: 5, scale: 0 }),
     tempo: varchar('tempo', { length: 10 }),
     notes: text('notes'),
   },
@@ -109,7 +109,7 @@ export const logSets = pgTable(
       .references(() => workoutExercises.id, { onDelete: 'cascade' }),
     setNumber: integer('set_number').notNull(),
     repsDone: integer('reps_done'),
-    loadKg: decimal('load_kg', { precision: 5, scale: 1 }),
+    loadKg: decimal('load_kg', { precision: 5, scale: 0 }),
     completed: boolean('completed').notNull().default(false),
   },
   (t) => ({

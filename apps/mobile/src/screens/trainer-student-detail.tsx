@@ -6,7 +6,7 @@ import { type TrainerStudent, getTrainerStudent } from '../application/trainer/t
 import { StudentActionButton } from '../components/trainer/student-action-button';
 import { StudentStatusBadge } from '../components/trainer/student-status-badge';
 import { TrainerScreen } from '../components/trainer/trainer-screen';
-import { Message } from '../components/ui/v2/message';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text, TextClassContext } from '../components/ui/v2/text';
 import { ApiError } from '../lib/api';
@@ -123,7 +123,11 @@ export function TrainerStudentDetailScreen(): React.JSX.Element {
     >
       <ScrollView className="flex-1" contentContainerStyle={{ gap: spacing.xl }}>
         {query.isRefetchError ? (
-          <Message title="Não foi possível atualizar o aluno." variant="error" />
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
+            title="Não foi possível atualizar o aluno."
+            variant="error"
+          />
         ) : null}
 
         <IdentityCard student={student} />

@@ -27,6 +27,14 @@ vi.mock('../lib/use-api', () => ({
   useApiClient: () => apiState,
 }));
 
+vi.mock('../lib/use-workout-evolution', () => ({
+  useWorkoutEvolution: () => ({
+    data: { streakWeeks: 0, completedThisWeek: 0 },
+    isPending: false,
+    isError: false,
+  }),
+}));
+
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: storageState,
 }));
@@ -249,8 +257,12 @@ describe('TodayWorkoutScreen', () => {
 
     expect(await screen.findByText('Sem plano ativo')).toBeTruthy();
     expect(screen.getByText('Seu professor ainda não publicou um plano de treino.')).toBeTruthy();
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
-    expect(screen.getByText('Encontre seu próximo movimento.')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        /de (janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/,
+      ),
+    ).toBeTruthy();
   });
 
   it('mantém o cabeçalho no estado de recuperação', async () => {
@@ -265,7 +277,7 @@ describe('TodayWorkoutScreen', () => {
     expect(
       screen.getByText('Aproveite para descansar e se preparar para o próximo treino.'),
     ).toBeTruthy();
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
   });
 
   it.each(emptyStateRefreshScenarios)(
@@ -334,8 +346,9 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(await screen.findByText('Plano A · Treino A')).toBeTruthy();
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(await screen.findByText('Plano A')).toBeTruthy();
+    expect(screen.getByText('Peito · costas')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
     expect(screen.getByText('Supino')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
     expect(linkState.hrefs).toContain(`/log/${activeWorkout.days[0].id}`);
@@ -355,8 +368,12 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
-    expect(screen.getByText('Encontre seu próximo movimento.')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
+    expect(
+      screen.getByText(
+        /de (janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/,
+      ),
+    ).toBeTruthy();
     expect(await screen.findByText('Carregando treino')).toBeTruthy();
 
     await act(async () => pendingSummaries.resolve({ items: [activeWorkoutSummary] }));
@@ -371,7 +388,7 @@ describe('TodayWorkoutScreen', () => {
 
     renderWithQueryClient();
 
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
     expect(await screen.findByText('Carregando treino')).toBeTruthy();
 
     await act(async () => initialFailure.reject(new ApiError('indisponível', 503)));
@@ -520,7 +537,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
     expect(screen.queryByText('Supino')).toBeNull();
   });
@@ -576,7 +593,7 @@ describe('TodayWorkoutScreen', () => {
     renderWithQueryClient();
 
     expect(await screen.findByText('Não foi possível carregar seu treino')).toBeTruthy();
-    expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+    expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeTruthy();
     expect(screen.queryByText('offline')).toBeNull();
     expect(storageState.getItem).not.toHaveBeenCalled();
@@ -724,7 +741,7 @@ describe('TodayWorkoutScreen', () => {
       renderWithQueryClient();
 
       expect(await screen.findByRole('button', { name: 'Iniciar treino' })).toBeTruthy();
-      expect(screen.getByText('Seu treino de hoje')).toBeTruthy();
+      expect(screen.getByText('Seu ritmo, seu dia.')).toBeTruthy();
       expect(screen.queryByText('Treino concluído')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Continuar treino' })).toBeNull();
       expect(linkState.hrefs).toContain(`/log/${day.id}`);
@@ -883,7 +900,7 @@ describe('TodayWorkoutScreen', () => {
 
     expect(await screen.findByText('Treino carregado offline')).toBeTruthy();
     expect(storageState.setItem).not.toHaveBeenCalled();
-    expect(screen.getByText('Plano A · Treino A')).toBeTruthy();
+    expect(screen.getByText('Plano A')).toBeTruthy();
   });
 
   it('informa o estado offline junto ao vazio sem plano', async () => {

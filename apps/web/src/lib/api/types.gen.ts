@@ -372,11 +372,28 @@ export type DeleteExercisesByIdData = {
     url: '/exercises/{id}';
 };
 
+export type DeleteExercisesByIdErrors = {
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: string;
+    };
+};
+
+export type DeleteExercisesByIdError = DeleteExercisesByIdErrors[keyof DeleteExercisesByIdErrors];
+
 export type DeleteExercisesByIdResponses = {
     /**
      * Default Response
      */
-    200: unknown;
+    204: unknown;
 };
 
 export type PatchExercisesByIdData = {
@@ -774,6 +791,279 @@ export type PatchAssessmentsByIdResponses = {
 };
 
 export type PatchAssessmentsByIdResponse = PatchAssessmentsByIdResponses[keyof PatchAssessmentsByIdResponses];
+
+export type GetStudentsByStudentIdWorkoutPlanDraftsData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/workout-plan-drafts';
+};
+
+export type GetStudentsByStudentIdWorkoutPlanDraftsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        items: Array<{
+            id: string;
+            trainerId: string;
+            studentId: string;
+            sourcePlanId: string | null;
+            payload: {
+                name: string;
+                notes?: string;
+                days: Array<{
+                    label: string;
+                    dayOrder: number;
+                    exercises: Array<{
+                        exerciseId: string;
+                        exerciseOrder: number;
+                        sets: number;
+                        reps: string;
+                        restSeconds?: number;
+                        loadKg?: number;
+                        tempo?: string;
+                        notes?: string;
+                    }>;
+                }>;
+            };
+            selectedDayOrder: number;
+            revision: number;
+            createdAt: string | string;
+            updatedAt: string | string;
+            exerciseReferences: Array<{
+                id: string;
+                name: string;
+                muscleGroup: string;
+            }>;
+        }>;
+    };
+};
+
+export type GetStudentsByStudentIdWorkoutPlanDraftsResponse = GetStudentsByStudentIdWorkoutPlanDraftsResponses[keyof GetStudentsByStudentIdWorkoutPlanDraftsResponses];
+
+export type PostWorkoutPlanDraftsData = {
+    body: {
+        studentId: string;
+        sourcePlanId?: string;
+        draftId?: string;
+        payload: {
+            name: string;
+            notes?: string;
+            days: Array<{
+                label: string;
+                dayOrder: number;
+                exercises: Array<{
+                    exerciseId: string;
+                    exerciseOrder: number;
+                    sets: number;
+                    reps: string;
+                    restSeconds?: number;
+                    loadKg?: number;
+                    tempo?: string;
+                    notes?: string;
+                }>;
+            }>;
+        };
+        selectedDayOrder: number;
+        revision?: number;
+    };
+    path?: never;
+    query?: never;
+    url: '/workout-plan-drafts';
+};
+
+export type PostWorkoutPlanDraftsResponses = {
+    /**
+     * Default Response
+     */
+    201: {
+        id: string;
+        trainerId: string;
+        studentId: string;
+        sourcePlanId: string | null;
+        payload: {
+            name: string;
+            notes?: string;
+            days: Array<{
+                label: string;
+                dayOrder: number;
+                exercises: Array<{
+                    exerciseId: string;
+                    exerciseOrder: number;
+                    sets: number;
+                    reps: string;
+                    restSeconds?: number;
+                    loadKg?: number;
+                    tempo?: string;
+                    notes?: string;
+                }>;
+            }>;
+        };
+        selectedDayOrder: number;
+        revision: number;
+        createdAt: string | string;
+        updatedAt: string | string;
+        exerciseReferences: Array<{
+            id: string;
+            name: string;
+            muscleGroup: string;
+        }>;
+    };
+};
+
+export type PostWorkoutPlanDraftsResponse = PostWorkoutPlanDraftsResponses[keyof PostWorkoutPlanDraftsResponses];
+
+export type GetWorkoutPlanDraftsByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/workout-plan-drafts/{id}';
+};
+
+export type GetWorkoutPlanDraftsByIdErrors = {
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+    };
+};
+
+export type GetWorkoutPlanDraftsByIdError = GetWorkoutPlanDraftsByIdErrors[keyof GetWorkoutPlanDraftsByIdErrors];
+
+export type GetWorkoutPlanDraftsByIdResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        trainerId: string;
+        studentId: string;
+        sourcePlanId: string | null;
+        payload: {
+            name: string;
+            notes?: string;
+            days: Array<{
+                label: string;
+                dayOrder: number;
+                exercises: Array<{
+                    exerciseId: string;
+                    exerciseOrder: number;
+                    sets: number;
+                    reps: string;
+                    restSeconds?: number;
+                    loadKg?: number;
+                    tempo?: string;
+                    notes?: string;
+                }>;
+            }>;
+        };
+        selectedDayOrder: number;
+        revision: number;
+        createdAt: string | string;
+        updatedAt: string | string;
+        exerciseReferences: Array<{
+            id: string;
+            name: string;
+            muscleGroup: string;
+        }>;
+    };
+};
+
+export type GetWorkoutPlanDraftsByIdResponse = GetWorkoutPlanDraftsByIdResponses[keyof GetWorkoutPlanDraftsByIdResponses];
+
+export type PostWorkoutPlanDraftsByIdPublishData = {
+    body: {
+        payload: {
+            name: string;
+            notes?: string;
+            days: Array<{
+                label: string;
+                dayOrder: number;
+                exercises: Array<{
+                    exerciseId: string;
+                    exerciseOrder: number;
+                    sets: number;
+                    reps: string;
+                    restSeconds?: number;
+                    loadKg?: number;
+                    tempo?: string;
+                    notes?: string;
+                }>;
+            }>;
+        };
+        revision: number;
+    };
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/workout-plan-drafts/{id}/publish';
+};
+
+export type PostWorkoutPlanDraftsByIdPublishErrors = {
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: string;
+    };
+};
+
+export type PostWorkoutPlanDraftsByIdPublishError = PostWorkoutPlanDraftsByIdPublishErrors[keyof PostWorkoutPlanDraftsByIdPublishErrors];
+
+export type PostWorkoutPlanDraftsByIdPublishResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        studentId: string;
+        trainerId: string | null;
+        name: string;
+        startDate: string | null;
+        endDate: string | null;
+        status: 'active' | 'archived' | 'draft';
+        notes: string | null;
+        createdAt: string | string;
+        days: Array<{
+            id: string;
+            planId: string;
+            label: string;
+            dayOrder: number;
+            exercises: Array<{
+                id: string;
+                workoutDayId: string;
+                exerciseId: string;
+                exerciseOrder: number;
+                sets: number;
+                reps: string;
+                restSeconds: number | null;
+                loadKg: string | number | null;
+                tempo: string | null;
+                notes: string | null;
+                exercise: {
+                    id: string;
+                    name: string;
+                    muscleGroup: string;
+                };
+            }>;
+        }>;
+    };
+};
+
+export type PostWorkoutPlanDraftsByIdPublishResponse = PostWorkoutPlanDraftsByIdPublishResponses[keyof PostWorkoutPlanDraftsByIdPublishResponses];
 
 export type PostWorkoutPlansData = {
     body: {
@@ -1287,6 +1577,66 @@ export type GetStudentsByStudentIdWorkoutLogsResponses = {
 };
 
 export type GetStudentsByStudentIdWorkoutLogsResponse = GetStudentsByStudentIdWorkoutLogsResponses[keyof GetStudentsByStudentIdWorkoutLogsResponses];
+
+export type GetStudentsMeWorkoutEvolutionData = {
+    body?: never;
+    path?: never;
+    query: {
+        date: string;
+    };
+    url: '/students/me/workout-evolution';
+};
+
+export type GetStudentsMeWorkoutEvolutionResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        streakWeeks: number;
+        completedThisWeek: number;
+        weeklyGoal: number | null;
+    };
+};
+
+export type GetStudentsMeWorkoutEvolutionResponse = GetStudentsMeWorkoutEvolutionResponses[keyof GetStudentsMeWorkoutEvolutionResponses];
+
+export type GetStudentsMeWorkoutGoalData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/students/me/workout-goal';
+};
+
+export type GetStudentsMeWorkoutGoalResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        weeklyGoal: number | null;
+    };
+};
+
+export type GetStudentsMeWorkoutGoalResponse = GetStudentsMeWorkoutGoalResponses[keyof GetStudentsMeWorkoutGoalResponses];
+
+export type PatchStudentsMeWorkoutGoalData = {
+    body: {
+        weeklyGoal: number | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/students/me/workout-goal';
+};
+
+export type PatchStudentsMeWorkoutGoalResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        weeklyGoal: number | null;
+    };
+};
+
+export type PatchStudentsMeWorkoutGoalResponse = PatchStudentsMeWorkoutGoalResponses[keyof PatchStudentsMeWorkoutGoalResponses];
 
 export type GetTrainerSummaryData = {
     body?: never;

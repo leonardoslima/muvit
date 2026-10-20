@@ -336,3 +336,22 @@ describe('workout log service', () => {
     });
   });
 });
+
+it('envia séries puladas sem carga ou repetições e preserva as realizadas', () => {
+  const completed = {
+    workoutExerciseId: 'exercise-a',
+    setNumber: 1,
+    repsDone: '10',
+    loadKg: '22',
+    completed: true,
+  };
+  const skipped = { ...completed, setNumber: 2, completed: false, skipped: true, loadKg: '12,5' };
+  expect(buildFinishWorkoutLogInput([completed, skipped], 5)).toEqual({
+    durationMin: 5,
+    completed: true,
+    sets: [
+      { workoutExerciseId: 'exercise-a', setNumber: 1, repsDone: 10, loadKg: 22, completed: true },
+      { workoutExerciseId: 'exercise-a', setNumber: 2, completed: false },
+    ],
+  });
+});

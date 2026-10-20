@@ -6,7 +6,11 @@ import { NewAssessmentScreen } from './new-assessment';
 const routerState = vi.hoisted(() => ({ back: vi.fn() }));
 const apiState = vi.hoisted(() => ({ request: vi.fn() }));
 const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
-const pickerState = vi.hoisted(() => ({ launchImageLibraryAsync: vi.fn() }));
+const pickerState = vi.hoisted(() => ({
+  launchImageLibraryAsync: vi.fn(),
+  launchCameraAsync: vi.fn(),
+  requestCameraPermissionsAsync: vi.fn(),
+}));
 const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
 
 vi.mock('expo-router', () => ({
@@ -52,7 +56,21 @@ function pickerResult(uris: readonly string[]) {
   };
 }
 
+let photoSourceChoice = 'Escolher da biblioteca';
+async function selectPhotoSource(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const modal = screen.queryByTestId('assessment-photo-source-modal');
+  if (!modal) return;
+  const dismiss = modal.props.onDismiss;
+  await user.press(screen.getByRole('button', { name: photoSourceChoice }));
+  await act(async () => {
+    dismiss();
+  });
+}
+
 beforeEach(() => {
+  photoSourceChoice = 'Escolher da biblioteca';
+  pickerState.launchCameraAsync.mockReset();
+  pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
   routerState.back.mockReset();
   apiState.request.mockReset().mockResolvedValue(undefined);
   queryState.invalidateQueries.mockReset().mockResolvedValue(undefined);
@@ -61,6 +79,29 @@ beforeEach(() => {
 });
 
 describe('NewAssessmentScreen', () => {
+  it('adiciona uma captura da câmera sem perder as fotos escolhidas antes na biblioteca', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      pickerResult(['file:///library.jpg']),
+    );
+    pickerState.launchCameraAsync.mockResolvedValueOnce(pickerResult(['file:///camera.jpg']));
+    render(<NewAssessmentScreen />);
+    await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
+    await screen.findByText('Foto 1');
+    photoSourceChoice = 'Tirar foto';
+    await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
+    await screen.findByText('Foto 2');
+    expect(pickerState.requestCameraPermissionsAsync).toHaveBeenCalledOnce();
+    expect(pickerState.launchCameraAsync).toHaveBeenCalledOnce();
+    expect(screen.getByLabelText('Prévia da foto 1')).toHaveProp('source', {
+      uri: 'file:///library.jpg',
+    });
+    expect(screen.getByLabelText('Prévia da foto 2')).toHaveProp('source', {
+      uri: 'file:///camera.jpg',
+    });
+  });
   it('mantém a seleção anterior quando a biblioteca é cancelada', async () => {
     const user = userEvent.setup();
     pickerState.launchImageLibraryAsync
@@ -69,9 +110,13 @@ describe('NewAssessmentScreen', () => {
 
     render(<NewAssessmentScreen />);
 
+    expect(screen.getByLabelText('Data da avaliação').props.value).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
     const addButton = screen.getByRole('button', { name: 'Adicionar fotos' });
     await user.press(addButton);
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.queryByText('Foto 2')).toBeNull();
@@ -100,12 +145,16 @@ describe('NewAssessmentScreen', () => {
     render(<NewAssessmentScreen />);
 
     await user.clear(screen.getByLabelText('Data da avaliação'));
-    await user.type(screen.getByLabelText('Data da avaliação'), '2026-06-12');
+    await user.type(screen.getByLabelText('Data da avaliação'), '12/06/2026');
+    expect(screen.getByLabelText('Data da avaliação')).toHaveProp('value', '12/06/2026');
+    expect(screen.getByPlaceholderText('DD/MM/AAAA')).toBeTruthy();
     await user.type(screen.getByLabelText('Peso'), '80,5');
     await user.type(screen.getByLabelText('Gordura corporal'), '19,2');
     await user.type(screen.getByLabelText('Observações'), 'Evoluiu');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
 
     expect(screen.getByText('Foto 1')).toBeTruthy();
     expect(screen.getByText('Foto 9')).toBeTruthy();
@@ -162,6 +211,7 @@ describe('NewAssessmentScreen', () => {
 
     await user.type(screen.getByLabelText('Peso'), '78,5');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Abrir foto 2' }));
 
     expect(screen.getByRole('header', { name: 'Foto 2 de 2' })).toBeTruthy();
@@ -212,6 +262,7 @@ describe('NewAssessmentScreen', () => {
     await user.type(screen.getByLabelText('Peso'), '80');
     await user.type(screen.getByLabelText('Observações'), 'Continuar acompanhamento');
     await user.press(screen.getByRole('button', { name: 'Adicionar fotos' }));
+    await selectPhotoSource(user);
     await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByText('Não foi possível salvar sua avaliação.')).toBeTruthy();

@@ -1,11 +1,12 @@
 import { Play } from 'lucide-react-native';
 import { type Ref, useEffect, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, View, useWindowDimensions } from 'react-native';
 import type { GuidedSessionView } from '../../application/workouts/guided-session-presentation';
 import { adjustSessionValue } from '../../application/workouts/guided-session-presentation';
-import { colors } from '../../lib/design-system/tokens';
+import { colors, fontFamilies, penTokens } from '../../lib/design-system/tokens';
 import type { GuidedWorkoutController, WorkoutDay } from '../../lib/use-guided-workout-session';
-import { Button, Card, Message, NumericField, Text } from '../ui/v2';
+import { ActionFeedback, Button, Card, NumericField, Text } from '../ui/v2';
+import { GuidedSessionFinishContent } from './guided-session-finish-content';
 
 export type GuidedSessionContentProps = {
   controller: GuidedWorkoutController;
@@ -13,6 +14,7 @@ export type GuidedSessionContentProps = {
   onOpenDemonstration: (exercise: WorkoutDay['exercises'][number]) => void;
   demonstrationActionRef?: Ref<View>;
   onBackHome: () => void;
+  onRequestSkipExercise: () => void;
 };
 
 export function GuidedSessionContent({
@@ -21,7 +23,16 @@ export function GuidedSessionContent({
   onOpenDemonstration,
   demonstrationActionRef,
   onBackHome,
+  onRequestSkipExercise,
 }: GuidedSessionContentProps): React.JSX.Element | null {
+  const { width, fontScale } = useWindowDimensions();
+  const stackFields = width < 360 || fontScale >= 1.2;
+  const fieldClassName = stackFields ? 'w-full' : 'min-w-0 flex-1';
+  const numericPresentation = {
+    className: fieldClassName,
+    labelClassName: 'ml-2 text-[13px] leading-[17.55px]',
+    inputClassName: 'min-w-[40px] py-0 text-[28px] leading-[37.8px]',
+  };
   const session = controller.session;
   if (!session) return null;
 
@@ -29,20 +40,37 @@ export function GuidedSessionContent({
   const currentSet = selection.currentSet;
   const exercisePosition = session.currentExerciseIndex + 1;
   const setPosition = session.currentSetIndex + 1;
-  const summary = controller.summary;
+  const skipButton = (
+    <Button
+      disabled={controller.busy}
+      label="Pular exercício"
+      onPress={onRequestSkipExercise}
+      variant="immersive"
+    />
+  );
+
+  if (session.phase === 'ready-to-finish' || session.phase === 'summary') {
+    return (
+      <GuidedSessionFinishContent
+        controller={controller}
+        selection={selection}
+        onBackHome={onBackHome}
+      />
+    );
+  }
 
   return (
     <View className="gap-5 pb-4">
       {controller.storageError ? (
-        <Message
+        <ActionFeedback
           description={controller.storageError}
           title="Aviso ao salvar seu progresso"
           variant="warning"
         />
       ) : null}
       {controller.actionError ? (
-        <View className="gap-3">
-          <Message
+        <>
+          <ActionFeedback
             description={controller.actionError}
             title="Não foi possível atualizar o treino"
             variant="error"
@@ -56,44 +84,42 @@ export function GuidedSessionContent({
               variant="immersive"
             />
           ) : null}
-        </View>
+        </>
       ) : null}
 
       {session.phase === 'set' && exercise && currentSet ? (
-        <View className="gap-4">
-          <Card className="gap-3 p-5" variant="immersive">
-            <Text className="text-v2-sessionSecondary" variant="support">
+        <View className="gap-5">
+          <Card className="gap-2.5 p-5" variant="immersive">
+            <Text style={styles.exerciseNumber}>{String(exercisePosition).padStart(2, '0')}</Text>
+            <Text className="text-v2-sessionSecondary" variant="label">
               Exercício {exercisePosition} de {selection.progress.totalExerciseCount}
             </Text>
-            <Text className="text-[20px] leading-[26px] text-v2-sessionText" variant="sectionTitle">
+            <Text
+              className="text-v2-sessionText"
+              style={[styles.exerciseName, stackFields && styles.compactExerciseName]}
+              variant="sectionTitle"
+            >
               {exercise.exercise.name}
             </Text>
-            <Text className="text-v2-sessionSecondary" variant="body">
+            <View className="h-px bg-v2-sessionBorder" />
+            <Text className="font-v2-medium text-v2-sessionText" variant="body">
+              {exercise.sets} séries ·{' '}
               {exercise.reps ? `${exercise.reps} reps` : 'Repetições conforme prescrição'}
-              {exercise.restSeconds ? ` · ${exercise.restSeconds} s de descanso` : ''}
+              {` · descanso de ${exercise.restSeconds ?? 0} s`}
             </Text>
-            {exercise.loadKg !== null && exercise.loadKg !== undefined ? (
-              <Text className="text-v2-sessionSecondary" variant="body">
-                Carga prescrita: {exercise.loadKg} kg
-              </Text>
-            ) : null}
-            {exercise.notes ? (
-              <Text className="text-v2-sessionSecondary" variant="body">
-                {exercise.notes}
-              </Text>
-            ) : null}
             <Button
               ref={demonstrationActionRef}
               accessibilityLabel={`Ver execução de ${exercise.exercise.name}`}
               disabled={controller.busy}
               label="Ver execução"
-              leading={<Play accessible={false} color={colors.sessionText} size={20} />}
+              leading={<Play accessible={false} color={colors.primary} size={20} />}
+              className="min-h-[48px] bg-v2-sessionRaised px-3 py-2"
               onPress={() => onOpenDemonstration(exercise)}
               variant="immersive"
             />
           </Card>
 
-          <Text className="text-v2-sessionSecondary" variant="support">
+          <Text className="text-v2-sessionText" variant="sectionTitle" style={styles.setTitle}>
             Série {setPosition} de {exercise.sets}
           </Text>
           {selection.previousSet ? (
@@ -108,14 +134,19 @@ export function GuidedSessionContent({
             </Card>
           ) : null}
 
-          <View className="gap-4">
+          <View className={stackFields ? 'gap-3' : 'flex-row gap-3'}>
             <NumericField
+              {...numericPresentation}
+              accessibilityLabel="Repetições realizadas"
+              testID="guided-repetitions"
+              error={controller.fieldErrors?.repsDone}
               accessibilityHint="Informe a quantidade de repetições realizadas"
               decrementLabel="Diminuir Repetições realizadas"
               editable={!controller.busy}
               incrementLabel="Aumentar Repetições realizadas"
               keyboardType="number-pad"
-              label="Repetições realizadas"
+              label="REPETIÇÕES"
+              placeholder="—"
               onChangeText={(repsDone) => void controller.updateSet({ repsDone })}
               onDecrement={() =>
                 void controller.updateSet({
@@ -131,12 +162,16 @@ export function GuidedSessionContent({
               variant="immersive"
             />
             <NumericField
+              {...numericPresentation}
+              accessibilityLabel="Carga utilizada"
+              testID="guided-load"
+              error={controller.fieldErrors?.loadKg}
               accessibilityHint="Informe a carga usada no exercício"
               decrementLabel="Diminuir Carga utilizada"
               editable={!controller.busy}
               incrementLabel="Aumentar Carga utilizada"
-              keyboardType="decimal-pad"
-              label="Carga utilizada"
+              keyboardType="number-pad"
+              label="CARGA (kg)"
               onChangeText={(loadKg) => void controller.updateSet({ loadKg })}
               onDecrement={() =>
                 void controller.updateSet({
@@ -148,17 +183,26 @@ export function GuidedSessionContent({
                   loadKg: adjustSessionValue(currentSet.loadKg, 1),
                 })
               }
-              unit="kg"
               value={currentSet.loadKg}
               variant="immersive"
             />
           </View>
+          <Text className="text-v2-sessionSecondary" variant="body">
+            Registre os valores realizados antes de avançar.
+          </Text>
           <Button
             disabled={controller.busy}
             label="Concluir série"
             loading={controller.busy}
             onPress={() => void controller.completeSet()}
+            labelClassName="text-[16px]"
           />
+          {skipButton}
+          {selection.nextExercise ? (
+            <Text className="text-v2-sessionSecondary text-[16px]" variant="body">
+              A seguir: {selection.nextExercise.exercise.name}
+            </Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -204,6 +248,7 @@ export function GuidedSessionContent({
               variant="immersive"
             />
           </View>
+          {skipButton}
         </View>
       ) : null}
 
@@ -233,60 +278,30 @@ export function GuidedSessionContent({
           />
         </View>
       ) : null}
-
-      {session.phase === 'ready-to-finish' ? (
-        <View className="gap-4">
-          <Text className="text-v2-sessionSecondary" variant="body">
-            Última série do treino
-          </Text>
-          <Text className="text-v2-sessionText" variant="sectionTitle">
-            Pronto para finalizar
-          </Text>
-          <Text className="text-v2-sessionSecondary" variant="body">
-            {selection.progress.progressPercent}% do treino concluído
-          </Text>
-          <Button
-            disabled={controller.busy}
-            label="Concluir e finalizar treino"
-            loading={controller.busy}
-            onPress={() => void controller.finishWorkout()}
-          />
-        </View>
-      ) : null}
-
-      {session.phase === 'summary' && summary ? (
-        <View className="gap-4">
-          <Text className="text-v2-sessionText text-center" variant="sectionTitle">
-            Treino concluído
-          </Text>
-          <Text className="text-v2-sessionSecondary text-center" variant="body">
-            Parabéns! Você concluiu a sessão.
-          </Text>
-          <Card className="gap-3" variant="immersive">
-            <Text className="text-v2-sessionText" variant="body">
-              Duração total: {summary.durationMin} min
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Exercícios: {summary.exerciseCount}
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Séries: {summary.completedSetCount}
-            </Text>
-            <Text className="text-v2-sessionText" variant="body">
-              Volume total: {summary.volumeKg} kg
-            </Text>
-          </Card>
-          <Text className="text-v2-sessionSecondary" variant="support">
-            {controller.queued
-              ? 'Treino salvo para sincronização'
-              : 'Resumo salvo no seu acompanhamento.'}
-          </Text>
-          <Button disabled={controller.busy} label="Voltar ao início" onPress={onBackHome} />
-        </View>
-      ) : null}
     </View>
   );
 }
+
+const styles = {
+  exerciseNumber: {
+    color: colors.primary,
+    fontFamily: fontFamilies.bold,
+    fontSize: 64,
+    lineHeight: 64 * 1.2,
+  },
+  exerciseName: {
+    fontSize: 28,
+    lineHeight: 28 * 1.35,
+  },
+  compactExerciseName: {
+    fontSize: penTokens['font/size/20'],
+    lineHeight: penTokens['font/size/20'] * 1.35,
+  },
+  setTitle: {
+    fontSize: penTokens['font/size/26'],
+    lineHeight: penTokens['font/size/26'] * 1.35,
+  },
+};
 
 function ExercisePreview({
   exercise,

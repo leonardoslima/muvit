@@ -438,3 +438,57 @@ describe('createWorkoutLogJournal', () => {
     await expect(journal.get(sibling.operationId)).resolves.toEqual(sibling);
   });
 });
+
+it('migra carga legada sem perder etapas, IDs ou tombstones', async () => {
+  const operations = ['create', 'finish', 'terminal'].map((kind, index) => {
+    const operation = workoutLogOperation({
+      operationId: `legacy-${index}`,
+      stage:
+        kind === 'finish'
+          ? { kind, workoutLogId: 'log-old' }
+          : { kind: kind as 'create' | 'terminal' },
+    });
+    operation.finish.sets[0] = {
+      ...operation.finish.sets[0],
+      workoutExerciseId: WORKOUT_EXERCISE_ID,
+      setNumber: 1,
+      loadKg: index === 0 ? 39.4 : 39.8,
+    };
+    return operation;
+  });
+  const storage = memoryStorage({ muvit_workout_log_journal: JSON.stringify(operations) });
+  const journal = createWorkoutLogJournal(storage);
+  for (const [index, operation] of operations.entries()) {
+    const migrated = await journal.get(operation.operationId);
+    expect(migrated).toEqual({
+      ...operation,
+      finish: {
+        ...operation.finish,
+        sets: operation.finish.sets.map((set) => ({ ...set, loadKg: index === 0 ? 39 : 40 })),
+      },
+    });
+  }
+  expect(storage.removeItem).not.toHaveBeenCalled();
+});
+
+it('envia a carga legada inteira ao retomar PATCH e preserva o log existente', async () => {
+  const operation = workoutLogOperation({ stage: { kind: 'finish', workoutLogId: 'log-old' } });
+  operation.finish.sets[0] = {
+    workoutExerciseId: WORKOUT_EXERCISE_ID,
+    setNumber: 1,
+    loadKg: 39.8,
+    completed: true,
+  };
+  const storage = memoryStorage({ muvit_workout_log_journal: JSON.stringify([operation]) });
+  const journal = createWorkoutLogJournal(storage);
+  const request = vi.fn().mockResolvedValue(null);
+  await journal.drain('user-a', () => ({ request }));
+  expect(request).toHaveBeenCalledExactlyOnceWith('/workout-logs/log-old/finish', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      ...operation.finish,
+      sets: [{ ...operation.finish.sets[0], loadKg: 40 }],
+    }),
+  });
+  expect((await journal.get(operation.operationId))?.stage.kind).toBe('terminal');
+});

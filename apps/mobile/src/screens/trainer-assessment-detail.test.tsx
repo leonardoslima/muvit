@@ -120,6 +120,13 @@ describe('TrainerAssessmentDetailScreen', () => {
     expect(apiState.request).toHaveBeenCalledWith(`/assessments/${ASSESSMENT_ID}`, {
       signal: expect.anything(),
     });
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Abrir foto 3' }));
+    expect(screen.getByLabelText('Prévia ampliada da foto 3').props.source.uri).toBe(
+      'https://cdn.test/side.jpg',
+    );
+    await user.press(screen.getByRole('button', { name: 'Fechar fotos' }));
+    expect(screen.queryByLabelText('Prévia ampliada da foto 3')).toBeNull();
   });
 
   it('mapeia todas as medidas corporais com unidade em centímetros', async () => {

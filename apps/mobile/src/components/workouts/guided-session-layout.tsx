@@ -1,16 +1,11 @@
 import { useIsFocused } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode, Ref } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  type ScrollView as ScrollViewInstance,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import type { ScrollView as ScrollViewInstance, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../lib/design-system/tokens';
+import { KeyboardScrollView } from '../ui/v2/keyboard-scroll-view';
+import { ToastProvider } from '../ui/v2/toast';
 
 export type GuidedSessionLayoutProps = {
   children: ReactNode;
@@ -31,17 +26,13 @@ export function GuidedSessionLayout({
   const isFocused = useIsFocused();
 
   return (
-    <SafeAreaView
-      edges={['top', 'left', 'right']}
-      style={{ flex: 1, backgroundColor: colors.sessionBackground }}
-    >
-      {isFocused ? <StatusBar style={statusBarStyle} /> : null}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-        style={{ flex: 1 }}
+    <ToastProvider safeAreaView={SafeAreaView}>
+      <SafeAreaView
+        edges={['top', 'left', 'right']}
+        style={{ flex: 1, backgroundColor: colors.sessionBackground }}
       >
-        <ScrollView
+        {isFocused ? <StatusBar style={statusBarStyle} /> : null}
+        <KeyboardScrollView
           ref={scrollRef}
           accessibilityElementsHidden={contentHidden}
           importantForAccessibility={contentHidden ? 'no-hide-descendants' : 'auto'}
@@ -50,9 +41,9 @@ export function GuidedSessionLayout({
           contentContainerStyle={[
             {
               flexGrow: 1,
-              gap: spacing.lg,
+              gap: spacing.xl,
               paddingHorizontal: spacing.lg,
-              paddingTop: spacing.md,
+              paddingTop: spacing.xl,
               paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg,
             },
             contentContainerStyle,
@@ -60,8 +51,8 @@ export function GuidedSessionLayout({
           style={{ flex: 1 }}
         >
           {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardScrollView>
+      </SafeAreaView>
+    </ToastProvider>
   );
 }

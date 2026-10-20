@@ -117,6 +117,90 @@ afterAll(async () => {
 });
 
 describe('workout plans', () => {
+  it('aceita cargas inteiras e rejeita carga fracionária na criação e atualização', async () => {
+    const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
+    const payloadWithLoad = (loadKg: number) => ({
+      studentId,
+      name: 'Carga inteira',
+      days: [
+        {
+          label: 'A',
+          dayOrder: 0,
+          exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 3, reps: '10', loadKg }],
+        },
+      ],
+    });
+    for (const loadKg of [0, 39, 1000]) {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/workout-plans',
+        headers: { cookie: trainerCookie },
+        payload: payloadWithLoad(loadKg),
+      });
+      expect(created.statusCode).toBe(201);
+      expect(created.json().days[0].exercises[0].loadKg).toBe(String(loadKg));
+      const rejectedUpdate = await app.inject({
+        method: 'PATCH',
+        url: `/workout-plans/${created.json().id}`,
+        headers: { cookie: trainerCookie },
+        payload: payloadWithLoad(39.4),
+      });
+      expect(rejectedUpdate.statusCode).toBe(400);
+    }
+    const rejected = await app.inject({
+      method: 'POST',
+      url: '/workout-plans',
+      headers: { cookie: trainerCookie },
+      payload: payloadWithLoad(39.4),
+    });
+    expect(rejected.statusCode).toBe(400);
+    expect(rejected.json().message).toContain('A carga deve ser um número inteiro.');
+  });
+
+  it('valida carga inteira ao salvar e publicar rascunho', async () => {
+    const { exerciseA, studentId, trainerCookie } = await createTrainerScenario();
+    const payloadWithLoad = (loadKg: number) => ({
+      name: 'Rascunho de carga inteira',
+      days: [
+        {
+          label: 'A',
+          dayOrder: 0,
+          exercises: [{ exerciseId: exerciseA, exerciseOrder: 0, sets: 3, reps: '10', loadKg }],
+        },
+      ],
+    });
+    const rejectedSave = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: { studentId, selectedDayOrder: 0, payload: payloadWithLoad(39.4) },
+    });
+    expect(rejectedSave.statusCode).toBe(400);
+    const saved = await app.inject({
+      method: 'POST',
+      url: '/workout-plan-drafts',
+      headers: { cookie: trainerCookie },
+      payload: { studentId, selectedDayOrder: 0, payload: payloadWithLoad(39) },
+    });
+    expect(saved.statusCode).toBe(201);
+    expect(saved.json().payload.days[0].exercises[0].loadKg).toBe(39);
+    const rejectedPublish = await app.inject({
+      method: 'POST',
+      url: `/workout-plan-drafts/${saved.json().id}/publish`,
+      headers: { cookie: trainerCookie },
+      payload: { revision: saved.json().revision, payload: payloadWithLoad(39.4) },
+    });
+    expect(rejectedPublish.statusCode).toBe(400);
+    const published = await app.inject({
+      method: 'POST',
+      url: `/workout-plan-drafts/${saved.json().id}/publish`,
+      headers: { cookie: trainerCookie },
+      payload: { revision: saved.json().revision, payload: payloadWithLoad(39) },
+    });
+    expect(published.statusCode).toBe(200);
+    expect(published.json().days[0].exercises[0].loadKg).toBe('39');
+  });
+
   it('trainer creates a 2-day plan with exercises', async () => {
     const { exerciseA, exerciseB, studentId, trainerCookie } = await createTrainerScenario();
 

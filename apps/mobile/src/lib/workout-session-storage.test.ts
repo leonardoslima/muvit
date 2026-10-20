@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { GuidedSession } from '../application/workouts/guided-session';
+import {
+  type GuidedSession,
+  completeCurrentSet,
+  createGuidedSession,
+  pauseGuidedSession,
+  resumeGuidedSession,
+  skipCurrentExercise,
+  updateCurrentSet,
+} from '../application/workouts/guided-session';
 import type { WorkoutDay } from '../application/workouts/today-workout';
 import { createWorkoutSessionStorage, workoutSessionKey } from './workout-session-storage';
 
@@ -87,6 +95,39 @@ function memoryStorage(seed: Record<string, string> = {}) {
 }
 
 describe('workoutSessionStorage', () => {
+  it('restaura cargas legadas arredondadas preservando o descanso e o progresso', async () => {
+    const record = {
+      kind: 'active',
+      version: 2,
+      ownerAuthUserId: 'user-a',
+      day: {
+        ...day,
+        exercises: day.exercises.map((exercise) => ({ ...exercise, loadKg: '39.4' })),
+      },
+      session: {
+        ...sessionV2,
+        phase: 'rest',
+        restEndsAtMs: 9000,
+        sets: sessionV2.sets.map((set) => ({ ...set, loadKg: '39,8', completed: true })),
+      },
+    };
+    const storage = memoryStorage({
+      [workoutSessionKey('user-a', day.id)]: JSON.stringify(record),
+    });
+    const restored = await createWorkoutSessionStorage(storage).load('user-a', day.id);
+    expect(restored).toEqual({
+      ...record,
+      day: {
+        ...record.day,
+        exercises: record.day.exercises.map((exercise) => ({ ...exercise, loadKg: '39' })),
+      },
+      session: {
+        ...record.session,
+        sets: record.session.sets.map((set) => ({ ...set, loadKg: '40' })),
+      },
+    });
+    expect(storage.removeItem).not.toHaveBeenCalled();
+  });
   it('salva e restaura sessão ativa com proprietário e snapshot validado', async () => {
     const storage = memoryStorage();
     const adapter = createWorkoutSessionStorage(storage);
@@ -333,5 +374,56 @@ describe('workoutSessionStorage', () => {
       day,
       session: sessionV2,
     });
+  });
+});
+
+it('persiste e restaura séries puladas na versão 2 preservando dados e snapshot', async () => {
+  const storage = memoryStorage();
+  const adapter = createWorkoutSessionStorage(storage);
+  const skippedSession: GuidedSession = {
+    ...sessionV2,
+    phase: 'ready-to-finish',
+    sets: sessionV2.sets.map((set) => ({ ...set, skipped: true })),
+  };
+  await adapter.save('user-a', day, skippedSession);
+  await expect(adapter.load('user-a', day.id)).resolves.toEqual({
+    kind: 'active',
+    version: 2,
+    ownerAuthUserId: 'user-a',
+    day,
+    session: skippedSession,
+  });
+});
+
+it('retoma o último exercício parcialmente pulado com séries e volume realizados intactos', async () => {
+  const snapshot = {
+    ...day,
+    exercises: day.exercises.map((exercise) => ({ ...exercise, sets: 4 })),
+  };
+  const initial = createGuidedSession(snapshot, 1_000);
+  const completed = completeCurrentSet(
+    updateCurrentSet(initial, { loadKg: '22', repsDone: '10' }, 1_100),
+    snapshot,
+    1_200,
+  );
+  const skipped = skipCurrentExercise(completed, snapshot, 1_300);
+  const paused = pauseGuidedSession(skipped, 1_400);
+  const storage = memoryStorage();
+  const adapter = createWorkoutSessionStorage(storage);
+  await adapter.save('user-a', snapshot, paused);
+  const restored = await adapter.load('user-a', snapshot.id);
+  expect(restored?.kind).toBe('active');
+  if (restored?.kind !== 'active') throw new Error('Snapshot não restaurado');
+  expect(restored.day).toEqual(snapshot);
+  expect(restored.session).toEqual(paused);
+  expect(resumeGuidedSession(restored.session, 2_000)).toMatchObject({
+    phase: 'ready-to-finish',
+    currentSetIndex: 3,
+    activeDurationMs: 400,
+    activeSinceMs: 2_000,
+    sets: [
+      { ...initial.sets[0], loadKg: '22', repsDone: '10', completed: true },
+      ...initial.sets.slice(1).map((set) => ({ ...set, skipped: true })),
+    ],
   });
 });

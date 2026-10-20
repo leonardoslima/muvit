@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { ArrowLeft } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, View, findNodeHandle } from 'react-native';
+import { AccessibilityInfo, Keyboard, View, findNodeHandle } from 'react-native';
 import { mobileRoutes } from '../application/navigation/role-navigation';
 import { selectGuidedSessionView } from '../application/workouts/guided-session-presentation';
 import type { getWorkoutDraftProgress } from '../application/workouts/today-workout';
@@ -13,8 +14,9 @@ import {
   GuidedSessionDemonstration,
   type GuidedSessionDemonstrationPhase,
 } from '../components/workouts/guided-session-demonstration';
-import { GuidedSessionExitSheet } from '../components/workouts/guided-session-exit-sheet';
+import { GuidedSessionExitDialog } from '../components/workouts/guided-session-exit-dialog';
 import { GuidedSessionLayout } from '../components/workouts/guided-session-layout';
+import { GuidedSessionSkipDialog } from '../components/workouts/guided-session-skip-dialog';
 import { authClient } from '../lib/auth-client';
 import { radii, colors as v2Colors } from '../lib/design-system/tokens';
 import { useApiClient } from '../lib/use-api';
@@ -25,6 +27,13 @@ type NavigationAction = unknown;
 type Navigation = {
   dispatch: (action: NavigationAction) => void;
 };
+type SkipContext = {
+  authUserId?: string;
+  dayId?: string;
+  startedAtMs: number;
+  exerciseId: string;
+};
+
 type DemonstrationContext = {
   authUserId?: string;
   dayId?: string;
@@ -45,13 +54,46 @@ export function LogWorkoutScreen() {
   const demonstrationActionRef = useRef<View>(null);
   const restoreDemonstrationFocusRef = useRef(false);
   const [exitVisible, setExitVisible] = useState(false);
+  const [skipTarget, setSkipTarget] = useState<SkipContext | null>(null);
   const [demonstration, setDemonstration] = useState<DemonstrationContext | null>(null);
 
-  const controller = useGuidedWorkoutSession({ api, authUserId, dayId });
+  const controller = useGuidedWorkoutSession({
+    api,
+    authUserId,
+    dayId,
+    deferRestAdvance: exitVisible || Boolean(demonstration) || Boolean(skipTarget),
+  });
   const session = controller.session;
   const day = controller.day;
   const selection = day && session ? selectGuidedSessionView(day, session) : null;
   const currentExercise = selection?.currentExercise;
+  const skipVisible = Boolean(
+    skipTarget &&
+      session &&
+      skipTarget.authUserId === authUserId &&
+      skipTarget.dayId === dayId &&
+      skipTarget.startedAtMs === session.startedAtMs &&
+      skipTarget.exerciseId === currentExercise?.id &&
+      (session.phase === 'set' || session.phase === 'rest'),
+  );
+  const requestSkipExercise = () => {
+    if (controller.busy || !session || !currentExercise) return;
+    Keyboard.dismiss();
+    setSkipTarget({
+      authUserId,
+      dayId,
+      startedAtMs: session.startedAtMs,
+      exerciseId: currentExercise.id,
+    });
+  };
+  const cancelSkipExercise = () => {
+    if (!controller.busy) setSkipTarget(null);
+  };
+  const confirmSkipExercise = async () => {
+    if (!skipVisible || controller.busy) return;
+    await controller.skipExercise();
+    setSkipTarget(null);
+  };
   const isResumedSession = session ? session.updatedAtMs > session.startedAtMs : false;
   const demonstrationExercise =
     demonstration?.originPhase === 'exercise-complete' ? selection?.nextExercise : currentExercise;
@@ -98,6 +140,10 @@ export function LogWorkoutScreen() {
 
   usePreventRemove(controller.draftActive, ({ data }) => {
     if (controller.busy) return;
+    if (skipVisible) {
+      cancelSkipExercise();
+      return;
+    }
     if (demonstrationVisible) {
       closeDemonstration();
       return;
@@ -110,15 +156,21 @@ export function LogWorkoutScreen() {
     if (!authUserId || !dayId) {
       pendingActionRef.current = null;
       setExitVisible(false);
+      setSkipTarget(null);
       restoreDemonstrationFocusRef.current = false;
       setDemonstration(null);
       return;
     }
     pendingActionRef.current = null;
     setExitVisible(false);
+    setSkipTarget(null);
     restoreDemonstrationFocusRef.current = false;
     setDemonstration(null);
   }, [authUserId, dayId]);
+
+  useEffect(() => {
+    if (skipTarget && !skipVisible) setSkipTarget(null);
+  }, [skipTarget, skipVisible]);
 
   useEffect(() => {
     if (!demonstration) return;
@@ -136,6 +188,10 @@ export function LogWorkoutScreen() {
   }, [demonstration]);
 
   const requestClose = () => {
+    if (skipVisible) {
+      cancelSkipExercise();
+      return;
+    }
     if (demonstrationVisible) {
       closeDemonstration();
       return;
@@ -186,7 +242,7 @@ export function LogWorkoutScreen() {
     ? `${currentExercise.exercise.name} · Série ${(session?.currentSetIndex ?? 0) + 1}`
     : 'Treino em andamento';
   const exitSheet = (
-    <GuidedSessionExitSheet
+    <GuidedSessionExitDialog
       context={exitContext}
       storageError={controller.storageError}
       onContinue={continueAfterExit}
@@ -263,26 +319,49 @@ export function LogWorkoutScreen() {
   return (
     <>
       <GuidedSessionLayout
-        contentHidden={exitVisible || demonstrationVisible}
+        contentHidden={exitVisible || demonstrationVisible || skipVisible}
         statusBarStyle={demonstrationVisible ? 'dark' : 'light'}
       >
         <SessionHeader
           busy={controller.busy}
-          onClose={requestClose}
-          progress={progress}
-          subtitle={isResumedSession ? 'Treino em andamento' : undefined}
-          title={session.phase === 'summary' ? 'Treino concluído' : day.label}
+          onClose={
+            session.phase === 'summary'
+              ? () => router.replace(mobileRoutes.studentHome)
+              : requestClose
+          }
+          progress={session.phase === 'summary' ? undefined : progress}
+          subtitle={
+            isResumedSession && session.phase !== 'summary' && session.phase !== 'ready-to-finish'
+              ? 'Treino em andamento'
+              : undefined
+          }
+          title={session.phase === 'summary' ? 'Resumo do treino' : day.label}
+          summary={session.phase === 'summary'}
         />
 
         <GuidedSessionContent
           controller={controller}
           demonstrationActionRef={demonstrationActionRef}
           onBackHome={() => router.replace(mobileRoutes.studentHome)}
+          onRequestSkipExercise={requestSkipExercise}
           onOpenDemonstration={openDemonstration}
           selection={selection}
         />
       </GuidedSessionLayout>
       {exitSheet}
+      <GuidedSessionSkipDialog
+        visible={skipVisible}
+        busy={controller.busy}
+        exerciseName={currentExercise?.exercise.name ?? ''}
+        completedSetCount={
+          session.sets.filter(
+            (set) => set.workoutExerciseId === currentExercise?.id && set.completed,
+          ).length
+        }
+        totalSetCount={currentExercise?.sets ?? 0}
+        onCancel={cancelSkipExercise}
+        onConfirm={confirmSkipExercise}
+      />
       {demonstration ? (
         <GuidedSessionDemonstration
           visible={demonstrationVisible}
@@ -305,19 +384,31 @@ function SessionHeader({
   progress,
   busy,
   onClose,
+  summary = false,
 }: {
   title: string;
   subtitle?: string;
   progress?: ReturnType<typeof getWorkoutDraftProgress>;
   busy: boolean;
   onClose: () => void;
+  summary?: boolean;
 }): React.JSX.Element {
+  const hasSkipped = progress?.resolvedExerciseCount !== undefined;
+  const progressCount = progress?.resolvedExerciseCount ?? progress?.completedExerciseCount ?? 0;
+  const progressText = progress
+    ? `${progressCount} de ${progress.totalExerciseCount} exercícios ${hasSkipped ? 'percorridos' : 'concluídos'}`
+    : '';
   return (
-    <View className="gap-4">
+    <View className="gap-5">
       <Header
         title={title}
         variant="session"
-        backAction={{ label: 'Fechar sessão', onPress: onClose, disabled: busy }}
+        backAction={{
+          label: summary ? 'Voltar' : 'Fechar sessão',
+          onPress: onClose,
+          disabled: busy,
+        }}
+        backIcon={summary ? <ArrowLeft color={v2Colors.sessionText} size={22} /> : undefined}
       />
       {subtitle ? (
         <V2Text className="text-v2-sessionSecondary" variant="body">
@@ -325,29 +416,35 @@ function SessionHeader({
         </V2Text>
       ) : null}
       {progress ? (
-        <View className="gap-2">
-          <V2Text className="text-v2-sessionSecondary" variant="support">
-            {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
-          </V2Text>
+        <View className="min-h-[48px] gap-3">
           <View
             accessibilityRole="progressbar"
             accessibilityValue={{
               min: 0,
               max: progress.totalExerciseCount,
-              now: progress.completedExerciseCount,
-              text: `${progress.completedExerciseCount} de ${progress.totalExerciseCount} exercícios concluídos`,
+              now: progressCount,
+              text: progressText,
             }}
-            className="h-2 overflow-hidden rounded-full bg-v2-sessionSurface"
+            className="h-[6px] overflow-hidden rounded-full bg-v2-sessionBorder"
           >
             <View
               style={{
-                width: `${progress.progressPercent}%`,
+                width: `${progress.resolvedProgressPercent ?? progress.progressPercent}%`,
                 height: '100%',
                 backgroundColor: v2Colors.primary,
                 borderRadius: radii.highlight,
               }}
             />
           </View>
+          <V2Text className="font-v2-bold text-v2-primary" variant="body">
+            {progressText}
+          </V2Text>
+          {hasSkipped ? (
+            <V2Text className="text-v2-sessionSecondary" variant="support">
+              {progress.completedExerciseCount} concluídos · {progress.partialExerciseCount ?? 0}{' '}
+              parcial · {progress.skippedExerciseCount ?? 0} pulados
+            </V2Text>
+          ) : null}
         </View>
       ) : null}
     </View>

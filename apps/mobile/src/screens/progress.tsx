@@ -6,7 +6,7 @@ import type { Assessment, AssessmentsPage } from '../application/assessments/ass
 import { AssessmentPhotoViewer } from '../components/assessments/assessment-photo-viewer';
 import { StudentAssessmentCard } from '../components/assessments/student-assessment-card';
 import { Screen, ScreenHeader } from '../components/ui/screen';
-import { Button, Message, StatePanel, Text } from '../components/ui/v2';
+import { ActionFeedback, Button, StatePanel, Text } from '../components/ui/v2';
 import { authClient } from '../lib/auth-client';
 import { useApiClient } from '../lib/use-api';
 
@@ -115,7 +115,8 @@ export function ProgressScreen(): React.JSX.Element {
         ) : null}
 
         {hasRefreshError ? (
-          <Message
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
             action={{ label: 'Tentar novamente', onPress: retry }}
             title="Não foi possível atualizar suas avaliações."
             variant="error"

@@ -8,7 +8,7 @@ export const workoutExerciseInputSchema = z.object({
   sets: z.number().int().min(1).max(20),
   reps: z.string().min(1).max(20),
   restSeconds: z.number().int().min(0).max(600).optional(),
-  loadKg: z.number().min(0).max(1000).optional(),
+  loadKg: z.number().int('A carga deve ser um número inteiro.').min(0).max(1000).optional(),
   tempo: z.string().max(10).optional(),
   notes: z.string().max(500).optional(),
 });
@@ -90,7 +90,7 @@ export const logSetInputSchema = z.object({
   workoutExerciseId: z.string().uuid(),
   setNumber: z.number().int().min(1).max(20),
   repsDone: z.number().int().min(0).max(200).optional(),
-  loadKg: z.number().min(0).max(1000).optional(),
+  loadKg: z.number().int('A carga deve ser um número inteiro.').min(0).max(1000).optional(),
   completed: z.boolean().default(false),
 });
 

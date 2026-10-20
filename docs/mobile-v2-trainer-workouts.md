@@ -8,7 +8,7 @@ Lista de treinos por aluno, detalhe, criação/edição, catálogo de seleção,
 
 DM Sans, papel, verde profundo, lima e ícones Lucide usam os tokens existentes. Gutter de 16 dp, controles de 52 dp, CTA de 58 dp e alvos de ícone de 48 dp. As telas são expandidas para mostrar conteúdo rolável; não representam altura fixa do dispositivo. Adaptações de lista, detalhe, editor e catálogo em 320/390/430 dp; o editor de 320 dp inclui nome extenso. Safe areas e tab bar devem ser consumidas uma vez pelo shell Início/Alunos/Perfil.
 
-Os novos símbolos são `RTkQU` (lista de treino), `JPjJ2` (prescrição em leitura), `HJIyB` (exercício do catálogo), `Gaaoc` (prescrição editável), `WpCw0` (ação contextual) e `lwH91` (referência visual de confirmação). Botões, campos, status, mensagens, cabeçalho e navegação são instâncias conectadas à MUV-24. O diálogo mapeia o Alert nativo; não exige substituir o controle do sistema por modal próprio.
+Os novos símbolos são `RTkQU` (lista de treino), `JPjJ2` (prescrição em leitura), `HJIyB` (exercício do catálogo), `Gaaoc` (prescrição editável), `WpCw0` (ação contextual) e `lwH91` (referência visual de confirmação). Botões, campos, status, mensagens, cabeçalho e navegação são instâncias conectadas à MUV-24. A implementação da confirmação de remoção de dia passa a usar o componente compartilhado ConfirmationDialog na revisão MUV-9 descrita abaixo.
 
 ## Jornada e navegação
 
@@ -195,6 +195,30 @@ Revisão do rascunho e saída em 07/10/2026: removidos seletor e label de status
 
 Revisão da seleção de dias em 07/10/2026: o padrão de aybsK foi corrigido e aplicado a 16 variantes do editor. Abas selecionam; uma única ação contextual Remover dia fica no cabeçalho do campo do dia selecionado. Capturas conferiram 320/390 dp, um dia, sete dias e envio. O desenho reutiliza tabs, campo e botões de texto da foundation, sem novos componentes reutilizáveis. A leitura contou 65 quadros MUV-31 e 464 referências, sem ações de remoção sob as abas, placeholders ou escapes Unicode; os 330 quadros raiz não se intersectam. O visitor de bounds reporta clipping no wrapper movido e no toolbar, divergindo das capturas completas após a reorganização; não é usado como prova de geometria interna limpa. O salvamento permanece com o usuário.
 
+## Polimento do editor mobile — MUV-9 (19/10/2026)
+
+A implementação do editor foi comparada com o Pen atual pelo Pen CLI, incluindo prescrição preenchida, vazio, edição pendente, 320/390/430 dp, catálogo e saída sem salvar. O formulário usa título e orientação separados do cabeçalho Treinos, campos gerais sem card envolvente, abas verdes e cartão do dia com nome editável, contagem, lápis e remoção contextual. Os exercícios apresentam identificação com ícone e posição, parâmetros em duas colunas, unidades nos rótulos, observação multiline e ações alinhadas à direita. O foco direto nos parâmetros também identifica o exercício em edição; alterações pendentes continuam prioritárias sobre o foco, com ícone, texto e borda de 2 dp.
+
+O catálogo mantém busca aplicada, filtros e paginação existentes, com fechamento por X e tipografia/superfícies do design. A saída usa a ordem Salvar rascunho e sair, Continuar editando e Descartar e sair. A recuperação de consulta do editor fica no ícone Atualizar do cabeçalho. Erros de ações, validação global e falhas de atualização/paginação usam os toasts implementados no MUV-9; não reproduzir as mensagens inline antigas desses quadros. Falhas iniciais sem conteúdo e contextos indisponíveis mantêm StatePanel. A carga continua inteira, conforme a decisão posterior ao desenho, sem alterar contratos de API ou persistência neste polimento.
+
+Por decisão posterior do usuário, o título do dia fica somente para leitura no editor mobile. O cabeçalho do cartão preserva nome, contagem e remoção contextual, sem campo de nome ou lápis para renomear; nomes existentes são preservados e novos dias recebem os nomes gerados pelo fluxo atual. Os cartões de exercício também não oferecem lápis ou destaque verde de edição: tocar no campo permite editar diretamente, com foco visual restrito ao campo. O aviso de alterações não salvas continua disponível.
+
+A busca do catálogo passa a seguir a tela de alunos: consulta à API após 400 ms sem digitar, cancelamento da consulta anterior ao alterar o termo, paginação por busca/grupo e X dentro do campo para limpar imediatamente sem perder o grupo selecionado. Não há botões externos Buscar/Limpar nem envio adicional pelo teclado. O campo permanece editável durante consultas; seleção de exercícios e filtros aguardam o carregamento. O cabeçalho e a faixa horizontal de filtros não encolhem para acomodar a lista: somente a área dos resultados cede altura e rola, preservando os alvos de toque dos filtros.
+
+O catálogo ocupa 92% da altura útil do contêiner ajustado ao teclado, independentemente da quantidade de resultados ou do estado de carregamento. Não usar apenas maxHeight nessa superfície: o conteúdo curto durante a busca faz o sheet encolher. A lista preenche o espaço restante; KeyboardAvoidingView ajusta a superfície inteira no Android/iOS.
+
+A lixeira de cada exercício abre `ConfirmationDialog` com o nome do exercício e ações Cancelar/Remover exercício. Somente a confirmação remove a prescrição do dia no editor; cancelar ou dispensar mantém os dados. O exercício do catálogo não é excluído.
+
+A remoção de dia usa `ConfirmationDialog` de `src/components/ui/v2`, baseado no Modal do React Native e no quadro `P9njzq`: superfície branca com raio 24 dp, padding 24 dp, gap 16 dp, título 22/30,8 dp, descrição 15/21 dp e botões Cancelar/Remover dia de 58 dp empilhados. O modal adapta a área rolável ao viewport e às safe areas; cancelar ou Back mantém o dia. Toda remoção de dia exige confirmação, inclusive vazio, e continua bloqueada para o último dia e durante envio. Essa apresentação substitui o Alert nativo usado anteriormente para essa ação.
+
+O mesmo componente é compartilhado pelas remoções de exercício e pela saída da conta no perfil de aluno/professor. Sair abre a confirmação, Cancelar mantém a sessão e somente Sair da conta chama o logout existente. Falhas continuam usando toast na tela após fechar a confirmação.
+
+Decisão posterior de padronização: confirmações usam modais e seleção/consulta usa bottom sheet. `Dialog` centraliza janela, scrim, safe areas, rolagem, tipografia e ToastProvider; `ConfirmationDialog` compõe as duas ações sobre essa base. Saída do editor, saída da sessão guiada e pular exercício passam a `WorkoutEditorExitDialog`, `GuidedSessionExitDialog` e `GuidedSessionSkipDialog`. Cancelar/continuar vem antes das ações de salvar ou descartar; bloqueios durante gravação, recuperação por toast e preservação das séries concluídas continuam sob os controllers existentes. O catálogo continua em bottom sheet.
+
+A origem das fotos em avaliações de aluno/professor usa o `AssessmentPhotoSourceSheet` compartilhado, com câmera, biblioteca e cancelar. O picker recebe uma origem explícita. No iOS, aguarda o evento de dispensa do modal antes de abrir câmera/biblioteca; no Android, inicia a escolha após fechar o sheet. Uma escolha concluída após desmontar a tela é ignorada. Câmera mantém permissão no ponto de uso; limites, uploads e tratamento de cancelamento permanecem nos fluxos existentes.
+
+A validação visual no app cabe ao usuário; os exports do Pen são referências de design, sem equivaler a QA do Android/iOS.
+
 ## Validação MUV-40 — execução run-34 (16/10/2026)
 
 ### Fluxo real em Android
@@ -203,8 +227,8 @@ Como a ponte de emulador do Orca estava indisponível, o QA usou ADB no AVD excl
 
 Capturas desta execução:
 
-- [Editor em 320 dp](evidence/muv-40/editor-320dp.png) e [editor em 390 dp](evidence/muv-40/editor-390dp.png), incluindo o texto completo de “Adicionar dia”.
-- [Rascunho salvo na lista](evidence/muv-40/draft-lista-salvo.png), [rascunho retomado após reabrir o app](evidence/muv-40/draft-retomado.png) e [lista após publicação](evidence/muv-40/draft-publicado.png).
+- Editor em 320/390 dp, incluindo o texto completo de “Adicionar dia”: capturas locais `artifacts/muv-40/historico/screenshots/editor-320dp.png` e `editor-390dp.png`.
+- Rascunho salvo, retomado após reabrir o app e lista após publicação: capturas locais `draft-lista-salvo.png`, `draft-retomado.png` e `draft-publicado.png`, no mesmo diretório ignorado. Para revisão compartilhada, use anexos da PR/issue conforme o [fluxo de artefatos de QA](operations/qa-artifacts.md).
 
 O ciclo validado demonstra persistência remota após reinício do processo; não foi feita reinstalação nem teste em segundo aparelho. O restante dos estados de erro, concorrência e saída é coberto pelas suítes automatizadas.
 

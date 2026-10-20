@@ -222,7 +222,7 @@ describe('workout-editor', () => {
       sets: '4',
       reps: '8-10',
       restSeconds: '90',
-      loadKg: '82.50',
+      loadKg: '83',
       notes: 'Sem falhar',
       tempo: '3010',
     });
@@ -232,7 +232,9 @@ describe('workout-editor', () => {
   });
 
   it.each([
-    ['abc', 'Carga deve ser um número válido.'],
+    ['82,5', 'Carga deve ser um número inteiro.'],
+    ['82.5', 'Carga deve ser um número inteiro.'],
+    ['abc', 'Carga deve ser um número inteiro.'],
     ['1001', 'Carga deve estar entre 0 e 1000 kg.'],
   ])('rejeita carga %s', (loadKg, message) => {
     let state = validEditorState();
@@ -241,15 +243,15 @@ describe('workout-editor', () => {
     expect(buildCreateTrainerWorkoutInput(state, STUDENT_ID)).toEqual({ ok: false, message });
   });
 
-  it('aceita vírgula decimal na carga e converte campos opcionais', () => {
+  it('aceita carga inteira e converte campos opcionais', () => {
     let state = validEditorState();
-    state = updateWorkoutEditorExerciseField(state, 'local-1', 'local-2', 'loadKg', '82,5');
+    state = updateWorkoutEditorExerciseField(state, 'local-1', 'local-2', 'loadKg', '83');
     state = updateWorkoutEditorExerciseField(state, 'local-1', 'local-2', 'restSeconds', '90');
 
     const result = buildCreateTrainerWorkoutInput(state, STUDENT_ID);
 
     if (!result.ok) throw new Error(result.message);
-    expect(result.body.days[0]?.exercises[0]?.loadKg).toBe(82.5);
+    expect(result.body.days[0]?.exercises[0]?.loadKg).toBe(83);
     expect(result.body.days[0]?.exercises[0]?.restSeconds).toBe(90);
   });
 
@@ -408,7 +410,7 @@ describe('workout-editor', () => {
       firstDay(state).localId,
       first.localId,
       'loadKg',
-      '82,5',
+      '83',
     );
     state = updateWorkoutEditorExerciseField(
       state,
@@ -451,7 +453,7 @@ describe('workout-editor', () => {
                 exerciseOrder: 0,
                 sets: 4,
                 reps: '8-10',
-                loadKg: 82.5,
+                loadKg: 83,
                 tempo: '3010',
               },
             ],

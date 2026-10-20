@@ -1,4 +1,5 @@
 import { Link, router } from 'expo-router';
+import { ArrowUpRight, Clock3, Dumbbell } from 'lucide-react-native';
 import { useRef } from 'react';
 import { View } from 'react-native';
 import type { GuidedSession } from '../application/workouts/guided-session';
@@ -8,14 +9,21 @@ import {
   getWorkoutDraftProgress,
 } from '../application/workouts/today-workout';
 import { Screen } from '../components/ui/screen';
+import { ActionFeedback } from '../components/ui/v2/action-feedback';
 import { Button } from '../components/ui/v2/button';
 import { Card } from '../components/ui/v2/card';
-import { Message } from '../components/ui/v2/message';
 import { StatePanel } from '../components/ui/v2/state-panel';
 import { Text } from '../components/ui/v2/text';
 import { StudentExerciseList } from '../components/workouts/student-exercise-list';
+import { StudentWorkoutEvolution } from '../components/workouts/student-workout-evolution';
 import { authClient } from '../lib/auth-client';
-import { colors, controlSizes, spacing } from '../lib/design-system/tokens';
+import {
+  colors,
+  controlSizes,
+  fontFamilies,
+  penTokens,
+  spacing,
+} from '../lib/design-system/tokens';
 import { muscleGroupLabel } from '../lib/muscle-groups';
 import { useTodayWorkout } from '../lib/use-today-workout';
 
@@ -39,7 +47,7 @@ export function TodayWorkoutScreen() {
   if (!query.data && (query.isLoading || query.isFetching || query.isPending)) {
     return (
       <Screen scroll contentContainerStyle={styles.content}>
-        <StudentTodayHeader initials={initials} />
+        <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
         <View style={styles.stateArea}>
           <StatePanel
             description="Estamos buscando seu treino de hoje."
@@ -54,7 +62,7 @@ export function TodayWorkoutScreen() {
   if (!query.data) {
     return (
       <Screen scroll contentContainerStyle={styles.content}>
-        <StudentTodayHeader initials={initials} />
+        <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
         <View style={styles.stateArea}>
           <StatePanel
             action={{ label: 'Tentar novamente', onPress: retry }}
@@ -74,10 +82,11 @@ export function TodayWorkoutScreen() {
     const hasNoPlan = data.status === 'no-active-plan';
     return (
       <Screen scroll contentContainerStyle={styles.content}>
-        <StudentTodayHeader initials={initials} />
+        <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
         {stale ? <OfflineMessage /> : null}
         {hasRefreshError ? (
-          <Message
+          <ActionFeedback
+            eventKey={query.errorUpdatedAt}
             action={{
               label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
               onPress: retry,
@@ -113,10 +122,11 @@ export function TodayWorkoutScreen() {
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
-      <StudentTodayHeader initials={initials} />
+      <StudentTodayHeader firstName={nameParts[0]} initials={initials} />
       {stale ? <OfflineMessage /> : null}
       {hasRefreshError ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           action={{
             label: query.isFetching ? 'Atualizando…' : 'Tentar novamente',
             onPress: retry,
@@ -129,41 +139,56 @@ export function TodayWorkoutScreen() {
         />
       ) : null}
 
-      <Card className="gap-4 p-5" variant="highlight">
-        <Text className="text-v2-sessionSecondary uppercase" variant="caption">
+      <Card className="gap-0 border-0 p-5" style={styles.workoutCard} variant="highlight">
+        <Text className="text-v2-primary uppercase" variant="caption">
           {completedLocal ? 'CONCLUÍDO' : draft ? 'RETOMAR' : 'HOJE'} · {day.label}
         </Text>
-        <Text className="text-v2-sessionText" variant="sectionTitle">
-          {completedLocal
-            ? 'Treino concluído'
-            : draft
-              ? 'Treino em andamento'
-              : `${plan.name} · ${day.label}`}
+        <Text className="text-v2-surface" style={styles.workoutTitle} variant="sectionTitle">
+          {completedLocal ? 'Treino concluído' : draft ? 'Treino em andamento' : plan.name}
         </Text>
-        <Text className="text-v2-sessionSecondary" variant="body">
-          {muscleGroups}
-        </Text>
-        <Text className="text-v2-sessionSecondary" variant="support">
-          {day.exercises.length} exercícios · {estimateWorkoutDuration(day)} min estimados
-        </Text>
+        <Text style={styles.workoutContext}>{muscleGroups}</Text>
+        <View style={styles.workoutMetrics}>
+          <View style={styles.metric}>
+            <Clock3 accessible={false} color={colors.primary} size={penTokens['font/size/17']} />
+            <Text style={styles.metricText}>~{estimateWorkoutDuration(day)} min</Text>
+          </View>
+          <View style={styles.metric}>
+            <Dumbbell accessible={false} color={colors.primary} size={penTokens['font/size/17']} />
+            <Text style={styles.metricText}>{day.exercises.length} exercícios</Text>
+          </View>
+        </View>
         {draft ? <ResumeProgress day={day} session={draft} /> : null}
         {!completedLocal ? (
-          <Link asChild href={actionHref}>
-            <Button label={actionLabel} />
-          </Link>
+          <View style={styles.workoutAction}>
+            <Link asChild href={actionHref}>
+              <Button label={actionLabel} labelClassName="px-6 text-[17px]" />
+            </Link>
+            <View pointerEvents="none" style={styles.actionArrow}>
+              <ArrowUpRight accessible={false} color={colors.text} size={controlSizes.icon} />
+            </View>
+          </View>
         ) : null}
       </Card>
 
       {completedLocal ? (
-        <Message
+        <ActionFeedback
+          eventKey={query.errorUpdatedAt}
           description="A conclusão está salva neste dispositivo e será sincronizada quando necessário."
           title="Conclusão salva"
           variant="success"
         />
       ) : null}
 
+      <StudentWorkoutEvolution />
       <View style={styles.exerciseSection}>
-        <Text variant="sectionTitle">Exercícios</Text>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionTitle} variant="sectionTitle">
+            Exercícios de hoje
+          </Text>
+          <Text className="text-v2-secondary" variant="support">
+            {day.exercises.length} exercícios
+          </Text>
+        </View>
         <StudentExerciseList
           day={day}
           onExercisePress={(exerciseId) => {
@@ -179,30 +204,53 @@ export function TodayWorkoutScreen() {
   );
 }
 
-function StudentTodayHeader({ initials }: { initials: string }) {
+function StudentTodayHeader({ firstName, initials }: { firstName?: string; initials: string }) {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+  const date = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(now);
+
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
-        <Text className="text-v2-brand" variant="sectionTitle">
-          muvit
-        </Text>
+        <View style={styles.brand}>
+          <Text className="font-v2-extrabold text-[22px]" variant="sectionTitle">
+            muvit
+          </Text>
+          <View style={styles.brandDot} />
+        </View>
         <View accessibilityLabel={`Perfil do aluno, ${initials}`} style={styles.avatar}>
-          <Text className="text-v2-brand" variant="caption">
+          <Text className="text-[13px]" variant="caption">
             {initials}
           </Text>
         </View>
       </View>
-      <Text variant="screenTitle">Seu treino de hoje</Text>
-      <Text className="text-v2-secondary" variant="body">
-        Encontre seu próximo movimento.
-      </Text>
+      <View style={styles.heading}>
+        <Text className="text-v2-brand uppercase" variant="caption">
+          {firstName ? `${greeting}, ${firstName}` : greeting}
+        </Text>
+        <Text
+          accessibilityRole="header"
+          className="text-[29px] leading-[34.8px]"
+          variant="screenTitle"
+        >
+          Seu ritmo, seu dia.
+        </Text>
+        <Text className="text-v2-secondary text-[13px]" variant="body">
+          {date.charAt(0).toLocaleUpperCase('pt-BR') + date.slice(1)}
+        </Text>
+      </View>
     </View>
   );
 }
 
 function OfflineMessage() {
   return (
-    <Message
+    <ActionFeedback
       description="Mostrando os dados salvos neste dispositivo."
       title="Treino carregado offline"
       variant="info"
@@ -215,9 +263,15 @@ function ResumeProgress({ day, session }: { day: WorkoutDay; session: GuidedSess
 
   return (
     <View style={styles.progressContent}>
-      <Text className="text-v2-sessionText" variant="label">
+      <Text className="text-v2-surface" variant="label">
         {progress.completedExerciseCount} de {progress.totalExerciseCount} exercícios concluídos
       </Text>
+      {progress.resolvedExerciseCount !== undefined ? (
+        <Text style={{ color: colors.onBrandSecondary }} variant="body">
+          {progress.partialExerciseCount ?? 0} com séries realizadas e restantes puladas ·{' '}
+          {progress.skippedExerciseCount ?? 0} pulados
+        </Text>
+      ) : null}
       <View
         accessibilityLabel="Progresso do treino"
         accessibilityRole="progressbar"
@@ -227,7 +281,7 @@ function ResumeProgress({ day, session }: { day: WorkoutDay; session: GuidedSess
       >
         <View style={[styles.progressFill, { width: `${progress.progressPercent}%` }]} />
       </View>
-      <Text className="text-v2-sessionSecondary" variant="body">
+      <Text style={{ color: colors.onBrandSecondary }} variant="body">
         {progress.next
           ? `Próximo: ${progress.next.exerciseName} · Série ${progress.next.setNumber} de ${progress.next.totalSets}`
           : 'Treino pronto para concluir'}
@@ -244,23 +298,83 @@ const styles = {
     paddingTop: spacing.xxl,
   },
   header: {
-    gap: spacing.sm,
+    gap: spacing.xxl,
+  },
+  heading: {
+    gap: spacing.xs,
   },
   brandRow: {
     alignItems: 'center' as const,
     flexDirection: 'row' as const,
     justifyContent: 'space-between' as const,
-    marginBottom: spacing.md,
+    minHeight: controlSizes.touch + spacing.optical,
+  },
+  brand: {
+    alignItems: 'baseline' as const,
+    flexDirection: 'row' as const,
+    gap: spacing.optical,
+  },
+  brandDot: {
+    backgroundColor: colors.primary,
+    borderRadius: spacing.xs,
+    height: 7,
+    width: 7,
   },
   avatar: {
     alignItems: 'center' as const,
     backgroundColor: colors.subtle,
-    borderColor: colors.border,
-    borderRadius: controlSizes.touch / 2,
-    borderWidth: 1,
-    height: controlSizes.touch,
+    borderRadius: penTokens['radius/21'],
+    height: penTokens['radius/21'] * 2,
     justifyContent: 'center' as const,
-    width: controlSizes.touch,
+    width: penTokens['radius/21'] * 2,
+  },
+  workoutCard: {
+    backgroundColor: colors.text,
+    paddingTop: penTokens['font/size/22'],
+    paddingBottom: spacing.md,
+  },
+  workoutTitle: {
+    fontSize: penTokens['font/size/25'],
+    lineHeight: penTokens['font/size/25'] * 1.35,
+    marginTop: spacing.lg,
+  },
+  workoutContext: {
+    color: colors.onBrandSecondary,
+    fontSize: penTokens['font/size/13'],
+    lineHeight: penTokens['font/size/13'] * 1.35,
+    marginTop: spacing.xs,
+  },
+  workoutMetrics: {
+    alignItems: 'center' as const,
+    borderTopColor: colors.borderOnBrand,
+    borderTopWidth: 1,
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    columnGap: spacing.xxxl,
+    rowGap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  metric: {
+    alignItems: 'center' as const,
+    flexDirection: 'row' as const,
+    gap: spacing.sm,
+  },
+  metricText: {
+    color: colors.surface,
+    fontSize: penTokens['font/size/13'],
+    lineHeight: penTokens['font/size/13'] * 1.4,
+    fontFamily: fontFamilies.semibold,
+  },
+  workoutAction: {
+    marginTop: spacing.lg,
+  },
+  actionArrow: {
+    position: 'absolute' as const,
+    right: spacing.xl,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center' as const,
   },
   stateArea: {
     flexGrow: 1,
@@ -269,8 +383,17 @@ const styles = {
   exerciseSection: {
     gap: spacing.md,
   },
+  sectionHeading: {
+    alignItems: 'baseline' as const,
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    flex: 1,
+  },
   progressContent: {
     gap: spacing.md,
+    marginTop: spacing.lg,
   },
   progressTrack: {
     backgroundColor: colors.borderOnBrand,

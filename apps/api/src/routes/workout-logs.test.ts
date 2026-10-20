@@ -82,6 +82,37 @@ afterAll(async () => {
 });
 
 describe('workout logs', () => {
+  it('rejeita carga fracionária sem concluir a sessão e aceita cargas inteiras nos limites', async () => {
+    const { studentCookie, workoutDayId, workoutExerciseId } = await createStudentWorkoutScenario();
+    for (const loadKg of [0, 39, 1000]) {
+      const started = await app.inject({
+        method: 'POST',
+        url: '/workout-logs',
+        headers: { cookie: studentCookie },
+        payload: { workoutDayId, date: '2026-10-17' },
+      });
+      expect(started.statusCode).toBe(201);
+      const finishWithLoad = (load: number) =>
+        app.inject({
+          method: 'PATCH',
+          url: `/workout-logs/${started.json().id}/finish`,
+          headers: { cookie: studentCookie },
+          payload: {
+            durationMin: 30,
+            sets: [
+              { workoutExerciseId, setNumber: 1, repsDone: 10, loadKg: load, completed: true },
+            ],
+          },
+        });
+      const rejected = await finishWithLoad(39.4);
+      expect(rejected.statusCode).toBe(400);
+      expect(rejected.json().message).toContain('A carga deve ser um número inteiro.');
+      const finished = await finishWithLoad(loadKg);
+      expect(finished.statusCode).toBe(200);
+      expect(finished.json().sets[0].loadKg).toBe(String(loadKg));
+    }
+  });
+
   it('student starts a log', async () => {
     const { studentCookie, workoutDayId } = await createStudentWorkoutScenario();
 

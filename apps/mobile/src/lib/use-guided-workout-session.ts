@@ -2,6 +2,7 @@ import type { workoutPlanFullSchema } from '@muvit/validators';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import type { z } from 'zod';
 import {
   type GuidedSession,
@@ -14,6 +15,7 @@ import {
   markSessionFinished,
   pauseGuidedSession,
   resumeGuidedSession,
+  skipCurrentExercise,
   skipRest,
   updateCurrentSet,
 } from '../application/workouts/guided-session';
@@ -21,12 +23,24 @@ import { loadWorkoutDay, normalizeCachedTodayWorkout } from '../application/work
 import { finishWorkoutWithOfflineFallback } from '../application/workouts/workout-log';
 import type { ApiClient } from './api';
 import { isoDateFromTimestamp, todayIsoDate } from './date';
+import { invalidateWorkoutEvolution } from './invalidate-workout-evolution';
 import { createWorkoutLogJournal } from './log-queue';
 import { type WorkoutSessionStorage, createWorkoutSessionStorage } from './workout-session-storage';
 
 export type WorkoutPlan = z.infer<typeof workoutPlanFullSchema>;
 export type WorkoutDay = WorkoutPlan['days'][number];
 export type GuidedWorkoutState = 'loading' | 'error' | 'ready' | 'completed';
+type GuidedFieldErrors = { loadKg?: string; repsDone?: string };
+
+function fieldErrorScope(identity: string | null, session: GuidedSession | null): string {
+  return JSON.stringify([
+    identity,
+    session?.startedAtMs,
+    session?.currentExerciseIndex,
+    session?.currentSetIndex,
+    session?.phase,
+  ]);
+}
 
 type GuidedWorkoutInput = {
   api: ApiClient;
@@ -34,6 +48,7 @@ type GuidedWorkoutInput = {
   dayId?: string;
   storage?: WorkoutSessionStorage;
   now?: () => number;
+  deferRestAdvance?: boolean;
 };
 
 export type GuidedWorkoutController = {
@@ -42,6 +57,7 @@ export type GuidedWorkoutController = {
   session: GuidedSession | null;
   error: Error | null;
   actionError: string | null;
+  fieldErrors?: GuidedFieldErrors;
   canRetryFinish: boolean;
   storageError: string | null;
   queued: boolean;
@@ -52,6 +68,7 @@ export type GuidedWorkoutController = {
   completeSet: () => Promise<void>;
   addRestTime: () => Promise<void>;
   skipRest: () => Promise<void>;
+  skipExercise: () => Promise<void>;
   continueAfterExercise: () => Promise<void>;
   finishWorkout: () => Promise<void>;
   discard: () => Promise<boolean>;
@@ -341,6 +358,7 @@ export function useGuidedWorkoutSession({
   dayId,
   now = defaultNow,
   storage,
+  deferRestAdvance = false,
 }: GuidedWorkoutInput): GuidedWorkoutController {
   const queryClient = useQueryClient();
   const sessionStorage = useMemo(
@@ -352,6 +370,10 @@ export function useGuidedWorkoutSession({
   const sessionRef = useRef<GuidedSession | null>(null);
   const dayRef = useRef<WorkoutDay | null>(null);
   const mountedRef = useRef(true);
+  const deferRestAdvanceRef = useRef(deferRestAdvance);
+  deferRestAdvanceRef.current = deferRestAdvance;
+  const appStateRef = useRef(AppState.currentState ?? 'active');
+  const [appState, setAppState] = useState(() => ({ status: appStateRef.current }));
   const lifecycleIdentityRef = useRef<string | null>(null);
   const lifecycleLeaseRef = useRef<SessionLifecycleVersion | null>(null);
   const committedIdentityRef = useRef<string | null>(null);
@@ -363,6 +385,10 @@ export function useGuidedWorkoutSession({
   const [session, setSession] = useState<GuidedSession | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [fieldErrorState, setFieldErrorState] = useState<{
+    scope: string;
+    errors: GuidedFieldErrors;
+  } | null>(null);
   const [canRetryFinish, setCanRetryFinish] = useState(false);
   const [queued, setQueued] = useState(false);
   const [draftActive, setDraftActive] = useState(false);
@@ -516,7 +542,12 @@ export function useGuidedWorkoutSession({
 
   useEffect(() => {
     mountedRef.current = true;
+    const subscription = AppState.addEventListener('change', (state) => {
+      appStateRef.current = state;
+      setAppState({ status: state });
+    });
     return () => {
+      subscription.remove();
       mountedRef.current = false;
       busyRef.current = false;
       mutationTokenRef.current = null;
@@ -919,8 +950,9 @@ export function useGuidedWorkoutSession({
           const current = sessionRef.current;
           const day = query.data?.day ?? dayRef.current;
           if (!current || !day || !isCurrentIdentity()) return;
-          bumpSessionRevision(identity);
           const next = derive(current, day, nowRef.current());
+          if (next === current) return;
+          bumpSessionRevision(identity);
           sessionRef.current = next;
           setSession(next);
           syncSessionCache(next);
@@ -955,10 +987,19 @@ export function useGuidedWorkoutSession({
       const current = sessionRef.current;
       const day = query.data?.day ?? dayRef.current;
       if (!current || !day) return;
+      const errorScope = fieldErrorScope(identity, current);
 
       try {
         bumpSessionRevision(identity);
         const next = updateCurrentSet(current, values, nowRef.current());
+        setFieldErrorState((state) => ({
+          scope: errorScope,
+          errors: {
+            ...(state?.scope === errorScope ? state.errors : {}),
+            ...(values.loadKg !== undefined ? { loadKg: undefined } : {}),
+            ...(values.repsDone !== undefined ? { repsDone: undefined } : {}),
+          },
+        }));
         sessionRef.current = next;
         setSession(next);
         syncSessionCache(next);
@@ -967,7 +1008,15 @@ export function useGuidedWorkoutSession({
         await enqueueEdit(next, day);
       } catch (error) {
         if (isCurrentIdentity()) {
-          setActionError(getErrorMessage(error));
+          const message = getErrorMessage(error);
+          setFieldErrorState((state) => ({
+            scope: errorScope,
+            errors: {
+              ...(state?.scope === errorScope ? state.errors : {}),
+              ...(values.loadKg !== undefined ? { loadKg: message } : { repsDone: message }),
+            },
+          }));
+          setActionError(null);
           setCanRetryFinish(false);
         }
       }
@@ -983,9 +1032,55 @@ export function useGuidedWorkoutSession({
     await transition((current, _day, at) => extendRest(current, at));
   }, [transition]);
 
-  const skipRestAction = useCallback(async () => {
-    await transition((current, day, at) => skipRest(current, day, at));
+  const skipExercise = useCallback(async () => {
+    await transition((current, day, at) =>
+      current.phase === 'set' || current.phase === 'rest'
+        ? skipCurrentExercise(current, day, at)
+        : current,
+    );
   }, [transition]);
+
+  const skipRestAction = useCallback(async () => {
+    await transition((current, day, at) =>
+      current.phase === 'rest' ? skipRest(current, day, at) : current,
+    );
+  }, [transition]);
+
+  useEffect(() => {
+    if (
+      !session ||
+      session.phase !== 'rest' ||
+      session.restEndsAtMs === null ||
+      session.activeSinceMs === null ||
+      deferRestAdvance ||
+      busy ||
+      !queryEnabled ||
+      appState.status !== 'active'
+    ) {
+      return;
+    }
+    const advanceIfExpired = () => {
+      void transition((current, day, at) => {
+        if (
+          current !== session ||
+          current.phase !== 'rest' ||
+          current.restEndsAtMs === null ||
+          current.restEndsAtMs > at ||
+          current.activeSinceMs === null ||
+          deferRestAdvanceRef.current ||
+          appStateRef.current !== 'active'
+        ) {
+          return current;
+        }
+        return skipRest(current, day, at);
+      });
+    };
+    const timer = setTimeout(
+      advanceIfExpired,
+      Math.min(2_147_483_647, Math.max(0, session.restEndsAtMs - nowRef.current())),
+    );
+    return () => clearTimeout(timer);
+  }, [appState, busy, deferRestAdvance, queryEnabled, session, transition]);
 
   const continueAfterExerciseAction = useCallback(async () => {
     await transition((current, day, at) => continueAfterExercise(current, day, at));
@@ -1007,6 +1102,7 @@ export function useGuidedWorkoutSession({
         sessionRef.current = paused;
         setSession(paused);
         syncSessionCache(paused);
+        setQueryEnabled(false);
         await invalidateTodayWorkout();
         return isCurrentIdentity();
       });
@@ -1058,8 +1154,15 @@ export function useGuidedWorkoutSession({
         const current = sessionRef.current;
         const day = query.data?.day ?? dayRef.current;
         if (!current || !day || !isCurrentIdentity()) return;
-        if (current.phase !== 'ready-to-finish' || current.sets.some((set) => !set.completed)) {
+        if (
+          current.phase !== 'ready-to-finish' ||
+          current.sets.some((set) => !set.completed && !set.skipped)
+        ) {
           setActionError('O treino ainda não está pronto para finalizar.');
+          return;
+        }
+        if (!current.sets.some((set) => set.completed)) {
+          setActionError('Registre ao menos uma série antes de finalizar o treino.');
           return;
         }
         const finishedAtMs = nowRef.current();
@@ -1075,6 +1178,9 @@ export function useGuidedWorkoutSession({
           workoutDayId: day.id,
         });
         const finished = markSessionFinished(current, finishedAtMs);
+        if (!result.queued) {
+          void invalidateWorkoutEvolution(queryClient, finishAuthUserId);
+        }
 
         const capturedLifecycle = getSessionLifecycle(finishIdentity);
         const capturedLifecycleWasCurrent = Boolean(
@@ -1143,6 +1249,7 @@ export function useGuidedWorkoutSession({
     isCurrentIdentity,
     isCurrentLogicalIdentity,
     query.data?.day,
+    queryClient,
     sessionStorage,
     workoutLogJournal,
   ]);
@@ -1199,11 +1306,15 @@ export function useGuidedWorkoutSession({
         : query.isError && !session
           ? 'error'
           : !session
-            ? 'error'
+            ? 'loading'
             : 'ready';
 
   return {
     actionError,
+    fieldErrors:
+      identityReady && fieldErrorState?.scope === fieldErrorScope(identity, visibleSession)
+        ? fieldErrorState.errors
+        : {},
     canRetryFinish,
     addRestTime,
     completeSet,
@@ -1224,6 +1335,7 @@ export function useGuidedWorkoutSession({
     saveDraft,
     session: visibleSession,
     skipRest: skipRestAction,
+    skipExercise,
     state,
     storageError,
     summary,

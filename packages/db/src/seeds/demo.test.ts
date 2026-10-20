@@ -18,6 +18,18 @@ const identities: DemoIdentities = {
 };
 
 describe('buildDemoScenario', () => {
+  it('gera somente cargas inteiras em prescrições e séries, preservando medidas decimais', () => {
+    const scenario = buildDemoScenario(identities, referenceDate);
+    const exercises = scenario.plans.flatMap((plan) => plan.days.flatMap((day) => day.exercises));
+    const sets = scenario.logs.flatMap((log) => log.sets);
+
+    expect(exercises.every((exercise) => /^\d+$/.test(exercise.loadKg))).toBe(true);
+    expect(sets.every((set) => /^\d+$/.test(set.loadKg))).toBe(true);
+    expect(
+      scenario.assessments.some((assessment) => !Number.isInteger(Number(assessment.weightKg))),
+    ).toBe(true);
+  });
+
   it('gera as mesmas identidades e distribuições com a mesma referência', () => {
     const first = buildDemoScenario(identities, referenceDate);
     const second = buildDemoScenario(identities, referenceDate);
@@ -50,12 +62,12 @@ describe('buildDemoScenario', () => {
     const trainerPlans = scenario.plans.filter((plan) => plan.studentIndex < 10);
 
     expect(scenario.students).toHaveLength(11);
-    expect(scenario.assessments).toHaveLength(24);
+    expect(scenario.assessments).toHaveLength(28);
     expect(scenario.plans).toHaveLength(11);
     expect(trainerPlans.filter((plan) => plan.status === 'active')).toHaveLength(6);
     expect(trainerPlans.filter((plan) => plan.status === 'archived')).toHaveLength(3);
     expect(trainerPlans.filter((plan) => plan.status === 'draft')).toHaveLength(1);
-    expect(scenario.logs).toHaveLength(41);
+    expect(scenario.logs).toHaveLength(52);
     expect(trainerPlans.every((plan) => plan.days.length >= 2 && plan.days.length <= 4)).toBe(true);
     expect(
       trainerPlans.every((plan) =>
@@ -76,7 +88,7 @@ describe('buildDemoScenario', () => {
     ).toBe(true);
   });
 
-  it('mantém duas matrículas e oito avaliações dentro das janelas do dashboard', () => {
+  it('mantém duas matrículas e oito avaliações do professor nas janelas do dashboard', () => {
     const scenario = buildDemoScenario(identities, referenceDate);
     const sevenDaysAgo = new Date(referenceDate);
     sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
@@ -93,7 +105,10 @@ describe('buildDemoScenario', () => {
     ).toHaveLength(2);
     expect(
       scenario.assessments.filter(
-        (assessment) => assessment.createdAt !== undefined && assessment.createdAt >= thirtyDaysAgo,
+        (assessment) =>
+          assessment.studentIndex < 10 &&
+          assessment.createdAt !== undefined &&
+          assessment.createdAt >= thirtyDaysAgo,
       ),
     ).toHaveLength(8);
   });
@@ -112,8 +127,89 @@ describe('buildDemoScenario', () => {
       authUserId: identities.independentStudent.authUserId,
       isIndependent: true,
     });
-    expect(scenario.assessments).toHaveLength(24);
+    expect(scenario.assessments).toHaveLength(28);
     expect(scenario.plans).toHaveLength(11);
-    expect(scenario.logs).toHaveLength(41);
+    expect(scenario.logs).toHaveLength(52);
+  });
+
+  it('preenche contatos, medidas, mídia e prescrições, incluindo o aluno independente', () => {
+    const media = {
+      avatarUrl: 'https://cdn.muvit.test/demo/avatar.png',
+      assessmentPhotos: ['https://cdn.muvit.test/demo/avaliacao.png'],
+    };
+    const scenario = buildDemoScenario(identities, referenceDate, media);
+
+    for (const student of scenario.students) {
+      expect(student.phone).toBeTruthy();
+      expect(student.birthDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(student.gender).toBeTruthy();
+      expect(student.restrictions).toBeTruthy();
+      expect(student.avatarUrl).toBe(media.avatarUrl);
+      expect(student.expoPushToken).toBeNull();
+    }
+    expect(scenario.assessments.filter((item) => item.studentIndex === 10)).toHaveLength(4);
+    for (const assessment of scenario.assessments) {
+      expect(assessment.photos).toEqual(media.assessmentPhotos);
+      expect(Object.keys(assessment.measurements ?? {})).toHaveLength(9);
+      expect(Number(assessment.weightKg)).toBeGreaterThan(0);
+    }
+    for (const plan of scenario.plans) {
+      expect(plan.endDate).toBeTruthy();
+      for (const day of plan.days) {
+        expect(day.exercises.every((exercise) => exercise.tempo && exercise.notes)).toBe(true);
+      }
+    }
+  });
+
+  it('registra todas as séries dos treinos concluídos e mantém datas dentro do plano', () => {
+    const scenario = buildDemoScenario(identities, referenceDate);
+    for (const log of scenario.logs) {
+      const plan = scenario.plans.find((item) => item.studentIndex === log.studentIndex);
+      const day = plan?.days.find((item) => item.dayOrder === log.workoutDayOrder);
+      expect(plan).toBeDefined();
+      expect(log.date >= (plan?.startDate ?? '')).toBe(true);
+      expect(log.date <= (plan?.endDate ?? '')).toBe(true);
+      expect(log.date < referenceDate.toISOString().slice(0, 10)).toBe(true);
+      expect(log.sets).toHaveLength(
+        day?.exercises.reduce((total, exercise) => total + exercise.sets, 0) ?? 0,
+      );
+      if (log.completed) expect(log.sets.every((set) => set.completed)).toBe(true);
+    }
+    const independentLogs = scenario.logs.filter((log) => log.studentIndex === 10);
+    expect(independentLogs).toHaveLength(14);
+    expect(new Set(independentLogs.map((log) => log.date)).size).toBe(14);
+    expect(scenario.logs.some((log) => log.studentIndex === 7)).toBe(false);
+  });
+
+  it('separa as imagens enviadas pelo professor das imagens do aluno independente', () => {
+    const media = {
+      avatarUrl: 'https://cdn.muvit.test/avatar/trainer/avatar.png',
+      assessmentPhotos: ['https://cdn.muvit.test/assessment-photo/trainer/photo.png'],
+      independentStudent: {
+        avatarUrl: 'https://cdn.muvit.test/avatar/student/avatar.png',
+        assessmentPhotos: ['https://cdn.muvit.test/assessment-photo/student/photo.png'],
+      },
+    };
+    const scenario = buildDemoScenario(identities, referenceDate, media);
+    expect(scenario.students.find((student) => student.isIndependent)?.avatarUrl).toBe(
+      media.independentStudent.avatarUrl,
+    );
+    expect(
+      scenario.students
+        .filter((student) => !student.isIndependent)
+        .every((student) => student.avatarUrl === media.avatarUrl),
+    ).toBe(true);
+    expect(
+      scenario.assessments
+        .filter((assessment) => assessment.studentIndex === 10)
+        .every(
+          (assessment) => assessment.photos?.[0] === media.independentStudent.assessmentPhotos[0],
+        ),
+    ).toBe(true);
+    expect(
+      scenario.assessments
+        .filter((assessment) => assessment.studentIndex < 10)
+        .every((assessment) => assessment.photos?.[0] === media.assessmentPhotos[0]),
+    ).toBe(true);
   });
 });

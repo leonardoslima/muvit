@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import TrainerProfileScreen from '../../app/(trainer)/trainer/profile';
+import { colors } from '../lib/design-system/tokens';
 import { ProfileScreen } from './profile';
 
 type SessionUser = { id: string; name: string; email: string; role: string };
@@ -34,6 +35,10 @@ vi.mock('../lib/auth-client', () => ({
 
 vi.mock('../lib/query-client', () => ({
   queryClient: queryState,
+}));
+
+vi.mock('../lib/use-api', () => ({
+  useApiClient: () => ({ bindCurrentSession: vi.fn() }),
 }));
 
 vi.mock('react-native-safe-area-context', () => ({
@@ -197,6 +202,19 @@ describe('ProfileScreen', () => {
     expect(screen.getByText('Informações da sua conta.')).toBeTruthy();
   });
 
+  it('permite cancelar a saída da conta do professor sem encerrar a sessão', async () => {
+    const user = userEvent.setup();
+    renderWithQueryClient(<TrainerProfileScreen />);
+    await user.press(screen.getByRole('button', { name: 'Sair' }));
+    expect(screen.getByText('Sair da conta?')).toBeTruthy();
+    expect(authState.signOut).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByText('Sair da conta?')).toBeNull();
+    expect(authState.signOut).not.toHaveBeenCalled();
+    expect(queryState.clear).not.toHaveBeenCalled();
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
   it('preserva a identidade e impede nova chamada enquanto o logout está pendente', async () => {
     const user = userEvent.setup();
     let resolveSignOut: () => void = () => undefined;
@@ -209,6 +227,8 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(<ProfileScreen />);
     await user.press(screen.getByRole('button', { name: 'Sair' }));
+    expect(authState.signOut).not.toHaveBeenCalled();
+    await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
 
     const pendingButton = screen.getByRole('button', { name: 'Saindo...' });
     expect(pendingButton.props.accessibilityState).toMatchObject({ busy: true, disabled: true });
@@ -234,6 +254,7 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(<ProfileScreen />);
     await user.press(screen.getByRole('button', { name: 'Sair' }));
+    await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
 
     await waitFor(() => {
       expect(authState.signOut).toHaveBeenCalledOnce();
@@ -248,16 +269,18 @@ describe('ProfileScreen', () => {
 
     renderWithQueryClient(<ProfileScreen />);
     await user.press(screen.getByRole('button', { name: 'Sair' }));
+    await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
 
     expect(await screen.findByText('Não foi possível sair agora.')).toBeTruthy();
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(screen.queryByText('Erro')).toBeNull();
     expect(screen.getByText('Ana Aluna')).toBeTruthy();
-    expect(screen.getByTestId('profile-error').props.className).toContain('bg-v2-errorBg');
+    expect(screen.getByTestId('profile-error').props.style.backgroundColor).toBe(colors.errorBg);
     expect(queryState.clear).toHaveBeenCalledOnce();
     expect(routerState.replace).not.toHaveBeenCalled();
 
     await user.press(screen.getByRole('button', { name: 'Sair' }));
+    await user.press(screen.getByRole('button', { name: 'Sair da conta' }));
 
     await waitFor(() => {
       expect(authState.signOut).toHaveBeenCalledTimes(2);

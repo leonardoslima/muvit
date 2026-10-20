@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { type ComponentProps, createRef } from 'react';
 import type { View } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '../../../test/render-with-toast';
 import type { GuidedSession } from '../../application/workouts/guided-session';
 import { createGuidedSession } from '../../application/workouts/guided-session';
 import { selectGuidedSessionView } from '../../application/workouts/guided-session-presentation';
@@ -31,6 +32,7 @@ vi.mock('react-native', async (importOriginal) => {
   const native = await importOriginal<typeof import('react-native')>();
   return {
     ...native,
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
     AppState: { addEventListener: appState.addEventListener },
   };
 });
@@ -138,6 +140,7 @@ function makeController(
     completeSet: vi.fn(async () => undefined),
     addRestTime: vi.fn(async () => undefined),
     skipRest: vi.fn(async () => undefined),
+    skipExercise: vi.fn(async () => undefined),
     continueAfterExercise: vi.fn(async () => undefined),
     finishWorkout: vi.fn(async () => undefined),
     discard: vi.fn(async () => true),
@@ -159,6 +162,7 @@ function renderContent(
       controller={controller}
       onBackHome={onBackHome}
       selection={selectGuidedSessionView(day, session)}
+      onRequestSkipExercise={vi.fn()}
       onOpenDemonstration={onOpenDemonstration}
     />,
   );
@@ -187,6 +191,9 @@ describe('GuidedSessionContent', () => {
     const { controller, onOpenDemonstration } = renderContent(session);
 
     expect(screen.getByText('Supino reto')).toBeTruthy();
+    expect(screen.getByText('01')).toBeTruthy();
+    expect(screen.getByText('Registre os valores realizados antes de avançar.')).toBeTruthy();
+    expect(screen.getByText('A seguir: Remada baixa')).toBeTruthy();
     expect(screen.getByText(/8 a 12 reps/)).toBeTruthy();
     expect(screen.getByLabelText('Repetições realizadas')).toHaveProp('value', '');
     expect(screen.getByLabelText('Carga utilizada')).toHaveProp('value', '40');
@@ -255,6 +262,7 @@ describe('GuidedSessionContent', () => {
           controller={makeController(session)}
           onBackHome={vi.fn()}
           selection={selectGuidedSessionView(day, session)}
+          onRequestSkipExercise={vi.fn()}
           onOpenDemonstration={vi.fn()}
           demonstrationActionRef={actionRef}
         />,
@@ -269,11 +277,34 @@ describe('GuidedSessionContent', () => {
 
     expect(screen.getByText('Pronto para finalizar')).toBeTruthy();
     expect(screen.queryByText('Treino concluído')).toBeNull();
-    expect(screen.getByText('100% do treino concluído')).toBeTruthy();
+    expect(screen.getByText('Você registrou todas as séries do treino.')).toBeTruthy();
+    expect(screen.getByText('Remada baixa · 1 de 1 série')).toBeTruthy();
+    expect(screen.getByText('2 exercícios · 3 séries registradas')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Concluir e finalizar treino' }));
 
     expect(controller.finishWorkout).toHaveBeenCalledOnce();
     expect(screen.queryByText(/Duração total/)).toBeNull();
+  });
+
+  it('mantém uma única ação de retry na finalização e preserva o contexto do treino', () => {
+    const { controller } = renderContent(sessionFor('ready-to-finish'), {
+      actionError: 'Não foi possível concluir o treino. Tente novamente.',
+      canRetryFinish: true,
+    });
+    expect(screen.getByText('Não foi possível concluir o treino')).toBeTruthy();
+    expect(screen.getByText('Seus registros foram preservados. Tente novamente.')).toBeTruthy();
+    expect(screen.getByText('Remada baixa · 1 de 1 série')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Concluir e finalizar treino' })).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Tentar novamente' }));
+    expect(controller.finishWorkout).toHaveBeenCalledOnce();
+  });
+
+  it('identifica a finalização em andamento e bloqueia reentrada', () => {
+    const { controller } = renderContent(sessionFor('ready-to-finish'), { busy: true });
+    const button = screen.getByRole('button', { name: 'Finalizando…' });
+    expect(button).toBeDisabled();
+    fireEvent.press(button);
+    expect(controller.finishWorkout).not.toHaveBeenCalled();
   });
 
   it('conserva as métricas do resumo pendente após erro de remoção', () => {
@@ -284,12 +315,41 @@ describe('GuidedSessionContent', () => {
       actionError: 'Não foi possível limpar o rascunho local.',
     });
 
-    expect(screen.getByText('Duração total: 18 min')).toBeTruthy();
-    expect(screen.getByText('Exercícios: 2')).toBeTruthy();
-    expect(screen.getByText('Séries: 3')).toBeTruthy();
-    expect(screen.getByText('Volume total: 480 kg')).toBeTruthy();
-    expect(screen.getByText('Treino salvo para sincronização')).toBeTruthy();
+    expect(screen.getByLabelText('Duração total: 18 min')).toBeTruthy();
+    expect(screen.getByLabelText('Exercícios: 2')).toBeTruthy();
+    expect(screen.getByLabelText('Séries: 3')).toBeTruthy();
+    expect(screen.getByLabelText('Volume total: 480 kg')).toBeTruthy();
+    expect(screen.getByText('Salvo neste aparelho')).toBeTruthy();
+    expect(
+      screen.getByText('Seu treino está salvo para sincronização. Você pode voltar ao início.'),
+    ).toBeTruthy();
     expect(screen.getByText('Não foi possível limpar o rascunho local.')).toBeTruthy();
+  });
+
+  it('distingue exercício parcial de exercício inteiramente pulado no resumo', () => {
+    const session = sessionFor('summary');
+    const partialSession: GuidedSession = {
+      ...session,
+      sets: session.sets.map((set, index) =>
+        index === 0 ? set : { ...set, completed: false, skipped: true },
+      ),
+    };
+    renderContent(partialSession, {
+      summary: {
+        durationMin: 18,
+        exerciseCount: 1,
+        completedSetCount: 1,
+        skippedSetCount: 2,
+        volumeKg: 480,
+      },
+    });
+
+    expect(screen.getByLabelText('Exercícios completos: 0')).toBeTruthy();
+    expect(screen.getByLabelText('Exercícios parciais: 1')).toBeTruthy();
+    expect(screen.getByLabelText('Exercícios pulados: 1')).toBeTruthy();
+    expect(screen.getByLabelText('Séries realizadas: 1')).toBeTruthy();
+    expect(screen.getByLabelText('Séries puladas: 2')).toBeTruthy();
+    expect(screen.getByLabelText('Volume total: 480 kg')).toBeTruthy();
   });
 
   it('bloqueia Voltar ao início enquanto a remoção do rascunho está ocupada', () => {
@@ -317,3 +377,5 @@ describe('GuidedSessionContent', () => {
     ).toBe(true);
   });
 });
+
+vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'View' }));

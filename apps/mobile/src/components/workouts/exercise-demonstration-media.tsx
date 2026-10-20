@@ -17,6 +17,9 @@ type ExerciseDemonstrationMediaProps = {
   active: boolean;
   onError: () => void;
   onFullscreenChange: (active: boolean) => void;
+  presentation?: 'default' | 'inline';
+  playOnMount?: boolean;
+  onLoadingChange?: (loading: boolean) => void;
 };
 
 export const ExerciseDemonstrationMedia = forwardRef<
@@ -33,7 +36,18 @@ export const ExerciseDemonstrationMedia = forwardRef<
 const VideoDemonstrationMedia = forwardRef<
   ExerciseDemonstrationMediaRef,
   ExerciseDemonstrationMediaProps
->(function VideoDemonstrationMedia({ media, active, onError, onFullscreenChange }, ref) {
+>(function VideoDemonstrationMedia(
+  {
+    media,
+    active,
+    onError,
+    onFullscreenChange,
+    presentation = 'default',
+    playOnMount = false,
+    onLoadingChange,
+  },
+  ref,
+) {
   const player = useVideoPlayer({ uri: media.uri }, (createdPlayer) => {
     createdPlayer.muted = true;
     createdPlayer.loop = false;
@@ -44,6 +58,7 @@ const VideoDemonstrationMedia = forwardRef<
   });
   const videoViewRef = useRef<VideoView>(null);
   const onErrorRef = useRef(onError);
+  const onLoadingChangeRef = useRef(onLoadingChange);
   const mountedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -52,7 +67,8 @@ const VideoDemonstrationMedia = forwardRef<
 
   useEffect(() => {
     onErrorRef.current = onError;
-  }, [onError]);
+    onLoadingChangeRef.current = onLoadingChange;
+  }, [onError, onLoadingChange]);
 
   useImperativeHandle(
     ref,
@@ -70,7 +86,13 @@ const VideoDemonstrationMedia = forwardRef<
     player.staysActiveInBackground = false;
     player.showNowPlayingNotification = false;
     player.pause();
+    onLoadingChangeRef.current?.(player.status !== 'readyToPlay' && player.status !== 'error');
+    if (player.status === 'error') {
+      setHasError(true);
+      onErrorRef.current();
+    } else if (playOnMount && active) player.play();
     const statusSubscription = player.addListener('statusChange', ({ status }) => {
+      onLoadingChangeRef.current?.(status === 'loading' || status === 'idle');
       if (status === 'error') {
         setHasError(true);
         onErrorRef.current();
@@ -94,7 +116,7 @@ const VideoDemonstrationMedia = forwardRef<
       appStateSubscription.remove();
       mountedRef.current = false;
     };
-  }, [player]);
+  }, [active, player, playOnMount]);
 
   useEffect(() => {
     if (!active) {
@@ -138,7 +160,8 @@ const VideoDemonstrationMedia = forwardRef<
         contentFit="contain"
         style={{
           width: '100%',
-          height: 240,
+          height: presentation === 'inline' ? undefined : 240,
+          aspectRatio: presentation === 'inline' ? 16 / 9 : undefined,
           backgroundColor: colors.sessionBackground,
           borderRadius: radii.card,
         }}
@@ -156,7 +179,7 @@ const VideoDemonstrationMedia = forwardRef<
             variant="secondary"
           />
         </View>
-      ) : (
+      ) : presentation === 'inline' ? null : (
         <Button
           disabled={!active}
           label={isPlaying ? 'Pausar vídeo' : 'Reproduzir vídeo'}
@@ -179,7 +202,10 @@ const VideoDemonstrationMedia = forwardRef<
 const GifDemonstrationMedia = forwardRef<
   ExerciseDemonstrationMediaRef,
   ExerciseDemonstrationMediaProps
->(function GifDemonstrationMedia({ media, active, onError }, ref) {
+>(function GifDemonstrationMedia(
+  { media, active, onError, presentation = 'default', playOnMount = false, onLoadingChange },
+  ref,
+) {
   const imageRef = useRef<ExpoImage>(null);
   const onErrorRef = useRef(onError);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -238,6 +264,14 @@ const GifDemonstrationMedia = forwardRef<
         source={{ uri: media.uri }}
         accessibilityLabel="Animação de demonstração do exercício"
         autoplay={false}
+        onLoadStart={() => onLoadingChange?.(true)}
+        onLoad={() => {
+          onLoadingChange?.(false);
+          if (playOnMount && active) {
+            void imageRef.current?.startAnimating();
+            setIsAnimating(true);
+          }
+        }}
         contentFit="contain"
         onError={() => {
           setHasError(true);
@@ -245,7 +279,8 @@ const GifDemonstrationMedia = forwardRef<
         }}
         style={{
           width: '100%',
-          height: 240,
+          height: presentation === 'inline' ? undefined : 240,
+          aspectRatio: presentation === 'inline' ? 16 / 9 : undefined,
           backgroundColor: colors.sessionBackground,
           borderRadius: radii.card,
         }}

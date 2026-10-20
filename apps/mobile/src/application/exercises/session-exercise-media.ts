@@ -16,7 +16,7 @@ export async function loadSessionExerciseMedia(
   let offset = 0;
 
   while (true) {
-    signal?.throwIfAborted();
+    assertNotAborted(signal);
     const page = parseCatalogPage(
       await listExerciseCatalog(api, {
         limit: EXERCISE_CATALOG_PAGE_SIZE,
@@ -24,7 +24,7 @@ export async function loadSessionExerciseMedia(
         signal,
       }),
     );
-    signal?.throwIfAborted();
+    assertNotAborted(signal);
 
     for (const rawExercise of page.items) {
       const exerciseToValidate =
@@ -48,6 +48,13 @@ export async function loadSessionExerciseMedia(
     }
     offset += page.items.length;
   }
+}
+
+function assertNotAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  const error = new Error('Consulta da demonstração cancelada.');
+  error.name = 'AbortError';
+  throw error;
 }
 
 function parseCatalogPage(value: unknown): CatalogPage {

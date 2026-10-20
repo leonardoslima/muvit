@@ -25,6 +25,7 @@ import { studentsRoutes } from './routes/students.js';
 import { trainerSummaryRoutes } from './routes/trainer-summary.js';
 import { trainersRoutes } from './routes/trainers.js';
 import { uploadsRoutes } from './routes/uploads.js';
+import { workoutEvolutionRoutes } from './routes/workout-evolution.js';
 import { workoutLogsRoutes } from './routes/workout-logs.js';
 import { workoutsRoutes } from './routes/workouts.js';
 
@@ -96,6 +97,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
   await app.register(assessmentsRoutes);
   await app.register(workoutsRoutes);
   await app.register(workoutLogsRoutes);
+  await app.register(workoutEvolutionRoutes);
   await app.register(trainerSummaryRoutes);
   await app.register(uploadsRoutes);
 

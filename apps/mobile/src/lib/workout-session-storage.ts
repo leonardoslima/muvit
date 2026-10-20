@@ -2,6 +2,7 @@ import { workoutDayFullSchema } from '@muvit/validators';
 import { z } from 'zod';
 import type { GuidedSession } from '../application/workouts/guided-session';
 import type { WorkoutDay } from '../application/workouts/today-workout';
+import { normalizeLegacyWorkoutLoads } from '../application/workouts/workout-load';
 
 export type SessionStorageDriver = {
   getItem: (key: string) => Promise<string | null>;
@@ -44,6 +45,7 @@ const workoutSetStateSchema = z
     repsDone: z.string(),
     loadKg: z.string(),
     completed: z.boolean(),
+    skipped: z.boolean().optional(),
   })
   .strict();
 
@@ -138,7 +140,7 @@ async function loadStoredSession(
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(serialized) as unknown;
+    parsed = normalizeLegacyWorkoutLoads(JSON.parse(serialized));
   } catch {
     await storage.removeItem(key);
     return null;

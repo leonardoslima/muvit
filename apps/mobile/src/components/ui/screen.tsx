@@ -1,17 +1,12 @@
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs';
 import { useContext } from 'react';
-import {
-  ScrollView,
-  type ScrollViewProps,
-  type StyleProp,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { type ScrollViewProps, type StyleProp, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, spacing } from '../../lib/design-system/tokens';
-import { sharedStyles } from '../../lib/styles';
+import { colors, spacing, tabBarLayout } from '../../lib/design-system/tokens';
 import { Header as V2Header } from './v2/header';
+import { KeyboardScrollView } from './v2/keyboard-scroll-view';
 import { Text as V2Text } from './v2/text';
+import { ToastProvider } from './v2/toast';
 
 export type ScreenProps = {
   children: React.ReactNode;
@@ -26,47 +21,51 @@ export function Screen({ children, contentContainerStyle, scroll = false, style 
   const safeAreaEdges: ('top' | 'right' | 'bottom' | 'left')[] = inTabs
     ? ['top', 'left', 'right']
     : ['top', 'right', 'bottom', 'left'];
-  const tabBarInset = inTabs ? { paddingBottom: tabBarHeight + spacing.lg } : undefined;
+  const tabBarInset = inTabs
+    ? { paddingBottom: tabBarHeight + tabBarLayout.offset + tabBarLayout.contentGap }
+    : undefined;
 
   if (!scroll) {
     return (
-      <SafeAreaView
-        edges={safeAreaEdges}
-        style={[
-          sharedStyles.screen,
-          {
-            backgroundColor: colors.background,
-            paddingHorizontal: spacing.lg,
-          },
-          style,
-          tabBarInset,
-        ]}
-      >
-        {children}
-      </SafeAreaView>
+      <ToastProvider safeAreaView={SafeAreaView}>
+        <SafeAreaView
+          edges={safeAreaEdges}
+          style={[
+            {
+              flex: 1,
+              backgroundColor: colors.background,
+              paddingVertical: spacing.xxl,
+              paddingHorizontal: spacing.lg,
+            },
+            style,
+            tabBarInset,
+          ]}
+        >
+          {children}
+        </SafeAreaView>
+      </ToastProvider>
     );
   }
 
   return (
-    <SafeAreaView
-      edges={safeAreaEdges}
-      style={[sharedStyles.safeArea, { backgroundColor: colors.background }]}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          {
-            gap: spacing.lg,
-            paddingHorizontal: spacing.lg,
-            paddingVertical: spacing.xxl,
-          },
-          contentContainerStyle,
-          tabBarInset,
-        ]}
-        style={style}
-      >
-        {children}
-      </ScrollView>
-    </SafeAreaView>
+    <ToastProvider safeAreaView={SafeAreaView}>
+      <SafeAreaView edges={safeAreaEdges} style={{ flex: 1, backgroundColor: colors.background }}>
+        <KeyboardScrollView
+          contentContainerStyle={[
+            {
+              gap: spacing.lg,
+              paddingHorizontal: spacing.lg,
+              paddingVertical: spacing.xxl,
+            },
+            contentContainerStyle,
+            tabBarInset,
+          ]}
+          style={style}
+        >
+          {children}
+        </KeyboardScrollView>
+      </SafeAreaView>
+    </ToastProvider>
   );
 }
 
@@ -78,7 +77,7 @@ export type ScreenHeaderProps = {
 
 export function ScreenHeader({ eyebrow, subtitle, title }: ScreenHeaderProps) {
   return (
-    <View style={sharedStyles.header}>
+    <View style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
       {eyebrow ? (
         <V2Text className="text-v2-brand uppercase tracking-[1px]" variant="caption">
           {eyebrow}
