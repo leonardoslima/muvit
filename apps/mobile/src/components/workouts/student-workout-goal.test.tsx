@@ -29,6 +29,15 @@ function setup() {
   return { client, Wrapper };
 }
 
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolvePromise: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return { promise, resolve: resolvePromise };
+}
+
 describe('StudentWorkoutGoal com hook e cache reais', () => {
   beforeEach(() => {
     state.owner = 'aluno-a';
@@ -116,7 +125,7 @@ describe('StudentWorkoutGoal com hook e cache reais', () => {
   it('preserva a meta confirmada quando uma leitura antiga termina após o salvamento', async () => {
     state.request.mockResolvedValueOnce({ weeklyGoal: 2 });
     const { client, Wrapper } = setup();
-    const pendingRead = Promise.withResolvers<{ weeklyGoal: number }>();
+    const pendingRead = deferred<{ weeklyGoal: number }>();
     const { result } = renderHook(() => useWorkoutGoal(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.query.data).toEqual({ weeklyGoal: 2 }));
 
@@ -147,7 +156,7 @@ describe('StudentWorkoutGoal com hook e cache reais', () => {
 
   it('confirma o salvamento sem aguardar uma atualização lenta da evolução', async () => {
     const { Wrapper } = setup();
-    const pendingEvolution = Promise.withResolvers<{ weeklyGoal: number | null }>();
+    const pendingEvolution = deferred<{ weeklyGoal: number | null }>();
     const evolutionRequest = vi
       .fn()
       .mockResolvedValueOnce({ weeklyGoal: null })
@@ -187,7 +196,7 @@ describe('StudentWorkoutGoal com hook e cache reais', () => {
 
   it('mantém resposta tardia da mutação no cache do proprietário original', async () => {
     const { client, Wrapper } = setup();
-    const pending = Promise.withResolvers<{ weeklyGoal: number }>();
+    const pending = deferred<{ weeklyGoal: number }>();
     const { result, rerender } = renderHook(() => useWorkoutGoal(), { wrapper: Wrapper });
     await waitFor(() => expect(result.current.query.isSuccess).toBe(true));
     state.request.mockReturnValueOnce(pending.promise);

@@ -23,6 +23,8 @@ assets/
 
 ## Setup
 
+Use Node.js 24 LTS e pnpm 10, conforme o campo `packageManager` da raiz. O CI usa Node.js 24; mantenha a mesma versão principal no desenvolvimento local e nos ambientes de execução da API e da web.
+
 ```bash
 pnpm install
 cp apps/api/.env.example apps/api/.env
