@@ -8,7 +8,7 @@ async function main() {
   if (env.NODE_ENV !== 'test') void startNotificationCron();
 
   try {
-    await app.listen({ port: env.API_PORT, host: '0.0.0.0' });
+    await app.listen({ port: env.API_PORT, host: env.API_HOST });
   } catch (err) {
     app.log.error(err);
     process.exit(1);

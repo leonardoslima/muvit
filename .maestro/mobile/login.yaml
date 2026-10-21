@@ -1,0 +1,50 @@
+appId: ${MAESTRO_E2E_APP_ID}
+---
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Development servers
+    timeout: 30000
+- openLink: ${MAESTRO_EXPO_URL}
+- runFlow: expo-overlays.yaml
+- extendedWaitUntil:
+    visible: Entrar
+    timeout: 120000
+- runFlow: expo-overlays.yaml
+- waitForAnimationToEnd:
+    timeout: 10000
+- assertVisible:
+    id: login-email
+- tapOn:
+    point: "50%,34%"
+    waitToSettleTimeoutMs: 5000
+- assertVisible:
+    id: login-email
+    focused: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- inputText: ${E2E_EMAIL}
+- assertVisible:
+    id: login-email
+    text: ${E2E_EMAIL}
+- tapOn:
+    id: login-password
+    point: "50%,50%"
+- assertVisible:
+    id: login-password
+    focused: true
+- waitForAnimationToEnd:
+    timeout: 10000
+- inputText: ${E2E_PASSWORD}
+- scrollUntilVisible:
+    element:
+      text: Entrar
+      below: Senha
+    direction: DOWN
+- tapOn:
+    text: Entrar
+    below: Senha
+- runFlow: expo-overlays.yaml
+- extendedWaitUntil:
+    visible: ${E2E_HOME}
+    timeout: 30000

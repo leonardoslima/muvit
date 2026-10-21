@@ -1,0 +1,114 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Jornada do professor
+---
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_TRAINER_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_TRAINER_PASSWORD}
+      E2E_HOME: Início
+- assertVisible: Acompanhe sua carteira de alunos.
+- tapOn: Ver alunos
+- tapOn:
+    id: trainer-students-search
+- inputText: ${MAESTRO_E2E_STUDENT_NAME}
+- hideKeyboard
+- tapOn:
+    text: Abrir ${MAESTRO_E2E_STUDENT_NAME}
+- scrollUntilVisible:
+    element: Nova avaliação
+    direction: DOWN
+- tapOn: Nova avaliação
+- tapOn: 'Ex.: 70,5'
+- inputText: '78.5'
+- hideKeyboard
+- tapOn: 'Ex.: 170'
+- inputText: '170'
+- hideKeyboard
+- scrollUntilVisible:
+    element: Adicione observações sobre a avaliação
+    direction: DOWN
+- tapOn: Adicione observações sobre a avaliação
+- inputText: Avaliacao E2E
+- hideKeyboard
+- scrollUntilVisible:
+    element: Salvar avaliação
+    direction: DOWN
+- tapOn: Salvar avaliação
+- extendedWaitUntil:
+    visible: Abrir avaliação de .*
+    timeout: 30000
+- tapOn: Abrir avaliação de .*
+- assertVisible: Métricas principais
+- assertVisible: 78,5 kg
+- assertVisible: 170 cm
+- scrollUntilVisible:
+    element: Avaliacao E2E
+    direction: DOWN
+- takeScreenshot: professor-avaliacao
+- tapOn: Voltar para avaliações
+- tapOn: Voltar para aluno
+- scrollUntilVisible:
+    element: Ver treinos
+    direction: DOWN
+- tapOn: Ver treinos
+- tapOn: Abrir ${MAESTRO_E2E_PLAN_NAME}, Ativo
+- scrollUntilVisible:
+    element: Editar treino
+    direction: DOWN
+- tapOn: Editar treino
+- scrollUntilVisible:
+    element:
+      text: Carga
+    direction: DOWN
+- tapOn:
+    text: Carga
+    point: "95%,50%"
+- eraseText
+- inputText: '24'
+- assertVisible: '24'
+- hideKeyboard
+- scrollUntilVisible:
+    element: Salvar alterações
+    direction: DOWN
+- tapOn: Salvar alterações
+- tapOn: Voltar para treinos
+- extendedWaitUntil:
+    visible: 'Carga: 24 kg'
+    timeout: 30000
+- assertVisible: 2 séries · 10 reps
+- takeScreenshot: professor-prescricao
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Development servers
+    timeout: 30000
+- openLink: ${MAESTRO_EXPO_URL}
+- runFlow: expo-overlays.yaml
+- extendedWaitUntil:
+    visible: Início
+    timeout: 30000
+- tapOn: Alunos
+- tapOn:
+    text: Abrir ${MAESTRO_E2E_STUDENT_NAME}
+- scrollUntilVisible:
+    element: Ver histórico
+    direction: DOWN
+- tapOn: Ver histórico
+- tapOn: Abrir avaliação de .*
+- assertVisible: 78,5 kg
+- assertVisible: 170 cm
+- tapOn: Voltar para avaliações
+- tapOn: Voltar para aluno
+- scrollUntilVisible:
+    element: Ver treinos
+    direction: DOWN
+- tapOn: Ver treinos
+- tapOn: Abrir ${MAESTRO_E2E_PLAN_NAME}, Ativo
+- assertVisible: 'Carga: 24 kg'
+- takeScreenshot: professor-reaberto
+- openLink: ${MAESTRO_EXPO_URL}
+- extendedWaitUntil:
+    visible: Início
+    timeout: 30000
+- runFlow: logout.yaml
