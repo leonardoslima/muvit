@@ -55,6 +55,23 @@ Ao executar os testes da API, o script aplica as migrations ao banco configurado
 
 Nunca aponte `DATABASE_URL` de teste para `muvit`: essa limpeza apagaria os dados de desenvolvimento. A aplicação iniciada em modo de desenvolvimento continua usando apenas os arquivos `.env`, não os `.env.test`.
 
+### Testes no CI
+
+Cada pull request executa `pnpm test` da raiz no job `Test (Turborepo)`, cobrindo as suítes existentes de API, web, mobile, db e validators. O job cria um service PostgreSQL 16 descartável, sem volume persistente, com banco `muvit_api_test` em `localhost:5433` e credenciais fictícias dos exemplos. Não utiliza secrets de produção.
+
+O workflow copia `apps/api/.env.test.example` e `packages/db/.env.test.example` para os respectivos `.env.test`. O comando de testes da API já cria o banco quando necessário e aplica as migrations; as próprias suítes preparam e limpam seus dados, sem executar o seed de demonstração. As tarefas `test` do Turbo têm cache desativado para que cada execução valide o estado real do banco. Falhas na preparação ou nos testes fazem o job falhar; lint, build e typecheck continuam no pipeline, com build dependente da suíte completa.
+
+Para reproduzir localmente após instalar as dependências:
+
+```bash
+cp apps/api/.env.test.example apps/api/.env.test
+cp packages/db/.env.test.example packages/db/.env.test
+docker compose up -d --wait postgres_test
+pnpm test
+```
+
+Esses comandos usam o banco local de testes e suas tabelas serão limpas pelas suítes. Para QA paralelo em outra worktree, use um PostgreSQL exclusivo e ajuste os dois `.env.test` ignorados para a mesma porta e banco de teste antes de executar `pnpm test`; não utilize o banco compartilhado por outra execução. No PowerShell, use `pnpm.cmd` se `pnpm.ps1` estiver bloqueado.
+
 Ainda não há uma suíte E2E. Quando ela for criada, deverá iniciar a API com o ambiente de teste e reutilizar `muvit_api_test`. Testes de integração e E2E não podem executá-lo simultaneamente, pois ambos precisam controlar e limpar o mesmo estado; cada execução E2E deverá preparar seus próprios dados no início.
 
 ### Autenticação e ambiente
