@@ -1,0 +1,125 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Jornada do aluno
+---
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_STUDENT_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_STUDENT_PASSWORD}
+      E2E_HOME: Hoje
+- assertVisible: ${MAESTRO_E2E_PLAN_NAME}
+- scrollUntilVisible:
+    element: NA SEMANA
+    direction: DOWN
+- assertVisible:
+    text: '00'
+    below: NA SEMANA
+    rightOf: SEQUÊNCIA
+- scrollUntilVisible:
+    element: Iniciar treino
+    direction: UP
+- tapOn: Iniciar treino
+- assertVisible: Visão geral do treino
+- scrollUntilVisible:
+    element: Iniciar treino
+    direction: DOWN
+- tapOn: Iniciar treino
+- assertVisible: ${MAESTRO_E2E_EXERCISE_NAME}
+- assertVisible: Série 1 de 2
+- tapOn:
+    id: guided-repetitions
+- eraseText
+- inputText: '10'
+- assertVisible:
+    id: guided-repetitions
+    text: '10'
+- hideKeyboard
+- assertVisible:
+    id: guided-load
+    text: '20'
+- tapOn: Aumentar Carga utilizada
+- tapOn: Aumentar Carga utilizada
+- assertVisible:
+    id: guided-load
+    text: '22'
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- tapOn: Concluir série
+- assertVisible: Série 2 de 2
+- tapOn:
+    id: guided-repetitions
+- eraseText
+- inputText: '8'
+- assertVisible:
+    id: guided-repetitions
+    text: '8'
+- hideKeyboard
+- assertVisible:
+    id: guided-load
+    text: '20'
+- tapOn: Diminuir Carga utilizada
+- tapOn: Diminuir Carga utilizada
+- assertVisible:
+    id: guided-load
+    text: '18'
+- scrollUntilVisible:
+    element: Concluir série
+    direction: DOWN
+- tapOn: Concluir série
+- assertVisible: Pronto para finalizar
+- scrollUntilVisible:
+    element: Concluir e finalizar treino
+    direction: DOWN
+- tapOn: Concluir e finalizar treino
+- extendedWaitUntil:
+    visible: Treino concluído
+    timeout: 30000
+- assertVisible: 'Séries: 2'
+- assertVisible: 'Volume total: 364 kg'
+- assertVisible: Resumo salvo no seu acompanhamento.
+- takeScreenshot: aluno-conclusao
+- scrollUntilVisible:
+    element: Voltar ao início
+    direction: DOWN
+- tapOn: Voltar ao início
+- scrollUntilVisible:
+    element: NA SEMANA
+    direction: DOWN
+- assertVisible:
+    text: '01'
+    below: NA SEMANA
+    rightOf: SEQUÊNCIA
+- tapOn: Progresso
+- assertVisible: 70 kg
+- takeScreenshot: aluno-progresso
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Development servers
+    timeout: 30000
+- openLink: ${MAESTRO_EXPO_URL}
+- runFlow: expo-overlays.yaml
+- extendedWaitUntil:
+    visible: Hoje
+    timeout: 30000
+- tapOn: Hoje
+- scrollUntilVisible:
+    element: NA SEMANA
+    direction: DOWN
+- assertVisible:
+    text: '01'
+    below: NA SEMANA
+    rightOf: SEQUÊNCIA
+- tapOn: Progresso
+- extendedWaitUntil:
+    visible: 70 kg
+    timeout: 10000
+- assertVisible: 70 kg
+- takeScreenshot: aluno-progresso-reaberto
+- takeScreenshot: aluno-reaberto
+- openLink: ${MAESTRO_EXPO_URL}
+- extendedWaitUntil:
+    visible: Hoje
+    timeout: 30000
+- runFlow: logout.yaml

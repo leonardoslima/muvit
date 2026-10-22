@@ -1,0 +1,75 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Isolamento entre contas e papéis
+---
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_STUDENT_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_STUDENT_PASSWORD}
+      E2E_HOME: Hoje
+- assertVisible: ${MAESTRO_E2E_PLAN_NAME}
+- tapOn: Progresso
+- assertVisible: 70 kg
+- runFlow: logout.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_STUDENT_B_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_STUDENT_B_PASSWORD}
+      E2E_HOME: Hoje
+- assertVisible: ${MAESTRO_E2E_STUDENT_B_PLAN_NAME}
+- assertNotVisible: ${MAESTRO_E2E_PLAN_NAME}
+- tapOn: Progresso
+- assertVisible: 90 kg
+- assertNotVisible: 70 kg
+- openLink: ${MAESTRO_E2E_FOREIGN_SESSION_URL}
+- extendedWaitUntil:
+    visible: Treino indisponível
+    timeout: 30000
+- assertNotVisible: ${MAESTRO_E2E_EXERCISE_NAME}
+- takeScreenshot: isolamento-sessao-aluno
+- openLink: ${MAESTRO_EXPO_URL}/--/trainer
+- extendedWaitUntil:
+    visible: ${MAESTRO_E2E_STUDENT_B_PLAN_NAME}
+    timeout: 30000
+- assertNotVisible: Acompanhe sua carteira de alunos.
+- runFlow: logout.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_TRAINER_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_TRAINER_PASSWORD}
+      E2E_HOME: Início
+- tapOn: Ver alunos
+- assertVisible: Abrir ${MAESTRO_E2E_STUDENT_NAME}
+- runFlow: logout.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_TRAINER_B_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_TRAINER_B_PASSWORD}
+      E2E_HOME: Início
+- tapOn: Ver alunos
+- assertVisible: Todos os alunos carregados
+- assertNotVisible: Abrir ${MAESTRO_E2E_STUDENT_NAME}
+- openLink: ${MAESTRO_E2E_FOREIGN_STUDENT_URL}
+- extendedWaitUntil:
+    visible: Aluno não encontrado
+    timeout: 30000
+- assertNotVisible: ${MAESTRO_E2E_STUDENT_NAME}
+- openLink: ${MAESTRO_E2E_FOREIGN_ASSESSMENT_URL}
+- extendedWaitUntil:
+    visible: Avaliação não encontrada
+    timeout: 30000
+- assertNotVisible: 65 kg
+- openLink: ${MAESTRO_E2E_FOREIGN_PLAN_URL}
+- extendedWaitUntil:
+    visible: Treino não encontrado
+    timeout: 30000
+- assertNotVisible: ${MAESTRO_E2E_TRAINER_PLAN_NAME}
+- takeScreenshot: isolamento-professor
+- openLink: ${MAESTRO_EXPO_URL}
+- extendedWaitUntil:
+    visible: Início
+    timeout: 30000
+- runFlow: logout.yaml

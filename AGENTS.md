@@ -80,6 +80,7 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 - Salve capturas, videos, logs, exports de referencia e relatorios completos de execucao em `artifacts/<issue-ou-escopo>/<execucao>/`, na raiz desta worktree; esse diretorio e ignorado pelo Git.
 - Siga `docs/operations/qa-artifacts.md` ao preparar, executar e compartilhar QA. Nao crie pastas paralelas de QA/evidence em `docs/`, nao force o versionamento de `artifacts/` e mantenha scripts, testes e assets de entrada necessarios a reproducao versionados nos seus diretorios responsaveis.
 - Execute os testes mais especificos do workspace afetado.
+- Ao alterar ou criar um fluxo de usuário, avalie a cobertura E2E existente e crie ou atualize os cenários necessários para proteger o comportamento alterado. Mantenha testes organizados por funcionalidade do projeto, sem diretórios ou nomes específicos de cards; IDs de issues ficam no histórico e nas evidências de execução.
 - Execute lint, typecheck ou build quando forem relevantes para a mudanca.
 - Se nao puder executar alguma verificacao, explique o motivo.
 - Informe quais comandos foram executados e o resultado.
