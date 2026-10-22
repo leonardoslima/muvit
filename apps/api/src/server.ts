@@ -1,4 +1,3 @@
-import './instrumentation.js';
 import { buildApp } from './app.js';
 import { env } from './env.js';
 import { startNotificationCron } from './jobs/notifications.js';

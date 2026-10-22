@@ -13,7 +13,6 @@ import { useFonts } from 'expo-font';
 import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
-import * as Sentry from 'sentry-expo';
 import {
   resolveRouteAccess,
   resolveRouteArea,
@@ -22,14 +21,6 @@ import { UnsupportedRoleBoundary } from '../src/components/navigation/unsupporte
 import { authClient } from '../src/lib/auth-client';
 import { queryClient } from '../src/lib/query-client';
 import { colors } from '../src/lib/styles';
-
-if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    environment: process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
-  });
-}
 
 function AuthenticatedRootLayout() {
   const segments = useSegments();
@@ -82,4 +73,4 @@ export function RootLayout() {
   return <AuthenticatedRootLayout />;
 }
 
-export default Sentry.Native.wrap(RootLayout);
+export default RootLayout;

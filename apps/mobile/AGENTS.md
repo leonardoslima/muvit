@@ -52,6 +52,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 ## Verificacao
 
 - Para alteracoes mobile, rode `pnpm.cmd --dir apps/mobile test`, `pnpm.cmd --dir apps/mobile typecheck` e `pnpm.cmd --dir apps/mobile doctor` conforme o risco.
+- Para build nativo em worktree Windows, siga `docs/operations/mobile-android-build-windows.md` e confirme APK, AVD e serial antes de declarar o resultado.
 - Quando alterar navegacao ou UI, teste pelo Expo em ao menos uma plataforma alvo quando possivel.
 - Para QA manual em emulador/dispositivo, use um Expo Development Build com `expo-dev-client` quando o fluxo exigir módulos nativos ausentes no Expo Go. Expo Go também é uma opção: execute `pnpm.cmd mobile:go` a partir da raiz e registre as limitações observadas. Para gerar e instalar a build Android localmente, execute `pnpm.cmd mobile:android:build` a partir da raiz; esse fluxo não exige conta ou login no EAS. Depois da instalação, inicie o Metro com `pnpm.cmd mobile:android` ou `pnpm.cmd --dir apps/mobile start` ou `ios`, que usam `--dev-client`. EAS Build é uma alternativa opcional.
 - O perfil EAS atual gera builds iOS para dispositivo; para usar o simulador iOS, configure `ios.simulator: true` no perfil antes de gerar a build.

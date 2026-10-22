@@ -58,11 +58,6 @@ vi.mock('expo-status-bar', () => ({
   StatusBar: () => null,
 }));
 
-vi.mock('sentry-expo', () => ({
-  init: vi.fn(),
-  Native: { wrap: (component: unknown) => component },
-}));
-
 vi.mock('../lib/auth-client', () => ({
   authClient: {
     useSession: authState.useSession,

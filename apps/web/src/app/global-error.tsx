@@ -1,18 +1,10 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
-
 type GlobalErrorProps = {
-  error: Error & { digest?: string };
   reset: () => void;
 };
 
-export default function GlobalError({ error, reset }: GlobalErrorProps) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
+export default function GlobalError({ reset }: GlobalErrorProps) {
   return (
     <html lang="pt-BR">
       <body className="min-h-screen bg-background text-foreground antialiased">

@@ -103,6 +103,7 @@ name: Jornada do aluno
 - extendedWaitUntil:
     visible: Hoje
     timeout: 30000
+- runFlow: expo-overlays.yaml
 - tapOn: Hoje
 - scrollUntilVisible:
     element: NA SEMANA
@@ -111,6 +112,7 @@ name: Jornada do aluno
     text: '01'
     below: NA SEMANA
     rightOf: SEQUÊNCIA
+- runFlow: expo-overlays.yaml
 - tapOn: Progresso
 - extendedWaitUntil:
     visible: 70 kg
