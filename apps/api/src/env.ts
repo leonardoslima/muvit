@@ -28,7 +28,6 @@ const schema = z.object({
     .transform((value) => value === 'true'),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
-  SENTRY_DSN: z.string().url().optional(),
 });
 
 export const env = schema.parse(process.env);

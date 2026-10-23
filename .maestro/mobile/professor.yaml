@@ -88,6 +88,7 @@ name: Jornada do professor
 - extendedWaitUntil:
     visible: Início
     timeout: 30000
+- runFlow: expo-overlays.yaml
 - tapOn: Alunos
 - tapOn:
     text: Abrir ${MAESTRO_E2E_STUDENT_NAME}

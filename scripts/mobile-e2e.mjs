@@ -419,7 +419,6 @@ function maestroEnvironment(options, credentials, manifest, apiDate) {
   const env = {
     NODE_ENV: 'test',
     EXPO_NO_DOTENV: '1',
-    EXPO_PUBLIC_SENTRY_DSN: '',
     EXPO_PUBLIC_API_URL: `http://127.0.0.1:${options.ports.api}`,
     EXPO_URL: options.launchUrl,
     E2E_APP_ID: options.appId,
@@ -508,7 +507,6 @@ async function startMetro(options, apiUrl, resources, artifacts) {
   const metroEnv = safeEnvironment({
     NODE_ENV: 'development',
     EXPO_NO_DOTENV: '1',
-    EXPO_PUBLIC_SENTRY_DSN: '',
     EXPO_PUBLIC_API_URL: apiUrl,
     CI: '1',
   });
