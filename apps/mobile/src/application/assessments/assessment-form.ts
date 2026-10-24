@@ -64,13 +64,14 @@ function parseOptionalNumber(
 
 type AssessmentValidationIssue = {
   code: string;
-  path: ReadonlyArray<string | number>;
+  path: ReadonlyArray<PropertyKey>;
 };
 
 const FALLBACK_VALIDATION_MESSAGE = 'Revise os dados da avaliação.';
 
 const SCHEMA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   'invalid_string:date': 'Informe uma data válida.',
+  'invalid_format:date': 'Informe uma data válida.',
   'invalid_type:date': 'Informe uma data válida.',
   'too_small:weightKg': 'Peso está fora dos limites permitidos.',
   'too_big:weightKg': 'Peso está fora dos limites permitidos.',
@@ -98,11 +99,14 @@ const SCHEMA_ERROR_MESSAGES: Readonly<Record<string, string>> = {
 };
 
 function localizeValidationIssue(issue: AssessmentValidationIssue): string {
-  const key = `${issue.code}:${issue.path.join('.')}`;
+  const key = `${issue.code}:${issue.path.map(String).join('.')}`;
   const message = SCHEMA_ERROR_MESSAGES[key];
   if (message) return message;
 
-  if (issue.path[0] === 'photos' && issue.code === 'invalid_string') {
+  if (
+    issue.path[0] === 'photos' &&
+    (issue.code === 'invalid_string' || issue.code === 'invalid_format')
+  ) {
     return 'A foto informada deve ser uma URL válida.';
   }
 

@@ -9,6 +9,88 @@ import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
 
+type JsonSchema = {
+  $ref?: string;
+  type?: string;
+  format?: string;
+  nullable?: boolean;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  items?: JsonSchema;
+  anyOf?: JsonSchema[];
+  oneOf?: JsonSchema[];
+};
+
+type OpenApiOperation = {
+  requestBody?: { content?: Record<string, { schema?: JsonSchema }> };
+  responses?: Record<string, { content?: Record<string, { schema?: JsonSchema }> }>;
+};
+
+type OpenApiDocument = {
+  paths?: Record<string, Partial<Record<'get' | 'post' | 'patch', OpenApiOperation>>>;
+  components?: { schemas?: Record<string, JsonSchema> };
+};
+
+function dereferenceSchema(document: OpenApiDocument, schema: JsonSchema): JsonSchema {
+  if (!schema.$ref) return schema;
+
+  const name = schema.$ref.split('/').at(-1);
+  const referencedSchema = name ? document.components?.schemas?.[name] : undefined;
+  if (!referencedSchema) throw new Error(`OpenAPI schema reference not found: ${schema.$ref}`);
+  return dereferenceSchema(document, referencedSchema);
+}
+
+function schemaHasType(document: OpenApiDocument, schema: JsonSchema, type: string): boolean {
+  const resolved = dereferenceSchema(document, schema);
+  if (resolved.type === type || (type === 'null' && resolved.nullable)) return true;
+
+  return [...(resolved.anyOf ?? []), ...(resolved.oneOf ?? [])].some((part) =>
+    schemaHasType(document, part, type),
+  );
+}
+
+function requestBodySchema(
+  document: OpenApiDocument,
+  path: string,
+  method: 'post' | 'patch',
+): JsonSchema {
+  const schema =
+    document.paths?.[path]?.[method]?.requestBody?.content?.['application/json']?.schema;
+  if (!schema)
+    throw new Error(`OpenAPI request body schema not found: ${method.toUpperCase()} ${path}`);
+  return dereferenceSchema(document, schema);
+}
+
+function responseBodySchema(
+  document: OpenApiDocument,
+  path: string,
+  method: 'get' | 'post' | 'patch',
+  statusCode: string,
+): JsonSchema {
+  const schema =
+    document.paths?.[path]?.[method]?.responses?.[statusCode]?.content?.['application/json']
+      ?.schema;
+  if (!schema)
+    throw new Error(
+      `OpenAPI response schema not found: ${statusCode} ${method.toUpperCase()} ${path}`,
+    );
+  return dereferenceSchema(document, schema);
+}
+
+function responseItemSchema(
+  document: OpenApiDocument,
+  path: string,
+  method: 'get' | 'post' | 'patch',
+  statusCode: string,
+  property: string,
+): JsonSchema {
+  const collection = responseBodySchema(document, path, method, statusCode).properties?.[property];
+  if (!collection) throw new Error(`OpenAPI response property not found: ${property}`);
+  const item = dereferenceSchema(document, collection).items;
+  if (!item) throw new Error(`OpenAPI array items schema not found: ${property}`);
+  return dereferenceSchema(document, item);
+}
+
 async function signupTrainer(email: string) {
   return signUpWithSession(app, {
     name: 'Trainer',
@@ -419,6 +501,114 @@ describe('workout plans', () => {
     expect(u.json().days).toHaveLength(1);
     expect(u.json().days[0].label).toBe('B');
     expect(u.json().days[0].exercises[0].exercise.name).toBe('Agacha');
+  });
+
+  it.each(['active', 'archived'] as const)(
+    'preserves the %s status and plan fields when PATCH omits status',
+    async (status) => {
+      const { studentId, trainerCookie } = await createTrainerScenario();
+      const created = await app.inject({
+        method: 'POST',
+        url: '/workout-plans',
+        headers: { cookie: trainerCookie },
+        payload: {
+          studentId,
+          name: 'Plano original',
+          status,
+          notes: 'Observação preservada',
+          days: [{ label: 'Treino A', dayOrder: 0, exercises: [] }],
+        },
+      });
+
+      expect(created.statusCode).toBe(201);
+      const createdPlan = created.json();
+      expect(createdPlan.createdAt).toBe(new Date(createdPlan.createdAt).toISOString());
+
+      const updated = await app.inject({
+        method: 'PATCH',
+        url: `/workout-plans/${createdPlan.id}`,
+        headers: { cookie: trainerCookie },
+        payload: { name: 'Treino renomeado' },
+      });
+
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json()).toEqual(
+        expect.objectContaining({
+          id: createdPlan.id,
+          name: 'Treino renomeado',
+          status,
+          notes: 'Observação preservada',
+          createdAt: createdPlan.createdAt,
+          days: [expect.objectContaining({ label: 'Treino A' })],
+        }),
+      );
+
+      const retrieved = await app.inject({
+        method: 'GET',
+        url: `/workout-plans/${createdPlan.id}`,
+        headers: { cookie: trainerCookie },
+      });
+      expect(retrieved.statusCode).toBe(200);
+      expect(retrieved.json().createdAt).toBe(createdPlan.createdAt);
+    },
+  );
+
+  it('publishes useful workout and transformed response schemas in OpenAPI', async () => {
+    const response = await app.inject({ method: 'GET', url: '/docs/openapi.json' });
+    expect(response.statusCode).toBe(200);
+
+    const document = response.json<OpenApiDocument>();
+    const createBody = requestBodySchema(document, '/workout-plans', 'post');
+    const updateBody = requestBodySchema(document, '/workout-plans/{id}', 'patch');
+    const planResponse = responseBodySchema(document, '/workout-plans', 'post', '201');
+    const workoutLogResponse = responseBodySchema(document, '/workout-logs', 'post', '201');
+    const assessmentResponse = responseItemSchema(
+      document,
+      '/students/{studentId}/assessments',
+      'get',
+      '200',
+      'items',
+    );
+    const exerciseResponse = responseItemSchema(document, '/exercises', 'get', '200', 'items');
+    const studentResponse = responseItemSchema(document, '/students', 'get', '200', 'items');
+    const workoutPlanDraftResponse = responseItemSchema(
+      document,
+      '/students/{studentId}/workout-plan-drafts',
+      'get',
+      '200',
+      'items',
+    );
+    const trainerOnboardingResponse = responseBodySchema(
+      document,
+      '/trainers/onboarding',
+      'post',
+      '200',
+    );
+    const days = dereferenceSchema(document, planResponse.properties?.days ?? {});
+    const day = dereferenceSchema(document, days.items ?? {});
+    const exercises = dereferenceSchema(document, day.properties?.exercises ?? {});
+    const exercise = dereferenceSchema(document, exercises.items ?? {});
+    const loadKg = exercise.properties?.loadKg;
+
+    expect(createBody.properties?.status?.type).toBe('string');
+    expect(createBody.properties?.days?.type).toBe('array');
+    expect(createBody.required ?? []).not.toContain('status');
+    expect(updateBody.properties?.status?.type).toBe('string');
+    expect(updateBody.required ?? []).not.toContain('status');
+    expect(planResponse.properties?.days?.type).toBe('array');
+    expect(planResponse.properties?.createdAt?.type).toBe('string');
+    expect(workoutLogResponse.properties?.createdAt?.type).toBe('string');
+    expect(assessmentResponse.properties?.createdAt?.type).toBe('string');
+    expect(exerciseResponse.properties?.createdAt?.type).toBe('string');
+    expect(studentResponse.properties?.createdAt?.type).toBe('string');
+    expect(workoutPlanDraftResponse.properties?.createdAt?.type).toBe('string');
+    expect(workoutPlanDraftResponse.properties?.updatedAt?.type).toBe('string');
+    expect(trainerOnboardingResponse.properties?.onboardedAt?.type).toBe('string');
+    expect(loadKg).toBeDefined();
+    if (!loadKg) return;
+    expect(schemaHasType(document, loadKg, 'string')).toBe(true);
+    expect(schemaHasType(document, loadKg, 'number')).toBe(true);
+    expect(schemaHasType(document, loadKg, 'null')).toBe(true);
   });
 
   it('rejects empty days array with 400', async () => {

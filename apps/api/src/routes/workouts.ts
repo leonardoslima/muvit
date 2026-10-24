@@ -25,7 +25,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: [app.requireRole('trainer')],
       schema: {
         tags: ['workout-plan-drafts'],
-        params: z.object({ studentId: z.string().uuid() }),
+        params: z.object({ studentId: z.string().guid() }),
         response: { 200: z.object({ items: z.array(workoutPlanDraftSchema) }) },
       },
     },
@@ -68,7 +68,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: [app.requireRole('trainer')],
       schema: {
         tags: ['workout-plan-drafts'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         response: {
           200: workoutPlanDraftSchema,
           404: z.object({ error: z.string() }),
@@ -90,7 +90,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: [app.requireRole('trainer')],
       schema: {
         tags: ['workout-plan-drafts'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         body: publishWorkoutPlanDraftSchema,
         response: {
           200: workoutPlanFullSchema,
@@ -154,7 +154,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-plans'],
-        params: z.object({ studentId: z.string().uuid() }),
+        params: z.object({ studentId: z.string().guid() }),
         response: { 200: z.object({ items: z.array(workoutPlanSummarySchema) }) },
       },
     },
@@ -172,7 +172,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-plans'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         response: {
           200: workoutPlanFullSchema,
           404: z.object({ error: z.string() }),
@@ -193,7 +193,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-plans'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         body: updateWorkoutPlanSchema,
         response: {
           200: workoutPlanFullSchema,
@@ -219,7 +219,7 @@ export const workoutsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-plans'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
       },
     },
     async (req, reply) => {
