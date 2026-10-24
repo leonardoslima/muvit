@@ -34,6 +34,9 @@
     "typescript": "^5.7.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"]
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"],
+    "overrides": {
+      "@expo/cli@54.0.28>tar": "7.5.22"
+    }
   }
 }
