@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const workoutPlanStatusSchema = z.enum(['active', 'archived', 'draft']);
 
 export const workoutExerciseInputSchema = z.object({
-  exerciseId: z.string().uuid(),
+  exerciseId: z.string().guid(),
   exerciseOrder: z.number().int().min(0),
   sets: z.number().int().min(1).max(20),
   reps: z.string().min(1).max(20),
@@ -20,7 +20,7 @@ export const workoutDayInputSchema = z.object({
 });
 
 export const createWorkoutPlanSchema = z.object({
-  studentId: z.string().uuid(),
+  studentId: z.string().guid(),
   name: z.string().min(1).max(200),
   startDate: z.string().date().optional(),
   endDate: z.string().date().optional(),
@@ -29,17 +29,21 @@ export const createWorkoutPlanSchema = z.object({
   days: z.array(workoutDayInputSchema).min(1).max(7),
 });
 
-export const updateWorkoutPlanSchema = createWorkoutPlanSchema.omit({ studentId: true }).partial();
+export const updateWorkoutPlanSchema = createWorkoutPlanSchema
+  .omit({ studentId: true })
+  .partial()
+  .extend({ status: workoutPlanStatusSchema.optional() });
 
 const decStrOrNum = z.union([z.string(), z.number()]).nullable();
 const dateOrIso = z
   .union([z.string(), z.date()])
-  .transform((v) => (v instanceof Date ? v.toISOString() : v));
+  .transform((v) => (v instanceof Date ? v.toISOString() : v))
+  .pipe(z.string());
 
 export const workoutExerciseFullSchema = z.object({
-  id: z.string().uuid(),
-  workoutDayId: z.string().uuid(),
-  exerciseId: z.string().uuid(),
+  id: z.string().guid(),
+  workoutDayId: z.string().guid(),
+  exerciseId: z.string().guid(),
   exerciseOrder: z.number().int(),
   sets: z.number().int(),
   reps: z.string(),
@@ -48,24 +52,24 @@ export const workoutExerciseFullSchema = z.object({
   tempo: z.string().nullable(),
   notes: z.string().nullable(),
   exercise: z.object({
-    id: z.string().uuid(),
+    id: z.string().guid(),
     name: z.string(),
     muscleGroup: z.string(),
   }),
 });
 
 export const workoutDayFullSchema = z.object({
-  id: z.string().uuid(),
-  planId: z.string().uuid(),
+  id: z.string().guid(),
+  planId: z.string().guid(),
   label: z.string(),
   dayOrder: z.number().int(),
   exercises: z.array(workoutExerciseFullSchema),
 });
 
 export const workoutPlanFullSchema = z.object({
-  id: z.string().uuid(),
-  studentId: z.string().uuid(),
-  trainerId: z.string().uuid().nullable(),
+  id: z.string().guid(),
+  studentId: z.string().guid(),
+  trainerId: z.string().guid().nullable(),
   name: z.string(),
   startDate: z.string().date().nullable(),
   endDate: z.string().date().nullable(),
@@ -76,9 +80,9 @@ export const workoutPlanFullSchema = z.object({
 });
 
 export const workoutPlanSummarySchema = z.object({
-  id: z.string().uuid(),
-  studentId: z.string().uuid(),
-  trainerId: z.string().uuid().nullable(),
+  id: z.string().guid(),
+  studentId: z.string().guid(),
+  trainerId: z.string().guid().nullable(),
   name: z.string(),
   startDate: z.string().date().nullable(),
   endDate: z.string().date().nullable(),
@@ -87,7 +91,7 @@ export const workoutPlanSummarySchema = z.object({
 });
 
 export const logSetInputSchema = z.object({
-  workoutExerciseId: z.string().uuid(),
+  workoutExerciseId: z.string().guid(),
   setNumber: z.number().int().min(1).max(20),
   repsDone: z.number().int().min(0).max(200).optional(),
   loadKg: z.number().int('A carga deve ser um número inteiro.').min(0).max(1000).optional(),
@@ -95,7 +99,7 @@ export const logSetInputSchema = z.object({
 });
 
 export const startWorkoutLogSchema = z.object({
-  workoutDayId: z.string().uuid(),
+  workoutDayId: z.string().guid(),
   date: z.string().date(),
 });
 
@@ -110,12 +114,13 @@ export const finishWorkoutLogSchema = z.object({
 const decStrOrNumLog = z.union([z.string(), z.number()]).nullable();
 const dateOrIsoLog = z
   .union([z.string(), z.date()])
-  .transform((v) => (v instanceof Date ? v.toISOString() : v));
+  .transform((v) => (v instanceof Date ? v.toISOString() : v))
+  .pipe(z.string());
 
 export const logSetSchema = z.object({
-  id: z.string().uuid(),
-  workoutLogId: z.string().uuid(),
-  workoutExerciseId: z.string().uuid(),
+  id: z.string().guid(),
+  workoutLogId: z.string().guid(),
+  workoutExerciseId: z.string().guid(),
   setNumber: z.number().int(),
   repsDone: z.number().int().nullable(),
   loadKg: decStrOrNumLog,
@@ -123,9 +128,9 @@ export const logSetSchema = z.object({
 });
 
 export const workoutLogSummarySchema = z.object({
-  id: z.string().uuid(),
-  studentId: z.string().uuid(),
-  workoutDayId: z.string().uuid(),
+  id: z.string().guid(),
+  studentId: z.string().guid(),
+  workoutDayId: z.string().guid(),
   date: z.string().date(),
   durationMin: z.number().int().nullable(),
   rpe: z.number().int().nullable(),
@@ -137,7 +142,7 @@ export const workoutLogFullSchema = workoutLogSummarySchema.extend({
   notes: z.string().nullable(),
   sets: z.array(
     logSetSchema.extend({
-      exercise: z.object({ id: z.string().uuid(), name: z.string() }),
+      exercise: z.object({ id: z.string().guid(), name: z.string() }),
     }),
   ),
 });

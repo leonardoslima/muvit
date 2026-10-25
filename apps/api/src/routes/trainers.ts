@@ -15,7 +15,8 @@ export const trainersRoutes: FastifyPluginAsyncZod = async (app) => {
           200: z.object({
             onboardedAt: z
               .union([z.string().datetime(), z.date()])
-              .transform((value) => (value instanceof Date ? value.toISOString() : value)),
+              .transform((value) => (value instanceof Date ? value.toISOString() : value))
+              .pipe(z.string()),
           }),
         },
       },

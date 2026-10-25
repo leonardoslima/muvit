@@ -34,6 +34,21 @@
     "typescript": "^5.7.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"]
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"],
+    "packageExtensions": {
+      "@testing-library/jest-dom@6.9.1": {
+        "peerDependencies": {
+          "vitest": "*"
+        },
+        "peerDependenciesMeta": {
+          "vitest": {
+            "optional": true
+          }
+        }
+      }
+    },
+    "overrides": {
+      "@expo/cli@54.0.28>tar": "7.5.22"
+    }
   }
 }

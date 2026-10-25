@@ -23,9 +23,9 @@ export const workoutPlanDraftPayloadSchema = createWorkoutPlanSchema
 
 export const saveWorkoutPlanDraftSchema = z
   .object({
-    studentId: z.string().uuid(),
-    sourcePlanId: z.string().uuid().optional(),
-    draftId: z.string().uuid().optional(),
+    studentId: z.string().guid(),
+    sourcePlanId: z.string().guid().optional(),
+    draftId: z.string().guid().optional(),
     payload: workoutPlanDraftPayloadSchema,
     selectedDayOrder: z.number().int().min(0),
     revision: z.number().int().min(1).optional(),
@@ -51,14 +51,15 @@ export const publishWorkoutPlanDraftSchema = z.object({
 
 const dateOrIso = z
   .union([z.string(), z.date()])
-  .transform((value) => (value instanceof Date ? value.toISOString() : value));
+  .transform((value) => (value instanceof Date ? value.toISOString() : value))
+  .pipe(z.string());
 
 export const workoutPlanDraftSchema = z
   .object({
-    id: z.string().uuid(),
-    trainerId: z.string().uuid(),
-    studentId: z.string().uuid(),
-    sourcePlanId: z.string().uuid().nullable(),
+    id: z.string().guid(),
+    trainerId: z.string().guid(),
+    studentId: z.string().guid(),
+    sourcePlanId: z.string().guid().nullable(),
     payload: workoutPlanDraftPayloadSchema,
     selectedDayOrder: z.number().int().min(0),
     revision: z.number().int().min(1),
@@ -66,7 +67,7 @@ export const workoutPlanDraftSchema = z
     updatedAt: dateOrIso,
     exerciseReferences: z.array(
       z.object({
-        id: z.string().uuid(),
+        id: z.string().guid(),
         name: z.string(),
         muscleGroup: z.string(),
       }),
