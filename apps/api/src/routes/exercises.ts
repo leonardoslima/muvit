@@ -51,7 +51,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: [app.requireRole('trainer')],
       schema: {
         tags: ['exercises'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         body: updateExerciseSchema,
         response: {
           200: exerciseSchema,
@@ -78,7 +78,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       preHandler: [app.requireRole('trainer')],
       schema: {
         tags: ['exercises'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         response: {
           204: z.void(),
           404: z.object({ error: z.string() }),

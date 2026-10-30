@@ -3,7 +3,7 @@ import { z } from 'zod';
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(3333),
-  API_HOST: z.string().ip().default('0.0.0.0'),
+  API_HOST: z.union([z.ipv4(), z.ipv6()]).default('0.0.0.0'),
   DATABASE_URL: z.string().url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
