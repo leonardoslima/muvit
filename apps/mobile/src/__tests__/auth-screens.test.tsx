@@ -83,7 +83,7 @@ describe('telas de autenticação mobile', () => {
     authState.resetPassword.mockReset();
     authState.refetchSession.mockReset();
     authState.signInEmail.mockReset();
-    authState.signOut.mockReset();
+    authState.signOut.mockReset().mockResolvedValue(undefined);
     authState.signUpEmail.mockReset();
 
     routerState.push.mockReset();
@@ -723,6 +723,20 @@ describe('telas de autenticação mobile', () => {
     await user.press(screen.getByRole('button', { name: 'Voltar para entrar' }));
     expect(routerState.push).toHaveBeenCalledWith('/(auth)/login');
     expect(authState.signInEmail).not.toHaveBeenCalled();
+    expect(authState.notify).toHaveBeenCalledWith('$sessionSignal');
+    expect(authState.signOut).toHaveBeenCalledOnce();
+  });
+
+  it('preserva a troca concluída quando a limpeza da sessão anterior falha', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'valid-token' };
+    authState.resetPassword.mockResolvedValueOnce({ data: { status: true }, error: null });
+    authState.signOut.mockRejectedValueOnce(new Error('network'));
+    render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova');
+    await user.type(screen.getByLabelText('Confirmar senha'), 'senha-nova');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await screen.findByText('Senha atualizada. Entre com sua nova senha.')).toBeTruthy();
     expect(authState.notify).toHaveBeenCalledWith('$sessionSignal');
   });
 

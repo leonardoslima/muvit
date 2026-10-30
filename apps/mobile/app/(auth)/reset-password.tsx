@@ -55,6 +55,7 @@ function ResetPasswordForm({
         setError('Não foi possível atualizar a senha. Tente novamente.');
         return;
       }
+      await authClient.signOut().catch(() => undefined);
       setPassword('');
       setConfirmation('');
       setCompleted(true);

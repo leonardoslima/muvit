@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { db, queryClient, schema } from '@muvit/db';
 import { and, eq, inArray, isNull, like } from 'drizzle-orm';
-import { env } from '../../src/env.js';
 
 export type Scenario = 'aluno' | 'professor' | 'isolamento';
 export type FixtureCredentials = {
@@ -148,7 +147,7 @@ async function createAccount(
 ): Promise<Account> {
   const response = await fetch(new URL('/api/auth/sign-up/email', baseUrl), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', origin: env.WEB_URL },
+    headers: { 'content-type': 'application/json', origin: 'muvit://' },
     body: JSON.stringify({ ...credential, role }),
   });
   if (!response.ok)
@@ -185,7 +184,7 @@ async function signInAccount(
 ): Promise<Account> {
   const response = await fetch(new URL('/api/auth/sign-in/email', baseUrl), {
     method: 'POST',
-    headers: { 'content-type': 'application/json', origin: env.WEB_URL },
+    headers: { 'content-type': 'application/json', origin: 'muvit://' },
     body: JSON.stringify({ email: credential.email, password: credential.password }),
   });
   if (!response.ok)
