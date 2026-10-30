@@ -1,0 +1,33 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Recuperação de senha
+---
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible: Development servers
+    timeout: 30000
+- openLink: ${MAESTRO_EXPO_URL}
+- runFlow: expo-overlays.yaml
+- extendedWaitUntil:
+    visible: Entrar
+    timeout: 120000
+- tapOn: Esqueci minha senha
+- assertVisible: Recuperar senha
+- tapOn: Enviar link
+- assertVisible: Informe um email válido.
+- tapOn:
+    id: forgot-password-email
+- inputText: ${MAESTRO_E2E_RECOVERY_EMAIL}
+- hideKeyboard
+- tapOn: Enviar link
+- extendedWaitUntil:
+    visible: 'Se existir uma conta com este email, você receberá um link para redefinir sua senha.'
+    timeout: 30000
+- tapOn: Voltar para entrar
+- assertVisible: Entrar
+- openLink: muvit://reset-password?error=INVALID_TOKEN
+- assertVisible: 'Este link é inválido ou expirou. Solicite um novo link.'
+- tapOn: Solicitar novo link
+- assertVisible: Recuperar senha
+- tapOn: Voltar para entrar
+- assertVisible: Entrar

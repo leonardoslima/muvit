@@ -1,0 +1,40 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Redefinição de senha por link
+---
+- openLink: ${MAESTRO_E2E_RESET_LINK}
+- extendedWaitUntil:
+    visible: Redefinir senha
+    timeout: 30000
+- tapOn:
+    id: reset-password-new
+- inputText: ${MAESTRO_E2E_NEW_PASSWORD}
+- tapOn:
+    id: reset-password-confirmation
+- inputText: diferente
+- hideKeyboard
+- tapOn: Salvar nova senha
+- assertVisible: As senhas devem ser iguais.
+- tapOn:
+    id: reset-password-confirmation
+- eraseText
+- inputText: ${MAESTRO_E2E_NEW_PASSWORD}
+- hideKeyboard
+- tapOn: Salvar nova senha
+- extendedWaitUntil:
+    visible: Senha atualizada. Entre com sua nova senha.
+    timeout: 30000
+- tapOn: Voltar para entrar
+- assertVisible: Entrar
+- tapOn:
+    id: login-email
+- inputText: ${MAESTRO_E2E_RECOVERY_EMAIL}
+- tapOn:
+    id: login-password
+- inputText: ${MAESTRO_E2E_NEW_PASSWORD}
+- hideKeyboard
+- tapOn:
+    text: Entrar
+    below: Senha
+- extendedWaitUntil:
+    visible: ${E2E_HOME}
+    timeout: 30000

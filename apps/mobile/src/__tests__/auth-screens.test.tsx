@@ -2,7 +2,9 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import React, { type ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import ForgotPasswordScreen from '../../app/(auth)/forgot-password';
 import LoginScreen from '../../app/(auth)/login';
+import ResetPasswordScreen from '../../app/(auth)/reset-password';
 import SignupScreen from '../../app/(auth)/signup';
 import { mobileRoutes } from '../application/navigation/role-navigation';
 
@@ -18,10 +20,14 @@ vi.mock('react-native', async (importOriginal) => {
 });
 
 const routerState = vi.hoisted(() => ({
+  params: {} as { token?: string | string[]; error?: string },
   push: vi.fn(),
   replace: vi.fn(),
 }));
 const authState = vi.hoisted(() => ({
+  notify: vi.fn(),
+  requestPasswordReset: vi.fn(),
+  resetPassword: vi.fn(),
   refetchSession: vi.fn(),
   signInEmail: vi.fn(),
   signOut: vi.fn(),
@@ -30,6 +36,7 @@ const authState = vi.hoisted(() => ({
 
 vi.mock('expo-router', () => ({
   router: routerState,
+  useLocalSearchParams: () => routerState.params,
   Link: ({ children, href }: { children: ReactNode; href: string }) => {
     if (!React.isValidElement(children)) {
       return children;
@@ -48,8 +55,11 @@ vi.mock('react-native-safe-area-context', () => ({
 vi.mock('../lib/auth-client', () => ({
   authClient: {
     $store: {
+      notify: authState.notify,
       atoms: { session: { get: () => ({ refetch: authState.refetchSession }) } },
     },
+    requestPasswordReset: authState.requestPasswordReset,
+    resetPassword: authState.resetPassword,
     signIn: { email: authState.signInEmail },
     signOut: authState.signOut,
     signUp: { email: authState.signUpEmail },
@@ -67,6 +77,10 @@ vi.mock('@expo/vector-icons', () => ({
 
 describe('telas de autenticação mobile', () => {
   beforeEach(() => {
+    authState.notify.mockReset();
+    routerState.params = {};
+    authState.requestPasswordReset.mockReset();
+    authState.resetPassword.mockReset();
     authState.refetchSession.mockReset();
     authState.signInEmail.mockReset();
     authState.signOut.mockReset();
@@ -140,7 +154,7 @@ describe('telas de autenticação mobile', () => {
       placeholder: 'Sua senha',
       secureTextEntry: true,
     });
-    expect(screen.queryByRole('button', { name: /senha|papel/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /mostrar senha|selecionar papel/i })).toBeNull();
     expect(screen.queryByRole('radio')).toBeNull();
   });
 
@@ -504,7 +518,7 @@ describe('telas de autenticação mobile', () => {
       placeholder: 'Sua senha',
       secureTextEntry: true,
     });
-    expect(screen.queryByRole('button', { name: /senha|papel/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /mostrar senha|selecionar papel/i })).toBeNull();
     expect(screen.queryByRole('radio')).toBeNull();
   });
 
@@ -613,6 +627,157 @@ describe('telas de autenticação mobile', () => {
     await user.press(screen.getByRole('button', { name: 'Criar conta independente' }));
 
     expect(routerState.push).toHaveBeenCalledWith('/(auth)/signup');
+  });
+
+  it('abre a recuperação de senha pelo login', async () => {
+    const user = userEvent.setup();
+    render(<LoginScreen />);
+    await user.press(screen.getByRole('button', { name: 'Esqueci minha senha' }));
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/forgot-password');
+  });
+
+  it('solicita o link nativo e confirma sem revelar se a conta existe', async () => {
+    const user = userEvent.setup();
+    authState.requestPasswordReset.mockResolvedValueOnce({ data: { status: true }, error: null });
+    render(<ForgotPasswordScreen />);
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.press(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(await screen.findByText(/Se existir uma conta/)).toBeTruthy();
+    expect(authState.requestPasswordReset).toHaveBeenCalledWith({
+      email: 'ana@example.com',
+      redirectTo: 'muvit://reset-password',
+    });
+    expect(screen.queryByLabelText('Email')).toBeNull();
+  });
+
+  it('impede email inválido e permite tentar novamente após falha de rede', async () => {
+    const user = userEvent.setup();
+    authState.requestPasswordReset.mockRejectedValueOnce(new Error('network'));
+    render(<ForgotPasswordScreen />);
+    await user.press(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(await screen.findByText('Informe um email válido.')).toBeTruthy();
+    expect(authState.requestPasswordReset).not.toHaveBeenCalled();
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.press(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(
+      await screen.findByText('Não foi possível enviar o link. Tente novamente.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Email').props.value).toBe('ana@example.com');
+  });
+
+  it('bloqueia toques repetidos enquanto envia o link', async () => {
+    const user = userEvent.setup();
+    const pending = createDeferred<{ data: { status: boolean }; error: null }>();
+    authState.requestPasswordReset.mockReturnValueOnce(pending.promise);
+    render(<ForgotPasswordScreen />);
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.press(screen.getByRole('button', { name: 'Enviar link' }));
+    const button = screen.getByRole('button', { name: 'Enviando...' });
+    expect(button.props.disabled).toBe(true);
+    await user.press(button);
+    expect(authState.requestPasswordReset).toHaveBeenCalledOnce();
+    pending.resolve({ data: { status: true }, error: null });
+    expect(await screen.findByText(/Se existir uma conta/)).toBeTruthy();
+  });
+
+  it.each([{}, { token: 'token', error: 'INVALID_TOKEN' }, { token: ['a', 'b'] }])(
+    'oferece novo link para callback inválido %j',
+    (params) => {
+      routerState.params = params;
+      render(<ResetPasswordScreen />);
+      expect(
+        screen.getByText('Este link é inválido ou expirou. Solicite um novo link.'),
+      ).toBeTruthy();
+      expect(screen.queryByLabelText('Nova senha')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Solicitar novo link' })).toBeTruthy();
+    },
+  );
+
+  it('valida tamanho e confirmação antes de redefinir a senha', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'valid-token' };
+    render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'curta');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await screen.findByText('Use entre 8 e 128 caracteres.')).toBeTruthy();
+    await user.type(screen.getByLabelText('Nova senha'), '-segura');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await screen.findByText('As senhas devem ser iguais.')).toBeTruthy();
+    expect(authState.resetPassword).not.toHaveBeenCalled();
+  });
+
+  it('redefine a senha usando o token e retorna ao login sem criar sessão', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'valid-token' };
+    authState.resetPassword.mockResolvedValueOnce({ data: { status: true }, error: null });
+    render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova');
+    await user.type(screen.getByLabelText('Confirmar senha'), 'senha-nova');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await screen.findByText('Senha atualizada. Entre com sua nova senha.')).toBeTruthy();
+    expect(authState.resetPassword).toHaveBeenCalledWith({
+      newPassword: 'senha-nova',
+      token: 'valid-token',
+    });
+    expect(screen.queryByLabelText('Nova senha')).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Voltar para entrar' }));
+    expect(routerState.push).toHaveBeenCalledWith('/(auth)/login');
+    expect(authState.signInEmail).not.toHaveBeenCalled();
+    expect(authState.notify).toHaveBeenCalledWith('$sessionSignal');
+  });
+
+  it('explica token rejeitado sem expor o erro do servidor', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'expired' };
+    authState.resetPassword.mockResolvedValueOnce({
+      data: null,
+      error: { code: 'INVALID_TOKEN', message: 'secret' },
+    });
+    render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova');
+    await user.type(screen.getByLabelText('Confirmar senha'), 'senha-nova');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(
+      await screen.findByText('Este link é inválido ou expirou. Solicite um novo link.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('secret')).toBeNull();
+  });
+
+  it('limpa o estado do link rejeitado quando outro link chega ao app aberto', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'expired' };
+    authState.resetPassword.mockResolvedValueOnce({ data: null, error: { code: 'INVALID_TOKEN' } });
+    const view = render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova');
+    await user.type(screen.getByLabelText('Confirmar senha'), 'senha-nova');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(await screen.findByText(/Este link é inválido/)).toBeTruthy();
+    routerState.params = { token: 'fresh-token' };
+    view.rerender(<ResetPasswordScreen />);
+    expect(screen.getByLabelText('Nova senha').props.value).toBe('');
+  });
+
+  it('mantém os campos e permite repetir uma redefinição após falha de rede', async () => {
+    const user = userEvent.setup();
+    routerState.params = { token: 'valid-token' };
+    authState.resetPassword.mockRejectedValueOnce(new Error('network'));
+    render(<ResetPasswordScreen />);
+    await user.type(screen.getByLabelText('Nova senha'), 'senha-nova');
+    await user.type(screen.getByLabelText('Confirmar senha'), 'senha-nova');
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    expect(
+      await screen.findByText('Não foi possível atualizar a senha. Tente novamente.'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Nova senha').props.value).toBe('senha-nova');
+    const pending = createDeferred<{ data: { status: boolean }; error: null }>();
+    authState.resetPassword.mockReturnValueOnce(pending.promise);
+    await user.press(screen.getByRole('button', { name: 'Salvar nova senha' }));
+    const button = screen.getByRole('button', { name: 'Salvando...' });
+    expect(button.props.disabled).toBe(true);
+    await user.press(button);
+    expect(authState.resetPassword).toHaveBeenCalledTimes(2);
+    pending.resolve({ data: { status: true }, error: null });
+    expect(await screen.findByText('Senha atualizada. Entre com sua nova senha.')).toBeTruthy();
   });
 
   it('usa o destino de login do link secundário do cadastro', async () => {

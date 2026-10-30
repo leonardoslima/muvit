@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cookieHeaderFromSetCookie, signUpWithSession } from '../../test/helpers/auth.js';
 import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
+import { env } from '../env.js';
 
 type TestProfileProvisioner = {
   provision(input: {
@@ -149,7 +150,7 @@ describe('Better Auth', () => {
     const response = await currentApp().inject({
       method: 'POST',
       url: '/api/auth/update-user',
-      headers: { cookie },
+      headers: { cookie, origin: env.WEB_URL },
       payload: { role: 'student' },
     });
 
@@ -210,7 +211,7 @@ describe('Better Auth', () => {
     const signOutResponse = await currentApp().inject({
       method: 'POST',
       url: '/api/auth/sign-out',
-      headers: { cookie },
+      headers: { cookie, origin: env.WEB_URL },
     });
 
     expect(signOutResponse.statusCode).toBe(200);

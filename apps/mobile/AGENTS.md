@@ -24,6 +24,7 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 
 - Trate chamadas de rede com estados de loading, erro e retry quando o fluxo exigir.
 - Use `authClient.useSession()` como fonte unica de hidratacao e identidade; o plugin Expo do Better Auth e o unico responsavel por persistir a sessao no SecureStore.
+- As rotas `(auth)/forgot-password` e `(auth)/reset-password` sao publicas mesmo com sessao existente; o retorno `muvit://reset-password` recebe token ou erro na query e nunca autentica automaticamente apos redefinir.
 - Encaminhe `authClient.getCookie()` no header `Cookie` das chamadas nativas e use `credentials: 'omit'`; nao crie store paralela ou tokens proprios.
 - Chamadas de dominio do aluno usam rotas self-scoped `/students/me/*`; nunca trate o ID do usuario Better Auth como `profileId`.
 - O fluxo mobile autenticável mantém isolamento por papel: `student` usa rotas self-scoped `/students/me/*` e `trainer` usa o shell protegido `/trainer`; ownership e autorização continuam sob responsabilidade da API.

@@ -1,5 +1,5 @@
 export type MobileRole = 'student' | 'trainer';
-export type RouteArea = 'auth' | 'student' | 'trainer' | 'unknown';
+export type RouteArea = 'auth' | 'recovery' | 'student' | 'trainer' | 'unknown';
 
 export const mobileRoutes = {
   login: '/(auth)/login',
@@ -31,6 +31,11 @@ export function resolveInitialRoute(role: unknown): string | null {
 }
 
 export function resolveRouteArea(segments: readonly string[]): RouteArea {
+  if (
+    segments.includes('(auth)') &&
+    (segments.includes('forgot-password') || segments.includes('reset-password'))
+  )
+    return 'recovery';
   if (segments.includes('(auth)')) return 'auth';
   if (segments.includes('(student)')) return 'student';
   if (segments.includes('(trainer)')) return 'trainer';
@@ -38,6 +43,7 @@ export function resolveRouteArea(segments: readonly string[]): RouteArea {
 }
 
 export function resolveRouteAccess(input: RouteAccessInput): RouteAccessDecision {
+  if (input.area === 'recovery') return { kind: 'allow' };
   if (!input.isAuthenticated) {
     return input.area === 'auth'
       ? { kind: 'allow' }

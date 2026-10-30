@@ -47,6 +47,14 @@ describe('LoginPage', () => {
     expect(screen.queryByRole('button', { name: 'Aluno' })).not.toBeInTheDocument();
   });
 
+  it('oferece recuperação de senha no login', () => {
+    render(<LoginPage />);
+    expect(screen.getByRole('link', { name: 'Esqueci minha senha' })).toHaveAttribute(
+      'href',
+      '/forgot-password',
+    );
+  });
+
   it.each([
     ['trainer', '/dashboard'],
     ['student', '/me'],

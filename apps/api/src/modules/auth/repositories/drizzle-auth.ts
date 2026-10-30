@@ -1,5 +1,5 @@
 import { type Database, db } from '@muvit/db';
-import { type MuvitAuth, createMuvitAuth } from '../../../lib/auth.js';
+import { type MuvitAuth, type SendResetPassword, createMuvitAuth } from '../../../lib/auth.js';
 import type { ProfileProvisioner } from '../profile-provisioner.js';
 import { DrizzleProfileProvisioner } from './drizzle-profile-provisioner.js';
 
@@ -9,6 +9,9 @@ export type DrizzleAuthOptions = {
   secret: string;
   baseURL: string;
   trustedOrigins: string[];
+  sendResetPassword?: SendResetPassword;
+  onPasswordResetDeliveryError?: () => void;
+  onAuthError?: () => void;
 };
 
 export function createDrizzleAuth(options: DrizzleAuthOptions): MuvitAuth {
@@ -21,5 +24,8 @@ export function createDrizzleAuth(options: DrizzleAuthOptions): MuvitAuth {
     secret: options.secret,
     baseURL: options.baseURL,
     trustedOrigins: options.trustedOrigins,
+    sendResetPassword: options.sendResetPassword,
+    onPasswordResetDeliveryError: options.onPasswordResetDeliveryError,
+    onAuthError: options.onAuthError,
   });
 }
