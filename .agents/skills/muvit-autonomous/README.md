@@ -5,8 +5,8 @@ Fluxo v8 do Muvit com perfis fixos: Terra medium coordena, Sol high planeja e re
 ## Dependências de execução
 
 - Host capaz de aplicar os perfis e iniciar os especialistas com a assinatura Codex Plus.
-- Superpowers disponível e acesso real ao GitHub, Linear e ferramentas necessárias ao card.
-- Ao instalar em outro checkout, levar esta pasta de skill e os arquivos de configuração de `.codex/`. Nenhuma instalação global é necessária.
+- Superpowers 7.0.1 incluído em `.agents/skills/superpowers/`, com origem e versão em `UPSTREAM.md`; acesso real ao GitHub, Linear e ferramentas necessárias ao card.
+- Ao instalar em outro checkout, levar as pastas `muvit-autonomous/` e `superpowers/` de `.agents/skills/`, além dos arquivos de configuração de `.codex/`. Nenhuma instalação global é necessária.
 
 ## Executar e validar
 

@@ -2,6 +2,8 @@
 
 O chat principal usa Terra medium para coordenar a rodada. Ele reúne o contexto, chama os especialistas, integra alterações, confere evidências e cuida de GitHub/Linear. Sol high planeja e revisa em sessões independentes; o principal não refaz o planejamento delegado. Superpowers permanece obrigatório nas etapas pertinentes, com decisões técnicas rotineiras autônomas conforme a autorização da rodada.
 
+Use a distribuição local Superpowers 7.0.1 em `.agents/skills/superpowers/`, a partir da raiz do repositório. Comece por `using-superpowers/SKILL.md` e carregue somente as skills pertinentes à etapa. Referências `superpowers:<nome>` correspondem a `<nome>/SKILL.md` nessa pasta, mesmo quando o seletor do host não exibir o prefixo. A proveniência está em `UPSTREAM.md`; a instalação global não é pré-requisito.
+
 ## Perfis do projeto
 
 A configuração do principal está em `.codex/config.toml`; os especialistas estão em `.codex/agents/muvit-*.toml`, na raiz do repositório. Esses arquivos são a configuração efetiva. Não há seleção automática de perfil por cota nem dependência externa de roteamento.
