@@ -7,12 +7,10 @@ Antes de abrir PR e depois de cada push de correção:
 - Se app conversa com backend, levantar API + banco de teste com seed e verificar o fluxo completo. Diferenciar teste mockado de fluxo integrado real.
 - Validar estados vazios, inválidos, permissões, erro de rede, sessão e retorno; evitar mudanças incidentais fora do card.
 - Conferir diff integrado e arquivos não versionados; verificar que nenhum segredo, dump, arquivo de ambiente ou dado privado entrou no PR.
-- Sempre testar áreas afetadas de forma prática: mobile via adb (ver `mobile.md`), web com navegador Orca (ver `web-and-design.md`). Visual QA deve conferir alinhamento com `.pen` quando aplicável.
+- Sempre testar áreas afetadas de forma prática: mobile via adb (ver `mobile.md`), web com navegador Orca (ver `web-and-design.md`). Em cards com interface afetada, o QA visual é obrigatório e testa os fluxos reais, sem exigir comparação com design de referência ou `.pen`.
 - Review independente não substitui checks determinísticos; report de um agente não prova que app abriu ou que API funcionou.
 
 ## Evidência mínima
-
-Salvar capturas, vídeos, logs, exports e relatórios completos em `artifacts/<issue-ou-escopo>/<execucao>/`, conforme `docs/operations/qa-artifacts.md`. Não criar pastas paralelas em `docs/` nem forçar versionamento de artefatos. Testes/scripts/assets necessários à reprodução ficam versionados no diretório responsável. Antes de concluir, conferir UTF-8 literal nos arquivos alterados e corrigir escapes Unicode usados para acentuação.
 
 `card`, `branch`, `HEAD`, `aceite_requisito`, `comando`, `resultado`, `ambiente`, `screenshots/logs` quando permitidos, `PR`, `pendências` e `riscos`.
 

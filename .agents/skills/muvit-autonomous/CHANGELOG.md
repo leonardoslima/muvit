@@ -1,13 +1,12 @@
 # Changelog
 
-## 9.0.0 — 2026-10-30
+## 8.1.0 — 2026-11-03
 
-- Migração local para Batuta v19, com backends nativo/CLI distintos, cotas e limites aprovados, briefs e rastreamento de workers.
-- Descrição com gatilhos e leitura por etapa conforme a aula “Skills como manual de operação” do curso Harness Engineering.
-- Autorização delimitada à rodada pedida; manutenção da skill não inicia card nem autoriza publicação ou reconfiguração.
-- Ambiente proporcional ao aceite, reaproveitamento de worktree gerenciada e cópia de `.env` antes de setup, testes e builds.
-- Correção do mapa do projeto e adoção do diretório oficial de artefatos; revisão da HEAD e demais gates preservados.
-- Testes estáticos e cenários comportamentais reproduzíveis; avaliação sem mutações em GitHub/Linear.
+- Base v8 restaurada e adaptada à delegação direta, com coordenador e cinco especialistas configurados em `.codex/` do projeto.
+- Terra medium coordena, Sol high planeja e revisa em sessões independentes, Terra xhigh implementa, Luna medium executa checks e Terra medium faz QA visual.
+- Execução sequencial como padrão, teto de quatro agentes contando o principal e assinatura Plus sem extras.
+- QA visual em aplicação real, sem comparação obrigatória com design de referência.
+- Testes de contrato analisam os perfis TOML, incluindo modelo, esforço e limite de especialistas.
 
 ## 8.0.0 — 2026-10-25
 

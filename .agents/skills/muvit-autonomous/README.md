@@ -1,22 +1,23 @@
-# muvit-autonomous — v9.0
+# muvit-autonomous — v8.1 local
 
-Skill local do Muvit em `.agents/skills/muvit-autonomous/`. Invoque `$muvit-autonomous` para pedir uma rodada completa ou a retomada de uma rodada identificada. Consultar ou editar seus arquivos não inicia execução de card.
+Fluxo v8 do Muvit com perfis fixos: Terra medium coordena, Sol high planeja e revisa, Terra xhigh implementa, Luna medium executa checks e Terra medium faz QA visual. As configurações efetivas estão em `.codex/config.toml` e `.codex/agents/muvit-*.toml` do projeto. Veja `references/superpowers-and-delegation.md` para o uso de cada agente.
 
-## Dependências e limites
+## Dependências de execução
 
-- Batuta disponível para decisões de delegação, backend e recursos; configuração e limites aprovados continuam externos a esta skill.
-- Superpowers pertinentes disponíveis para planejamento, execução e verificação.
-- Ferramentas e acessos reais ao GitHub, Linear e ao ambiente de QA necessário ao card. Python/runner são necessários somente quando o backend CLI escolhido os exigir; agentes nativos usam o host.
-- Um card por rodada, PR para revisão humana e nenhum merge automático. Pedido de rodada completa autoriza as operações desse card; manutenção isolada não autoriza publicação.
+- Host capaz de aplicar os perfis e iniciar os especialistas com a assinatura Codex Plus.
+- Superpowers disponível e acesso real ao GitHub, Linear e ferramentas necessárias ao card.
+- Ao instalar em outro checkout, levar esta pasta de skill e os arquivos de configuração de `.codex/`. Nenhuma instalação global é necessária.
 
-## Verificação local
+## Executar e validar
 
-Da raiz do repositório: `python -B -X utf8 -m unittest discover -s .agents/skills/muvit-autonomous/tests`.
+Pedir ao principal uma rodada de `muvit-autonomous` autoriza trabalhar em exatamente um card elegível até os gates de PR/review ou um bloqueio documentado, sem merge. Consultar ou editar os arquivos autoriza somente manutenção. A execução sequencial dos especialistas é o padrão.
 
-Os testes estáticos verificam estrutura, referências e contratos básicos, sem provar operação em GitHub/Linear. Para avaliação comportamental somente leitura, use `tests/behavioral-scenarios.md` em sessão isolada e guarde resultados em `artifacts/skill-muvit-autonomous/<execucao>/`.
+A configuração do projeto não troca o modelo de uma sessão já iniciada. No host, confira Terra medium como principal e a descoberta dos agentes antes da rodada; uma seleção explícita do host pode prevalecer. Os agentes personalizados herdam as permissões do principal.
 
-## Critérios de manutenção
+Da raiz do repositório, execute `python -B -X utf8 -m unittest discover -s .agents/skills/muvit-autonomous/tests -v`. Os testes analisam os TOMLs e contratos documentados; não comprovam acesso aos modelos, carregamento pelo host ou uma rodada real. Não inicie um card para validar uma manutenção sem autorização de rodada.
 
-Aplicação da aula local “Skills como manual de operação” (Módulo 03, aula 04 do curso Harness Engineering): descrição com gatilhos específicos; entrada curta com referências por etapa; ferramentas verificadas separadamente do procedimento; regras locais no AGENTS.md responsável. A aula 05 reforça conferir capacidade, procedimento e informação separadamente. Não copiar o curso nem seus exemplos para o contexto de execução.
+O QA visual testa os fluxos da aplicação em execução quando houver interface afetada, sem exigir comparação com design de referência.
 
-Veja `MIGRATION-NOTE.md` para proveniência e limitações históricas da v8.
+## Origem
+
+Base: ZIP original v8.0.0, restaurado em 2026-11-03. A v8.1 substitui a dependência externa de delegação por perfis fixos e conserva o fluxo de seleção, isolamento, QA e revisão. Consulte `MIGRATION-NOTE.md` para o registro histórico.

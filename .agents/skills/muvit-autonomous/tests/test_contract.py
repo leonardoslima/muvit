@@ -1,6 +1,6 @@
 """Testes estáticos do contrato da skill standalone. Não executam repo/CLI/Linear reais."""
 from pathlib import Path
-import re
+import tomllib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,7 +12,7 @@ class MuvitContractTests(unittest.TestCase):
     def test_skill_metadata(self):
         skill=self.read('SKILL.md')
         self.assertIn('name: muvit-autonomous', skill)
-        self.assertRegex(skill, r'version: "\d+\.\d+\.\d+"')
+        self.assertIn('version: "8.1.0"', skill)
 
     def test_standalone_files(self):
         for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','references/selection-and-state.md',
@@ -22,11 +22,12 @@ class MuvitContractTests(unittest.TestCase):
                   'references/closure-and-recovery.md','templates/pr-description.md']:
             self.assertTrue((ROOT/p).is_file(), p)
 
-    def test_one_card_and_batuta(self):
+    def test_one_card_and_direct_delegation(self):
         s=self.read('SKILL.md')
         self.assertIn('um card', s.lower())
-        self.assertIn('`batuta`',s)
+        self.assertNotIn('`orchestrator`',s)
         self.assertIn('Superpowers',s)
+        self.assertIn('agente', s.lower())
 
     def test_review_rules(self):
         s=self.read('references/pr-and-review-loop.md')
@@ -38,25 +39,35 @@ class MuvitContractTests(unittest.TestCase):
         for phrase in ['Docker','PostgreSQL','API','adb','Orca','Pen CLI']:
             self.assertIn(phrase.lower(),s.lower())
 
-    def test_no_fixed_role_models(self):
-        for path in ROOT.rglob('*.md'):
-            text=path.read_text(encoding='utf-8')
-            self.assertNotRegex(text,re.compile(r'(?im)^\s*(?:model|model_reasoning_effort|reasoning_effort)\s*:\s*(?:gpt-|claude-|opus|sonnet|haiku|sol|luna)'))
+    def test_fixed_project_profiles(self):
+        project = ROOT.parents[2]
+        coordinator_path = project / '.codex/config.toml'
+        self.assertTrue(coordinator_path.is_file())
+        coordinator = tomllib.loads(coordinator_path.read_text(encoding='utf-8'))
+        self.assertEqual(coordinator['model'], 'gpt-6.1-terra')
+        self.assertEqual(coordinator['model_reasoning_effort'], 'medium')
+        self.assertEqual(coordinator['agents']['max_concurrent_threads_per_session'], 3)
+        expected = {
+            'planner': ('gpt-6.1-sol', 'high'),
+            'implementer': ('gpt-6.1-terra', 'xhigh'),
+            'reviewer': ('gpt-6.1-sol', 'high'),
+            'quality-verifier': ('gpt-6-luna', 'medium'),
+            'visual-qa': ('gpt-6.1-terra', 'medium'),
+        }
+        for role, profile in expected.items():
+            with self.subTest(role=role):
+                path = project / '.codex/agents' / f'muvit-{role}.toml'
+                self.assertTrue(path.is_file(), str(path))
+                config = tomllib.loads(path.read_text(encoding='utf-8'))
+                self.assertEqual(config['name'], f'muvit-{role}')
+                self.assertEqual((config['model'], config['model_reasoning_effort']), profile)
+                self.assertTrue(config['description'].strip())
+                self.assertTrue(config['developer_instructions'].strip())
+                for key in ['sandbox_mode', 'approval_policy', 'model_provider', 'mcp_servers']:
+                    self.assertNotIn(key, config)
 
     def test_not_updater(self):
         self.assertFalse((ROOT/'apply.py').exists())
         self.assertFalse((ROOT/'muvit-integration').exists())
-
-    def test_reference_targets_exist(self):
-        for path in ROOT.rglob('*.md'):
-            text = path.read_text(encoding='utf-8')
-            for target in re.findall(r'`((?:references|templates)/[^`]+)`', text):
-                self.assertTrue((ROOT / target).exists(), f'{path.name}: {target}')
-
-    def test_literal_utf8(self):
-        for path in ROOT.rglob('*'):
-            if path.is_file() and path.suffix in {'.md', '.py'}:
-                text = path.read_text(encoding='utf-8')
-                self.assertNotIn(chr(0xFFFD), text, str(path))
 
 if __name__=='__main__': unittest.main()

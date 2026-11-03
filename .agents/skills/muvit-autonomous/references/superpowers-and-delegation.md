@@ -1,25 +1,29 @@
-# Superpowers e delegação pela Batuta
+# Superpowers e agentes com perfis fixos
 
-## Coordenador e planejamento
+O chat principal usa Terra medium para coordenar a rodada. Ele reúne o contexto, chama os especialistas, integra alterações, confere evidências e cuida de GitHub/Linear. Sol high planeja e revisa em sessões independentes; o principal não refaz o planejamento delegado. Superpowers permanece obrigatório nas etapas pertinentes, com decisões técnicas rotineiras autônomas conforme a autorização da rodada.
 
-O Codex principal responde por seleção, plano, integração, GitHub/Linear e fechamento. Não iniciar outro supervisor ou outra rodada Muvit em um worker. Use as skills Superpowers disponíveis e pertinentes à etapa: descoberta e plano antes da implementação; TDD para comportamento; diagnóstico para falhas; revisão e verificação antes da entrega. Resolva escolhas técnicas rotineiras internamente conforme a autonomia autorizada. Bloqueios de acesso, orçamento e decisões materiais fora do escopo continuam exigindo resolução; não chame um procedimento comum de Superpowers quando a skill necessária estiver ausente.
+## Perfis do projeto
 
-Use **`batuta`**, não a antiga dependência `orchestrator`, para decidir se delegar e escolher backend, playbook, modelo e esforço. Leia seu `SKILL.md` e somente as referências pertinentes. Não copie roteador, catálogo de modelos ou configuração da Batuta para esta skill. Ausência de setup ou Python não bloqueia capacidades nativas verificadas. Se Batuta estiver ausente, registre o pré-requisito antes de claim; continue apenas leituras e diagnóstico independentes.
+A configuração do principal está em `.codex/config.toml`; os especialistas estão em `.codex/agents/muvit-*.toml`, na raiz do repositório. Esses arquivos são a configuração efetiva. Não há seleção automática de perfil por cota nem dependência externa de roteamento.
 
-## Backend, consumo e permissões
+| Papel | Agente | Modelo | Effort |
+| --- | --- | --- | --- |
+| Coordenador | Chat principal | `gpt-6.1-terra` | `medium` |
+| Planejador | `muvit-planner` | `gpt-6.1-sol` | `high` |
+| Implementador | `muvit-implementer` | `gpt-6.1-terra` | `xhigh` |
+| Revisor | `muvit-reviewer` | `gpt-6.1-sol` | `high` |
+| Verificador de checks | `muvit-quality-verifier` | `gpt-6-luna` | `medium` |
+| QA visual | `muvit-visual-qa` | `gpt-6.1-terra` | `medium` |
 
-- Siga preferência explícita e política aprovada atual. Confira conta, acesso, cotas e concorrência antes de cada rodada delegada. Leituras ausentes ou antigas permanecem desconhecidas; não inferir acesso por catálogo nem capacidade pela mensalidade. Respeite restrições de provedor, extras e perfil já autorizadas; não reconfigure para viabilizar um card.
-- Agentes nativos usam ferramentas reais do host para iniciar, acompanhar e encerrar. O runner Python não inicia nem controla esses agentes e não é pré-requisito para eles. Consulte `native-execution.md` da Batuta; o adaptador Orca somente no host Orca.
-- Workers CLI seguem `cli-workflow.md` da Batuta e seus processos/limites próprios. Não apresentar sessão CLI como agente nativo. Não trocar backend exigido silenciosamente.
-- Delegue unidades independentes quando compensar. Mudanças pequenas ou acopladas podem ficar no principal. Escritores concorrentes têm caminhos disjuntos e isolamento adequado; revisão usa a HEAD integrada após as escritas.
-- Workers não iniciam outra orquestração ou CLIs de agentes alheios. Descendentes nativos herdam escopo/permissões e contam no teto total aprovado junto do principal e demais agentes ativos.
-- Registre IDs, parentesco, estado, escolhas e resultados observados. Tokens/custos não expostos ficam desconhecidos; não somar métricas nativas potencialmente inclusivas aos totais CLI. Persistência é serializada pelo principal conforme `tracing.md` da Batuta.
-- Cota insuficiente, redução de capacidade ou previsão acima do limite seguem o gate de decisão da Batuta. Reparos ilimitados da PR não autorizam ultrapassar orçamento. Uma nova tentativa precisa de causa concreta e corrigível.
+Planejador, implementador e revisor participam das etapas correspondentes. Delegue uma bateria de checks ao verificador quando isso compensar; comandos simples podem ficar com o implementador. QA visual é obrigatório quando o card altera interface e testa fluxos na aplicação, sem exigir comparação com design. A revisão de código não substitui checks nem QA visual.
 
-## Brief e retorno
+## Execução direta
 
-Siga `briefs.md` da Batuta: posição da unidade, objetivo/conclusão verificável, caminhos de escrita e proibidos, interfaces/decisões relevantes, ambiguidades resolvidas e verificações exatas. Aponte para arquivos do plano e critérios; não copie transcrições. Informe que há outros agentes e que mudanças alheias devem ser preservadas.
+1. Antes do claim, confirme ferramentas, acesso aos modelos e capacidade do host de aplicar os perfis necessários. Codex descobre agentes de projeto em `.codex/agents/`. Uma sessão já iniciada pode precisar recarregar as definições; criar o arquivo não altera retroativamente o modelo do chat. Overrides explícitos do host podem prevalecer sobre o projeto: confira o coordenador efetivo antes da rodada.
+2. Inicie o especialista pelo nome configurado. Se o host não descobrir nomes personalizados, use sua ferramenta nativa com modelo, esforço e instruções do TOML correspondente explicitamente. Quando a ferramenta exigir `fork_turns="none"` para aceitar modelo e esforço, use esse modo e envie o contexto necessário no pedido. Não herde silenciosamente o perfil do principal. Sem suporte ao perfil obrigatório, registre bloqueio antes do claim.
+3. Execute um especialista por vez como padrão, evitando duplicação de contexto. O teto é de quatro agentes simultâneos incluindo o principal; a configuração Codex permite três especialistas, pois seu limite exclui o principal. Workers não iniciam outros agentes. Paralelismo, quando útil, exige ownership disjunto. Use a assinatura Codex Plus, sem API paga ou extras.
+4. Informe objetivo, aceite, plano, caminhos permitidos e proibidos, dependências e comandos de validação. Aponte para documentos e trechos relevantes em vez de repassar toda a conversa. Informe que há outros agentes no repositório e que mudanças alheias devem ser preservadas. Ajustes rotineiros ficam com o implementador; descobertas que invalidem o plano voltam ao planejador, com evidências.
+5. O reviewer recebe a HEAD e o diff integrados em sessão independente, sem escrita concorrente sobre o que revisa. Não reutilize a sessão do planejador para revisar. Sua restrição de não editar é uma instrução operacional: o TOML herda as permissões do principal, sem prometer sandbox próprio.
+6. Confira IDs, modelos/esforços efetivos quando expostos, diff, comandos e resultados. Workers não fazem claim, commit, push, PR ou merge nem alteram preferências. Resultados declarados não substituem evidência. A revisão do GitHub e os gates da HEAD corrente continuam obrigatórios.
 
-Workers não alteram Linear, remotos, PR ou preferências da Batuta. Commit, push e PR ficam com o principal, apenas quando a rodada completa estiver autorizada conforme `SKILL.md`; manutenção isolada desta skill não concede essa autorização.
-
-Retorno: status real, arquivos/diff, comandos e resultados, evidências, limitações e próxima ação. O principal confere Git, testes e comportamento antes de integrar. Resultado declarado por worker não prova sucesso.
+Se a cota acabar ou um perfil ficar indisponível, preserve estado e reporte o bloqueio. Não troque modelos ou esforços automaticamente. Manutenção desta skill não autoriza uma rodada de card nem iniciar workers para simulá-la.

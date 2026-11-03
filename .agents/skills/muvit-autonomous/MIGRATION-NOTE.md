@@ -1,10 +1,12 @@
 # Nota de migração e proveniência
 
-## Revisão local v9 — 2026-10-30
+## Estado atual — v8.1 local, 2026-11-03
 
-Esta cópia do projeto foi migrada para Batuta v19 a partir dos arquivos v8 disponíveis localmente. A instalação global não foi alterada. Foram aplicados critérios das aulas 04 e 05 do Módulo 03 do curso Harness Engineering: descoberta precisa, referências sob demanda e separação de capacidade, procedimento e informação. Os testes estáticos e cenários em `tests/behavioral-scenarios.md` não comprovam uma rodada real em serviços externos. A nota abaixo permanece como registro histórico da origem v8; suas instruções de instalação e dependência antiga não definem o fluxo v9.
+A base v8.0.0 foi restaurada do ZIP original em Downloads, com conferência byte a byte dos 17 arquivos. Após aprovação explícita dos modelos e esforços, a v8.1 usa Terra medium como coordenador, Sol high para planejamento e revisão em sessões independentes, Terra xhigh para implementação, Luna medium para checks e Terra medium para QA visual. As configurações ficam em `.codex/` do projeto; a delegação é direta, sem dependência de orchestrator ou Batuta. QA visual não exige comparação com design de referência.
 
-## Origem v8 (histórico)
+Os perfis são uma escolha baseada nos benchmarks consultados e na preferência por economizar a assinatura Plus; não garantem consumo por card. O pacote v7.6 em Downloads foi consultado para recuperar a ideia dos agentes especializados. A limitação abaixo descreve a criação histórica da v8, não a disponibilidade atual desse ZIP. Testes estáticos e validação dos TOMLs não comprovam uma rodada real.
+
+## Registro histórico do pacote v8.0.0
 
 Data: 2026-10-25
 Pacote: `muvit-autonomous` v8.0.0 standalone

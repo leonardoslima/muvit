@@ -6,9 +6,7 @@
 - Branch/worktree:
 - Base remota/HEAD:
 - Plano Superpowers:
-- Batuta: backend, playbook/perfil, conta/acesso e origem/data das cotas:
-- Workers observados (IDs, pai, estado, caminhos e resultado):
-- Limites aprovados, consumo conhecido e lacunas de telemetria:
+- Coordenador e agentes: IDs, modelos/efforts solicitados e efetivos quando expostos:
 - Docker/DB/API isolados:
 - Testes/checks e resultado:
 - Evidência ADB/web/Pen:
