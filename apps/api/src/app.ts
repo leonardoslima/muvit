@@ -3,7 +3,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import scalar from '@scalar/fastify-api-reference';
-import Fastify from 'fastify';
+import Fastify, { type FastifyRequest } from 'fastify';
 import {
   type ZodTypeProvider,
   jsonSchemaTransform,
@@ -11,7 +11,9 @@ import {
   validatorCompiler,
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
-import type { MuvitAuth } from './lib/auth.js';
+import { sanitizeAuthRequestUrl } from './lib/auth-request-logging.js';
+import type { MuvitAuth, SendResetPassword } from './lib/auth.js';
+import { sendPasswordResetEmail } from './lib/mailer.js';
 import type { ProfileProvisioner } from './modules/auth/profile-provisioner.js';
 import type { ProfileResolver } from './modules/auth/profile-resolver.js';
 import { createDrizzleAuth } from './modules/auth/repositories/drizzle-auth.js';
@@ -44,11 +46,22 @@ declare module 'fastify' {
 export type BuildAppOptions = {
   profileProvisioner?: ProfileProvisioner;
   profileResolver?: ProfileResolver;
+  sendResetPassword?: SendResetPassword;
 };
 
 export async function buildApp(options: BuildAppOptions = {}) {
   const app = Fastify({
-    logger: env.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : true,
+    logger: {
+      ...(env.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
+      serializers: {
+        req: (request: FastifyRequest) => ({
+          method: request.method,
+          url: sanitizeAuthRequestUrl(request.url),
+          host: request.hostname,
+          remoteAddress: request.ip,
+        }),
+      },
+    },
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
@@ -66,7 +79,19 @@ export async function buildApp(options: BuildAppOptions = {}) {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.WEB_URL, ...env.EXPO_TRUSTED_ORIGINS],
+    sendResetPassword:
+      options.sendResetPassword ??
+      (env.RESEND_API_KEY && env.EMAIL_FROM ? sendPasswordResetEmail : undefined),
+    onPasswordResetDeliveryError: () => {
+      app.log.error({ category: 'password_reset_delivery_failed' });
+    },
+    onAuthError: () => {
+      app.log.error({ category: 'auth_provider_error' });
+    },
   });
+  if (!options.sendResetPassword && (!env.RESEND_API_KEY || !env.EMAIL_FROM)) {
+    app.log.error({ category: 'password_reset_email_not_configured' });
+  }
   app.decorate('auth', auth);
   await app.register(authPlugin, {
     profileResolver: options.profileResolver ?? createDrizzleProfileResolver(),

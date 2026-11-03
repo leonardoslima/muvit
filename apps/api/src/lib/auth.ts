@@ -8,6 +8,14 @@ import type { ProfileProvisioner } from '../modules/auth/profile-provisioner.js'
 
 const THIRTY_DAYS = 60 * 60 * 24 * 30;
 const ONE_DAY = 60 * 60 * 24;
+const ONE_HOUR = 60 * 60;
+
+export type PasswordResetMessage = {
+  user: { name: string; email: string };
+  url: string;
+};
+
+export type SendResetPassword = (message: PasswordResetMessage) => Promise<void>;
 
 export type AuthDependencies = {
   db: Database;
@@ -15,6 +23,9 @@ export type AuthDependencies = {
   secret: string;
   baseURL: string;
   trustedOrigins: string[];
+  sendResetPassword?: SendResetPassword;
+  onPasswordResetDeliveryError?: () => void;
+  onAuthError?: () => void;
 };
 
 export type SignUpEmailInput = {
@@ -63,8 +74,26 @@ export function createMuvitAuth(dependencies: AuthDependencies): MuvitAuth {
     }),
     secret: dependencies.secret,
     baseURL: dependencies.baseURL,
-    emailAndPassword: { enabled: true },
+    logger: {
+      level: 'error',
+      log: () => dependencies.onAuthError?.(),
+    },
+    emailAndPassword: {
+      enabled: true,
+      resetPasswordTokenExpiresIn: ONE_HOUR,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async (message) => {
+        const send = dependencies.sendResetPassword;
+        if (!send) return;
+
+        // A entrega externa não participa do tempo de resposta da solicitação.
+        void Promise.resolve()
+          .then(() => send(message))
+          .catch(() => dependencies.onPasswordResetDeliveryError?.());
+      },
+    },
     advanced: {
+      disableOriginCheck: false,
       database: { generateId: 'uuid' },
       cookiePrefix: 'muvit',
     },
@@ -78,6 +107,12 @@ export function createMuvitAuth(dependencies: AuthDependencies): MuvitAuth {
     plugins: [expo()],
     hooks: {
       before: createAuthMiddleware(async (context) => {
+        if (context.path === '/request-password-reset' && !dependencies.sendResetPassword) {
+          throw new APIError('SERVICE_UNAVAILABLE', {
+            code: 'PASSWORD_RESET_UNAVAILABLE',
+            message: 'Recuperação de senha temporariamente indisponível',
+          });
+        }
         const requestedRole = readRole(context.body);
         if (context.path === '/sign-up/email' && !isAuthRole(requestedRole)) {
           throw new APIError('BAD_REQUEST', { message: 'invalid role' });

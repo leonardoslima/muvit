@@ -98,6 +98,9 @@ export default function LoginScreen() {
         <Link href="/(auth)/signup" asChild>
           <Button label="Criar conta independente" onPress={() => undefined} variant="secondary" />
         </Link>
+        <Link href="/(auth)/forgot-password" asChild>
+          <Button label="Esqueci minha senha" onPress={() => undefined} variant="text" />
+        </Link>
       </View>
     </Screen>
   );

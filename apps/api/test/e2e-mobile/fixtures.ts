@@ -147,7 +147,7 @@ async function createAccount(
 ): Promise<Account> {
   const response = await fetch(new URL('/api/auth/sign-up/email', baseUrl), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: 'muvit://' },
     body: JSON.stringify({ ...credential, role }),
   });
   if (!response.ok)
@@ -184,7 +184,7 @@ async function signInAccount(
 ): Promise<Account> {
   const response = await fetch(new URL('/api/auth/sign-in/email', baseUrl), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: 'muvit://' },
     body: JSON.stringify({ email: credential.email, password: credential.password }),
   });
   if (!response.ok)

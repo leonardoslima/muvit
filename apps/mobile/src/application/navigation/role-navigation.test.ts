@@ -8,6 +8,14 @@ import {
 } from './role-navigation';
 
 describe('política de navegação por role', () => {
+  it.each(['forgot-password', 'reset-password'])('mantém %s pública com e sem sessão', (route) => {
+    const area = resolveRouteArea(['(auth)', route]);
+    for (const role of [undefined, 'student', 'trainer']) {
+      expect(resolveRouteAccess({ area, role, isAuthenticated: role !== undefined })).toEqual({
+        kind: 'allow',
+      });
+    }
+  });
   it('aceita somente student e trainer', () => {
     expect(resolveMobileRole('student')).toBe('student');
     expect(resolveMobileRole('trainer')).toBe('trainer');
