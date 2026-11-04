@@ -53,6 +53,7 @@ const cachedEmptyPlan = {
   days: [{ ...cachedDay, exercises: [] }],
 };
 const cachedPlanSummary = {
+  days: cachedPlan.days,
   id: cachedPlan.id,
   studentId: cachedPlan.studentId,
   trainerId: cachedPlan.trainerId,
