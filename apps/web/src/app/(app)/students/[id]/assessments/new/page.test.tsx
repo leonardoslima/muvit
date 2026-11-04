@@ -34,6 +34,7 @@ describe('NewAssessmentPage', () => {
         birthDate: null,
         gender: 'female',
         goals: null,
+        trainingDays: null,
         restrictions: null,
         status: 'active',
         avatarUrl: null,
@@ -42,7 +43,9 @@ describe('NewAssessmentPage', () => {
       }),
     );
 
-    render(await NewAssessmentPage({ params: Promise.resolve({ id: 'student-1' }) }));
+    const { container } = render(
+      await NewAssessmentPage({ params: Promise.resolve({ id: 'student-1' }) }),
+    );
 
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Alunos' })).toHaveAttribute('href', '/students');
@@ -61,5 +64,6 @@ describe('NewAssessmentPage', () => {
       '/students/student-1/assessments',
     );
     expect(screen.getByTestId('assessment-form')).toHaveTextContent('student-1');
+    expect(container.querySelector('[data-responsive-layout="new-assessment"]')).toBeTruthy();
   });
 });

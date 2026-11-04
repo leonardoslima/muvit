@@ -33,12 +33,22 @@ describe('AssessmentForm', () => {
       expect(screen.getByLabelText(label)).toHaveAttribute('accept', 'image/jpeg,image/png');
     }
 
-    expect(screen.getByText('Informe a data.')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Informe a data.');
     expect(screen.getByRole('link', { name: 'Cancelar' })).toHaveAttribute(
       'href',
       '/students/student-id',
     );
     expect(screen.getByRole('button', { name: 'Salvar avaliação' })).toBeEnabled();
+  });
+
+  it('mantém seções empilháveis e identifica a foto selecionada', () => {
+    const { container } = render(<AssessmentForm studentId="student-id" />);
+    const photo = new File(['front'], 'frente.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(screen.getByLabelText('Foto frontal'), { target: { files: [photo] } });
+
+    expect(screen.getByText('frente.jpg')).toBeInTheDocument();
+    expect(container.querySelector('[data-responsive-layout="assessment-form"]')).toBeTruthy();
   });
 
   it('calcula o IMC a partir do peso e da altura', () => {

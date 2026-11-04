@@ -2,7 +2,9 @@ import { fakerPT_BR } from '@faker-js/faker';
 import type {
   AssessmentMeasurements,
   NewAssessment,
+  NewBillingInvoice,
   NewStudent,
+  NewTrainerSubscription,
   NewWorkoutPlan,
 } from '../schema/index.js';
 
@@ -87,6 +89,8 @@ export type DemoScenario = {
   assessments: DemoAssessment[];
   plans: DemoPlan[];
   logs: DemoLog[];
+  trainerSubscription: Omit<NewTrainerSubscription, 'trainerId'>;
+  billingInvoices: Omit<NewBillingInvoice, 'trainerId'>[];
 };
 
 const studentStatuses = [
@@ -232,7 +236,9 @@ const buildStudents = (
       birthDate: toDateString(fakerPT_BR.date.birthdate({ min: 18, max: 55, mode: 'age' })),
       gender,
       goals: fakerPT_BR.helpers.arrayElement(goals),
+      trainingDays: fakerPT_BR.number.int({ min: 2, max: 6 }),
       restrictions: fakerPT_BR.helpers.arrayElement(restrictions),
+      internalNotes: 'Acompanhamento interno do treinador.',
       status,
       avatarUrl: media.avatarUrl,
       expoPushToken: null,
@@ -252,7 +258,9 @@ const buildStudents = (
       birthDate: '1994-05-18',
       gender: 'male',
       goals: 'Manter uma rotina de treinos com autonomia.',
+      trainingDays: 3,
       restrictions: 'Sem restrições relatadas nesta demonstração.',
+      internalNotes: null,
       status: 'active',
       avatarUrl: (media.independentStudent ?? media).avatarUrl,
       expoPushToken: null,
@@ -389,6 +397,23 @@ export const buildDemoScenario = (
   const assessments = buildAssessments(referenceDate, media);
   const plans = buildPlans(referenceDate);
   const logs = buildLogs(referenceDate, plans);
+  const trainerSubscription = {
+    plan: 'pro' as const,
+    billingInterval: 'annual' as const,
+    status: 'active' as const,
+    startsAt: daysBefore(referenceDate, 30),
+    renewsAt: daysBefore(referenceDate, -335),
+  };
+  const billingInvoices = [0, 1, 2].map((index) => ({
+    plan: 'pro' as const,
+    billingInterval: 'annual' as const,
+    amountCents: 29900,
+    currency: 'BRL',
+    status: 'paid' as const,
+    issuedAt: daysBefore(referenceDate, 30 + index * 30),
+    paidAt: daysBefore(referenceDate, 29 + index * 30),
+    createdAt: daysBefore(referenceDate, 30 + index * 30),
+  }));
 
   return {
     trainer: identities.trainer,
@@ -396,5 +421,7 @@ export const buildDemoScenario = (
     assessments,
     plans,
     logs,
+    trainerSubscription,
+    billingInvoices,
   };
 };

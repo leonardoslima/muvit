@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const studentGenderSchema = z.enum(['male', 'female', 'other']);
 export const studentStatusSchema = z.enum(['active', 'inactive', 'paused']);
+const trainingDaysSchema = z.number().int().min(1).max(7);
+const internalNotesSchema = z.string().trim().max(2000);
 
 export const createStudentSchema = z.object({
   name: z.string().min(2).max(150),
@@ -10,11 +12,16 @@ export const createStudentSchema = z.object({
   birthDate: z.string().date().optional(),
   gender: studentGenderSchema.optional(),
   goals: z.string().max(1000).optional(),
+  trainingDays: trainingDaysSchema.optional(),
   restrictions: z.string().max(1000).optional(),
+  internalNotes: internalNotesSchema.optional(),
   status: studentStatusSchema.optional(),
 });
 
-export const updateStudentSchema = createStudentSchema.partial();
+export const updateStudentSchema = createStudentSchema.partial().extend({
+  trainingDays: trainingDaysSchema.nullable().optional(),
+  internalNotes: internalNotesSchema.nullable().optional(),
+});
 
 export const studentSchema = z.object({
   id: z.string().guid(),
@@ -26,6 +33,7 @@ export const studentSchema = z.object({
   birthDate: z.string().date().nullable(),
   gender: studentGenderSchema.nullable(),
   goals: z.string().nullable(),
+  trainingDays: trainingDaysSchema.nullable(),
   restrictions: z.string().nullable(),
   status: studentStatusSchema,
   avatarUrl: z.string().nullable(),
@@ -34,6 +42,10 @@ export const studentSchema = z.object({
     .union([z.string().datetime(), z.date()])
     .transform((v) => (v instanceof Date ? v.toISOString() : v))
     .pipe(z.string()),
+});
+
+export const trainerStudentSchema = studentSchema.extend({
+  internalNotes: internalNotesSchema.nullable().optional(),
 });
 
 export const listStudentsQuerySchema = z.object({

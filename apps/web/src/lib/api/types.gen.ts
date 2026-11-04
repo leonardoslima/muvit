@@ -84,6 +84,375 @@ export type PostApiAuthBy__Responses = {
     200: unknown;
 };
 
+export type GetTrainerSubscriptionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainers/me/subscription';
+};
+
+export type GetTrainerSubscriptionResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        catalog: {
+            free: {
+                activeStudentLimit: number | null;
+                monthlyPriceCents: number;
+                annualPriceCents: number;
+            };
+            starter: {
+                activeStudentLimit: number | null;
+                monthlyPriceCents: number;
+                annualPriceCents: number;
+            };
+            pro: {
+                activeStudentLimit: number | null;
+                monthlyPriceCents: number;
+                annualPriceCents: number;
+            };
+            team: {
+                activeStudentLimit: number | null;
+                monthlyPriceCents: number;
+                annualPriceCents: number;
+            };
+        };
+        subscription: {
+            plan: 'free' | 'starter' | 'pro' | 'team';
+            billingInterval: 'monthly' | 'annual';
+            status: 'active' | 'canceled';
+            startsAt: string;
+            renewsAt: string | null;
+        };
+        usage: {
+            activeStudents: number;
+            activeStudentLimit: number | null;
+        };
+        invoices: Array<{
+            id: string;
+            trainerId: string;
+            plan: 'free' | 'starter' | 'pro' | 'team';
+            billingInterval: 'monthly' | 'annual';
+            amountCents: number;
+            currency?: string;
+            status: 'issued' | 'paid' | 'void';
+            issuedAt: string;
+            paidAt: string | null;
+            createdAt: string;
+        }>;
+    };
+};
+
+export type GetTrainerSubscriptionResponse = GetTrainerSubscriptionResponses[keyof GetTrainerSubscriptionResponses];
+
+export type UpdateTrainerSubscriptionData = {
+    body: {
+        plan: 'free' | 'starter' | 'pro' | 'team';
+        billingInterval: 'monthly' | 'annual';
+    };
+    path?: never;
+    query?: never;
+    url: '/trainers/me/subscription';
+};
+
+export type UpdateTrainerSubscriptionErrors = {
+    /**
+     * Default Response
+     */
+    409: {
+        error: string;
+    };
+};
+
+export type UpdateTrainerSubscriptionError = UpdateTrainerSubscriptionErrors[keyof UpdateTrainerSubscriptionErrors];
+
+export type UpdateTrainerSubscriptionResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        subscription: {
+            plan: 'free' | 'starter' | 'pro' | 'team';
+            billingInterval: 'monthly' | 'annual';
+            status: 'active' | 'canceled';
+            startsAt: string;
+            renewsAt: string | null;
+        };
+        invoice: {
+            id: string;
+            trainerId: string;
+            plan: 'free' | 'starter' | 'pro' | 'team';
+            billingInterval: 'monthly' | 'annual';
+            amountCents: number;
+            currency?: string;
+            status: 'issued' | 'paid' | 'void';
+            issuedAt: string;
+            paidAt: string | null;
+            createdAt: string;
+        } | null;
+    };
+};
+
+export type UpdateTrainerSubscriptionResponse = UpdateTrainerSubscriptionResponses[keyof UpdateTrainerSubscriptionResponses];
+
+export type GetTrainerInvoiceData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainers/me/invoices/{id}';
+};
+
+export type GetTrainerInvoiceErrors = {
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+    };
+};
+
+export type GetTrainerInvoiceError = GetTrainerInvoiceErrors[keyof GetTrainerInvoiceErrors];
+
+export type GetTrainerInvoiceResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        id: string;
+        trainerId: string;
+        plan: 'free' | 'starter' | 'pro' | 'team';
+        billingInterval: 'monthly' | 'annual';
+        amountCents: number;
+        currency?: string;
+        status: 'issued' | 'paid' | 'void';
+        issuedAt: string;
+        paidAt: string | null;
+        createdAt: string;
+    };
+};
+
+export type GetTrainerInvoiceResponse = GetTrainerInvoiceResponses[keyof GetTrainerInvoiceResponses];
+
+export type GetTrainerNotificationPreferencesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainers/me/notification-preferences';
+};
+
+export type GetTrainerNotificationPreferencesResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        inactivity: {
+            enabled: boolean;
+            afterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        workoutPlanExpiring: {
+            enabled: boolean;
+            daysBefore?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        pendingAssessment: {
+            enabled: boolean;
+            staleAfterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        newStudentRegistration: {
+            enabled: boolean;
+            channel?: 'email' | 'push' | 'both';
+        };
+    };
+};
+
+export type GetTrainerNotificationPreferencesResponse = GetTrainerNotificationPreferencesResponses[keyof GetTrainerNotificationPreferencesResponses];
+
+export type UpdateTrainerNotificationPreferencesData = {
+    body: {
+        inactivity?: {
+            enabled?: boolean;
+            afterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        workoutPlanExpiring?: {
+            enabled?: boolean;
+            daysBefore?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        pendingAssessment?: {
+            enabled?: boolean;
+            staleAfterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        newStudentRegistration?: {
+            enabled?: boolean;
+            channel?: 'email' | 'push' | 'both';
+        };
+    };
+    path?: never;
+    query?: never;
+    url: '/trainers/me/notification-preferences';
+};
+
+export type UpdateTrainerNotificationPreferencesResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        inactivity: {
+            enabled: boolean;
+            afterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        workoutPlanExpiring: {
+            enabled: boolean;
+            daysBefore?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        pendingAssessment: {
+            enabled: boolean;
+            staleAfterDays?: number;
+            channel?: 'email' | 'push' | 'both';
+        };
+        newStudentRegistration: {
+            enabled: boolean;
+            channel?: 'email' | 'push' | 'both';
+        };
+    };
+};
+
+export type UpdateTrainerNotificationPreferencesResponse = UpdateTrainerNotificationPreferencesResponses[keyof UpdateTrainerNotificationPreferencesResponses];
+
+export type GetStudentReportData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query: {
+        range: '30d' | '90d' | '6m' | 'all' | 'custom';
+        from?: string;
+        to?: string;
+    };
+    url: '/reports/students/{studentId}';
+};
+
+export type GetStudentReportErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+    };
+};
+
+export type GetStudentReportError = GetStudentReportErrors[keyof GetStudentReportErrors];
+
+export type GetStudentReportResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        student: {
+            id: string;
+            name: string;
+            avatarUrl: string | null;
+        };
+        period: {
+            range: '30d' | '90d' | '6m' | 'all' | 'custom';
+            from: string | null;
+            to: string | null;
+        };
+        physicalEvolution: {
+            hasEnoughData: boolean;
+            points: Array<{
+                date: string;
+                weightKg: number | null;
+                bodyFatPct: number | null;
+                measurements: {
+                    [key: string]: number;
+                } | null;
+            }>;
+            changes: {
+                weightKg: number | null;
+                bodyFatPct: number | null;
+                waistCm: number | null;
+                armCm: number | null;
+            };
+        };
+        beforeAfter: {
+            hasEnoughData: boolean;
+            before: {
+                date: string;
+                photoUrl: string | null;
+            } | null;
+            after: {
+                date: string;
+                photoUrl: string | null;
+            } | null;
+        };
+        workoutAdherence: {
+            hasEnoughData: boolean;
+            completed: number;
+            planned: number;
+            percentage: number | null;
+        };
+        trainingFrequency: {
+            hasEnoughData: boolean;
+            days: Array<{
+                date: string;
+                count: number;
+            }>;
+        };
+        topExercises: {
+            hasEnoughData: boolean;
+            items: Array<{
+                exerciseId: string;
+                name: string;
+                maxLoadKg: number | null;
+                totalSets: number;
+                totalVolumeKg: number;
+                progression: Array<{
+                    date: string;
+                    loadKg: number;
+                }>;
+            }>;
+        };
+        rpeTrend: {
+            hasEnoughData: boolean;
+            points: Array<{
+                date: string;
+                averageRpe: number;
+            }>;
+        };
+        summary: string;
+    };
+};
+
+export type GetStudentReportResponse = GetStudentReportResponses[keyof GetStudentReportResponses];
+
 export type PostStudentsMePushTokenData = {
     body: {
         token: string;
@@ -127,11 +496,13 @@ export type GetStudentsResponses = {
             birthDate: string | null;
             gender: 'male' | 'female' | 'other';
             goals: string | null;
+            trainingDays: number | null;
             restrictions: string | null;
             status: 'active' | 'inactive' | 'paused';
             avatarUrl: string | null;
             expoPushToken: string | null;
             createdAt: string;
+            internalNotes?: string | null;
         }>;
         total: number;
     };
@@ -147,13 +518,26 @@ export type PostStudentsData = {
         birthDate?: string;
         gender?: 'male' | 'female' | 'other';
         goals?: string;
+        trainingDays?: number;
         restrictions?: string;
+        internalNotes?: string;
         status?: 'active' | 'inactive' | 'paused';
     };
     path?: never;
     query?: never;
     url: '/students';
 };
+
+export type PostStudentsErrors = {
+    /**
+     * Default Response
+     */
+    409: {
+        error: string;
+    };
+};
+
+export type PostStudentsError = PostStudentsErrors[keyof PostStudentsErrors];
 
 export type PostStudentsResponses = {
     /**
@@ -169,11 +553,13 @@ export type PostStudentsResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 
@@ -235,11 +621,13 @@ export type GetStudentsByIdResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 
@@ -253,7 +641,9 @@ export type PatchStudentsByIdData = {
         birthDate?: string;
         gender?: 'male' | 'female' | 'other';
         goals?: string;
+        trainingDays?: number | null;
         restrictions?: string;
+        internalNotes?: string | null;
         status?: 'active' | 'inactive' | 'paused';
     };
     path: {
@@ -268,6 +658,12 @@ export type PatchStudentsByIdErrors = {
      * Default Response
      */
     404: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    409: {
         error: string;
     };
 };
@@ -288,11 +684,13 @@ export type PatchStudentsByIdResponses = {
         birthDate: string | null;
         gender: 'male' | 'female' | 'other';
         goals: string | null;
+        trainingDays: number | null;
         restrictions: string | null;
         status: 'active' | 'inactive' | 'paused';
         avatarUrl: string | null;
         expoPushToken: string | null;
         createdAt: string;
+        internalNotes?: string | null;
     };
 };
 
@@ -304,6 +702,7 @@ export type GetExercisesData = {
     query?: {
         q?: string;
         muscleGroup?: 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'legs' | 'glutes' | 'core' | 'cardio' | 'full_body';
+        equipment?: string;
         scope?: 'mine' | 'global' | 'all';
         limit?: number;
         offset?: number;
@@ -327,6 +726,9 @@ export type GetExercisesResponses = {
             createdAt: string | string;
         }>;
         total: number;
+        facets: {
+            equipment: Array<string>;
+        };
     };
 };
 
@@ -439,6 +841,121 @@ export type PatchExercisesByIdResponses = {
 };
 
 export type PatchExercisesByIdResponse = PatchExercisesByIdResponses[keyof PatchExercisesByIdResponses];
+
+export type GetTrainerProfileData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainers/me';
+};
+
+export type GetTrainerProfileErrors = {
+    /**
+     * Default Response
+     */
+    401: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: string;
+    };
+};
+
+export type GetTrainerProfileError = GetTrainerProfileErrors[keyof GetTrainerProfileErrors];
+
+export type GetTrainerProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        name: string;
+        email: string;
+        phone: string | null;
+        bio: string | null;
+        specialties: Array<string>;
+        avatarUrl: string | null;
+        id: string;
+        plan: 'free' | 'starter' | 'pro' | 'team';
+        onboardedAt: string | null;
+        createdAt: string;
+        updatedAt: string;
+    };
+};
+
+export type GetTrainerProfileResponse = GetTrainerProfileResponses[keyof GetTrainerProfileResponses];
+
+export type UpdateTrainerProfileData = {
+    body: {
+        name?: string;
+        email?: string;
+        phone?: string | null;
+        bio?: string | null;
+        specialties?: Array<string>;
+        avatarUrl?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/trainers/me';
+};
+
+export type UpdateTrainerProfileErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    401: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    409: {
+        error: string;
+    };
+    /**
+     * Default Response
+     */
+    500: {
+        error: string;
+    };
+};
+
+export type UpdateTrainerProfileError = UpdateTrainerProfileErrors[keyof UpdateTrainerProfileErrors];
+
+export type UpdateTrainerProfileResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        name: string;
+        email: string;
+        phone: string | null;
+        bio: string | null;
+        specialties: Array<string>;
+        avatarUrl: string | null;
+        id: string;
+        plan: 'free' | 'starter' | 'pro' | 'team';
+        onboardedAt: string | null;
+        createdAt: string;
+        updatedAt: string;
+    };
+};
+
+export type UpdateTrainerProfileResponse = UpdateTrainerProfileResponses[keyof UpdateTrainerProfileResponses];
 
 export type PostTrainersOnboardingData = {
     body?: never;
@@ -1156,6 +1673,12 @@ export type GetStudentsMeWorkoutPlansResponses = {
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
             createdAt: string | string;
+            days: Array<{
+                id: string;
+                planId: string;
+                label: string;
+                dayOrder: number;
+            }>;
         }>;
     };
 };
@@ -1185,6 +1708,12 @@ export type GetStudentsByStudentIdWorkoutPlansResponses = {
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
             createdAt: string | string;
+            days: Array<{
+                id: string;
+                planId: string;
+                label: string;
+                dayOrder: number;
+            }>;
         }>;
     };
 };
@@ -1656,12 +2185,15 @@ export type GetTrainerSummaryResponses = {
             paused: number;
             inactive: number;
             newThisWeek: number;
+            inactive7d: number;
         };
         workouts: {
             activePlans: number;
+            expiringThisWeek: number;
         };
         assessments: {
             last30d: number;
+            pending: number;
         };
     };
 };

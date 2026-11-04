@@ -26,7 +26,10 @@ interface StatCardProps extends VariantProps<typeof statCardIconVariants> {
 
 export function StatCard({ label, value, hint, icon: Icon, accent = 'primary' }: StatCardProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-[12px] bg-card p-5 shadow-card">
+    <article
+      aria-label={label}
+      className="flex flex-col gap-3 rounded-[12px] bg-card p-5 shadow-card"
+    >
       <div className="flex items-center justify-between">
         <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {label}
@@ -37,7 +40,7 @@ export function StatCard({ label, value, hint, icon: Icon, accent = 'primary' }:
       </div>
       <span className="font-display text-[32px] font-bold leading-none">{value}</span>
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-    </div>
+    </article>
   );
 }
 

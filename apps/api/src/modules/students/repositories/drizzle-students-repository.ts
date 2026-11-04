@@ -1,5 +1,6 @@
 import { db, schema } from '@muvit/db';
-import { and, eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike, ne, sql } from 'drizzle-orm';
+import { getTrainerPlanDatabase } from '../../trainer-plan/repositories/drizzle-trainer-plan-mutation-lock.js';
 import type {
   CreateStudentInput,
   ListStudentsQuery,
@@ -35,7 +36,7 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async createForTrainer(trainerId: string, input: CreateStudentInput) {
-    const [student] = await db
+    const [student] = await getTrainerPlanDatabase()
       .insert(schema.students)
       .values({ ...input, trainerId, isIndependent: false })
       .returning();
@@ -44,12 +45,43 @@ export class DrizzleStudentsRepository implements StudentsRepository {
   }
 
   async updateForTrainer(id: string, trainerId: string, input: UpdateStudentInput) {
-    const [student] = await db
+    const [student] = await getTrainerPlanDatabase()
       .update(schema.students)
       .set(input)
       .where(and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)))
       .returning();
     return student ?? null;
+  }
+
+  async findStatusForTrainer(id: string, trainerId: string) {
+    const student = await getTrainerPlanDatabase().query.students.findFirst({
+      columns: { status: true },
+      where: and(eq(schema.students.id, id), eq(schema.students.trainerId, trainerId)),
+    });
+    return student?.status ?? null;
+  }
+
+  async getStudentPlanUsage(trainerId: string, excludingStudentId?: string) {
+    const database = getTrainerPlanDatabase();
+    const trainer = await database.query.trainers.findFirst({
+      columns: { plan: true },
+      where: eq(schema.trainers.id, trainerId),
+    });
+    if (trainer === undefined) throw new Error('Treinador não encontrado');
+
+    const conditions = [
+      eq(schema.students.trainerId, trainerId),
+      eq(schema.students.status, 'active'),
+    ];
+    if (excludingStudentId !== undefined) {
+      conditions.push(ne(schema.students.id, excludingStudentId));
+    }
+    const result = await database
+      .select({ count: sql<number>`count(*)::int` })
+      .from(schema.students)
+      .where(and(...conditions));
+
+    return { plan: trainer.plan, activeStudentCount: result[0]?.count ?? 0 };
   }
 
   async deleteForTrainer(id: string, trainerId: string) {

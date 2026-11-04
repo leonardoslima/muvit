@@ -7,6 +7,7 @@
   },
   "files": {
     "ignore": [
+      ".agents/skills/superpowers",
       "**/node_modules",
       "**/.next",
       "**/dist",

@@ -28,7 +28,9 @@ type Student = {
   birthDate: string | null;
   gender: 'male' | 'female' | 'other' | null;
   goals: string | null;
+  trainingDays: number | null;
   restrictions: string | null;
+  internalNotes?: string | null;
   status: 'active' | 'inactive' | 'paused';
   isIndependent: boolean;
   createdAt: string;
@@ -62,6 +64,7 @@ type WorkoutPlan = {
   startDate: string | null;
   endDate?: string | null;
   status: 'active' | 'archived' | 'draft';
+  days: Array<{ id: string; planId: string; label: string; dayOrder: number }>;
 };
 
 function toNum(value: string | number | null): number | null {
@@ -203,23 +206,39 @@ export default async function StudentDetailPage({ params }: Props) {
 
       <nav
         aria-label="Seções do aluno"
-        className="flex overflow-x-auto border-b border-border text-sm font-medium"
+        className="overflow-x-auto border-b border-border text-sm font-medium"
       >
-        <a href="#overview" className="border-b-2 border-primary px-5 py-3 text-primary">
-          Visão geral
-        </a>
-        <a href="#treino-ativo" className="px-5 py-3 text-muted-foreground hover:text-foreground">
-          Treinos
-        </a>
-        <a
-          href={`/students/${s.id}/assessments`}
-          className="px-5 py-3 text-muted-foreground hover:text-foreground"
-        >
-          Avaliações
-        </a>
+        <div className="flex min-w-max">
+          <a
+            href={`/students/${s.id}`}
+            aria-current="page"
+            className="border-b-2 border-primary px-5 py-3 text-primary"
+          >
+            Visão geral
+          </a>
+          <a href="#treino-ativo" className="px-5 py-3 text-muted-foreground hover:text-foreground">
+            Treinos
+          </a>
+          <a
+            href="#ultima-avaliacao"
+            className="px-5 py-3 text-muted-foreground hover:text-foreground"
+          >
+            Avaliações
+          </a>
+          <a
+            href={`/students/${s.id}/assessments`}
+            className="px-5 py-3 text-muted-foreground hover:text-foreground"
+          >
+            Histórico
+          </a>
+        </div>
       </nav>
 
-      <div id="overview" className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+      <div
+        id="overview"
+        data-testid="student-overview"
+        className="grid grid-cols-1 gap-5 xl:grid-cols-3"
+      >
         <PersonalInfoCard student={s} />
         <ActiveWorkoutCard
           studentId={s.id}

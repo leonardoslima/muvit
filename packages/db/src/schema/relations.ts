@@ -3,6 +3,11 @@ import { assessments } from './assessments.js';
 import { authAccounts, authSessions, authUsers } from './auth.js';
 import { exercises } from './exercises.js';
 import { students } from './students.js';
+import {
+  billingInvoices,
+  trainerNotificationPreferences,
+  trainerSubscriptions,
+} from './trainer-settings.js';
 import { trainers } from './trainers.js';
 import { logSets, workoutDays, workoutExercises, workoutLogs, workoutPlans } from './workouts.js';
 
@@ -25,6 +30,25 @@ export const trainersRelations = relations(trainers, ({ many, one }) => ({
   authUser: one(authUsers, { fields: [trainers.authUserId], references: [authUsers.id] }),
   students: many(students),
   exercises: many(exercises),
+  notificationPreferences: one(trainerNotificationPreferences),
+  subscription: one(trainerSubscriptions),
+  billingInvoices: many(billingInvoices),
+}));
+
+export const trainerNotificationPreferencesRelations = relations(
+  trainerNotificationPreferences,
+  ({ one }) => ({
+    trainer: one(trainers, {
+      fields: [trainerNotificationPreferences.trainerId],
+      references: [trainers.id],
+    }),
+  }),
+);
+export const trainerSubscriptionsRelations = relations(trainerSubscriptions, ({ one }) => ({
+  trainer: one(trainers, { fields: [trainerSubscriptions.trainerId], references: [trainers.id] }),
+}));
+export const billingInvoicesRelations = relations(billingInvoices, ({ one }) => ({
+  trainer: one(trainers, { fields: [billingInvoices.trainerId], references: [trainers.id] }),
 }));
 
 export const studentsRelations = relations(students, ({ one, many }) => ({

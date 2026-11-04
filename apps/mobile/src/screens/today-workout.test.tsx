@@ -132,6 +132,7 @@ const activeWorkout = {
   ],
 };
 const activeWorkoutSummary = {
+  days: activeWorkout.days,
   id: activeWorkout.id,
   studentId: activeWorkout.studentId,
   trainerId: activeWorkout.trainerId,

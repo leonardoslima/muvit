@@ -1,4 +1,4 @@
-import { db, schema } from '@muvit/db';
+import { db, queryClient, schema } from '@muvit/db';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -17,6 +17,35 @@ async function signupTrainer(app: FastifyInstance, email: string) {
   });
 }
 
+async function installConcurrentStudentInsertDelay() {
+  await queryClient.unsafe(`
+    CREATE OR REPLACE FUNCTION delay_concurrent_student_insert_for_test()
+    RETURNS trigger AS $$
+    BEGIN
+      IF NEW.name LIKE 'Concorrente %' THEN
+        PERFORM pg_sleep(0.25);
+      END IF;
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql
+  `);
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_concurrent_student_insert_for_test ON students',
+  );
+  await queryClient.unsafe(`
+    CREATE TRIGGER delay_concurrent_student_insert_for_test
+    BEFORE INSERT ON students
+    FOR EACH ROW EXECUTE FUNCTION delay_concurrent_student_insert_for_test()
+  `);
+}
+
+async function removeConcurrentStudentInsertDelay() {
+  await queryClient.unsafe(
+    'DROP TRIGGER IF EXISTS delay_concurrent_student_insert_for_test ON students',
+  );
+  await queryClient.unsafe('DROP FUNCTION IF EXISTS delay_concurrent_student_insert_for_test()');
+}
+
 beforeEach(async () => {
   app = await buildTestApp();
   await truncateAll();
@@ -31,6 +60,149 @@ afterAll(async () => {
 });
 
 describe('students', () => {
+  it('bloqueia o quarto aluno ativo no plano free', async () => {
+    const trainer = await signupTrainer(app, 'limit-free@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois', 'Três'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Quarto aluno' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toEqual({ error: 'Seu plano aceita até 3 alunos ativos.' });
+  });
+
+  it('bloqueia reativação acima do limite sem alterar o aluno', async () => {
+    const trainer = await signupTrainer(app, 'limit-reactivate@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois', 'Três'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+    const [pausedStudent] = await db
+      .insert(schema.students)
+      .values({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name: 'Aluno pausado',
+        status: 'paused',
+      })
+      .returning();
+    if (pausedStudent === undefined) throw new Error('fixture de aluno pausado não foi criada');
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/students/${pausedStudent.id}`,
+      headers: { cookie: trainer.cookie },
+      payload: { status: 'active' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    const persistedStudent = await db.query.students.findFirst({
+      where: eq(schema.students.id, pausedStudent.id),
+    });
+    expect(persistedStudent?.status).toBe('paused');
+  });
+
+  it('permite editar aluno já ativo quando o plano está no limite', async () => {
+    const trainer = await signupTrainer(app, 'limit-edit@example.com');
+    const createdStudents = await db
+      .insert(schema.students)
+      .values(
+        ['Um', 'Dois', 'Três'].map((name) => ({
+          trainerId: trainer.profileId,
+          isIndependent: false,
+          name,
+          status: 'active' as const,
+        })),
+      )
+      .returning();
+    const student = createdStudents[0];
+    if (student === undefined) throw new Error('fixture de aluno ativo não foi criada');
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/students/${student.id}`,
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Nome atualizado' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().name).toBe('Nome atualizado');
+  });
+
+  it('mantém o plano team sem limite de alunos ativos', async () => {
+    const trainer = await signupTrainer(app, 'limit-team@example.com');
+    await db
+      .update(schema.trainers)
+      .set({ plan: 'team' })
+      .where(eq(schema.trainers.id, trainer.profileId));
+    await db.insert(schema.students).values(
+      Array.from({ length: 51 }, (_, index) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name: `Aluno ${index + 1}`,
+        status: 'active' as const,
+      })),
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Aluno 52' },
+    });
+
+    expect(response.statusCode).toBe(201);
+  });
+
+  it('persiste somente uma de duas ativações concorrentes quando resta uma vaga', async () => {
+    const trainer = await signupTrainer(app, 'limit-concurrent@example.com');
+    await db.insert(schema.students).values(
+      ['Um', 'Dois'].map((name) => ({
+        trainerId: trainer.profileId,
+        isIndependent: false,
+        name,
+        status: 'active' as const,
+      })),
+    );
+    await installConcurrentStudentInsertDelay();
+
+    try {
+      const responses = await Promise.all(
+        ['Concorrente A', 'Concorrente B'].map((name) =>
+          app.inject({
+            method: 'POST',
+            url: '/students',
+            headers: { cookie: trainer.cookie },
+            payload: { name },
+          }),
+        ),
+      );
+
+      expect(responses.map((response) => response.statusCode).sort()).toEqual([201, 409]);
+      const activeStudents = await db.query.students.findMany({
+        where: eq(schema.students.trainerId, trainer.profileId),
+      });
+      expect(activeStudents.filter((student) => student.status === 'active')).toHaveLength(3);
+    } finally {
+      await removeConcurrentStudentInsertDelay();
+    }
+  });
+
   it('creates a student bound to current trainer', async () => {
     const trainer = await signupTrainer(app, 'a@a.com');
 
@@ -43,6 +215,118 @@ describe('students', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json()).toMatchObject({ name: 'Aluno 1', isIndependent: false });
     expect(res.json().trainerId).toBe(trainer.profileId);
+  });
+
+  it('persiste e retorna frequência e notas internas sem achatar os campos', async () => {
+    const trainer = await signupTrainer(app, 'roundtrip@example.com');
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: {
+        name: 'Aluno com contexto',
+        goals: 'Hipertrofia',
+        restrictions: 'Dor no ombro',
+        trainingDays: 4,
+        internalNotes: '  Prefere treinar pela manhã.  ',
+      },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: 4,
+      internalNotes: 'Prefere treinar pela manhã.',
+    });
+
+    const fetched = await app.inject({
+      method: 'GET',
+      url: `/students/${created.json().id}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(fetched.json()).toMatchObject({
+      trainingDays: 4,
+      internalNotes: 'Prefere treinar pela manhã.',
+    });
+  });
+
+  it('não expõe notas internas quando o próprio aluno consulta seu perfil', async () => {
+    const student = await signUpWithSession(app, {
+      name: 'Aluno privado',
+      email: 'private-student@example.com',
+      password: '12345678',
+      role: 'student',
+    });
+    await queryClient.unsafe(
+      `UPDATE students SET internal_notes = 'Somente treinador' WHERE id = $1`,
+      [student.profileId],
+    );
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/students/${student.profileId}`,
+      headers: { cookie: student.cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).not.toHaveProperty('internalNotes');
+  });
+
+  it('atualiza e limpa frequência e notas sem alterar objetivos ou restrições', async () => {
+    const trainer = await signupTrainer(app, 'cleanup-fields@example.com');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students',
+      headers: { cookie: trainer.cookie },
+      payload: {
+        name: 'Aluno editável',
+        goals: 'Hipertrofia',
+        restrictions: 'Dor no ombro',
+      },
+    });
+    const studentId = created.json().id;
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+      payload: { trainingDays: 5, internalNotes: '  Acompanhar sono.  ' },
+    });
+    expect(updated.statusCode).toBe(200);
+
+    const afterUpdate = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(afterUpdate.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: 5,
+      internalNotes: 'Acompanhar sono.',
+    });
+
+    const cleared = await app.inject({
+      method: 'PATCH',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+      payload: { trainingDays: null, internalNotes: null },
+    });
+    expect(cleared.statusCode).toBe(200);
+
+    const afterCleanup = await app.inject({
+      method: 'GET',
+      url: `/students/${studentId}`,
+      headers: { cookie: trainer.cookie },
+    });
+    expect(afterCleanup.json()).toMatchObject({
+      goals: 'Hipertrofia',
+      restrictions: 'Dor no ombro',
+      trainingDays: null,
+      internalNotes: null,
+    });
   });
 
   it('lists only my students', async () => {

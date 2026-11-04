@@ -6,6 +6,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: 'trainer' | 'student';
+  image: string | null;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -15,17 +16,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readAuthUser(payload: unknown): AuthUser | null {
   if (!isRecord(payload) || !isRecord(payload.user)) return null;
 
-  const { id, name, email, role } = payload.user;
+  const { id, name, email, role, image } = payload.user;
   if (
     typeof id !== 'string' ||
     typeof name !== 'string' ||
     typeof email !== 'string' ||
-    (role !== 'trainer' && role !== 'student')
+    (role !== 'trainer' && role !== 'student') ||
+    (image !== undefined && image !== null && typeof image !== 'string')
   ) {
     return null;
   }
 
-  return { id, name, email, role };
+  return { id, name, email, role, image: typeof image === 'string' ? image : null };
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {

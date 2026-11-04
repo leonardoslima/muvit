@@ -33,6 +33,10 @@ export interface UpdateStudentRepository {
   ): Promise<Student | null>;
 }
 
+export interface FindStudentStatusForTrainerRepository {
+  findStatusForTrainer(id: string, trainerId: string): Promise<Student['status'] | null>;
+}
+
 export interface DeleteStudentRepository {
   deleteForTrainer(id: string, trainerId: string): Promise<boolean>;
 }
@@ -46,5 +50,6 @@ export interface StudentsRepository
     ListStudentsRepository,
     CreateStudentRepository,
     UpdateStudentRepository,
+    FindStudentStatusForTrainerRepository,
     DeleteStudentRepository,
     UpdateStudentPushTokenRepository {}

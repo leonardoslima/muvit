@@ -36,6 +36,9 @@ function createAuth(): MuvitAuth {
         throw new Error('cadastro não deveria ser chamado');
       }),
       getSession: vi.fn(async () => null),
+      getSessionWithHeaders: vi.fn(async () => ({ session: null, headers: new Headers() })),
+      changeEmail: vi.fn(async () => new Headers()),
+      updateUser: vi.fn(async () => new Headers()),
     },
   };
 }

@@ -1,7 +1,7 @@
 import {
   createStudentSchema,
   listStudentsQuerySchema,
-  studentSchema,
+  trainerStudentSchema,
   updateStudentSchema,
 } from '@muvit/validators';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -10,7 +10,7 @@ import { makeStudentsModule } from '../modules/students/factory.js';
 import { sendUseCaseError } from '../shared/http-error.js';
 
 export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
-  const studentsModule = makeStudentsModule();
+  const studentsModule = makeStudentsModule(app.log);
 
   app.addHook('preHandler', app.requireAuth);
 
@@ -37,7 +37,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['students'],
         querystring: listStudentsQuerySchema,
-        response: { 200: z.object({ items: z.array(studentSchema), total: z.number() }) },
+        response: { 200: z.object({ items: z.array(trainerStudentSchema), total: z.number() }) },
       },
     },
     async (req) => studentsModule.listStudents.execute(req.identity.profileId, req.query),
@@ -47,11 +47,25 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
     '/students',
     {
       preHandler: [app.requireRole('trainer')],
-      schema: { tags: ['students'], body: createStudentSchema, response: { 201: studentSchema } },
+      schema: {
+        tags: ['students'],
+        body: createStudentSchema,
+        response: {
+          201: trainerStudentSchema,
+          409: z.object({ error: z.string() }),
+        },
+      },
     },
     async (req, reply) => {
-      const student = await studentsModule.createStudent.execute(req.identity.profileId, req.body);
-      return reply.code(201).send(student);
+      try {
+        const student = await studentsModule.createStudent.execute(
+          req.identity.profileId,
+          req.body,
+        );
+        return reply.code(201).send(student);
+      } catch (error) {
+        return sendUseCaseError(reply, error);
+      }
     },
   );
 
@@ -62,7 +76,7 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['students'],
         params: z.object({ id: z.string().guid() }),
         response: {
-          200: studentSchema,
+          200: trainerStudentSchema,
           404: z.object({ error: z.string() }),
           403: z.object({ error: z.string() }),
         },
@@ -86,8 +100,9 @@ export const studentsRoutes: FastifyPluginAsyncZod = async (app) => {
         params: z.object({ id: z.string().guid() }),
         body: updateStudentSchema,
         response: {
-          200: studentSchema,
+          200: trainerStudentSchema,
           404: z.object({ error: z.string() }),
+          409: z.object({ error: z.string() }),
         },
       },
     },

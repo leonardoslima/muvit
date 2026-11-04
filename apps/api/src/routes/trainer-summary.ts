@@ -9,12 +9,15 @@ const summarySchema = z.object({
     paused: z.number().int(),
     inactive: z.number().int(),
     newThisWeek: z.number().int(),
+    inactive7d: z.number().int(),
   }),
   workouts: z.object({
     activePlans: z.number().int(),
+    expiringThisWeek: z.number().int(),
   }),
   assessments: z.object({
     last30d: z.number().int(),
+    pending: z.number().int(),
   }),
 });
 

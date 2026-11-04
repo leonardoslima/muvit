@@ -32,6 +32,10 @@ export function WeightEvolutionChart({ points }: { points: WeightEvolutionPoint[
     ...point,
     chartId: `${point.date}-${index}`,
   }));
+  const latestWeight = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(data.at(-1)?.weight ?? 0);
 
   return (
     <div className="flex flex-col gap-2">
@@ -68,6 +72,7 @@ export function WeightEvolutionChart({ points }: { points: WeightEvolutionPoint[
           ))}
         </div>
       </div>
+      <p className="text-xs text-muted-foreground">Peso mais recente: {latestWeight} kg.</p>
     </div>
   );
 }

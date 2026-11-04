@@ -1,23 +1,28 @@
 'use server';
 
-import { type StudentFormState, buildCreateStudentBody } from '@/application/students/student-form';
+import { buildCreateStudentBody } from '@/application/students/student-form';
 import { configureServerClient } from '@/lib/api-client';
 import { postStudents } from '@/lib/api/sdk.gen';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+
+export type CreateStudentState = {
+  error?: string;
+  fieldErrors?: Record<string, string>;
+  studentId?: string;
+} | null;
 
 export async function createStudentAction(
-  _: StudentFormState,
+  _: CreateStudentState,
   formData: FormData,
-): Promise<StudentFormState> {
+): Promise<CreateStudentState> {
   const input = buildCreateStudentBody(formData);
   if (!input.ok) return input.state;
 
   const client = await configureServerClient();
-  const res = await postStudents({ client, body: input.body });
-  if (res.error || !res.data) {
-    return { error: 'Nao foi possivel cadastrar o aluno.' };
+  const response = await postStudents({ client, body: input.body });
+  if (response.error || !response.data) {
+    return { error: 'Não foi possível cadastrar o aluno.' };
   }
   revalidatePath('/students');
-  redirect(`/students/${res.data.id}`);
+  return { studentId: response.data.id };
 }

@@ -10,30 +10,8 @@ export type ActiveWorkoutPlan = {
   startDate: string | null;
   endDate?: string | null;
   status: 'active' | 'archived' | 'draft';
+  days: Array<{ id: string; planId: string; label: string; dayOrder: number }>;
 };
-
-const trainingDays = [
-  {
-    key: 'A',
-    name: 'Treino A — Superior empurrar',
-    muscles: 'Peito · Ombros · Tríceps',
-  },
-  {
-    key: 'B',
-    name: 'Treino B — Superior puxar',
-    muscles: 'Costas · Bíceps · Deltoide posterior',
-  },
-  {
-    key: 'C',
-    name: 'Treino C — Inferiores',
-    muscles: 'Quadríceps · Posteriores · Glúteos · Panturrilhas',
-  },
-  {
-    key: 'D',
-    name: 'Treino D — Core + Cardio',
-    muscles: 'Core · HIIT · Condicionamento',
-  },
-];
 
 function formatDate(date: string): string {
   const dateOnly = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -101,24 +79,29 @@ export function ActiveWorkoutCard({
               <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Dias de treino
               </span>
-              <div className="flex flex-col gap-2">
-                {trainingDays.map((day) => (
-                  <div
-                    key={day.key}
-                    className="flex items-center gap-3 rounded-lg border border-primary/20 bg-success-bg px-3.5 py-2.5"
-                  >
-                    <span className="grid h-6 min-w-6 place-items-center rounded bg-primary px-2 font-display text-xs font-semibold text-primary-foreground">
-                      {day.key}
-                    </span>
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="truncate text-sm font-semibold text-foreground">
-                        {day.name}
+              {activeWorkoutPlan.days.length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  {activeWorkoutPlan.days.map((day) => (
+                    <div
+                      key={day.id}
+                      className="flex items-center gap-3 rounded-lg border border-primary/20 bg-success-bg px-3.5 py-2.5"
+                    >
+                      <span className="grid h-6 min-w-6 place-items-center rounded bg-primary px-2 font-display text-xs font-semibold text-primary-foreground">
+                        {day.dayOrder + 1}
                       </span>
-                      <span className="truncate text-xs text-muted-foreground">{day.muscles}</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-sm font-semibold text-foreground">
+                          {day.label}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-lg border border-dashed border-border px-3.5 py-4 text-sm text-muted-foreground">
+                  Nenhum dia de treino configurado neste plano.
+                </p>
+              )}
             </div>
             <Button asChild size="sm" className="w-full">
               <Link href={`/workouts/${activeWorkoutPlan.id}`}>

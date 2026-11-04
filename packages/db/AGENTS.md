@@ -39,6 +39,7 @@ Estas regras valem para `packages/db`, incluindo schema Drizzle, client, migrati
 
 ## Verificacao
 
+- O `pretest` compila o pacote e aplica migrations no banco de teste. No Turborepo, `@muvit/api#test` deve aguardar `@muvit/db#test`: os testes da API truncam as mesmas tabelas e nao podem concorrer com os testes de constraints de db.
 - Para schema, rode `pnpm.cmd --filter @muvit/db typecheck`.
 - Para migration, rode `pnpm.cmd --filter @muvit/db migrate:test`.
 - Para mudanca com consumidores, rode tambem as verificacoes do workspace consumidor afetado.

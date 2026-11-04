@@ -7,6 +7,8 @@ const statusByCode = {
   conflict: 409,
   invalid_credentials: 401,
   duplicate_email: 409,
+  plan_limit_conflict: 409,
+  student_plan_limit_exceeded: 409,
   invalid_refresh_token: 401,
 } satisfies Record<UseCaseError['code'], number>;
 

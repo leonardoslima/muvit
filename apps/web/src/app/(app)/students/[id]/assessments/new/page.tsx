@@ -21,7 +21,7 @@ export default async function NewAssessmentPage({
   const student = response.data as { id: string; name: string };
 
   return (
-    <>
+    <div className="flex flex-col gap-6" data-responsive-layout="new-assessment">
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] font-medium">
         <Link href="/students" className="text-primary hover:text-primary-hover">
           Alunos
@@ -73,6 +73,6 @@ export default async function NewAssessmentPage({
       </nav>
 
       <AssessmentForm studentId={student.id} />
-    </>
+    </div>
   );
 }

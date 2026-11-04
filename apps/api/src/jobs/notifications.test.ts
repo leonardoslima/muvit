@@ -28,6 +28,10 @@ describe('runDailyNotifications', () => {
       .values({ authUserId: authUser.id, name: authUser.name, email: authUser.email })
       .returning();
     if (!trainer) throw new Error('trainer not inserted');
+    await db.insert(schema.trainerNotificationPreferences).values({
+      trainerId: trainer.id,
+      pendingAssessmentChannel: 'email',
+    });
 
     const [student] = await db
       .insert(schema.students)
@@ -36,6 +40,7 @@ describe('runDailyNotifications', () => {
         email: 'student@example.com',
         trainerId: trainer.id,
         expoPushToken: 'ExponentPushToken[inactive]',
+        createdAt: new Date('2026-05-01T12:00:00.000Z'),
       })
       .returning();
     if (!student) throw new Error('student not inserted');

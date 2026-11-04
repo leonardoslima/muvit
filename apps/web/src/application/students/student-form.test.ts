@@ -36,7 +36,9 @@ describe('student form builders', () => {
         birthDate: undefined,
         gender: 'female',
         goals: undefined,
+        trainingDays: undefined,
         restrictions: undefined,
+        internalNotes: undefined,
         status: 'paused',
       },
     });
@@ -63,9 +65,27 @@ describe('student form builders', () => {
         birthDate: undefined,
         gender: undefined,
         goals: undefined,
+        trainingDays: undefined,
         restrictions: undefined,
+        internalNotes: undefined,
         status: undefined,
       },
+    });
+  });
+
+  it('mapeia controles vazios para null somente na edição', () => {
+    expect(
+      buildUpdateStudentBody(
+        formDataFrom({ id: 'student-id', trainingDays: '', internalNotes: '' }),
+      ),
+    ).toMatchObject({
+      ok: true,
+      body: { trainingDays: null, internalNotes: null },
+    });
+
+    expect(buildCreateStudentBody(formDataFrom({ name: 'Maria Costa' }))).toMatchObject({
+      ok: true,
+      body: { trainingDays: undefined, internalNotes: undefined },
     });
   });
 });

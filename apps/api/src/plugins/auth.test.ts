@@ -95,6 +95,32 @@ describe('auth plugin', () => {
     expect(response.json()).toEqual({ authUserId, profileId: profile?.id, role: 'trainer' });
   });
 
+  it('encaminha separadamente todos os cookies emitidos pela leitura da sessão', async () => {
+    const { cookie } = await createSession('trainer', 'session-refresh@example.com');
+    const getSessionWithHeaders = currentApp().auth.api.getSessionWithHeaders.bind(
+      currentApp().auth.api,
+    );
+    currentApp().auth.api.getSessionWithHeaders = async (options) => {
+      const result = await getSessionWithHeaders(options);
+      const headers = new Headers();
+      headers.append('set-cookie', 'muvit.session_refresh=one; Path=/; HttpOnly');
+      headers.append('set-cookie', 'muvit.session_state=two; Path=/; HttpOnly');
+      return { ...result, headers };
+    };
+
+    const response = await currentApp().inject({
+      method: 'GET',
+      url: '/protected',
+      headers: { cookie },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['set-cookie']).toEqual([
+      'muvit.session_refresh=one; Path=/; HttpOnly',
+      'muvit.session_state=two; Path=/; HttpOnly',
+    ]);
+  });
+
   it('resolve a sessão student para o perfil independente', async () => {
     const { authUserId, cookie } = await createSession('student', 'student-identity@example.com');
     const [profile] = await db

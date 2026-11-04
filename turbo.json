@@ -9,6 +9,7 @@
     },
     "dev": {
       "cache": false,
+      "dependsOn": ["^build"],
       "persistent": true
     },
     "lint": {},
@@ -17,6 +18,11 @@
     },
     "test": {
       "dependsOn": ["^build"],
+      "cache": false,
+      "outputs": []
+    },
+    "@muvit/api#test": {
+      "dependsOn": ["^build", "@muvit/db#test"],
       "cache": false,
       "outputs": []
     }

@@ -1,3 +1,4 @@
+import { AppContentSurface } from '@/components/app-content-surface';
 import { TopBar } from '@/components/top-bar';
 import { Badge } from '@/components/ui/badge';
 import { configureServerClient } from '@/lib/api-client';
@@ -37,7 +38,7 @@ export default async function WorkoutDetailPage({ params }: Props) {
   };
 
   return (
-    <>
+    <AppContentSurface>
       <Link
         href={`/students/${plan.studentId}`}
         className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
@@ -87,6 +88,6 @@ export default async function WorkoutDetailPage({ params }: Props) {
           </article>
         ))}
       </div>
-    </>
+    </AppContentSurface>
   );
 }

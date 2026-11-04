@@ -4,6 +4,8 @@ export type UseCaseErrorCode =
   | 'conflict'
   | 'invalid_credentials'
   | 'duplicate_email'
+  | 'plan_limit_conflict'
+  | 'student_plan_limit_exceeded'
   | 'invalid_refresh_token';
 
 export class UseCaseError extends Error {

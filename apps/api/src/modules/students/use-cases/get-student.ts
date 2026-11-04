@@ -5,6 +5,10 @@ export class GetStudentUseCase {
   constructor(private readonly ensureStudentAccess: StudentAccessPolicy) {}
 
   async execute(identity: RequestIdentity, studentId: string) {
-    return this.ensureStudentAccess.execute(identity, studentId);
+    const student = await this.ensureStudentAccess.execute(identity, studentId);
+    if (identity.role === 'trainer') return student;
+
+    const { internalNotes: _internalNotes, ...studentWithoutInternalNotes } = student;
+    return studentWithoutInternalNotes;
   }
 }

@@ -3,7 +3,7 @@ import {
   createWorkoutPlanSchema,
   workoutDayInputSchema,
   workoutExerciseInputSchema,
-} from './workouts';
+} from './workouts.js';
 
 const workoutPlanDraftExerciseSchema = workoutExerciseInputSchema.extend({
   reps: z.string().trim().min(1).max(20),

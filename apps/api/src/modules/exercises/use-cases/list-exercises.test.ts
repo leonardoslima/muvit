@@ -22,7 +22,7 @@ class FakeExercisesRepository implements ExercisesRepository {
 
   async list(params: ExerciseListParams) {
     this.listParams = params;
-    return { items: [], total: 0 };
+    return { items: [], total: 0, facets: { equipment: [] } };
   }
 
   async create() {

@@ -1,8 +1,10 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   date,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -29,7 +31,9 @@ export const students = pgTable(
     birthDate: date('birth_date'),
     gender: studentGenderEnum('gender'),
     goals: text('goals'),
+    trainingDays: integer('training_days'),
     restrictions: text('restrictions'),
+    internalNotes: text('internal_notes'),
     status: studentStatusEnum('status').notNull().default('active'),
     avatarUrl: text('avatar_url'),
     expoPushToken: varchar('expo_push_token', { length: 255 }),
@@ -38,6 +42,10 @@ export const students = pgTable(
   (t) => ({
     trainerIdx: index('students_trainer_idx').on(t.trainerId),
     emailIdx: uniqueIndex('students_email_unique').on(t.email),
+    trainingDaysCheck: check(
+      'students_training_days_check',
+      sql`${t.trainingDays} BETWEEN 1 AND 7`,
+    ),
   }),
 );
 

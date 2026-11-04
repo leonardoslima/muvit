@@ -2,6 +2,7 @@ import {
   createExerciseSchema,
   exerciseSchema,
   listExercisesQuerySchema,
+  listExercisesResponseSchema,
   updateExerciseSchema,
 } from '@muvit/validators';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
@@ -20,7 +21,7 @@ export const exercisesRoutes: FastifyPluginAsyncZod = async (app) => {
       schema: {
         tags: ['exercises'],
         querystring: listExercisesQuerySchema,
-        response: { 200: z.object({ items: z.array(exerciseSchema), total: z.number() }) },
+        response: { 200: listExercisesResponseSchema },
       },
     },
     async (req) => exercisesModule.listExercises.execute(req.identity, req.query),

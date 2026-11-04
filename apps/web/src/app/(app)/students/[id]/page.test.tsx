@@ -41,7 +41,9 @@ describe('StudentDetailPage', () => {
         birthDate: null,
         gender: 'female',
         goals: 'Ganhar massa muscular.',
+        trainingDays: 4,
         restrictions: 'Evitar impacto alto no joelho direito.',
+        internalNotes: 'Prefere treinar pela manhã.',
         status: 'active',
         avatarUrl: null,
         expoPushToken: null,
@@ -84,6 +86,10 @@ describe('StudentDetailPage', () => {
             endDate: null,
             status: 'active',
             createdAt: '2026-06-20T00:00:00.000Z',
+            days: [
+              { id: 'day-1', planId: 'workout-1', label: 'Força superior', dayOrder: 0 },
+              { id: 'day-2', planId: 'workout-1', label: 'Pernas e core', dayOrder: 1 },
+            ],
           },
         ],
       }),
@@ -142,14 +148,33 @@ describe('StudentDetailPage', () => {
       '/students/student-1/assessments/new',
     );
 
-    expect(screen.getByRole('navigation', { name: 'Seções do aluno' })).toBeInTheDocument();
+    const sections = screen.getByRole('navigation', { name: 'Seções do aluno' });
+    expect(within(sections).queryAllByRole('tab')).toHaveLength(0);
+    expect(within(sections).getByRole('link', { name: 'Visão geral' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(within(sections).getByRole('link', { name: 'Treinos' })).toHaveAttribute(
+      'href',
+      '#treino-ativo',
+    );
+    expect(within(sections).getByRole('link', { name: 'Avaliações' })).toHaveAttribute(
+      'href',
+      '#ultima-avaliacao',
+    );
+    expect(within(sections).getByRole('link', { name: 'Histórico' })).toHaveAttribute(
+      'href',
+      '/students/student-1/assessments',
+    );
+    expect(screen.getByTestId('student-overview')).toHaveClass('xl:grid-cols-3');
     expect(screen.getByRole('heading', { name: 'Informações pessoais' })).toBeInTheDocument();
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
     expect(screen.getByText('Evitar impacto alto no joelho direito.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Treino ativo' })).toBeInTheDocument();
     expect(screen.getByText('Hipertrofia A/B')).toBeInTheDocument();
-    expect(screen.getByText('Treino A — Superior empurrar')).toBeInTheDocument();
-    expect(screen.getByText('Peito · Ombros · Tríceps')).toBeInTheDocument();
+    expect(screen.getByText('Força superior')).toBeInTheDocument();
+    expect(screen.getByText('Pernas e core')).toBeInTheDocument();
+    expect(screen.queryByText('Treino A — Superior empurrar')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Última avaliação' })).toBeInTheDocument();
     expect(screen.getByText('Métricas principais')).toBeInTheDocument();
     expect(screen.getByText('Medidas')).toBeInTheDocument();
@@ -157,6 +182,7 @@ describe('StudentDetailPage', () => {
     expect(screen.getByText('68 cm')).toBeInTheDocument();
     expect(screen.getByText('Evolução de peso')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Evolução de peso' })).toBeInTheDocument();
+    expect(screen.getByText('Peso mais recente: 72,5 kg.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver histórico' })).toHaveAttribute(
       'href',
       '/students/student-1/assessments',

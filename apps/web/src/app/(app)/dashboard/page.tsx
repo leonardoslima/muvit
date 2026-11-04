@@ -6,16 +6,7 @@ import { configureServerClient } from '@/lib/api-client';
 import { getTrainerSummary } from '@/lib/api/sdk.gen';
 import { requireUser } from '@/lib/auth-server';
 import { loadDashboardStudentList } from '@/lib/dashboard-student-list';
-import {
-  AlertTriangle,
-  BarChart3,
-  Bell,
-  ClipboardList,
-  Plus,
-  Search,
-  Sparkles,
-  Users,
-} from 'lucide-react';
+import { AlertTriangle, Bell, ClipboardCheck, Clock, Plus, Search, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export default async function DashboardPage() {
@@ -26,9 +17,16 @@ export default async function DashboardPage() {
     loadDashboardStudentList(client),
   ]);
   const data = summaryRes.data ?? {
-    students: { total: 0, active: 0, paused: 0, inactive: 0, newThisWeek: 0 },
-    workouts: { activePlans: 0 },
-    assessments: { last30d: 0 },
+    students: {
+      total: 0,
+      active: 0,
+      paused: 0,
+      inactive: 0,
+      newThisWeek: 0,
+      inactive7d: 0,
+    },
+    workouts: { activePlans: 0, expiringThisWeek: 0 },
+    assessments: { last30d: 0, pending: 0 },
   };
 
   return (
@@ -73,70 +71,29 @@ export default async function DashboardPage() {
           accent="primary"
         />
         <StatCard
-          label="Pausados"
-          value={data.students.paused}
-          hint={data.students.paused > 0 ? 'Acompanhe' : 'Nenhum'}
-          icon={AlertTriangle}
+          label="Vencendo esta semana"
+          value={data.workouts.expiringThisWeek}
+          hint={data.workouts.expiringThisWeek === 0 ? 'Nenhum vencimento' : 'Revise os planos'}
+          icon={Clock}
           accent="warning"
         />
         <StatCard
-          label="Planos ativos"
-          value={data.workouts.activePlans}
-          hint={`${data.students.active} alunos ativos`}
-          icon={ClipboardList}
+          label="Avaliações pendentes"
+          value={data.assessments.pending}
+          hint={data.assessments.pending === 0 ? 'Todas em dia' : 'Acompanhe os alunos'}
+          icon={ClipboardCheck}
           accent="info"
         />
         <StatCard
-          label="Avaliações 30d"
-          value={data.assessments.last30d}
-          hint={data.assessments.last30d === 0 ? 'Nenhuma ainda' : 'Continue acompanhando'}
-          icon={BarChart3}
-          accent="success"
+          label="Inativos (7+ dias)"
+          value={data.students.inactive7d}
+          hint={data.students.inactive7d === 0 ? 'Todos em movimento' : 'Precisam de atenção'}
+          icon={AlertTriangle}
+          accent="destructive"
         />
       </div>
 
-      <section className="rounded-[12px] bg-card p-6 shadow-card">
-        <div className="flex items-center justify-between pb-4">
-          <h2 className="font-display text-lg font-bold">Próximos passos</h2>
-          <Link
-            href="/students"
-            className="font-display text-[13px] font-semibold text-primary hover:underline"
-          >
-            Ver alunos →
-          </Link>
-        </div>
-        <ul className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <NextStepCard icon={Users} title="Cadastrar aluno" href="/students/new" />
-          <NextStepCard icon={ClipboardList} title="Montar treino" href="/workouts" />
-          <NextStepCard icon={Sparkles} title="Adicionar exercício custom" href="/exercises" />
-        </ul>
-      </section>
-
       <StudentListTable state={studentListState} />
     </>
-  );
-}
-
-function NextStepCard({
-  icon: Icon,
-  title,
-  href,
-}: {
-  icon: typeof Users;
-  title: string;
-  href: string;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="flex items-center gap-3 rounded-md border border-border p-4 transition-colors hover:bg-card-hover"
-      >
-        <span className="grid size-9 place-items-center rounded-md bg-success-bg text-primary">
-          <Icon className="size-4" />
-        </span>
-        <span className="font-display text-sm font-semibold">{title}</span>
-      </Link>
-    </li>
   );
 }

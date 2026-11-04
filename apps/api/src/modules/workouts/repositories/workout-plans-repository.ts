@@ -2,6 +2,7 @@ import type {
   createWorkoutPlanSchema,
   updateWorkoutPlanSchema,
   workoutPlanFullSchema,
+  workoutPlanSummarySchema,
 } from '@muvit/validators';
 import type { z } from 'zod';
 
@@ -15,16 +16,7 @@ export type WorkoutPlanAccess = {
   trainerId: string | null;
   status: 'draft' | 'active' | 'archived';
 };
-export type WorkoutPlanSummary = {
-  id: string;
-  studentId: string;
-  trainerId: string | null;
-  name: string;
-  startDate: string | null;
-  endDate: string | null;
-  status: 'draft' | 'active' | 'archived';
-  createdAt: Date;
-};
+export type WorkoutPlanSummary = z.input<typeof workoutPlanSummarySchema>;
 
 export interface CreateWorkoutPlanRepository {
   create(data: CreateWorkoutPlanData): Promise<WorkoutPlanFullResponse>;
