@@ -95,6 +95,7 @@ export class DrizzleWorkoutPlansRepository implements WorkoutPlansRepository {
       orderBy: [desc(schema.workoutPlans.createdAt)],
       with: {
         days: {
+          where: eq(schema.workoutDays.isCurrent, true),
           orderBy: [asc(schema.workoutDays.dayOrder)],
         },
       },

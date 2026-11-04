@@ -20,6 +20,11 @@
       "dependsOn": ["^build"],
       "cache": false,
       "outputs": []
+    },
+    "@muvit/api#test": {
+      "dependsOn": ["^build", "@muvit/db#test"],
+      "cache": false,
+      "outputs": []
     }
   }
 }

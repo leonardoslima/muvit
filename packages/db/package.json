@@ -25,7 +25,7 @@
     "generate": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs generate",
     "migrate": "node --env-file=.env --import tsx src/migrate.ts",
     "migrate:test": "node --env-file=.env.test --import tsx src/ensure-database.ts && node --env-file=.env.test --import tsx src/migrate.ts",
-    "pretest": "pnpm run build",
+    "pretest": "pnpm run build && pnpm run migrate:test",
     "studio": "node --env-file=.env ./node_modules/drizzle-kit/bin.cjs studio",
     "test": "node --env-file=.env.test ./node_modules/vitest/vitest.mjs run --passWithNoTests",
     "typecheck": "tsc --noEmit"

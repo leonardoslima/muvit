@@ -15,6 +15,7 @@ function studentFixture(overrides: Partial<TrainerStudent> = {}): TrainerStudent
     birthDate: null,
     gender: null,
     goals: null,
+    trainingDays: null,
     restrictions: null,
     status: 'active',
     avatarUrl: null,

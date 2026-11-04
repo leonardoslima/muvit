@@ -58,6 +58,7 @@ function planFixture(
     studentId: STUDENT_ID,
     trainerId: '00000000-0000-0000-0000-000000000901',
     name: 'Hipertrofia',
+    days: [],
     startDate: null,
     endDate: null,
     status: 'draft',
