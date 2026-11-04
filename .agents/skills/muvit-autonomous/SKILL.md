@@ -1,20 +1,20 @@
 ---
 name: muvit-autonomous
-description: Use quando o usuário pedir uma rodada autônoma do Muvit para um card agent_ready ou a retomada de uma rodada identificada. Coordena agentes com modelos e esforços fixos; consultar ou editar a skill não inicia uma rodada.
+description: Use quando o usuário pedir uma rodada autônoma do Muvit para um card agent_ready ou a retomada de uma rodada identificada. Consultar ou editar a skill não inicia uma rodada.
 metadata:
-  version: "8.1.0"
+  version: "8.2.0"
 ---
 
 # Muvit Autonomous — fluxo específico do projeto Muvit
 
-Esta skill define **o que fazer, os critérios de qualidade, o contexto do Muvit e quando considerar a entrega concluída**. O chat principal usa Terra medium para coordenar e delega diretamente aos especialistas de `.codex/agents/` do projeto. Sol high planeja e revisa em sessões independentes; Terra xhigh implementa; Luna medium executa checks; Terra medium faz QA visual quando houver interface afetada. Priorize economia da assinatura Plus, contexto delimitado e execução sequencial. Orca pode disparar agendamentos e oferecer browser para QA.
+Esta skill define **o que fazer, os critérios de qualidade, o contexto do Muvit e quando considerar a entrega concluída**. O chat principal usa Terra medium para coordenar e delega aos especialistas por workers supervisionados do Orca, com chat nativo preferencial e CLI como fallback autorizado. Sol high planeja e revisa em sessões independentes; Terra xhigh implementa; Luna medium executa checks; Terra medium faz QA visual quando houver interface afetada. Priorize economia da assinatura Plus, contexto delimitado e execução sequencial. Orca também pode disparar agendamentos e oferecer browser para QA.
 
-Consultar ou editar esta skill autoriza somente manutenção: não inicia rodada, claim, commit, push ou PR. A configuração do principal está em `.codex/config.toml`; o host precisa aplicá-la, pois a skill não troca o modelo de uma sessão já iniciada.
+Consultar ou editar esta skill autoriza somente manutenção: não inicia rodada, claim, workers, commit, push ou PR. O perfil do principal está em `.codex/config.toml`; o host precisa aplicá-lo, pois a skill não troca o modelo de uma sessão já iniciada. Os TOMLs de `.codex/agents/` fornecem os perfis e instruções que o coordenador aplica explicitamente aos workers Orca.
 
 ## Pré-requisitos e precedência
 
 - Leia `references/selection-and-state.md`, `references/superpowers-and-delegation.md`, `references/environment.md`, `references/quality-and-qa.md`, `references/pr-and-review-loop.md` e `references/closure-and-recovery.md` antes de agir. Referências extras de mobile/web quando aplicáveis.
-- Confirme que o host consegue aplicar os perfis de `.codex/config.toml` e `.codex/agents/muvit-*.toml` antes do claim. Use os nomes dos agentes ou os mesmos modelos, esforços e instruções explicitamente na ferramenta nativa. Perfil obrigatório indisponível é bloqueio, sem substituição silenciosa ou execução simulada.
+- Antes do claim, carregue os guias versionados de `orchestration` e `orca-cli` do executável Orca resolvido para a sessão, conforme `references/superpowers-and-delegation.md`. Confirme runtime, identidade do coordenador para receber eventos, ferramentas, assinatura Plus e suporte aos perfis necessários. Inicie workers com `--agent codex`, modelo, esforço e briefing derivados dos TOMLs; os nomes dos papéis não são IDs de agentes Orca. Perfil obrigatório ou orquestração indisponível é bloqueio, sem substituição por subagentes internos deste chat ou execução simulada.
 - Todo planejamento e execução de mudanças seguem **Superpowers**, com decisões e planejamento internos autônomos, sem exigir aprovação humana intermediária. Se ferramenta/skill não existir, não chame um planejamento comum de Superpowers: explicite o bloqueio.
 - Prioridade: segurança e instruções expressas do usuário > instruções de repo validadas > requisitos do card > regras desta skill. Conflitos materiais precisam ser registrados antes de agir.
 - Uma rodada = **um card**. Rodadas diferentes podem ocorrer paralelamente em cards sem dependências e com ambientes isolados.
@@ -23,7 +23,7 @@ Consultar ou editar esta skill autoriza somente manutenção: não inicia rodada
 
 1. **Precheck**: confirmar repo correto, branch base remota (normalmente `origin/develop`, verificar), ferramentas disponíveis, usuário autenticado e workspace do Linear pela conexão utilizada, isolamento do ambiente e card desbloqueado. Somente cards atribuídos ao ID desse usuário podem ser elegíveis; sem responsável ou de outra pessoa ficam excluídos. Não inferir identidade por nome/Git/Windows. Identidade indisponível é bloqueio. Se não houver card próprio elegível, relatar sem abrir trabalho.
 2. **Claim local**: selecionar só um card `agent_ready` elegível atribuído ao usuário autenticado, checar conflitos e adquirir a trava local atômica com `scripts/local_lock.py`, conforme `references/selection-and-state.md`, antes de alterar o Linear ou código. Reconsultar elegibilidade e responsável após a trava; somente então retirar `agent_ready` ao iniciar. Não criar/publicar branches de reserva `automation/claims/*`. Não fazer duas seleções na mesma execução.
-3. **Contexto e plano**: ler issue, comentários, dependências, critérios e documentos, avaliar worktrees/branches/PRs associados. Delegar o plano a `muvit-planner`, aplicando Superpowers integralmente de modo autônomo. O principal coordena a execução do plano, sem refazê-lo.
+3. **Contexto e plano**: ler issue, comentários, dependências, critérios e documentos, avaliar worktrees/branches/PRs associados. Delegar o plano ao worker Orca do papel `muvit-planner`, aplicando Superpowers integralmente de modo autônomo. Encerrar o turno para aguardar o evento de resposta, preservando rodada e trava; retomar pelo protocolo Orca antes da próxima etapa. O principal coordena a execução do plano, sem refazê-lo.
 4. **Isolamento**: criar worktree e branch de nome curto do card sobre base remota atualizada, e ambiente de teste separado (Docker, PostgreSQL, API, dados e `.env`). Nunca reutilizar banco mutável de outra rodada. Verificar serviços e seed antes de testes.
 5. **Implementar/validar**: delegar implementação e correções a `muvit-implementer`, sem sobreposição de escrita. Usar `muvit-quality-verifier` para a bateria de checks que justifique delegação; checks simples podem ficar com o implementador. Em interface afetada, `muvit-visual-qa` testa os fluxos reais via `adb` e emulador dedicado para mobile ou navegador Orca para web, sem exigir comparação com design. Tarefas explícitas de edição de `.pen` usam Pen CLI.
 6. **Integrar e abrir PR**: obter revisão independente de `muvit-reviewer` sobre a HEAD integrada, preservar integridade do branch e conferir validação integrada. Manter a branch da rodada local até esta etapa; publicar somente a branch de entrega do card para abrir PR, nunca uma branch auxiliar da automação. Em rodada completa autorizada, commitar/push conforme padrão repo, abrir PR apontando para base correta e vincular card. A autorização não inclui merge.
@@ -50,4 +50,4 @@ Consultar ou editar esta skill autoriza somente manutenção: não inicia rodada
 - `references/project-boundaries.md` — restrições relevantes ao repositório/negócio.
 - `templates/` — descrições/relatórios de handoff e PR.
 
-**Escopo desta v8.1 local:** fluxo v8 com delegação direta e perfis fixos do projeto. Consulte `MIGRATION-NOTE.md` para a proveniência e as limitações históricas do pacote original.
+**Escopo desta v8.2 local:** fluxo v8 com workers Orca, chat nativo preferencial, fallback CLI e perfis fixos do projeto. Consulte `MIGRATION-NOTE.md` para a proveniência e as limitações históricas do pacote original.

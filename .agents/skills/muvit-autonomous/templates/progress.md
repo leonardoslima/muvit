@@ -9,6 +9,10 @@
 - Base remota/HEAD:
 - Plano Superpowers:
 - Coordenador e agentes: IDs, modelos/efforts solicitados e efetivos quando expostos:
+- Orca Run/Task/Dispatch por papel, workspace e handle quando exposto:
+- Superfície chat/CLI por worker (recibo, fallback ou não comprovada):
+- Workers pendentes, resultado/worker_done, tentativas com liveness incerta e próxima ação/next:
+- Espera por evento Orca (rodada e trava preservadas; turno encerrado não é rodada concluída):
 - Docker/DB/API isolados:
 - Testes/checks e resultado:
 - Evidência ADB/web/Pen:

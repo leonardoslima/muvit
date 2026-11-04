@@ -1,20 +1,22 @@
-# muvit-autonomous — v8.1 local
+# muvit-autonomous — v8.2 local
 
-Fluxo v8 do Muvit com perfis fixos: Terra medium coordena, Sol high planeja e revisa, Terra xhigh implementa, Luna medium executa checks e Terra medium faz QA visual. As configurações efetivas estão em `.codex/config.toml` e `.codex/agents/muvit-*.toml` do projeto. Veja `references/superpowers-and-delegation.md` para o uso de cada agente.
+Fluxo v8 do Muvit com workers supervisionados do Orca: chat nativo preferencial e CLI como fallback autorizado, conforme a configuração do aplicativo. Terra medium coordena, Sol high planeja e revisa em sessões distintas, Terra xhigh implementa, Luna medium executa checks e Terra medium faz QA visual. Os perfis estão em `.codex/config.toml` e `.codex/agents/muvit-*.toml`; o coordenador aplica modelo, esforço e instruções explicitamente no lançamento Orca. Veja `references/superpowers-and-delegation.md`.
 
 ## Dependências de execução
 
-- Host capaz de aplicar os perfis e iniciar os especialistas com a assinatura Codex Plus.
+- Orca operacional, com orquestração, coordenador apto a receber eventos e agente Codex capaz de usar os perfis com a assinatura Plus. Carregar os guias versionados `orchestration` e `orca-cli` pelo executável resolvido para a sessão.
 - Superpowers 7.0.1 incluído em `.agents/skills/superpowers/`, com origem e versão em `UPSTREAM.md`; acesso real ao GitHub, Linear e ferramentas necessárias ao card.
-- Ao instalar em outro checkout, levar as pastas `muvit-autonomous/` e `superpowers/` de `.agents/skills/`, além dos arquivos de configuração de `.codex/`. Nenhuma instalação global é necessária.
+- Ao instalar em outro checkout, levar as pastas `muvit-autonomous/` e `superpowers/` de `.agents/skills/`, além dos arquivos de configuração de `.codex/`. Superpowers não exige instalação global; Orca e seu runtime precisam estar disponíveis.
 
 ## Executar e validar
 
 Pedir ao principal uma rodada de `muvit-autonomous` autoriza trabalhar em exatamente um card elegível até os gates de PR/review ou um bloqueio documentado, sem merge. Consultar ou editar os arquivos autoriza somente manutenção. A execução sequencial dos especialistas é o padrão.
 
-A configuração do projeto não troca o modelo de uma sessão já iniciada. No host, confira Terra medium como principal e a descoberta dos agentes antes da rodada; uma seleção explícita do host pode prevalecer. Os agentes personalizados herdam as permissões do principal.
+A configuração do projeto não troca o modelo de uma sessão já iniciada. No host, confira Terra medium como principal e o suporte aos perfis antes da rodada; uma seleção explícita do host pode prevalecer. Os TOMLs não são registro automático de agentes Orca e não garantem permissões ou sandbox dos workers. O ID de lançamento é `codex`, com modelo/esforço explícitos e briefing derivado do papel.
 
-Da raiz do repositório, execute `python -B -X utf8 -m unittest discover -s .agents/skills/muvit-autonomous/tests -v`. Os testes analisam os TOMLs e contratos documentados; não comprovam acesso aos modelos, carregamento pelo host ou uma rodada real. Não inicie um card para validar uma manutenção sem autorização de rodada.
+O coordenador usa `worker-start`, registra o recibo real de chat/CLI e encerra o turno para ser retomado pelo evento Orca. Correções usam `orchestration send`; o worker conclui pelo protocolo `worker_done`. Fim de turno não encerra rodada nem libera trava. Não fazer polling de workers nem substituir Orca por subagentes internos do chat. O teto de quatro agentes incluindo o principal precisa ser contado pelo coordenador: o limite interno de threads Codex não limita workers Orca.
+
+Da raiz do repositório, execute `python -B -X utf8 -m unittest discover -s .agents/skills/muvit-autonomous/tests -v`. Os testes analisam os TOMLs e contratos documentados; não comprovam acesso aos modelos, superfície efetiva, eventos Orca, autenticação Plus ou uma rodada real. Não inicie workers ou um card para validar uma manutenção sem autorização específica.
 
 O QA visual testa os fluxos da aplicação em execução quando houver interface afetada, sem exigir comparação com design de referência.
 
@@ -24,4 +26,4 @@ Cada execução seleciona somente cards `agent_ready` atribuídos ao usuário au
 
 ## Origem
 
-Base: ZIP original v8.0.0, restaurado em 2026-11-03. A v8.1 substitui a dependência externa de delegação por perfis fixos e conserva o fluxo de seleção, isolamento, QA e revisão. Consulte `MIGRATION-NOTE.md` para o registro histórico.
+Base: ZIP original v8.0.0, restaurado em 2026-11-03. A v8.1 introduziu os perfis fixos; a v8.2 passa a delegar pelo Orca, conservando perfis, seleção, isolamento, QA e revisão. Consulte `MIGRATION-NOTE.md` para o registro histórico.

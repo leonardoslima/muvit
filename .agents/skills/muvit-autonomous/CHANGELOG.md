@@ -1,5 +1,13 @@
 # Changelog
 
+## 8.2.0 — 2026-11-04
+
+- Especialistas passam a usar workers supervisionados do Orca, com chat nativo preferencial e CLI como fallback autorizado, preservando modelos e esforços.
+- Perfis TOML são aplicados explicitamente ao lançamento Codex e ao briefing; não há fallback para subagentes internos do chat.
+- Retomada por eventos, correções por mensagens e conclusão pelo protocolo Orca, com registro de Run/Task/Dispatch e superfície real.
+- Recuperação evita duplicar lançamentos desconhecidos; fim de turno preserva rodada e trava. Mantidos isolamento, teto de agentes e gates de qualidade.
+- Testes estáticos conferem o exemplo de lançamento contra o perfil do planejador; não comprovam workers reais ou eventos no runtime.
+
 ## 8.1.0 — 2026-11-03
 
 - Base v8 restaurada e adaptada à delegação direta, com coordenador e cinco especialistas configurados em `.codex/` do projeto.

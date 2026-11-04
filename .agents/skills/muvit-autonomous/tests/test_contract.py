@@ -1,5 +1,7 @@
 """Testes estáticos do contrato da skill standalone. Não executam repo/CLI/Linear reais."""
 from pathlib import Path
+import re
+import shlex
 import tomllib
 import unittest
 
@@ -12,7 +14,7 @@ class MuvitContractTests(unittest.TestCase):
     def test_skill_metadata(self):
         skill=self.read('SKILL.md')
         self.assertIn('name: muvit-autonomous', skill)
-        self.assertIn('version: "8.1.0"', skill)
+        self.assertIn('version: "8.2.0"', skill)
 
     def test_standalone_files(self):
         for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','references/selection-and-state.md',
@@ -22,12 +24,46 @@ class MuvitContractTests(unittest.TestCase):
                   'references/closure-and-recovery.md','templates/pr-description.md']:
             self.assertTrue((ROOT/p).is_file(), p)
 
-    def test_one_card_and_direct_delegation(self):
+    def test_one_card_and_orca_delegation(self):
         s=self.read('SKILL.md')
         self.assertIn('um card', s.lower())
         self.assertNotIn('`orchestrator`',s)
         self.assertIn('Superpowers',s)
         self.assertIn('agente', s.lower())
+        self.assertIn('Orca', s)
+
+    def test_orca_launch_matches_planner_profile(self):
+        protocol = self.read('references/superpowers-and-delegation.md')
+        commands = re.findall(r'^ORCA orchestration worker-start .+$', protocol, re.MULTILINE)
+        self.assertEqual(len(commands), 1, 'Manter um exemplo de lançamento verificável')
+        args = shlex.split(commands[0])
+        profile_path = ROOT.parents[2] / '.codex/agents/muvit-planner.toml'
+        profile = tomllib.loads(profile_path.read_text(encoding='utf-8'))
+        expected = {
+            '--agent': 'codex',
+            '--model': profile['model'],
+            '--effort': profile['model_reasoning_effort'],
+            '--worktree': '<seletor-exato-da-worktree-do-card>',
+        }
+        for flag, value in expected.items():
+            self.assertIn(flag, args)
+            self.assertEqual(args[args.index(flag) + 1], value)
+        self.assertIn('--spec-file', args)
+        self.assertNotIn('--surface', args)
+        self.assertNotIn('fork_turns', protocol)
+
+    def test_orca_recovery_and_resume_contract(self):
+        protocol = self.read('references/superpowers-and-delegation.md')
+        for command in ['skills get orchestration', 'orchestration send',
+                        'orchestration worker-read', 'worker_done']:
+            with self.subTest(command=command):
+                self.assertIn(command, protocol)
+        recovery = self.read('references/closure-and-recovery.md')
+        self.assertIn('references/recovery-and-cleanup.md', recovery)
+        self.assertIn('Dispatch', recovery)
+        progress = self.read('templates/progress.md')
+        self.assertIn('Run/Task/Dispatch', progress)
+        self.assertIn('chat/CLI', progress)
 
     def test_review_rules(self):
         s=self.read('references/pr-and-review-loop.md')
