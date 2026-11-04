@@ -173,7 +173,7 @@ describe('Better Auth', () => {
     const response = await currentApp().inject({
       method: 'POST',
       url,
-      headers: { cookie: trainer.cookie },
+      headers: { cookie: trainer.cookie, origin: env.WEB_URL },
       payload,
     });
 

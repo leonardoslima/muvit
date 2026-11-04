@@ -92,6 +92,7 @@ const workoutPlan = {
   ],
 };
 const workoutPlanSummary = {
+  days: workoutPlan.days,
   id: workoutPlan.id,
   studentId: workoutPlan.studentId,
   trainerId: workoutPlan.trainerId,
