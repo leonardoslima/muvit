@@ -48,3 +48,4 @@ Estas regras valem para `apps/web`, dashboard Next.js do trainer.
 
 - Para alteracoes web, rode `pnpm.cmd --dir apps/web test`, `pnpm.cmd --dir apps/web typecheck` e `pnpm.cmd exec biome check apps/web` conforme o risco.
 - Para fluxos visuais relevantes, verifique no navegador local antes de concluir.
+- Para E2E de navegador, mantenha cenários `*.spec.ts` em `test/e2e` e execute-os pelo runner isolado `pnpm.cmd web:e2e`; consulte `docs/operations/web-e2e.md`.

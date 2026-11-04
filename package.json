@@ -11,7 +11,7 @@
     "dev": "turbo run dev --ui=tui",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "test": "node --test scripts/mobile-e2e.test.mjs && turbo run test",
+    "test": "node --test scripts/web-e2e.test.mjs scripts/mobile-e2e.test.mjs && turbo run test",
     "typecheck": "turbo run typecheck",
     "mobile:start": "pnpm --filter @muvit/mobile start",
     "mobile:go": "pnpm --filter @muvit/mobile start:go",
@@ -26,7 +26,8 @@
     "db:generate": "pnpm --filter @muvit/db generate",
     "db:migrate": "pnpm --filter @muvit/db migrate",
     "db:studio": "pnpm --filter @muvit/db studio",
-    "db:seed": "pnpm --filter @muvit/api seed"
+    "db:seed": "pnpm --filter @muvit/api seed",
+    "web:e2e": "node scripts/web-e2e.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
