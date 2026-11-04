@@ -3,6 +3,7 @@
 ## 1. Antes da PR
 
 - Branch com título curto e vinculado ao card; commits e push somente do trabalho aprovado para escopo do card; base do PR conferida no remoto.
+- O primeiro push ocorre nesta preparação, após validação e revisão local. Publicar somente a branch de entrega do card; branches auxiliares de agendamento e reservas não são publicadas.
 - Checar diff, testes, lint/typecheck/build, migrações e QA prático. Descrever intenção, critérios, evidências, riscos e dependências.
 - Abrir PR na branch remota, vincular ao Linear e colocar em **revisão humana** ao final do ciclo técnico. **Não fazer merge** automaticamente.
 

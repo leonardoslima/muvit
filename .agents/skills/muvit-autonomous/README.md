@@ -18,6 +18,10 @@ Da raiz do repositório, execute `python -B -X utf8 -m unittest discover -s .age
 
 O QA visual testa os fluxos da aplicação em execução quando houver interface afetada, sem exigir comparação com design de referência.
 
+A reserva de cards usa `python -B -X utf8 .agents/skills/muvit-autonomous/scripts/local_lock.py` e fica no diretório Git comum, compartilhado pelas worktrees do mesmo clone. Veja aquisição, liberação e retomada em `references/selection-and-state.md`. Nenhuma branch remota de reserva é criada; o primeiro push da branch de entrega ocorre na preparação da PR.
+
+Cada execução seleciona somente cards `agent_ready` atribuídos ao usuário autenticado no Linear. Cada colaborador precisa usar sua própria conexão; cards sem responsável ou de outro usuário não entram na fila. O precheck Orca em `scripts/precheck.ps1` consulta `--assignee me`, e a skill repete o filtro inclusive em execuções manuais e após adquirir a trava.
+
 ## Origem
 
 Base: ZIP original v8.0.0, restaurado em 2026-11-03. A v8.1 substitui a dependência externa de delegação por perfis fixos e conserva o fluxo de seleção, isolamento, QA e revisão. Consulte `MIGRATION-NOTE.md` para o registro histórico.
