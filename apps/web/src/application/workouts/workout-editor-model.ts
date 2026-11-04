@@ -251,7 +251,7 @@ function validationMessage(field: PropertyKey | undefined): string {
     sets: 'Use um número inteiro de séries entre 1 e 20.',
     reps: 'Informe repetições com até 20 caracteres.',
     restSeconds: 'Use um descanso inteiro entre 0 e 600 segundos.',
-    loadKg: 'Use uma carga entre 0 e 1000 kg.',
+    loadKg: 'Use uma carga inteira entre 0 e 1000 kg.',
     tempo: 'Informe um tempo com até 10 caracteres.',
   };
   return messages[String(field)] ?? 'Revise este campo.';

@@ -59,6 +59,25 @@ function populatedDraft(): WorkoutDraft {
 }
 
 describe('workout editor model', () => {
+  it('rejeita carga decimal e aceita carga inteira no formulário', () => {
+    const draft = populatedDraft();
+    const decimal = validateWorkoutDraft({
+      ...draft,
+      days: updateWorkoutExercise(draft.days, 0, 0, 'loadKg', 12.5),
+    });
+    expect(decimal.success).toBe(false);
+    if (!decimal.success)
+      expect(decimal.errors).toContainEqual({
+        path: 'days.day-a.exercises.instance-a.loadKg',
+        message: 'Use uma carga inteira entre 0 e 1000 kg.',
+      });
+    expect(
+      validateWorkoutDraft({
+        ...draft,
+        days: updateWorkoutExercise(draft.days, 0, 0, 'loadKg', 13),
+      }).success,
+    ).toBe(true);
+  });
   it('cria o rascunho inicial com um dia e os metadados canônicos', () => {
     expect(createWorkoutDraft('student-id', () => 'day-a')).toEqual({
       studentId: 'student-id',

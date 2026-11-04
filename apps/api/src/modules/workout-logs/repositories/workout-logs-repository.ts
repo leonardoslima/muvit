@@ -11,7 +11,7 @@ export type FinishWorkoutLogInput = z.infer<typeof finishWorkoutLogSchema>;
 export type ListWorkoutLogsQuery = z.infer<typeof listWorkoutLogsQuerySchema>;
 export type WorkoutLogFullResponse = z.input<typeof workoutLogFullSchema>;
 export type WorkoutLogAccess = { id: string; studentId: string };
-export type WorkoutDayAccess = { id: string; studentId: string };
+export type WorkoutDayAccess = { id: string; studentId: string; isCurrent: boolean };
 export type WorkoutLogSummary = {
   id: string;
   studentId: string;
@@ -25,7 +25,7 @@ export type WorkoutLogSummary = {
 
 export interface WorkoutLogsRepository {
   findWorkoutDayAccess(workoutDayId: string): Promise<WorkoutDayAccess | null>;
-  start(studentId: string, input: StartWorkoutLogInput): Promise<WorkoutLogSummary>;
+  start(studentId: string, input: StartWorkoutLogInput): Promise<WorkoutLogSummary | null>;
   findById(id: string): Promise<WorkoutLogAccess | null>;
   finish(id: string, input: FinishWorkoutLogInput): Promise<WorkoutLogFullResponse | null>;
   findFullById(id: string): Promise<WorkoutLogFullResponse | null>;

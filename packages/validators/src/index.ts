@@ -6,3 +6,5 @@ export * from './trainers.js';
 export * from './notifications.js';
 export * from './billing.js';
 export * from './reports.js';
+export * from './workout-plan-drafts.js';
+export * from './workout-evolution.js';

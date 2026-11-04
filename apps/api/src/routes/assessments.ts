@@ -70,7 +70,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['assessments'],
-        params: z.object({ studentId: z.string().uuid() }),
+        params: z.object({ studentId: z.string().guid() }),
         querystring: listAssessmentsQuerySchema,
         response: {
           200: z.object({ items: z.array(assessmentSchema), total: z.number() }),
@@ -95,7 +95,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['assessments'],
-        params: z.object({ studentId: z.string().uuid() }),
+        params: z.object({ studentId: z.string().guid() }),
         body: createAssessmentSchema,
         response: { 201: assessmentSchema },
       },
@@ -119,7 +119,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['assessments'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         response: {
           200: assessmentSchema,
           404: z.object({ error: z.string() }),
@@ -140,7 +140,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['assessments'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         body: updateAssessmentSchema,
         response: {
           200: assessmentSchema,
@@ -166,7 +166,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['assessments'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
       },
     },
     async (req, reply) => {

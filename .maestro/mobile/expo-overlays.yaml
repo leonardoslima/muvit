@@ -1,0 +1,18 @@
+appId: ${MAESTRO_E2E_APP_ID}
+---
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: "Connected to expo-cli"
+    commands:
+      - tapOn:
+          point: "92%,34%"
+- runFlow:
+    when:
+      visible: "Muvit needs permissions.*"
+    commands:
+      - tapOn: DENY

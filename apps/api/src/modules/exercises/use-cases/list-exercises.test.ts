@@ -32,10 +32,6 @@ class FakeExercisesRepository implements ExercisesRepository {
   async updateForTrainer() {
     return this.exercise;
   }
-
-  async deleteForTrainer() {
-    return true;
-  }
 }
 
 describe('ListExercisesUseCase', () => {

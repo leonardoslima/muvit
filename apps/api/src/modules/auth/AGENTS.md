@@ -21,6 +21,12 @@ Estas regras valem para `apps/api/src/modules/auth` e complementam `apps/api/AGE
 - Implementações Drizzle ficam em `repositories/drizzle-*.ts` e cumprem portas pequenas orientadas ao consumidor.
 - Identidades sem perfil válido devem ser tratadas como não autenticadas.
 
+## Recuperação de senha
+
+- Recuperação de senha usa somente os endpoints nativos do Better Auth, com expiração de 1 hora, uso único e revogação de sessões; o envio transacional via Resend independe de `EMAIL_NOTIFICATIONS_ENABLED`.
+- Sem `RESEND_API_KEY` ou `EMAIL_FROM`, a solicitação deve retornar indisponibilidade uniforme antes de consultar a conta; falha do provedor deve manter a resposta genérica e registrar somente categoria segura, sem erro original, email ou token.
+- Não aguarde a entrega externa na resposta de solicitação; preserve a sanitização de URLs de autenticação no logger, incluindo token no caminho do callback e parâmetros de consulta.
+
 ## Testes
 
 - Testes de autenticação devem usar operações nativas do Better Auth e sessão por cookie.

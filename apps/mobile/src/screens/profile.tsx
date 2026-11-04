@@ -1,47 +1,155 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useState } from 'react';
+import { View } from 'react-native';
+import { AuthBrand } from '../components/auth/auth-brand';
+import { Screen } from '../components/ui/screen';
+import {
+  ActionFeedback,
+  Button,
+  Card,
+  ConfirmationDialog,
+  Header,
+  StatePanel,
+  Text,
+} from '../components/ui/v2';
+import { StudentWorkoutGoal } from '../components/workouts/student-workout-goal';
 import { authClient } from '../lib/auth-client';
+import { spacing } from '../lib/design-system/tokens';
 import { queryClient } from '../lib/query-client';
-import { colors, sharedStyles } from '../lib/styles';
 
-export function ProfileScreen() {
+export type ProfileScreenProps = {
+  accountType?: string;
+  fallbackInitials?: string;
+  fallbackName?: string;
+  showWorkoutGoal?: boolean;
+};
+
+export function ProfileScreen({
+  accountType = 'Aluno independente',
+  fallbackInitials = 'AL',
+  fallbackName = 'Aluno',
+  showWorkoutGoal = false,
+}: ProfileScreenProps = {}) {
   const session = authClient.useSession();
   const user = session.data?.user;
+  const [logoutError, setLogoutError] = useState<string>();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   async function logout() {
+    if (loggingOut) return;
+
+    setLoggingOut(true);
+    setLogoutError(undefined);
     try {
       await authClient.signOut();
+      router.replace('/(auth)/login');
+    } catch {
+      setLogoutError('Não foi possível sair agora.');
     } finally {
       queryClient.clear();
-      router.replace('/(auth)/login');
+      setLoggingOut(false);
     }
   }
 
   if (session.isPending) {
     return (
-      <View style={[sharedStyles.screen, { alignItems: 'center', justifyContent: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <Screen>
+        <StatePanel
+          description="Estamos carregando seus dados."
+          kind="loading"
+          testID="profile-loading"
+          title="Carregando perfil"
+        />
+      </Screen>
     );
   }
 
+  const displayName = user?.name?.trim() || fallbackName;
+  const initials = getInitials(user?.name, fallbackInitials);
+
   return (
-    <View style={[sharedStyles.screen, { gap: 16 }]}>
-      <Text style={sharedStyles.title}>Perfil</Text>
-      <View style={sharedStyles.card}>
-        <Text style={{ color: colors.ink, fontSize: 20, fontWeight: '700' }}>
-          {user?.name ?? 'Aluno'}
+    <Screen scroll contentContainerStyle={{ gap: spacing.xxl }}>
+      <AuthBrand />
+      <View
+        style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}
+        testID="profile-heading"
+      >
+        <Header
+          testID="profile-title"
+          title="Perfil"
+          titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold"
+        />
+        <Text className="text-v2-secondary" testID="profile-subtitle" variant="body">
+          Informações da sua conta.
         </Text>
-        <Text style={sharedStyles.subtitle}>{user?.email ?? 'Sem email cadastrado'}</Text>
-        {user ? (
-          <Text style={sharedStyles.subtitle}>
-            Tipo de conta: {user.role === 'student' ? 'Aluno' : 'Treinador'}
-          </Text>
-        ) : null}
       </View>
-      <Pressable onPress={logout} style={sharedStyles.secondaryButton}>
-        <Text style={sharedStyles.secondaryButtonText}>Sair</Text>
-      </Pressable>
-    </View>
+
+      <Card className="items-center gap-3 rounded-[26px] border-0 p-6" testID="profile-card">
+        <View
+          accessibilityLabel={`Iniciais de ${displayName}`}
+          className="h-[72px] w-[72px] items-center justify-center rounded-[36px] bg-v2-subtle"
+          testID="profile-avatar"
+        >
+          <Text className="text-v2-brand" variant="action">
+            {initials}
+          </Text>
+        </View>
+        <Text
+          className="w-full text-center text-[25px] leading-[32.5px] font-v2-extrabold"
+          testID="profile-name"
+        >
+          {displayName}
+        </Text>
+        <Text
+          className="w-full text-center text-v2-secondary"
+          testID="profile-email"
+          variant="body"
+        >
+          {user?.email ?? 'Sem email cadastrado'}
+        </Text>
+        <Text
+          className="w-full text-center text-v2-brand"
+          testID="profile-account-type"
+          variant="label"
+        >
+          {accountType}
+        </Text>
+      </Card>
+
+      {showWorkoutGoal ? <StudentWorkoutGoal key={user?.id} /> : null}
+
+      {logoutError ? (
+        <ActionFeedback description={logoutError} testID="profile-error" variant="error" />
+      ) : null}
+      <Button
+        disabled={loggingOut}
+        label={loggingOut ? 'Saindo...' : 'Sair'}
+        loading={loggingOut}
+        onPress={() => setConfirmingLogout(true)}
+        variant="secondary"
+      />
+      <ConfirmationDialog
+        visible={confirmingLogout}
+        title="Sair da conta?"
+        description="Você precisará entrar novamente para acessar sua conta."
+        confirmLabel="Sair da conta"
+        disabled={loggingOut}
+        onCancel={() => setConfirmingLogout(false)}
+        onConfirm={() => {
+          setConfirmingLogout(false);
+          void logout();
+        }}
+      />
+    </Screen>
   );
+}
+
+function getInitials(name: string | undefined, fallbackInitials: string): string {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+  return initials || fallbackInitials;
 }

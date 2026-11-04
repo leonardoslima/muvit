@@ -16,8 +16,6 @@ export default mergeConfig(
           'src/app/layout.tsx',
           'src/app/global-error.tsx',
           'src/app/providers.tsx',
-          'src/instrumentation*.ts',
-          'src/sentry.*.config.ts',
           'test/**',
         ],
       },

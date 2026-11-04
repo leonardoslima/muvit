@@ -52,7 +52,7 @@ export const studentReportSchema = z.object({
         date: z.string().date(),
         weightKg: z.number().nullable(),
         bodyFatPct: z.number().nullable(),
-        measurements: z.record(z.number()).nullable(),
+        measurements: z.record(z.string(), z.number()).nullable(),
       }),
     ),
     changes: z.object({

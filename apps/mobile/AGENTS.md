@@ -2,7 +2,7 @@
 
 ## Escopo
 
-Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
+Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entrega a experiência do aluno e poderá hospedar a experiência de professor/personal.
 
 ## Arquitetura mobile
 
@@ -24,21 +24,39 @@ Estas regras valem para `apps/mobile`, app Expo/React Native do aluno.
 
 - Trate chamadas de rede com estados de loading, erro e retry quando o fluxo exigir.
 - Use `authClient.useSession()` como fonte unica de hidratacao e identidade; o plugin Expo do Better Auth e o unico responsavel por persistir a sessao no SecureStore.
+- As rotas `(auth)/forgot-password` e `(auth)/reset-password` sao publicas mesmo com sessao existente; o retorno `muvit://reset-password` recebe token ou erro na query e nunca autentica automaticamente apos redefinir.
 - Encaminhe `authClient.getCookie()` no header `Cookie` das chamadas nativas e use `credentials: 'omit'`; nao crie store paralela ou tokens proprios.
 - Chamadas de dominio do aluno usam rotas self-scoped `/students/me/*`; nunca trate o ID do usuario Better Auth como `profileId`.
-- O fluxo mobile autenticavel e exclusivo de `student`; rejeite e encerre sessoes com outro papel.
+- O fluxo mobile autenticável mantém isolamento por papel: `student` usa rotas self-scoped `/students/me/*` e `trainer` usa o shell protegido `/trainer`; ownership e autorização continuam sob responsabilidade da API.
 - Particione cache persistente privado pela identidade autenticada ou limpe-o ao trocar de conta.
 - Solicite permissoes nativas no ponto de uso e trate negacao de forma explicita.
 - Push tokens e dados de sessao devem seguir os contratos da API.
 - Dados offline ou cache local devem ter origem e invalidez claras.
+- Sessoes guiadas offline devem persistir um registro versionado com snapshot validado do dia, particionado por `authUserId` e `workoutDayId`; tente restaurar esse snapshot antes da rede e migre registros legados sem descartar progresso.
+- Ao salvar uma sessao, pause-a e persista o relogio acumulado; somente intervalos entre `resumeGuidedSession` e `pauseGuidedSession` contam no resumo enviado.
+- Conclusoes devem avancar no journal duravel por `ownerAuthUserId`, data local e `workoutDayId`: persistir `create` antes do POST; persistir `finish` apos o POST bem-sucedido e antes do PATCH; persistir `terminal` apos o PATCH bem-sucedido. O requester deve ser vinculado uma vez ao cookie da mesma sessao Better Auth e o tombstone deve bloquear duplicatas.
+- Na reconciliacao de rascunho e tombstone, a mesma data continua bloqueada; para data anterior, remova o rascunho somente no serializador compartilhado por storage e chave e se usuário, dia e `startedAtMs` ainda coincidirem com o snapshot lido. Apos essa remoção, aposente a geração para bloquear saves tardios e remova o tombstone exato somente após essa confirmação. Se a limpeza falhar, ignore o rascunho antigo para liberar o novo ciclo e tente limpar novamente na próxima montagem.
 
 ## UI nativa
 
 - Preserve ergonomia mobile: areas tocaveis confortaveis, feedback de toque, safe area e teclado.
+- Formularios rolaveis usam `KeyboardScrollView` de `src/components/ui/v2`, que ajusta a area util no Android/iOS e revela o campo focado ao abrir o teclado ou mudar o layout. Nao aninhe outro `KeyboardAvoidingView` nesses formularios. Modais com busca fora da lista devem ajustar a superficie inteira ao teclado.
 - Texto visivel deve estar em pt-BR e caber em telas pequenas.
 - Evite layouts dependentes de dimensoes fixas quando o conteudo puder variar.
+- O componente `Screen` deve consumir `BottomTabBarHeightContext` e reservar `tabBarHeight + tabBarLayout.offset + tabBarLayout.contentGap` somente dentro das tabs; `offset` compensa a barra flutuante e `contentGap` mantém 24 dp livres acima dela. A barra usa o mesmo `tabBarLayout.offset` no deslocamento vertical; telas nao devem duplicar esse espacamento.
+- Use `src/lib/design-system/tokens.ts` como fonte canônica de cores, tipografia, espaçamento, raios e elevação da UI mobile; os identificadores exportados não devem ter prefixo de versão; prefira esses tokens a valores visuais locais.
+- Use `src/components/ui/v2` para primitives compartilhados. Ao migrar ou alterar um fluxo, substitua os imports afetados de `src/lib/styles.ts` e `src/components/ui` pelos equivalentes v2; não crie aliases ou shims para preservar compatibilidade com o legado. Consulte `docs/mobile-v2-foundation.md` e `docs/mobile-v2-design-gate.md` para os contratos aprovados.
+- Confirmações de remover, sair, descartar e pular exercício usam `Dialog`/`ConfirmationDialog` de `src/components/ui/v2`, reutilizando superfície e tipografia do modal `P9njzq`. `ConfirmationDialog` compõe cancelar/confirmar; `Dialog` atende fluxos com mais ações e fornece o ToastProvider na janela nativa. Cancelar e Back preservam os dados, e a ação só ocorre ao confirmar. Bottom sheets com `SheetSurface` ficam para seleção e consulta de conteúdo, como catálogo e origem das fotos.
+- NativeWind é configurado por Babel/Metro/Tailwind no app e `global.css` é importado uma vez pelo root layout; classes v2 usam tokens `v2-*`. DM Sans é a família tipográfica da foundation v2. A paleta imersiva é contextual, sem dark mode global.
+- Use `ActionFeedback` de `src/components/ui/v2` para falhas de ações: a variante `error` mostra toast flutuante no `ToastProvider` da `Screen` ou de `GuidedSessionLayout`. Modais nativos com essas falhas precisam de um `ToastProvider` dentro da janela e montado somente enquanto visível. Passe `eventKey={query.errorUpdatedAt}` para falhas repetidas de consultas. Preserve validação junto ao campo e `StatePanel` para falhas sem conteúdo disponível; sucessos, avisos persistentes e contexto offline continuam inline com `Message`. A regra de estado permanece fora do componente visual.
 
 ## Verificacao
 
 - Para alteracoes mobile, rode `pnpm.cmd --dir apps/mobile test`, `pnpm.cmd --dir apps/mobile typecheck` e `pnpm.cmd --dir apps/mobile doctor` conforme o risco.
+- Para build nativo em worktree Windows, siga `docs/operations/mobile-android-build-windows.md` e confirme APK, AVD e serial antes de declarar o resultado.
 - Quando alterar navegacao ou UI, teste pelo Expo em ao menos uma plataforma alvo quando possivel.
+- Para QA manual em emulador/dispositivo, use um Expo Development Build com `expo-dev-client` quando o fluxo exigir módulos nativos ausentes no Expo Go. Expo Go também é uma opção: execute `pnpm.cmd mobile:go` a partir da raiz e registre as limitações observadas. Para gerar e instalar a build Android localmente, execute `pnpm.cmd mobile:android:build` a partir da raiz; esse fluxo não exige conta ou login no EAS. Depois da instalação, inicie o Metro com `pnpm.cmd mobile:android` ou `pnpm.cmd --dir apps/mobile start` ou `ios`, que usam `--dev-client`. EAS Build é uma alternativa opcional.
+- O perfil EAS atual gera builds iOS para dispositivo; para usar o simulador iOS, configure `ios.simulator: true` no perfil antes de gerar a build.
+- Recrie e reinstale o Development Build depois de adicionar/remover dependência nativa ou alterar configuração nativa; alterações JS/TS podem ser carregadas pelo Metro no client instalado.
+- Para testes do app em emulador ou dispositivo, use Maestro como ferramenta padrão; registre evidências observáveis e limitações de cenários não reproduzidos.
+- A suíte E2E permanente fica em `.maestro/mobile/` e usa `pnpm.cmd mobile:e2e --scenario all --device <serial-confirmado>` da raiz; consulte `docs/operations/mobile-e2e.md`. Ao alterar autenticação, navegação, avaliação ou treino, atualize os cenários afetados ou acrescente a cobertura funcional necessária. Use AVD exclusivo e banco descartável do runner; `--mode api-only` valida preparação/permissões, sem substituir o aceite Android.

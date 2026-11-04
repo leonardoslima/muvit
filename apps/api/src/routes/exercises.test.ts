@@ -61,6 +61,25 @@ describe('exercises', () => {
     expect(r.json().trainerId).toBe(trainer.profileId);
   });
 
+  it('trainer deletes a custom exercise that is not used by a draft', async () => {
+    const trainer = await signupTrainer('a@a.com');
+    const created = await app.inject({
+      method: 'POST',
+      url: '/exercises',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Crucifixo invertido', muscleGroup: 'shoulders' },
+    });
+
+    const deleted = await app.inject({
+      method: 'DELETE',
+      url: `/exercises/${created.json().id}`,
+      headers: { cookie: trainer.cookie },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(deleted.statusCode).toBe(204);
+  });
+
   it('students cannot create exercises', async () => {
     const student = await signUpWithSession(app, {
       name: 'Aluno',

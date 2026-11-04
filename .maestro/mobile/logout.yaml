@@ -1,0 +1,11 @@
+appId: ${MAESTRO_E2E_APP_ID}
+---
+- tapOn: Perfil
+- scroll
+- scrollUntilVisible:
+    element: Sair
+    direction: DOWN
+- tapOn: Sair
+- assertVisible: Sair da conta?
+- tapOn: Sair da conta
+- assertVisible: Entrar

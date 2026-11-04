@@ -1,0 +1,119 @@
+# Aluno — progresso e avaliações v2 — MUV-27
+
+O visor compartilhado de fotos permite pinça temporária de 1× a 4×, retornando suavemente ao tamanho original em 180 ms ao soltar ou cancelar. Trocar de imagem ou fechar descarta a escala. Não há arraste ou toque duplo; os controles de fechar e navegar permanecem fora da ampliação.
+
+Atualização de 2026-10-19: a grade compartilhada usa miniaturas uniformes de proporção 1:1, fundo neutro `subtle` e borda. As imagens usam `contain`, preservando a foto inteira sem distorção; os espaços livres fazem parte do card. O X fica fixo no canto do card. Adicionar fotos usa um botão secundário compacto abaixo da grade, com o texto de apoio separado. O toque na foto abre o visor existente em tela cheia. Esta regra substitui a altura variável pela proporção original descrita abaixo e também se aplica à leitura pela grade compartilhada. O arquivo enviado permanece inteiro.
+
+A fonte visual é `assets/design/mobile.pen`, editada pelo MCP pen.dev. Esta proposta registra a direção A e a foundation do MUV-24; o design foi aprovado pelo usuário em 2026-10-04. A implementação foi entregue no MUV-37 em 2026-10-14. O usuário autorizou adequar app, API e validação para aceitar quantidade ilimitada de fotos, sem preservar o teto antigo de seis. O relatório completo e os limites da inspeção nativa estão no artefato local ignorado `artifacts/muv-37/2026-10-14-validacao/relatorio.md`; para compartilhar evidências, siga o [fluxo de artefatos de QA](operations/qa-artifacts.md).
+
+## Status da implementação
+
+O app do aluno aceita seleção cumulativa e sem teto de fotos, pré-visualização, remoção antes do envio, envio sequencial e leitura das fotos registradas. O contrato compartilhado/API aceita qualquer quantidade válida de URLs; o banco já armazena `photos` como `jsonb` sem limite de itens, portanto esta entrega não exige migration. O fluxo do professor mantém seu máximo de três fotos. Consulte o relatório do MUV-37 para comandos, resultados e capturas do AVD.
+
+## Onde encontrar
+
+Os componentes de avaliação começam em y=31129 e os de fotos em y=31049; as telas começam em y=32450. Cada tela é um frame independente. Os registros, datas, medidas e fotos nas amostras são ilustrativos.
+
+| Tela ou quadro | Node ID |
+| --- | --- |
+| Componentes de avaliação | `XCKBa` |
+| Componentes de fotos e orientação de implementação | `JXm9A` |
+| Fluxo e contrato de implementação | `H02fJG` |
+| Progresso — histórico | `R8DMP` |
+| Progresso — uma avaliação | `xQCvZ` |
+| Progresso — dados parciais | `E8gHIE` |
+| Progresso — sem alteração | `d5Owa` |
+| Progresso — variação a mais | `Eyq0q` |
+| Progresso — informações já registradas | `SdMyc` |
+| Progresso — registro sem medidas | `wD6Ex` |
+| Progresso — carregando | `lECTq` |
+| Progresso — nenhuma avaliação | `Y8WrQ1` |
+| Progresso — erro sem dados | `Fbjmz` |
+| Progresso — tentando novamente | `s7tXs` |
+| Progresso — erro de atualização com dados | `cN2h4` |
+| Nova avaliação — formulário vazio | `YQWga` |
+| Nova avaliação — dados preenchidos | `pXdSR` |
+| Nova avaliação — foto adicionada | `e34lmL` |
+| Nova avaliação — uma foto selecionada | `hnvnM` |
+| Nova avaliação — seleção extensa de oito fotos | `ZCD1f` |
+| Conferir foto inteira antes do envio | `bUVFV` |
+| Conferir foto registrada | `j5Le78` |
+| Nova avaliação — salvando | `SDrcx` |
+| Nova avaliação — erro ao salvar | `EjRT9` |
+| Nova avaliação — sucesso transitório | `S1DV3j` |
+| Nova avaliação — foco e teclado | `I887G` |
+| Progresso — 320 dp | `GjYM3` |
+| Progresso — 430 dp | `jbrY4` |
+| Nova avaliação — 320 dp | `TwkHx` |
+| Nova avaliação — 430 dp | `cs4M7` |
+| Observações longas — 320 dp | `vg801` |
+
+## Hierarquia e componentes
+
+Progresso mantém o shell do aluno e a navegação Hoje/Progresso/Perfil, com Progresso selecionado. O título e o contexto precedem a ação **Nova avaliação**; o histórico agrupa cada registro por data, medidas e observações. Nova avaliação usa o header contextual de retorno, sem tab bar.
+
+As telas reutilizam instâncias conectadas da foundation: headers, tabs, campos, botões, mensagens e StatePanel. Os novos símbolos `t3pxeT` (`Card/Avaliação/Aluno`) e `A34fEL` (`Card/Avaliação/Medidas existentes`) ficam no quadro `XCKBa`. O segundo apresenta somente informações de leitura; não é um novo formulário nem uma nova rota. No quadro `JXm9A`, os frames `FVzOO`, `bY2Om` e `p5TUr` organizam fotos selecionadas, registradas e uma seleção extensa. O filho `CfWyw` de `FVzOO` é o único componente reutilizável de imagem dessas seções. Todas as imagens dos exemplos e das telas dependentes usam instâncias de `CfWyw`, preservando contagem, grade, proporções e estados. Nas fotos registradas, a remoção fica oculta; na seleção, permanece disponível ou visualmente bloqueada conforme o estado. As instâncias herdam os estilos compartilhados e sobrescrevem somente as diferenças de conteúdo, tamanho e estado.
+
+O artefato conserva DM Sans, papel, verde profundo, lima, gutter de 16 dp e os demais tokens existentes. Botões têm 58 dp; controles de entrada têm pelo menos 52 dp. Labels e unidades permanecem visíveis. Texto secundário, estados e comparações não dependem apenas de cor.
+
+## Progresso e histórico
+
+A fonte atual é `GET /students/me/assessments?limit=20`, usada em `apps/mobile/src/screens/progress.tsx`. Preservar a ordem retornada, o escopo da identidade autenticada e o limite atual. Não introduzir filtros, paginação, metas, gráficos, pontuação, edição, exclusão ou navegação para detalhe.
+
+- Datas dos registros aparecem em DD/MM/AAAA; números usam apresentação pt-BR.
+- Peso e gordura corporal permanecem separados, com kg e %. Ausência de valor aparece como traço, nunca como zero.
+- Comparar com o registro imediatamente seguinte da lista, somente quando os dois valores da métrica forem válidos. Sem referência anterior ou com dado ausente, omitir aquela comparação.
+- Variação de peso usa kg; variação de gordura usa pontos percentuais. Usar **a mais**, **a menos** e **sem alteração** sem classificar o resultado como bom, ruim ou meta atingida.
+- Observações aparecem apenas quando existentes e crescem sem truncamento.
+- A amostra de informações existentes apresenta altura e as circunferências de `assessmentSchema`: peito, cintura, quadril, braços, coxas e panturrilhas direita/esquerda. Esses campos já são retornados pela API, embora a tela atual do aluno renderize somente peso, gordura e observações. A apresentação v2 é condicional aos valores recebidos; não calcula IMC, não cria métricas e não permite ao aluno preencher campos adicionais.
+- Fotos retornadas com a avaliação aparecem como miniaturas no registro correspondente. A seção `bY2Om` e os cards dependentes seguem o layout de `CfWyw`, com remoção oculta. A amostra preserva a proporção 1:2: 153 × 306 dp nas colunas dos cards de 390 dp, 118 × 236 dp em 320 dp e 173 × 346 dp em 430 dp; outras imagens mantêm suas próprias proporções. Tocar uma miniatura permite conferir a imagem inteira, preservando sua proporção. O visor de leitura permite percorrer as fotos e retornar ao Progresso; não oferece remover anexos registrados, comparar corpos, editar, compartilhar ou baixar imagens.
+
+Loading, vazio e erro sem dados ocupam a área principal, sem superfície própria de card. Marca, título, ação de avaliação e tabs permanecem visíveis. O erro oferece **Tentar novamente**, que refaz a consulta existente. O retry sem dados usa a apresentação de carregamento.
+
+Se uma atualização falhar com dados já carregados, preservar o histórico e apresentar mensagem contextual com **Tentar novamente** integrado na mesma superfície de aviso, sem um botão separado abaixo. A tela `cN2h4` segue a composição de `fsBiz` e `ClZZn` do MUV-25: mensagem sem padding próprio dentro do aviso, ação de 48 dp sem borda ou cápsula e fundo compartilhado. A foundation do MUV-24 define o feedback; essa composição não altera a requisição. Não prometer cache offline persistente, fila de avaliações ou sincronização pendente: o fluxo atual de avaliações não oferece esses contratos.
+
+## Nova avaliação
+
+Preservar os campos atuais de `apps/mobile/src/screens/new-assessment.tsx`: data, peso, gordura corporal e observações. A data inicia com a data local atual e mantém entrada AAAA-MM-DD. Peso e gordura usam teclado decimal; vírgula continua aceita pela conversão existente. Observações usam entrada multiline. Os traços da amostra vazia representam ausência de conteúdo; não devem ser enviados como texto.
+
+Somente a data é obrigatória no schema. Peso, gordura, observações e foto são opcionais. Os limites existentes permanecem: peso positivo até 500 kg, gordura entre 0 e 80%, observações até 2000 caracteres. O design não cria uma nova camada de validação local: a tela atual retorna mensagem genérica de falha, representada no estado de erro, e não oferece erros específicos por campo.
+
+**Adicionar fotos** oferece as opções nativas **Tirar foto**, **Escolher da biblioteca** e **Cancelar**. A biblioteca mantém a seleção múltipla; a câmera acrescenta uma imagem por captura, sem recorte. A seção de fotos mostra a quantidade selecionada e miniaturas de todas as imagens, em duas colunas. Novas seleções e capturas acrescentam fotos ao conjunto já escolhido; cancelamento mantém a seleção anterior. Tocar uma miniatura abre a imagem inteira, com indicação **Foto N de M**, ações anterior/próxima e retorno ao formulário sem perder os dados. Nas extremidades, a navegação indisponível deve ficar desabilitada; com uma só foto, não é necessário mostrar os controles de percurso.
+
+As 11 telas de avaliação do aluno usam instâncias de `S8jXyf` (`Photos/Avaliação/Upload`): `YQWga`, `pXdSR`, `e34lmL`, `SDrcx`, `EjRT9`, `S1DV3j`, `TwkHx`, `cs4M7`, `I887G`, `hnvnM` e `ZCD1f`. O upload ocupa a próxima posição da grade: a primeira quando não há fotos, a coluna livre quando a última linha tem uma foto ou uma nova linha quando ambas as colunas estão ocupadas. Ele substitui o botão separado abaixo das imagens. O componente original fica no exemplo de seleção do catálogo `JXm9A`, e o exemplo de oito fotos também o reutiliza. O visual segue a referência fornecida pelo usuário: superfície clara, borda tracejada, ícone de upload sobre círculo verde claro, label Adicionar fotos e texto de apoio. A ação conserva a seleção múltipla e os anexos já escolhidos; envio e sucesso mantêm o upload visível, com aparência e ação desabilitadas. As instâncias de 320/390/430 dp adaptam o container e a borda vetorial `OpRtY` para 138 × 276, 173 × 346 e 193 × 386 dp, respectivamente. Histórico e visores de leitura não oferecem upload.
+
+A ação de remover atua somente na seleção ainda não enviada. Nas seções `FVzOO` e `p5TUr` (seleção extensa), compostas por imagens reutilizáveis de `CfWyw`, a foto ocupa toda a largura da coluna e sua altura acompanha a proporção real, sem faixas laterais ou corte do corpo. O X fica sobre a própria foto, no canto superior direito, com círculo verde sólido de 28 dp e ícone branco de 16 dp, sem transparência. A área de toque de 48 dp é transparente e não aumenta o círculo visível. O label acessível identifica a foto. Estados bloqueados mantêm o X legível, em verde escuro sobre fundo de ação desabilitada, também sem transparência. Remover atualiza a contagem e reorganiza a grade; retirar a última foto volta ao estado sem seleção. O label **Adicionar fotos** permanece disponível para incluir mais imagens. Não são exigidas poses ou quantidades específicas.
+
+Não há teto de quantidade no design solicitado. Mais fotos criam novas linhas e rolagem, sem truncar a lista ou trocar os anexos por um contador de imagens ocultas. A amostra com oito fotos valida a apresentação de um conjunto maior; seus assets se repetem apenas como ilustração de layout. O produto deve representar cada imagem efetivamente selecionada.
+
+Essa seleção múltipla, a conferência e a remoção da seleção foram implementadas no MUV-37. `new-assessment.tsx` acumula os assets escolhidos e o serviço envia cada foto em ordem antes de criar a avaliação. O schema compartilhado deixou de limitar `photos` a seis, sem alterar o formato dos dados, os limites dos demais campos ou o máximo de três fotos deliberado no fluxo do professor. O relatório do MUV-37 registra a confirmação por testes de schema, API, serviço e AVD. A extensão de câmera solicitada no MUV-9 em 2026-10-19 usa o mesmo fluxo de prévia, upload e payload; compartilhamento permanece fora do escopo.
+
+A permissão da câmera é solicitada somente após **Tirar foto**. Negação informa como permitir o acesso; quando o sistema não pode perguntar novamente, a mensagem orienta ativar a permissão nas configurações. Cancelar o menu ou a captura não remove fotos. O seletor compartilhado em `src/lib/assessment-photo-picker.ts` verifica a validade da operação antes e depois da escolha e da permissão; os consumidores ignoram resultados após sair da tela ou iniciar o envio. As mensagens de permissão iOS estão localizadas pelo plugin `expo-image-picker` em `app.json`; mudanças nessas mensagens exigem uma nova build nativa para aparecer no aplicativo instalado.
+
+O envio conserva a sequência de upload dos anexos, criação da avaliação, invalidação da query de avaliações e confirmação de sucesso. O serviço do MUV-37 executa essa sequência para todo o conjunto selecionado. Durante o envio, as miniaturas permanecem visíveis e as ações de adicionar/remover fotos e salvar ficam desabilitadas. O botão de salvar exibe **Salvando avaliação...** com largura estável. O design não bloqueia os demais campos que o fluxo atual mantém editáveis.
+
+No erro, preservar data, valores, observações e todas as fotos selecionadas; mostrar **Não foi possível salvar sua avaliação.** e permitir novo envio. Não inferir causa específica nem prometer idempotência, descarte ou salvamento offline. Como o fluxo existente inclui invalidação depois da criação, uma falha da operação completa não constitui prova de que nenhum registro foi criado.
+
+**Avaliação salva!** é feedback transitório no mesmo formulário, com ações desabilitadas. Preservar o retorno automático existente ao Progresso; não criar tela permanente de sucesso ou ação adicional para continuar.
+
+## Adaptação e implementação
+
+As referências de 320/390/430 dp mantêm gutter, unidades e navegação. O histórico e as observações crescem verticalmente. Alturas do canvas mostram todo o conteúdo e não definem a altura do dispositivo: no runtime, usar rolagem e reservar insets reais uma única vez.
+
+O quadro de foco inclui uma anotação da área de teclado nativo; esse texto não pertence à interface do produto. Aparência e altura do teclado são determinadas pelo dispositivo. Manter o campo focado visível e permitir alcançar as ações por rolagem, sem encobrir conteúdo.
+
+Validar na implementação navegação de retorno, leitor de tela, labels/unidades, estado ocupado e desabilitado, escala de fonte, teclado, seleção múltipla e cancelamento da biblioteca, remoção de uma/última seleção, conferência da imagem inteira, ordem dos anexos e reentrada no envio. As amostras não são um protótipo navegável nem evidência de execução Android/iOS.
+
+As fotos fictícias foram geradas com Imagegen e estão em `assets/design/assessment-photo-samples/assessment-views.png`; origem e prompt estão no README do diretório. O Pen usa recortes de fill sem modificar o bitmap. No runtime, usar as imagens reais escolhidas pelo usuário ou retornadas com a avaliação. Não há foto nem dado de aluno real nesses assets.
+
+## Verificação do artefato
+
+As 24 telas iniciais foram verificadas por capturas do MCP, com conferência de componentes, conteúdo e contratos. A revisão de fotos acrescenta quatro telas, totalizando 28, e traz 165 instâncias conectadas nas telas e quadros da proposta. A busca nos textos do canvas não encontrou escapes Unicode; `git diff --check` e a busca correspondente nos documentos também ficaram limpos. As flags de bounds do MCP apresentaram offsets divergentes da renderização, inclusive em descendentes desabilitados; não devem ser usadas isoladamente para declarar clipping ou ausência dele. Algumas capturas múltiplas mostraram somente fragmentos; os quadros afetados foram recapturados individualmente. A revisão visual e suas limitações são a evidência desta etapa.
+
+Na revisão de fotos, as telas alteradas e as quatro novas representações foram conferidas por captura: seleção vazia, uma/três/oito fotos, envio, erro, sucesso, foco, 320/430 dp, fotos no histórico e conferência da imagem inteira. As miniaturas usam o asset local, sem imagens pendentes de geração. A gravação das alterações do canvas fica a cargo do usuário, conforme sua preferência.
+
+A conferência dos 31 frames de topo do MUV-27 (28 telas, dois quadros de componentes e guia) não encontrou sobreposição ou placeholders ativos. Os contrastes pontuais calculados foram 4,81:1 para texto secundário sobre papel, 5,25:1 sobre branco e 10,21:1 para texto primário sobre lima. Esses pares não constituem auditoria completa de todos os estados.
+
+Na conferência final de 2026-10-04, o MCP confirmou 31 frames, 165 instâncias, nenhuma sobreposição, nenhum placeholder ativo e nenhum escape Unicode no texto do canvas. A captura de `e34lmL` confirmou a apresentação das fotos selecionadas. Os documentos também passaram por `git diff --check` e busca de escapes Unicode antes do commit.
+
+As capturas Pen documentam a proposta e não substituem a execução do app. O MUV-37 também foi validado em Android; o relatório com comandos, resultados e cenários não reproduzidos fica em `artifacts/muv-37/2026-10-14-validacao/relatorio.md`, com as capturas em `screenshots/` no mesmo diretório. Esses arquivos são locais e ignorados pelo Git; consulte os anexos da PR/issue ou o histórico anterior quando não estiverem disponíveis na worktree.

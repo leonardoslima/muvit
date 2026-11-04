@@ -4,20 +4,23 @@
   "private": true,
   "packageManager": "pnpm@10.0.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --ui=tui",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "test": "turbo run test",
+    "test": "node --test scripts/mobile-e2e.test.mjs && turbo run test",
     "typecheck": "turbo run typecheck",
     "mobile:start": "pnpm --filter @muvit/mobile start",
+    "mobile:go": "pnpm --filter @muvit/mobile start:go",
     "mobile:android": "pnpm --filter @muvit/mobile android",
+    "mobile:android:build": "pnpm --filter @muvit/mobile android:build",
     "mobile:ios": "pnpm --filter @muvit/mobile ios",
     "mobile:web": "pnpm --filter @muvit/mobile web",
     "mobile:test": "pnpm --filter @muvit/mobile test",
+    "mobile:e2e": "node scripts/mobile-e2e.mjs",
     "mobile:typecheck": "pnpm --filter @muvit/mobile typecheck",
     "mobile:doctor": "pnpm --filter @muvit/mobile run doctor",
     "db:generate": "pnpm --filter @muvit/db generate",
@@ -31,6 +34,21 @@
     "typescript": "^5.7.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"]
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "sharp"],
+    "packageExtensions": {
+      "@testing-library/jest-dom@6.9.1": {
+        "peerDependencies": {
+          "vitest": "*"
+        },
+        "peerDependenciesMeta": {
+          "vitest": {
+            "optional": true
+          }
+        }
+      }
+    },
+    "overrides": {
+      "@expo/cli@54.0.28>tar": "7.5.22"
+    }
   }
 }

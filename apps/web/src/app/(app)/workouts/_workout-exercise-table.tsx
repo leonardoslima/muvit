@@ -203,7 +203,7 @@ function ExerciseRows({
           value={exercise.loadKg}
           min={0}
           max={1000}
-          step="any"
+          step={1}
           disabled={disabled}
           error={loadError}
           inputId={`exercise-${exercise.id}-load`}

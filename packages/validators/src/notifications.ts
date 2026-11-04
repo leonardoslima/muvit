@@ -50,10 +50,23 @@ export const notificationPreferencesSchema = z.object({
 
 export const updateNotificationPreferencesSchema = z
   .object({
-    inactivity: inactivityPreferencesSchema.partial(),
-    workoutPlanExpiring: workoutPlanExpiringPreferencesSchema.partial(),
-    pendingAssessment: pendingAssessmentPreferencesSchema.partial(),
-    newStudentRegistration: newStudentRegistrationPreferencesSchema.partial(),
+    inactivity: inactivityPreferencesSchema.partial().extend({
+      afterDays: inactivityPreferencesSchema.shape.afterDays.removeDefault().optional(),
+      channel: inactivityPreferencesSchema.shape.channel.removeDefault().optional(),
+    }),
+    workoutPlanExpiring: workoutPlanExpiringPreferencesSchema.partial().extend({
+      daysBefore: workoutPlanExpiringPreferencesSchema.shape.daysBefore.removeDefault().optional(),
+      channel: workoutPlanExpiringPreferencesSchema.shape.channel.removeDefault().optional(),
+    }),
+    pendingAssessment: pendingAssessmentPreferencesSchema.partial().extend({
+      staleAfterDays: pendingAssessmentPreferencesSchema.shape.staleAfterDays
+        .removeDefault()
+        .optional(),
+      channel: pendingAssessmentPreferencesSchema.shape.channel.removeDefault().optional(),
+    }),
+    newStudentRegistration: newStudentRegistrationPreferencesSchema.partial().extend({
+      channel: newStudentRegistrationPreferencesSchema.shape.channel.removeDefault().optional(),
+    }),
   })
   .partial()
   .refine(

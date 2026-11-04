@@ -1,0 +1,202 @@
+import type { PlatformPressable } from '@react-navigation/elements';
+import { act, render } from '@testing-library/react-native';
+import React, { type ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import TabsLayout from '../../app/(student)/(tabs)/_layout';
+
+type TabIconProps = {
+  color: string;
+  focused: boolean;
+  size: number;
+};
+
+type TabScreen = {
+  name: string;
+  options: {
+    tabBarIcon?: (props: TabIconProps) => React.ReactElement<{ name: string }>;
+    tabBarLabel?: string;
+    title?: string;
+  };
+};
+
+type TabBarButtonProps = React.ComponentProps<typeof PlatformPressable>;
+
+type ScreenOptions = {
+  tabBarButton?: (props: TabBarButtonProps) => React.ReactElement;
+};
+
+type RenderedButtonCase = {
+  label: string | undefined;
+  labelTestID: string;
+  name: string;
+  onLongPress: () => void;
+  onPress: () => void;
+  selected: boolean;
+  testID: string;
+};
+
+const tabsState = vi.hoisted(() => ({
+  buttonCases: [] as RenderedButtonCase[],
+  screenOptions: null as ScreenOptions | null,
+  screens: [] as TabScreen[],
+}));
+
+const platformPressableState = vi.hoisted(() => ({
+  calls: 0,
+}));
+
+vi.mock('expo-router', () => {
+  const Tabs = Object.assign(
+    ({ children, screenOptions }: { children: ReactNode; screenOptions: ScreenOptions }) => {
+      tabsState.screenOptions = screenOptions;
+      return React.createElement('View', null, children);
+    },
+    {
+      Screen: ({ name, options }: TabScreen) => {
+        tabsState.screens.push({ name, options });
+
+        const tabBarButton = tabsState.screenOptions?.tabBarButton;
+        if (!tabBarButton) {
+          return null;
+        }
+
+        const buttons = [true, false].map((selected) => {
+          const testID = `tab-${name}-${selected ? 'active' : 'inactive'}`;
+          const labelTestID = `${testID}-label`;
+          const onPress = vi.fn();
+          const onLongPress = vi.fn();
+          const element = tabBarButton({
+            'aria-label': options.tabBarLabel,
+            'aria-selected': selected,
+            android_ripple: { borderless: true },
+            children: React.createElement('Text', { testID: labelTestID }, options.tabBarLabel),
+            href: `/${name}`,
+            onLongPress,
+            onPress,
+            role: 'tab',
+            style: {
+              backgroundColor: selected ? 'selected' : 'not-selected',
+              borderRadius: 0,
+            },
+            testID,
+          });
+
+          tabsState.buttonCases.push({
+            label: options.tabBarLabel,
+            labelTestID,
+            name,
+            onLongPress,
+            onPress,
+            selected,
+            testID,
+          });
+
+          return { element, testID };
+        });
+
+        return React.createElement(
+          React.Fragment,
+          null,
+          buttons.map(({ element, testID }) =>
+            React.createElement(React.Fragment, { key: testID }, element),
+          ),
+        );
+      },
+    },
+  );
+
+  return { Tabs };
+});
+
+vi.mock('@react-navigation/elements', () => ({
+  PlatformPressable: React.forwardRef<unknown, TabBarButtonProps>(({ children, ...props }, ref) => {
+    platformPressableState.calls += 1;
+    return React.createElement('PlatformPressable', { ...props, ref }, children);
+  }),
+}));
+
+vi.mock('@expo/vector-icons', () => ({
+  Ionicons: (props: { name: string; color: string; size: number }) =>
+    React.createElement('Ionicons', props),
+}));
+
+vi.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ bottom: 0 }),
+}));
+
+describe('TabsLayout', () => {
+  beforeEach(() => {
+    tabsState.buttonCases.length = 0;
+    tabsState.screenOptions = null;
+    tabsState.screens.length = 0;
+    platformPressableState.calls = 0;
+  });
+
+  it('preserva acessibilidade, seleção e destinos das abas', () => {
+    const tabsRender = render(<TabsLayout />);
+
+    const screenOptions = tabsState.screenOptions;
+    if (!screenOptions) {
+      throw new Error('As opções das abas não foram capturadas');
+    }
+
+    expect(tabsState.screens.map(({ name }) => name)).toEqual(['index', 'progress', 'profile']);
+    expect(typeof screenOptions.tabBarButton).toBe('function');
+    expect(platformPressableState.calls).toBe(tabsState.buttonCases.length);
+    expect(tabsState.buttonCases).toHaveLength(6);
+
+    for (const buttonCase of tabsState.buttonCases) {
+      const host = tabsRender.getByTestId(buttonCase.testID);
+
+      expect(host.type).toBe('PlatformPressable');
+      expect(host.props.testID).toBe(buttonCase.testID);
+      expect(host.props.onLongPress).toBe(buttonCase.onLongPress);
+      expect(host.props.role).toBe('tab');
+      expect(host.props['aria-label']).toBe(buttonCase.label);
+      expect(host.props['aria-selected']).toBe(buttonCase.selected);
+      expect(host.props.href).toBe(`/${buttonCase.name}`);
+      expect(host.props.android_ripple).toEqual({ borderless: true });
+      expect(host.props.style).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            backgroundColor: buttonCase.selected ? 'selected' : 'not-selected',
+            borderRadius: 0,
+          }),
+        ]),
+      );
+      expect(tabsRender.getByTestId(buttonCase.labelTestID).props.children).toBe(buttonCase.label);
+
+      const pressEvent = { persist: vi.fn() };
+      act(() => host.props.onPress(pressEvent));
+      expect(buttonCase.onPress).toHaveBeenCalledOnce();
+      expect(buttonCase.onPress).toHaveBeenCalledWith(pressEvent);
+    }
+    tabsRender.unmount();
+  });
+
+  it('mantém labels e ícones distintos para Hoje, Progresso e Perfil', () => {
+    render(<TabsLayout />);
+
+    expect(
+      tabsState.screens.map(({ options }) => ({
+        label: options.tabBarLabel,
+        title: options.title,
+      })),
+    ).toEqual([
+      { label: 'Hoje', title: 'Hoje' },
+      { label: 'Progresso', title: 'Progresso' },
+      { label: 'Perfil', title: 'Perfil' },
+    ]);
+
+    const iconNames = tabsState.screens.map(({ options }) => {
+      const tabBarIcon = options.tabBarIcon;
+      if (!tabBarIcon) {
+        throw new Error('Ícone de aba não configurado');
+      }
+
+      return tabBarIcon({ color: '#111111', focused: false, size: 24 }).props.name;
+    });
+
+    expect(iconNames).toEqual(['home-outline', 'stats-chart-outline', 'person-outline']);
+  });
+});

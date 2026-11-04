@@ -3,6 +3,7 @@ import { z } from 'zod';
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   API_PORT: z.coerce.number().int().positive().default(3333),
+  API_HOST: z.union([z.ipv4(), z.ipv6()]).default('0.0.0.0'),
   DATABASE_URL: z.string().url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url(),
@@ -27,7 +28,6 @@ const schema = z.object({
     .transform((value) => value === 'true'),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(1).optional(),
-  SENTRY_DSN: z.string().url().optional(),
 });
 
 export const env = schema.parse(process.env);

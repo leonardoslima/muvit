@@ -1,23 +1,46 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { createLogQueue, sendPendingWorkoutLog } from '../lib/log-queue';
+import type { ApiRequester } from '../lib/api';
+import { authClient } from '../lib/auth-client';
+import { invalidateWorkoutEvolution } from '../lib/invalidate-workout-evolution';
+import { createWorkoutLogJournal } from '../lib/log-queue';
 import { useApiClient } from '../lib/use-api';
 
 export function QueueDrain() {
   const api = useApiClient();
+  const client = useQueryClient();
+  const authUserId = authClient.useSession().data?.user.id;
 
   useEffect(() => {
-    const queue = createLogQueue(AsyncStorage);
-    const drain = () => queue.drain((item) => sendPendingWorkoutLog(api, item));
+    if (!authUserId) return;
 
-    void drain();
+    const journal = createWorkoutLogJournal(AsyncStorage);
+    const drain = async (requester: ApiRequester): Promise<void> => {
+      try {
+        await journal.drain(authUserId, () => requester);
+        await invalidateWorkoutEvolution(client, authUserId);
+      } catch {
+        // O próximo foreground tenta novamente sem descartar o journal.
+      }
+    };
+    const drainCurrentSession = (): void => {
+      try {
+        const requester = api.bindCurrentSession();
+        void drain(requester);
+      } catch {
+        // O próximo foreground tenta novamente com a sessão então vigente.
+      }
+    };
+
+    drainCurrentSession();
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void drain();
+      if (state === 'active') drainCurrentSession();
     });
 
     return () => subscription.remove();
-  }, [api]);
+  }, [api, authUserId, client]);
 
   return null;
 }

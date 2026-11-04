@@ -21,7 +21,7 @@ Cada item deve ser validado no ambiente de producao correspondente.
 - [ ] Variaveis de producao do mobile configuradas no EAS.
 - [ ] `DATABASE_URL` de producao aponta para o PostgreSQL correto no Railway.
 - [ ] `WEB_URL` de producao aponta para o dominio publico do app web.
-- [ ] Segredos JWT, Sentry, Resend e storage estao presentes apenas nos
+- [ ] Segredos JWT, Resend e storage estao presentes apenas nos
   ambientes que precisam deles.
 - [ ] Notificacoes por email continuam desativadas com
   `EMAIL_NOTIFICATIONS_ENABLED=false` ate a conta Resend e o dominio de envio
@@ -61,14 +61,11 @@ Cada item deve ser validado no ambiente de producao correspondente.
 - [ ] Build Android enviado para a internal track do Play Console.
 - [ ] Lista inicial de testadores internos configurada no Play Console.
 
-## Observabilidade e comunicacao
+## Comunicação e atendimento
 
-- [ ] Projeto Sentry recebe eventos da API em producao.
-- [ ] Projeto Sentry recebe eventos do web em producao.
-- [ ] Projeto Sentry recebe eventos do mobile em producao.
-- [ ] Alertas Sentry configurados para erro novo, aumento de erro e regressao.
-- [ ] Responsavel pelo primeiro atendimento de alerta definido para a semana de
-  soft-launch.
+- [ ] Responsável pelo primeiro atendimento de erros definido para a semana de
+  soft-launch. A integração Sentry foi descontinuada em 17/10/2026; a definição
+  de outra solução de monitoramento exige uma decisão própria.
 - [ ] Notificacoes por email transacional foram desenvolvidas, habilitadas com
   `EMAIL_NOTIFICATIONS_ENABLED=true` e validadas antes de convidar usuarios
   reais para producao.

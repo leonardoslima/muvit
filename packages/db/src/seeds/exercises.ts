@@ -1,4 +1,4 @@
-export const globalExercises = [
+const exerciseDefinitions = [
   { name: 'Supino reto com barra', muscleGroup: 'chest' as const, equipment: 'Barra' },
   { name: 'Supino inclinado halter', muscleGroup: 'chest' as const, equipment: 'Halteres' },
   { name: 'Crucifixo na máquina', muscleGroup: 'chest' as const, equipment: 'Máquina' },
@@ -24,3 +24,18 @@ export const globalExercises = [
   { name: 'Bicicleta ergométrica', muscleGroup: 'cardio' as const, equipment: 'Bicicleta' },
   { name: 'Burpee', muscleGroup: 'full_body' as const, equipment: 'Peso corporal' },
 ];
+
+export const globalExercises = exerciseDefinitions.map((exercise) => ({
+  ...exercise,
+  instructions: `Demonstração de ${exercise.name.toLocaleLowerCase('pt-BR')}, com ${exercise.equipment.toLocaleLowerCase('pt-BR')}. Ajuste o equipamento, mantenha o movimento controlado e respeite a amplitude confortável. Dados fictícios para teste de interface; não constituem prescrição individual.`,
+}));
+
+export const trainerExercises = [
+  { name: 'Agachamento goblet — demo', muscleGroup: 'legs' as const, equipment: 'Halter' },
+  { name: 'Remada unilateral — demo', muscleGroup: 'back' as const, equipment: 'Halter e banco' },
+  { name: 'Ponte de glúteos — demo', muscleGroup: 'glutes' as const, equipment: 'Colchonete' },
+  { name: 'Prancha lateral — demo', muscleGroup: 'core' as const, equipment: 'Colchonete' },
+].map((exercise) => ({
+  ...exercise,
+  instructions: `Exercício privado de demonstração: ${exercise.name}. Posicione o equipamento, estabilize o tronco e execute cada repetição lentamente. Conteúdo fictício para QA, sem prescrição individual.`,
+}));

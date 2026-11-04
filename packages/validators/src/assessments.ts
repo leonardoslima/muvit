@@ -20,15 +20,15 @@ export const createAssessmentSchema = z.object({
   heightCm: z.number().positive().max(300).optional(),
   bodyFatPct: z.number().min(0).max(80).optional(),
   measurements: measurementsSchema.optional(),
-  photos: z.array(z.string().url()).max(6).optional(),
+  photos: z.array(z.string().url()).optional(),
   notes: z.string().max(2000).optional(),
 });
 
 export const updateAssessmentSchema = createAssessmentSchema.partial();
 
 export const assessmentSchema = z.object({
-  id: z.string().uuid(),
-  studentId: z.string().uuid(),
+  id: z.string().guid(),
+  studentId: z.string().guid(),
   date: z.string().date(),
   // Drizzle returns decimals as strings; numbers may also flow in. Accept either.
   weightKg: z.union([z.string(), z.number()]).nullable(),
@@ -39,7 +39,8 @@ export const assessmentSchema = z.object({
   notes: z.string().nullable(),
   createdAt: z
     .union([z.string(), z.date()])
-    .transform((v) => (v instanceof Date ? v.toISOString() : v)),
+    .transform((v) => (v instanceof Date ? v.toISOString() : v))
+    .pipe(z.string()),
 });
 
 export const listAssessmentsQuerySchema = z.object({

@@ -1,0 +1,502 @@
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { todayIsoDate } from '../lib/date';
+import { TrainerNewAssessmentScreen } from './trainer-new-assessment';
+
+const apiState = vi.hoisted(() => ({ request: vi.fn() }));
+const pickerState = vi.hoisted(() => ({
+  launchImageLibraryAsync: vi.fn(),
+  launchCameraAsync: vi.fn(),
+  requestCameraPermissionsAsync: vi.fn(),
+}));
+const queryState = vi.hoisted(() => ({ invalidateQueries: vi.fn() }));
+const routerState = vi.hoisted(() => ({ dismissTo: vi.fn() }));
+const uploadState = vi.hoisted(() => ({ uploadAssessmentPhoto: vi.fn() }));
+const paramsState = vi.hoisted(() => ({ studentId: 'student-1' as string | undefined }));
+
+vi.mock('../lib/use-api', () => ({
+  useApiClient: () => apiState,
+}));
+
+vi.mock('../lib/query-client', () => ({
+  queryClient: queryState,
+}));
+
+vi.mock('../lib/uploads', () => ({
+  uploadAssessmentPhoto: uploadState.uploadAssessmentPhoto,
+}));
+
+vi.mock('expo-image-picker', () => pickerState);
+
+vi.mock('expo-router', () => ({
+  router: routerState,
+  useLocalSearchParams: () => paramsState,
+}));
+
+vi.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: 'View',
+}));
+
+function renderTrainerNewAssessment() {
+  return render(<TrainerNewAssessmentScreen />);
+}
+
+function validPickerResult(uri: string, mimeType: 'image/jpeg' | 'image/png') {
+  return {
+    canceled: false,
+    assets: [{ mimeType, uri }],
+  };
+}
+
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolvePromise: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve: (value: T) => {
+      resolvePromise?.(value);
+    },
+  };
+}
+
+let photoSourceChoice = 'Escolher da biblioteca';
+async function selectPhotoSource(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const modal = screen.queryByTestId('assessment-photo-source-modal');
+  if (!modal) return;
+  const dismiss = modal.props.onDismiss;
+  await user.press(screen.getByRole('button', { name: photoSourceChoice }));
+  await act(async () => {
+    dismiss();
+  });
+}
+
+beforeEach(() => {
+  photoSourceChoice = 'Escolher da biblioteca';
+  pickerState.launchCameraAsync.mockReset();
+  pickerState.requestCameraPermissionsAsync.mockReset().mockResolvedValue({ granted: true });
+  apiState.request.mockReset();
+  pickerState.launchImageLibraryAsync.mockReset();
+  queryState.invalidateQueries.mockReset();
+  routerState.dismissTo.mockReset();
+  uploadState.uploadAssessmentPhoto.mockReset();
+  paramsState.studentId = 'student-1';
+  queryState.invalidateQueries.mockResolvedValue(undefined);
+});
+
+describe('TrainerNewAssessmentScreen', () => {
+  it('permite capturar até três fotos na câmera e preserva o limite do professor', async () => {
+    const user = userEvent.setup();
+    photoSourceChoice = 'Tirar foto';
+    pickerState.launchCameraAsync
+      .mockResolvedValueOnce(validPickerResult('file:///camera-1.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///camera-2.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///camera-3.jpg', 'image/jpeg'));
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await screen.findByText('Foto 1');
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await screen.findByText('Foto 2');
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await screen.findByText('Foto 3');
+    expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
+    expect(pickerState.launchCameraAsync).toHaveBeenCalledTimes(3);
+    expect(pickerState.launchImageLibraryAsync).not.toHaveBeenCalled();
+  });
+  it('apresenta a data local de hoje no formato brasileiro e não mostra IMC sem peso e altura', () => {
+    renderTrainerNewAssessment();
+
+    expect(screen.getByRole('header', { name: 'Avaliações' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Voltar para avaliações' })).toBeTruthy();
+    expect(screen.getByLabelText('Data da avaliação').props.value).toBe(
+      todayIsoDate().split('-').reverse().join('/'),
+    );
+    expect(screen.getByText('IMC')).toBeTruthy();
+    expect(screen.getByText('Informe peso e altura')).toBeTruthy();
+    expect(screen.queryByText('26,0')).toBeNull();
+  });
+
+  it('usa os placeholders aprovados nos doze campos numéricos e nas observações', () => {
+    renderTrainerNewAssessment();
+
+    const placeholders = [
+      ['Peso', 'Ex.: 70,5'],
+      ['Altura', 'Ex.: 170'],
+      ['Gordura corporal', 'Ex.: 20,5'],
+      ['Peito', 'Ex.: 95'],
+      ['Cintura', 'Ex.: 80'],
+      ['Quadril', 'Ex.: 100'],
+      ['Braço direito', 'Ex.: 32,5'],
+      ['Braço esquerdo', 'Ex.: 32,5'],
+      ['Coxa direita', 'Ex.: 55'],
+      ['Coxa esquerda', 'Ex.: 55'],
+      ['Panturrilha direita', 'Ex.: 36'],
+      ['Panturrilha esquerda', 'Ex.: 36'],
+      ['Observações', 'Adicione observações sobre a avaliação'],
+    ];
+
+    for (const [label, placeholder] of placeholders) {
+      expect(screen.getByLabelText(label).props.placeholder).toBe(placeholder);
+    }
+
+    for (const label of placeholders.slice(0, 12).map(([fieldLabel]) => fieldLabel)) {
+      expect(screen.getByLabelText(label).props.keyboardType).toBe('decimal-pad');
+    }
+  });
+
+  it('envia avaliação completa, sem IMC no payload, invalida caches e redireciona após feedback', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync
+      .mockResolvedValueOnce(validPickerResult('file:///front.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///back.png', 'image/png'));
+    uploadState.uploadAssessmentPhoto
+      .mockResolvedValueOnce('https://cdn.test/front.jpg')
+      .mockResolvedValueOnce('https://cdn.test/back.png');
+    apiState.request.mockResolvedValueOnce({ id: 'assessment-new' });
+
+    renderTrainerNewAssessment();
+
+    await user.clear(screen.getByLabelText('Data da avaliação'));
+    await user.type(screen.getByLabelText('Data da avaliação'), '03/09/2026');
+    expect(screen.getByLabelText('Data da avaliação')).toHaveProp('value', '03/09/2026');
+    expect(screen.getByPlaceholderText('DD/MM/AAAA')).toBeTruthy();
+    await user.type(screen.getByLabelText('Peso'), '82,5');
+    await user.type(screen.getByLabelText('Altura'), '178');
+    await user.type(screen.getByLabelText('Gordura corporal'), '18,4');
+    await user.type(screen.getByLabelText('Peito'), '101,5');
+    await user.type(screen.getByLabelText('Cintura'), '84');
+    await user.type(screen.getByLabelText('Quadril'), '99');
+    await user.type(screen.getByLabelText('Braço direito'), '35');
+    await user.type(screen.getByLabelText('Braço esquerdo'), '34,5');
+    await user.type(screen.getByLabelText('Coxa direita'), '58');
+    await user.type(screen.getByLabelText('Coxa esquerda'), '57,5');
+    await user.type(screen.getByLabelText('Panturrilha direita'), '38');
+    await user.type(screen.getByLabelText('Panturrilha esquerda'), '37,5');
+    await user.type(screen.getByLabelText('Observações'), 'Boa evolução');
+    expect(screen.getByText('26,0')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+
+    await waitFor(() => {
+      expect(uploadState.uploadAssessmentPhoto).toHaveBeenCalledTimes(2);
+      expect(apiState.request).toHaveBeenCalledWith('/students/student-1/assessments', {
+        method: 'POST',
+        body: JSON.stringify({
+          date: '2026-09-03',
+          weightKg: 82.5,
+          heightCm: 178,
+          bodyFatPct: 18.4,
+          measurements: {
+            chest: 101.5,
+            waist: 84,
+            hip: 99,
+            armRight: 35,
+            armLeft: 34.5,
+            thighRight: 58,
+            thighLeft: 57.5,
+            calfRight: 38,
+            calfLeft: 37.5,
+          },
+          photos: ['https://cdn.test/front.jpg', 'https://cdn.test/back.png'],
+          notes: 'Boa evolução',
+        }),
+      });
+    });
+
+    expect(queryState.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'assessments', 'student-1'],
+    });
+    expect(queryState.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['trainer', 'summary'],
+    });
+    expect(JSON.stringify(apiState.request.mock.calls)).not.toContain('bmi');
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+    });
+  });
+
+  it('valida antes de fazer upload ou POST', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.type(screen.getByLabelText('Peso'), 'abc');
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+
+    expect(await screen.findByText('Peso deve ser um número válido.')).toBeTruthy();
+    expect(uploadState.uploadAssessmentPhoto).not.toHaveBeenCalled();
+    expect(apiState.request).not.toHaveBeenCalled();
+  });
+
+  it('valida novamente após upload e não faz POST para URL de foto inválida', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('foto-invalida');
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+
+    expect(await screen.findByText('A foto informada deve ser uma URL válida.')).toBeTruthy();
+    expect(uploadState.uploadAssessmentPhoto).toHaveBeenCalledTimes(1);
+    expect(apiState.request).not.toHaveBeenCalled();
+  });
+
+  it('não cria avaliação quando um upload falha', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockRejectedValueOnce(new Error('upload'));
+
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+
+    expect(await screen.findByText('Não foi possível enviar as fotos da avaliação.')).toBeTruthy();
+    expect(apiState.request).not.toHaveBeenCalled();
+    expect(queryState.invalidateQueries).not.toHaveBeenCalled();
+  });
+
+  it('usa dismissTo para o fallback sem studentId e não faz request', async () => {
+    const user = userEvent.setup();
+    paramsState.studentId = undefined;
+
+    renderTrainerNewAssessment();
+
+    expect(screen.getByText('Aluno inválido')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Alunos' })).toBeTruthy();
+    expect(screen.getByText('Não foi possível identificar o aluno solicitado.')).toBeTruthy();
+    expect(apiState.request).not.toHaveBeenCalled();
+
+    expect(screen.queryByRole('button', { name: 'Atualizar' })).toBeNull();
+    await user.press(screen.getByRole('button', { name: 'Voltar para alunos' }));
+
+    expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students');
+  });
+
+  it('mantém as fotos quando o picker é cancelado', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync
+      .mockResolvedValueOnce(validPickerResult('file:///front.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce({ canceled: true, assets: [] });
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+
+    expect(screen.getByText('Foto 1')).toBeTruthy();
+    expect(screen.queryByText('Foto 2')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Adicionar foto' })).toBeTruthy();
+    expect(screen.queryByText('Selecione uma imagem JPEG ou PNG.')).toBeNull();
+  });
+
+  it('rejeita MIME não suportado sem adicionar foto', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce({
+      canceled: false,
+      assets: [{ mimeType: 'image/gif', uri: 'file:///animation.gif' }],
+    });
+
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+
+    expect(await screen.findByText('Selecione uma imagem JPEG ou PNG.')).toBeTruthy();
+    expect(screen.queryByText('Foto 1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Adicionar foto' })).toBeTruthy();
+  });
+
+  it('aceita no máximo três fotos e bloqueia a quarta tentativa', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync
+      .mockResolvedValueOnce(validPickerResult('file:///one.jpg', 'image/jpeg'))
+      .mockResolvedValueOnce(validPickerResult('file:///two.png', 'image/png'))
+      .mockResolvedValueOnce(validPickerResult('file:///three.jpg', 'image/jpeg'));
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+
+    expect(screen.getByText('Foto 1')).toBeTruthy();
+    expect(screen.getByText('Foto 2')).toBeTruthy();
+    expect(screen.getByText('Foto 3')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Adicionar foto' })).toBeNull();
+    expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(3);
+  });
+
+  it('remove a foto selecionada pelo índice acessível', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    expect(screen.getByRole('button', { name: 'Remover foto 1' })).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Remover foto 1' }));
+
+    expect(screen.queryByText('Foto 1')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Adicionar foto' })).toBeTruthy();
+  });
+
+  it('bloqueia submit concorrente enquanto salva', async () => {
+    const user = userEvent.setup();
+    const request = deferred<{ id: string }>();
+    apiState.request.mockReturnValueOnce(request.promise);
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    expect(screen.getByRole('button', { name: 'Salvando avaliação...' })).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Salvando avaliação...' }));
+    expect(apiState.request).toHaveBeenCalledTimes(1);
+
+    request.resolve({ id: 'assessment-new' });
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+  });
+
+  it('congela campos, fotos e navegação enquanto o POST está pendente', async () => {
+    const user = userEvent.setup();
+    const request = deferred<{ id: string }>();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('https://cdn.test/front.jpg');
+    apiState.request.mockReturnValueOnce(request.promise);
+
+    renderTrainerNewAssessment();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => {
+      expect(apiState.request).toHaveBeenCalledTimes(1);
+    });
+
+    const weightField = screen.getByLabelText('Peso');
+    await user.type(weightField, '82,5');
+    expect(weightField.props.value).toBe('');
+
+    await user.press(screen.getByRole('button', { name: 'Remover foto 1' }));
+    expect(screen.getByText('Foto 1')).toBeTruthy();
+
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+
+    await user.press(screen.getByRole('button', { name: 'Voltar para avaliações' }));
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+    request.resolve({ id: 'assessment-new' });
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    await waitFor(() => {
+      expect(routerState.dismissTo).toHaveBeenCalledWith('/trainer/students/student-1/assessments');
+    });
+  });
+
+  it('mantém controles bloqueados durante a invalidação e o sucesso transitório', async () => {
+    const user = userEvent.setup();
+    const invalidation = deferred<void>();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('https://cdn.test/front.jpg');
+    apiState.request.mockResolvedValueOnce({ id: 'assessment-new' });
+    queryState.invalidateQueries.mockReturnValue(invalidation.promise);
+
+    renderTrainerNewAssessment();
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+    await waitFor(() => expect(queryState.invalidateQueries).toHaveBeenCalledTimes(2));
+
+    const weightField = screen.getByLabelText('Peso');
+    const backButton = screen.getByRole('button', { name: 'Voltar para avaliações' });
+    const removeButton = screen.getByRole('button', { name: 'Remover foto 1' });
+    const addButton = screen.getByRole('button', { name: 'Adicionar foto' });
+    const submitButton = screen.getByRole('button', { name: 'Salvando avaliação...' });
+    expect(weightField.props.accessibilityState.disabled).toBe(true);
+    expect(backButton.props.accessibilityState.disabled).toBe(true);
+    expect(removeButton.props.accessibilityState.disabled).toBe(true);
+    expect(addButton.props.accessibilityState.disabled).toBe(true);
+    expect(submitButton.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+
+    await user.type(weightField, '82,5');
+    await user.press(addButton);
+    await selectPhotoSource(user);
+    await user.press(removeButton);
+    await user.press(backButton);
+    await user.press(submitButton);
+    expect(weightField.props.value).toBe('');
+    expect(pickerState.launchImageLibraryAsync).toHaveBeenCalledTimes(1);
+    expect(apiState.request).toHaveBeenCalledTimes(1);
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+
+    invalidation.resolve(undefined);
+    expect(await screen.findByText('Avaliação salva!')).toBeTruthy();
+    expect(screen.getByLabelText('Peso').props.accessibilityState.disabled).toBe(true);
+    expect(
+      screen.getByRole('button', { name: 'Voltar para avaliações' }).props.accessibilityState
+        .disabled,
+    ).toBe(true);
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+  });
+
+  it('preserva valores e fotos quando o POST falha', async () => {
+    const user = userEvent.setup();
+    pickerState.launchImageLibraryAsync.mockResolvedValueOnce(
+      validPickerResult('file:///front.jpg', 'image/jpeg'),
+    );
+    uploadState.uploadAssessmentPhoto.mockResolvedValueOnce('https://cdn.test/front.jpg');
+    apiState.request.mockRejectedValueOnce(new Error('request'));
+
+    renderTrainerNewAssessment();
+    await user.type(screen.getByLabelText('Peso'), '82,5');
+    await user.type(screen.getByLabelText('Observações'), 'Continuar acompanhamento');
+    await user.press(screen.getByRole('button', { name: 'Adicionar foto' }));
+    await selectPhotoSource(user);
+    await user.press(screen.getByRole('button', { name: 'Salvar avaliação' }));
+
+    expect(await screen.findByText('Não foi possível salvar a avaliação.')).toBeTruthy();
+    expect(screen.getByLabelText('Peso').props.value).toBe('82,5');
+    expect(screen.getByLabelText('Observações').props.value).toBe('Continuar acompanhamento');
+    expect(screen.getByText('Foto 1')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Salvar avaliação' })).toBeTruthy();
+    expect(queryState.invalidateQueries).not.toHaveBeenCalled();
+    expect(routerState.dismissTo).not.toHaveBeenCalled();
+  });
+});

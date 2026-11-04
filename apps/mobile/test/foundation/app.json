@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Muvit Foundation v2",
+    "slug": "muvit-foundation-preview",
+    "version": "1.0.0",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true
+  }
+}

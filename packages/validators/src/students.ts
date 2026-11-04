@@ -24,8 +24,8 @@ export const updateStudentSchema = createStudentSchema.partial().extend({
 });
 
 export const studentSchema = z.object({
-  id: z.string().uuid(),
-  trainerId: z.string().uuid().nullable(),
+  id: z.string().guid(),
+  trainerId: z.string().guid().nullable(),
   isIndependent: z.boolean(),
   name: z.string(),
   email: z.string().email().nullable(),
@@ -40,7 +40,8 @@ export const studentSchema = z.object({
   expoPushToken: z.string().nullable(),
   createdAt: z
     .union([z.string().datetime(), z.date()])
-    .transform((v) => (v instanceof Date ? v.toISOString() : v)),
+    .transform((v) => (v instanceof Date ? v.toISOString() : v))
+    .pipe(z.string()),
 });
 
 export const trainerStudentSchema = studentSchema.extend({

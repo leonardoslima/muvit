@@ -26,6 +26,7 @@ function host(type: string) {
 }
 
 export const ActivityIndicator = host('View');
+export const KeyboardAvoidingView = host('View');
 export const Image = host('Image');
 export const Pressable = host('View');
 export const ScrollView = host('RCTScrollView');
@@ -40,9 +41,35 @@ export const Modal = React.forwardRef<unknown, NativeProps>(
       : React.createElement('Modal', { ...props, ref }, children as ReactNode),
 );
 
+export const Alert = {
+  alert: (
+    _title: string,
+    _message?: string,
+    _buttons?: Array<{
+      text?: string;
+      style?: string;
+      onPress?: () => void;
+    }>,
+  ) => undefined,
+};
+
+export const AccessibilityInfo = {
+  setAccessibilityFocus: (_node: number) => undefined,
+};
+
+export function findNodeHandle(node: unknown): number | null {
+  return node === null || node === undefined ? null : 1;
+}
+
 export const Platform = {
   OS: 'ios',
   select: (options: Record<string, unknown>) => options.ios ?? options.native ?? options.default,
+};
+
+export const Keyboard = {
+  dismiss: () => undefined,
+  isVisible: () => false,
+  addListener: (_event: string, _listener: () => void) => ({ remove: () => undefined }),
 };
 
 export const StyleSheet = {

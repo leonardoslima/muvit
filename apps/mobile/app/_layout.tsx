@@ -1,23 +1,28 @@
+import '../global.css';
+import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+  DMSans_800ExtraBold,
+} from '@expo-google-fonts/dm-sans';
+import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { SpaceGrotesk_600SemiBold } from '@expo-google-fonts/space-grotesk';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { Redirect, Slot, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
-import * as Sentry from 'sentry-expo';
-import { PushTokenRegistration } from '../src/components/push-token-registration';
-import { QueueDrain } from '../src/components/queue-drain';
+import {
+  resolveRouteAccess,
+  resolveRouteArea,
+} from '../src/application/navigation/role-navigation';
+import { UnsupportedRoleBoundary } from '../src/components/navigation/unsupported-role-boundary';
 import { authClient } from '../src/lib/auth-client';
 import { queryClient } from '../src/lib/query-client';
 import { colors } from '../src/lib/styles';
 
-if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-    environment: process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
-  });
-}
-
-export function RootLayout() {
+function AuthenticatedRootLayout() {
   const segments = useSegments();
   const session = authClient.useSession();
 
@@ -29,24 +34,43 @@ export function RootLayout() {
     );
   }
 
-  const routeGroup = segments[0];
-  const isAuthenticatedStudent = session.data?.user.role === 'student';
-
-  if (!isAuthenticatedStudent && routeGroup !== '(auth)') {
-    return <Redirect href="/(auth)/login" />;
-  }
-  if (isAuthenticatedStudent && routeGroup === '(auth)') {
-    return <Redirect href="/(tabs)" />;
-  }
+  const decision = resolveRouteAccess({
+    area: resolveRouteArea(segments),
+    isAuthenticated: Boolean(session.data),
+    role: session.data?.user.role,
+  });
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isAuthenticatedStudent ? <QueueDrain /> : null}
-      {isAuthenticatedStudent ? <PushTokenRegistration /> : null}
       <StatusBar style="dark" />
-      <Slot />
+      {decision.kind === 'unsupported-role' ? <UnsupportedRoleBoundary /> : null}
+      {decision.kind === 'redirect' ? <Redirect href={decision.href} /> : null}
+      {decision.kind === 'allow' ? <Slot /> : null}
     </QueryClientProvider>
   );
 }
 
-export default Sentry.Native.wrap(RootLayout);
+export function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_600SemiBold,
+    SpaceGrotesk_600SemiBold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    DMSans_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator accessibilityLabel="Carregando aplicativo" color={colors.primary} />
+      </View>
+    );
+  }
+
+  return <AuthenticatedRootLayout />;
+}
+
+export default RootLayout;

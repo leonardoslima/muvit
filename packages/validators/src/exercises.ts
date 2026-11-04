@@ -24,8 +24,8 @@ export const createExerciseSchema = z.object({
 export const updateExerciseSchema = createExerciseSchema.partial();
 
 export const exerciseSchema = z.object({
-  id: z.string().uuid(),
-  trainerId: z.string().uuid().nullable(),
+  id: z.string().guid(),
+  trainerId: z.string().guid().nullable(),
   name: z.string(),
   muscleGroup: muscleGroupSchema,
   equipment: z.string().nullable(),
@@ -33,7 +33,8 @@ export const exerciseSchema = z.object({
   instructions: z.string().nullable(),
   createdAt: z
     .union([z.string(), z.date()])
-    .transform((v) => (v instanceof Date ? v.toISOString() : v)),
+    .transform((v) => (v instanceof Date ? v.toISOString() : v))
+    .pipe(z.string()),
 });
 
 export const listExercisesQuerySchema = z.object({

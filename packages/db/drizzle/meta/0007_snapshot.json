@@ -1,6 +1,6 @@
 {
-  "id": "d2267fb1-56b6-4577-8730-997b51973f06",
-  "prevId": "520518fb-4c99-468d-b238-c705db955cb9",
+  "id": "ac176a98-0da3-40bd-891c-b2b0613d273c",
+  "prevId": "b02f8ee6-4b7c-49c0-8bb6-0ad92928e251",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -99,8 +99,12 @@
           "name": "assessments_student_id_students_id_fk",
           "tableFrom": "assessments",
           "tableTo": "students",
-          "columnsFrom": ["student_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -240,8 +244,12 @@
           "name": "auth_accounts_user_id_auth_users_id_fk",
           "tableFrom": "auth_accounts",
           "tableTo": "auth_users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -345,8 +353,12 @@
           "name": "auth_sessions_user_id_auth_users_id_fk",
           "tableFrom": "auth_sessions",
           "tableTo": "auth_users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -600,8 +612,12 @@
           "name": "exercises_trainer_id_trainers_id_fk",
           "tableFrom": "exercises",
           "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -647,25 +663,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "phone": {
-          "name": "phone",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "bio": {
-          "name": "bio",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "specialties": {
-          "name": "specialties",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
         "plan": {
           "name": "plan",
           "type": "trainer_plan",
@@ -686,13 +683,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {},
@@ -701,8 +691,12 @@
           "name": "trainers_auth_user_id_auth_users_id_fk",
           "tableFrom": "trainers",
           "tableTo": "auth_users",
-          "columnsFrom": ["auth_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "auth_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -712,313 +706,16 @@
         "trainers_auth_user_id_unique": {
           "name": "trainers_auth_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["auth_user_id"]
+          "columns": [
+            "auth_user_id"
+          ]
         },
         "trainers_email_unique": {
           "name": "trainers_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.billing_invoices": {
-      "name": "billing_invoices",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "trainer_id": {
-          "name": "trainer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "plan": {
-          "name": "plan",
-          "type": "trainer_plan",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "billing_interval": {
-          "name": "billing_interval",
-          "type": "billing_interval",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "amount_cents": {
-          "name": "amount_cents",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "currency": {
-          "name": "currency",
-          "type": "varchar(3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'BRL'"
-        },
-        "status": {
-          "name": "status",
-          "type": "billing_invoice_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "issued_at": {
-          "name": "issued_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "paid_at": {
-          "name": "paid_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "billing_invoices_trainer_issued_at_idx": {
-          "name": "billing_invoices_trainer_issued_at_idx",
           "columns": [
-            {
-              "expression": "trainer_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "issued_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "billing_invoices_trainer_id_trainers_id_fk": {
-          "name": "billing_invoices_trainer_id_trainers_id_fk",
-          "tableFrom": "billing_invoices",
-          "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "billing_invoices_amount_cents_positive": {
-          "name": "billing_invoices_amount_cents_positive",
-          "value": "\"billing_invoices\".\"amount_cents\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.trainer_notification_preferences": {
-      "name": "trainer_notification_preferences",
-      "schema": "",
-      "columns": {
-        "trainer_id": {
-          "name": "trainer_id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "inactivity_enabled": {
-          "name": "inactivity_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "inactivity_after_days": {
-          "name": "inactivity_after_days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 7
-        },
-        "inactivity_channel": {
-          "name": "inactivity_channel",
-          "type": "notification_channel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'both'"
-        },
-        "workout_plan_expiring_enabled": {
-          "name": "workout_plan_expiring_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "workout_plan_expiring_days_before": {
-          "name": "workout_plan_expiring_days_before",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 7
-        },
-        "workout_plan_expiring_channel": {
-          "name": "workout_plan_expiring_channel",
-          "type": "notification_channel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'email'"
-        },
-        "pending_assessment_enabled": {
-          "name": "pending_assessment_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "pending_assessment_stale_after_days": {
-          "name": "pending_assessment_stale_after_days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 60
-        },
-        "pending_assessment_channel": {
-          "name": "pending_assessment_channel",
-          "type": "notification_channel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'push'"
-        },
-        "new_student_registration_enabled": {
-          "name": "new_student_registration_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "new_student_registration_channel": {
-          "name": "new_student_registration_channel",
-          "type": "notification_channel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'both'"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "trainer_notification_preferences_trainer_id_trainers_id_fk": {
-          "name": "trainer_notification_preferences_trainer_id_trainers_id_fk",
-          "tableFrom": "trainer_notification_preferences",
-          "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.trainer_subscriptions": {
-      "name": "trainer_subscriptions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "trainer_id": {
-          "name": "trainer_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "plan": {
-          "name": "plan",
-          "type": "trainer_plan",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "billing_interval": {
-          "name": "billing_interval",
-          "type": "billing_interval",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "trainer_subscription_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "starts_at": {
-          "name": "starts_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "renews_at": {
-          "name": "renews_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "trainer_subscriptions_trainer_id_trainers_id_fk": {
-          "name": "trainer_subscriptions_trainer_id_trainers_id_fk",
-          "tableFrom": "trainer_subscriptions",
-          "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "trainer_subscriptions_trainer_id_unique": {
-          "name": "trainer_subscriptions_trainer_id_unique",
-          "nullsNotDistinct": false,
-          "columns": ["trainer_id"]
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -1092,20 +789,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "training_days": {
-          "name": "training_days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "restrictions": {
           "name": "restrictions",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "internal_notes": {
-          "name": "internal_notes",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1175,8 +860,12 @@
           "name": "students_auth_user_id_auth_users_id_fk",
           "tableFrom": "students",
           "tableTo": "auth_users",
-          "columnsFrom": ["auth_user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "auth_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1184,8 +873,12 @@
           "name": "students_trainer_id_trainers_id_fk",
           "tableFrom": "students",
           "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1195,14 +888,55 @@
         "students_auth_user_id_unique": {
           "name": "students_auth_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["auth_user_id"]
+          "columns": [
+            "auth_user_id"
+          ]
         }
       },
       "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.student_workout_goals": {
+      "name": "student_workout_goals",
+      "schema": "",
+      "columns": {
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "weekly_goal": {
+          "name": "weekly_goal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "student_workout_goals_student_id_students_id_fk": {
+          "name": "student_workout_goals_student_id_students_id_fk",
+          "tableFrom": "student_workout_goals",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
       "checkConstraints": {
-        "students_training_days_check": {
-          "name": "students_training_days_check",
-          "value": "\"students\".\"training_days\" BETWEEN 1 AND 7"
+        "student_workout_goals_weekly_goal_check": {
+          "name": "student_workout_goals_weekly_goal_check",
+          "value": "\"student_workout_goals\".\"weekly_goal\" BETWEEN 1 AND 7"
         }
       },
       "isRLSEnabled": false
@@ -1244,7 +978,7 @@
         },
         "load_kg": {
           "name": "load_kg",
-          "type": "numeric(5, 1)",
+          "type": "numeric(5, 0)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1278,8 +1012,12 @@
           "name": "log_sets_workout_log_id_workout_logs_id_fk",
           "tableFrom": "log_sets",
           "tableTo": "workout_logs",
-          "columnsFrom": ["workout_log_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workout_log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1287,8 +1025,12 @@
           "name": "log_sets_workout_exercise_id_workout_exercises_id_fk",
           "tableFrom": "log_sets",
           "tableTo": "workout_exercises",
-          "columnsFrom": ["workout_exercise_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workout_exercise_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1327,6 +1069,13 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": true
+        },
+        "is_current": {
+          "name": "is_current",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         }
       },
       "indexes": {
@@ -1351,8 +1100,12 @@
           "name": "workout_days_plan_id_workout_plans_id_fk",
           "tableFrom": "workout_days",
           "tableTo": "workout_plans",
-          "columnsFrom": ["plan_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1412,7 +1165,7 @@
         },
         "load_kg": {
           "name": "load_kg",
-          "type": "numeric(5, 1)",
+          "type": "numeric(5, 0)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1451,8 +1204,12 @@
           "name": "workout_exercises_workout_day_id_workout_days_id_fk",
           "tableFrom": "workout_exercises",
           "tableTo": "workout_days",
-          "columnsFrom": ["workout_day_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workout_day_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1460,8 +1217,12 @@
           "name": "workout_exercises_exercise_id_exercises_id_fk",
           "tableFrom": "workout_exercises",
           "tableTo": "exercises",
-          "columnsFrom": ["exercise_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "exercise_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1562,8 +1323,12 @@
           "name": "workout_logs_student_id_students_id_fk",
           "tableFrom": "workout_logs",
           "tableTo": "students",
-          "columnsFrom": ["student_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1571,8 +1336,12 @@
           "name": "workout_logs_workout_day_id_workout_days_id_fk",
           "tableFrom": "workout_logs",
           "tableTo": "workout_days",
-          "columnsFrom": ["workout_day_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "workout_day_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1668,8 +1437,12 @@
           "name": "workout_plans_student_id_students_id_fk",
           "tableFrom": "workout_plans",
           "tableTo": "students",
-          "columnsFrom": ["student_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1677,8 +1450,12 @@
           "name": "workout_plans_trainer_id_trainers_id_fk",
           "tableFrom": "workout_plans",
           "tableTo": "trainers",
-          "columnsFrom": ["trainer_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1688,23 +1465,208 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.workout_plan_drafts": {
+      "name": "workout_plan_drafts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "trainer_id": {
+          "name": "trainer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "student_id": {
+          "name": "student_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_plan_id": {
+          "name": "source_plan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "selected_day_order": {
+          "name": "selected_day_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workout_plan_drafts_trainer_student_idx": {
+          "name": "workout_plan_drafts_trainer_student_idx",
+          "columns": [
+            {
+              "expression": "trainer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "workout_plan_drafts_create_context_unique": {
+          "name": "workout_plan_drafts_create_context_unique",
+          "columns": [
+            {
+              "expression": "trainer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"workout_plan_drafts\".\"source_plan_id\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "workout_plan_drafts_source_context_unique": {
+          "name": "workout_plan_drafts_source_context_unique",
+          "columns": [
+            {
+              "expression": "trainer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "student_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_plan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"workout_plan_drafts\".\"source_plan_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workout_plan_drafts_trainer_id_trainers_id_fk": {
+          "name": "workout_plan_drafts_trainer_id_trainers_id_fk",
+          "tableFrom": "workout_plan_drafts",
+          "tableTo": "trainers",
+          "columnsFrom": [
+            "trainer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workout_plan_drafts_student_id_students_id_fk": {
+          "name": "workout_plan_drafts_student_id_students_id_fk",
+          "tableFrom": "workout_plan_drafts",
+          "tableTo": "students",
+          "columnsFrom": [
+            "student_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workout_plan_drafts_source_plan_id_workout_plans_id_fk": {
+          "name": "workout_plan_drafts_source_plan_id_workout_plans_id_fk",
+          "tableFrom": "workout_plan_drafts",
+          "tableTo": "workout_plans",
+          "columnsFrom": [
+            "source_plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "workout_plan_drafts_selected_day_order_check": {
+          "name": "workout_plan_drafts_selected_day_order_check",
+          "value": "\"workout_plan_drafts\".\"selected_day_order\" >= 0"
+        },
+        "workout_plan_drafts_revision_check": {
+          "name": "workout_plan_drafts_revision_check",
+          "value": "\"workout_plan_drafts\".\"revision\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
     }
   },
   "enums": {
     "public.auth_role": {
       "name": "auth_role",
       "schema": "public",
-      "values": ["trainer", "student"]
-    },
-    "public.billing_interval": {
-      "name": "billing_interval",
-      "schema": "public",
-      "values": ["monthly", "annual"]
-    },
-    "public.billing_invoice_status": {
-      "name": "billing_invoice_status",
-      "schema": "public",
-      "values": ["issued", "paid", "void"]
+      "values": [
+        "trainer",
+        "student"
+      ]
     },
     "public.muscle_group": {
       "name": "muscle_group",
@@ -1722,35 +1684,42 @@
         "full_body"
       ]
     },
-    "public.notification_channel": {
-      "name": "notification_channel",
-      "schema": "public",
-      "values": ["email", "push", "both"]
-    },
     "public.student_gender": {
       "name": "student_gender",
       "schema": "public",
-      "values": ["male", "female", "other"]
+      "values": [
+        "male",
+        "female",
+        "other"
+      ]
     },
     "public.student_status": {
       "name": "student_status",
       "schema": "public",
-      "values": ["active", "inactive", "paused"]
+      "values": [
+        "active",
+        "inactive",
+        "paused"
+      ]
     },
     "public.trainer_plan": {
       "name": "trainer_plan",
       "schema": "public",
-      "values": ["free", "starter", "pro", "team"]
-    },
-    "public.trainer_subscription_status": {
-      "name": "trainer_subscription_status",
-      "schema": "public",
-      "values": ["active", "canceled"]
+      "values": [
+        "free",
+        "starter",
+        "pro",
+        "team"
+      ]
     },
     "public.workout_plan_status": {
       "name": "workout_plan_status",
       "schema": "public",
-      "values": ["active", "archived", "draft"]
+      "values": [
+        "active",
+        "archived",
+        "draft"
+      ]
     }
   },
   "schemas": {},

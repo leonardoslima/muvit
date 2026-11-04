@@ -1,9 +1,13 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { View } from 'react-native';
+import { mobileRoutes } from '../../src/application/navigation/role-navigation';
+import { AuthBrand } from '../../src/components/auth/auth-brand';
+import { Screen } from '../../src/components/ui/screen';
+import { ActionFeedback, Button, Field, Header, Text } from '../../src/components/ui/v2';
 import { authClient } from '../../src/lib/auth-client';
 import { getAuthErrorMessage } from '../../src/lib/auth-errors';
-import { sharedStyles } from '../../src/lib/styles';
+import { spacing } from '../../src/lib/design-system/tokens';
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
@@ -28,7 +32,7 @@ export default function SignupScreen() {
         return;
       }
 
-      router.replace('/(tabs)');
+      router.replace(mobileRoutes.studentHome);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'signup'));
     } finally {
@@ -37,42 +41,71 @@ export default function SignupScreen() {
   }
 
   return (
-    <View style={[sharedStyles.screen, { justifyContent: 'center', gap: 18 }]}>
-      <View style={{ gap: 6 }}>
-        <Text style={sharedStyles.title}>Criar conta</Text>
-        <Text style={sharedStyles.subtitle}>Comece como aluno independente.</Text>
+    <Screen
+      scroll
+      contentContainerStyle={{
+        flexGrow: 1,
+        gap: spacing.xxl,
+        paddingBottom: spacing.xxl,
+        paddingHorizontal: spacing.lg,
+        paddingTop: spacing.xxl,
+      }}
+    >
+      <AuthBrand />
+      <View testID="signup-heading" style={{ gap: spacing.sm, paddingHorizontal: spacing.optical }}>
+        <Header
+          title="Criar conta"
+          titleClassName="text-[29px] leading-[40.6px] font-v2-extrabold"
+        />
+        <Text className="text-v2-secondary" variant="body">
+          Comece como aluno independente.
+        </Text>
       </View>
-      <TextInput
-        onChangeText={setName}
-        placeholder="Nome"
-        style={sharedStyles.input}
-        value={name}
-      />
-      <TextInput
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
-        onChangeText={setEmail}
-        placeholder="Email"
-        style={sharedStyles.input}
-        value={email}
-      />
-      <TextInput
-        onChangeText={setPassword}
-        placeholder="Senha"
-        secureTextEntry
-        style={sharedStyles.input}
-        value={password}
-      />
-      {error ? <Text style={sharedStyles.error}>{error}</Text> : null}
-      <Pressable disabled={submitting} onPress={submit} style={sharedStyles.button}>
-        <Text style={sharedStyles.buttonText}>{submitting ? 'Criando...' : 'Criar conta'}</Text>
-      </Pressable>
-      <Link href="/(auth)/login" asChild>
-        <Pressable style={sharedStyles.secondaryButton}>
-          <Text style={sharedStyles.secondaryButtonText}>Já tenho conta</Text>
-        </Pressable>
-      </Link>
-    </View>
+
+      <View testID="signup-fields" style={{ gap: spacing.xl }}>
+        <Field
+          label="Nome"
+          onChangeText={setName}
+          placeholder="Seu nome completo"
+          size="auth"
+          testID="signup-name"
+          value={name}
+        />
+        <Field
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          label="Email"
+          onChangeText={setEmail}
+          placeholder="voce@exemplo.com"
+          size="auth"
+          testID="signup-email"
+          value={email}
+        />
+        <Field
+          kind="password"
+          label="Senha"
+          onChangeText={setPassword}
+          placeholder="Sua senha"
+          size="auth"
+          testID="signup-password"
+          value={password}
+        />
+      </View>
+
+      {error ? <ActionFeedback description={error} variant="error" /> : null}
+
+      <View testID="signup-actions" style={{ gap: spacing.md }}>
+        <Button
+          disabled={submitting}
+          label={submitting ? 'Criando...' : 'Criar conta'}
+          loading={submitting}
+          onPress={submitting ? undefined : submit}
+        />
+        <Link href="/(auth)/login" asChild>
+          <Button label="Já tenho conta" onPress={() => undefined} variant="secondary" />
+        </Link>
+      </View>
+    </Screen>
   );
 }

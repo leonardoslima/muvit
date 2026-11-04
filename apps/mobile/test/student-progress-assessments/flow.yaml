@@ -1,0 +1,37 @@
+appId: com.anonymous.muvit
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Entrar"
+    timeout: 60000
+- takeScreenshot: "login-before-signup"
+- tapOn: "Criar conta independente"
+- assertVisible: "Criar conta"
+- tapOn: "Seu nome completo"
+- inputText: ${NAME}
+- tapOn: "voce@exemplo.com"
+- inputText: ${EMAIL}
+- pressKey: Back
+- tapOn: "Crie uma senha"
+- inputText: ${PASSWORD}
+- pressKey: Back
+- tapOn:
+    text: "Criar conta"
+    index: 1
+- extendedWaitUntil:
+    visible: "Hoje"
+    timeout: 20000
+- takeScreenshot: "student-home"
+- tapOn: "Progresso"
+- assertVisible: "Progresso"
+- assertVisible: "Nenhuma avaliação registrada"
+- takeScreenshot: "student-progress-empty"
+- tapOn:
+    id: "progress-new-assessment"
+- assertVisible: "Fotos"
+- takeScreenshot: "new-assessment-empty"
+- tapOn: "Adicionar fotos"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "photo-picker-open"

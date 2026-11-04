@@ -14,10 +14,12 @@ export class StartWorkoutLogUseCase {
 
   async execute(identity: RequestIdentity, input: StartWorkoutLogInput) {
     const day = await this.workoutLogsRepository.findWorkoutDayAccess(input.workoutDayId);
-    if (!day) throw new UseCaseError('not_found', 'not found');
+    if (!day || !day.isCurrent) throw new UseCaseError('not_found', 'not found');
     await this.ensureStudentAccess.execute(identity, day.studentId, {
       studentMismatchError: 'not_found',
     });
-    return this.workoutLogsRepository.start(day.studentId, input);
+    const log = await this.workoutLogsRepository.start(day.studentId, input);
+    if (!log) throw new UseCaseError('not_found', 'not found');
+    return log;
   }
 }

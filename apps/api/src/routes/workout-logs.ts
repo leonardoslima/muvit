@@ -44,7 +44,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-logs'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         body: finishWorkoutLogSchema,
         response: {
           200: workoutLogFullSchema,
@@ -71,7 +71,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-logs'],
-        params: z.object({ id: z.string().uuid() }),
+        params: z.object({ id: z.string().guid() }),
         response: {
           200: workoutLogFullSchema,
           404: z.object({ error: z.string() }),
@@ -115,7 +115,7 @@ export const workoutLogsRoutes: FastifyPluginAsyncZod = async (app) => {
     {
       schema: {
         tags: ['workout-logs'],
-        params: z.object({ studentId: z.string().uuid() }),
+        params: z.object({ studentId: z.string().guid() }),
         querystring: listWorkoutLogsQuerySchema,
         response: { 200: z.object({ items: z.array(workoutLogSummarySchema) }) },
       },

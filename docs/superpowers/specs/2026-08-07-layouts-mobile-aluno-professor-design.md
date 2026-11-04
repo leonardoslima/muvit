@@ -1,0 +1,278 @@
+# Layouts mobile de aluno e professor no Pencil
+
+## Contexto
+
+A issue [MUV-7](https://linear.app/muvit/issue/MUV-7/criar-layouts-mobile-de-aluno-e-professor-no-pencil) define o design que antecede a evolução do Mobile MVP. Hoje, "apps/mobile" implementa somente o fluxo autenticado de aluno: login, cadastro de aluno independente, treino do dia, sessão guiada de treino, progresso, nova avaliação e perfil. A sessão diferente de "student" é redirecionada ao login.
+
+O mesmo aplicativo passará a atender treinadores. O Pencil deve consolidar a experiência visual do aluno e definir uma experiência de acompanhamento para o treinador, sem antecipar mudanças de API, Expo Router ou regras de autorização. As issues MUV-8, MUV-16, MUV-17, MUV-18 e MUV-19 consumirão este design.
+
+## Fontes de verdade
+
+- Issue MUV-7 e as issues dependentes do projeto Mobile MVP.
+- "assets/design/pencil_design.pen", incluindo o Style Guide, as variáveis visuais e os componentes reutilizáveis existentes; ele é a fonte visual primária.
+- "apps/mobile/app/_layout.tsx" e "apps/mobile/app/(tabs)/_layout.tsx", para a navegação e o guard atuais.
+- "apps/mobile/src/screens", para os fluxos funcionais já disponíveis ao aluno.
+- "apps/mobile/src/lib/styles.ts", para reconciliar a implementação futura com os tokens visuais definidos no Pencil.
+- "AGENTS.md" da raiz e "apps/mobile/AGENTS.md".
+
+## Objetivo
+
+Criar no Pencil referências mobile claras, completas e reutilizáveis para:
+
+- redesenhar os fluxos funcionais existentes do aluno;
+- habilitar uma navegação própria de treinador;
+- acompanhar alunos, avaliações e treinos em modo leitura;
+- documentar estados de carregamento, vazio, erro e sucesso;
+- permitir que os tickets de implementação trabalhem sem decisões de experiência em aberto.
+
+## Decisões aprovadas
+
+- O design trata a role de API "trainer" como **Treinador** na cópia visível em pt-BR. “Professor” e “personal” são sinônimos do mesmo perfil no contexto da issue.
+- A role é resolvida pela sessão autenticada; não existe seletor de perfil, troca manual de role ou tela de escolha após o login.
+- O cadastro existente continua criando somente aluno independente. Cadastro, convite ou onboarding de treinador não fazem parte desta entrega.
+- A experiência do aluno mantém três destinos principais: **Hoje**, **Progresso** e **Perfil**.
+- A experiência do treinador possui três destinos principais: **Início**, **Alunos** e **Perfil**.
+- Avaliações e treinos do treinador ficam contextualizados dentro do detalhe do aluno, sem uma quarta aba.
+- O treinador consulta informações, atualiza a visualização e navega entre detalhes. Criar, editar, excluir, publicar ou montar avaliações, planos e exercícios não fazem parte do mobile.
+- Não haverá atalho para o dashboard web enquanto não existir um contrato explícito de deep link.
+- O MUV-7 é uma entrega de design. O guard de sessão, as rotas e as chamadas de dados serão modificados somente nas issues de implementação.
+
+## Arquitetura de navegação
+
+### Fluxo compartilhado
+
+Login e Criar conta permanecem compartilhados entre as experiências. Após autenticar, a sessão decide o destino inicial:
+
+- aluno segue para **Hoje**;
+- treinador segue para **Início**;
+- pessoa não autenticada permanece no fluxo de autenticação.
+
+O login exibe validação, submissão e erro de credencial sem mudar a estrutura da tela. O estado de sucesso não exige uma tela intermediária: o redirecionamento para a navegação da role é o feedback de conclusão.
+
+### Aluno
+
+| Destino | Intenção principal | Navegação de continuidade |
+| --- | --- | --- |
+| Hoje | Encontrar, iniciar ou retomar o treino do dia. | Abrir a visão geral, executar uma série por vez e retornar após concluir. |
+| Progresso | Consultar o histórico de avaliações e iniciar a avaliação própria já existente. | Abrir a nova avaliação e voltar ao histórico atualizado. |
+| Perfil | Consultar identidade e encerrar a sessão. | Sair e retornar ao login. |
+
+O fluxo de treino é guiado e reduzido a uma decisão por vez: **Hoje → visão geral → exercício e série atual → descanso → próximo exercício → último exercício → resumo**. A tela atual mostra exercício, progresso, série, carga, repetições e a última série registrada; o descanso permite adicionar tempo, pular ou seguir para a próxima série. Antes de sair, há confirmação que diferencia “continuar treinando”, “salvar e sair” e “encerrar treino”. A finalização apresenta um resumo objetivo antes de devolver o usuário à experiência de Hoje. O indicador de conteúdo offline continua explícito no treino disponível em cache.
+
+Os estados de Hoje distinguem treino disponível, treino em andamento para retomada, dia sem treino e ausência de plano ativo. O detalhe de exercício permanece como consulta complementar, sem substituir o percurso guiado da sessão.
+
+### Treinador
+
+| Destino | Intenção principal | Navegação de continuidade |
+| --- | --- | --- |
+| Início | Entender rapidamente a operação e chegar aos alunos. | Abrir a lista de alunos ou um aluno destacado. |
+| Alunos | Localizar e abrir um aluno vinculado. | Abrir o detalhe do aluno. |
+| Perfil | Consultar identidade e encerrar a sessão. | Sair e retornar ao login. |
+
+O detalhe do aluno é o hub de acompanhamento. Ele contém identificação, resumo útil, última avaliação e plano ativo. Os cards de avaliação e treino levam às respectivas listas e detalhes somente de leitura:
+
+- **Avaliações:** lista cronológica, estado sem avaliações e detalhe com medidas, notas e foto quando disponível.
+- **Treinos:** lista de planos, estado sem plano ativo e detalhe de plano com dias, exercícios, séries, repetições, carga, descanso e notas quando disponíveis.
+
+Os detalhes não exibem botão de criar, editar, excluir, salvar, publicar ou adicionar exercício. Atualização manual é permitida como ação simples de recarregamento.
+
+## Inventário de frames do Pencil
+
+Cada referência final usa o nome canônico "Mobile / <role> / <fluxo> / <estado>". Frames de tela são top-level, têm largura de 390 px, "clip: true" e altura baseada no conteúdo com referência inicial de 844 px. A árvore de componentes fica separada das telas e nenhum frame desktop existente é movido, renomeado ou alterado.
+
+### Componentes compartilhados
+
+- "Mobile / Component / Screen shell"
+- "Mobile / Component / App header"
+- "Mobile / Component / Back header"
+- "Mobile / Component / Tab bar"
+- "Mobile / Component / Primary button"
+- "Mobile / Component / Secondary button"
+- "Mobile / Component / Summary card"
+- "Mobile / Component / Student row"
+- "Mobile / Component / Workout preview"
+- "Mobile / Component / Assessment preview"
+- "Mobile / Component / Status badge"
+- "Mobile / Component / State panel"
+- "Mobile / Component / Workout today card"
+- "Mobile / Component / Workout progress"
+- "Mobile / Component / Current set"
+- "Mobile / Component / Workout set control"
+- "Mobile / Component / Previous set"
+- "Mobile / Component / Rest timer"
+
+Os componentes reutilizam os tokens e a intenção visual dos componentes atuais do arquivo Pencil. Adaptações de densidade, área de toque e disposição são específicas do mobile e não alteram as instâncias desktop.
+
+### Referências de aluno
+
+- "Mobile / Aluno / Login / default"
+- "Mobile / Aluno / Login / submitting-error"
+- "Mobile / Aluno / Cadastro / default"
+- "Mobile / Aluno / Cadastro / submitting-error"
+- "Mobile / Aluno / Hoje / treino-disponível"
+- "Mobile / Aluno / Hoje / treino-em-andamento"
+- "Mobile / Aluno / Hoje / carregando"
+- "Mobile / Aluno / Hoje / sem-plano-ativo"
+- "Mobile / Aluno / Hoje / sem-treino-hoje"
+- "Mobile / Aluno / Hoje / erro"
+- "Mobile / Aluno / Exercício / detalhes"
+- "Mobile / Aluno / Treino / visão geral"
+- "Mobile / Aluno / Sessão / exercício-atual"
+- "Mobile / Aluno / Sessão / descanso"
+- "Mobile / Aluno / Sessão / exercício-concluído"
+- "Mobile / Aluno / Sessão / último-exercício"
+- "Mobile / Aluno / Sessão / resumo"
+- "Mobile / Aluno / Sessão / saída"
+- "Mobile / Aluno / Sessão / carregando-erro"
+- "Mobile / Aluno / Progresso / com-avaliações"
+- "Mobile / Aluno / Progresso / carregando-vazio-erro"
+- "Mobile / Aluno / Nova avaliação / default"
+- "Mobile / Aluno / Nova avaliação / enviando-erro-sucesso"
+- "Mobile / Aluno / Perfil / default"
+
+### Referências de treinador
+
+- "Mobile / Treinador / Início / default"
+- "Mobile / Treinador / Início / carregando-vazio-erro"
+- "Mobile / Treinador / Alunos / lista"
+- "Mobile / Treinador / Alunos / carregando-vazio-erro"
+- "Mobile / Treinador / Aluno / detalhe"
+- "Mobile / Treinador / Aluno / carregando-erro"
+- "Mobile / Treinador / Avaliações / lista"
+- "Mobile / Treinador / Avaliações / vazio-erro"
+- "Mobile / Treinador / Avaliação / detalhe"
+- "Mobile / Treinador / Treinos / lista"
+- "Mobile / Treinador / Treinos / vazio-erro"
+- "Mobile / Treinador / Treino / detalhe"
+- "Mobile / Treinador / Perfil / default"
+
+Estados unidos pelo hífen pertencem ao mesmo frame de referência e aparecem como variantes claramente separadas, com label de estado. Isso evita duplicar telas cuja estrutura é idêntica e, ao mesmo tempo, torna explícito o comportamento que a implementação deve cobrir.
+
+## Sistema visual mobile
+
+O design usa as variáveis existentes do Pencil, sem introduzir paleta paralela:
+
+- fundo: "$--background", "#F5F3EF";
+- superfície: "$--card", "#FFFFFF";
+- texto principal: "$--foreground", "#1A1A1A";
+- texto secundário: "$--muted-foreground", "#666666";
+- borda: "$--border", "#D1CCC4";
+- ação primária: "$--primary", "#2ECC71";
+- destaque e aviso: "$--color-warning", "#F39C12";
+- erro: "$--color-error", "#E74C3C".
+
+Títulos de tela e de card usam "$--font-primary", Space Grotesk. Corpo, labels e mensagens de estado usam "$--font-secondary", Inter. A escala de cada função textual permanece consistente e legível sem reduzir o contraste. Conteúdo visível permanece em pt-BR com caracteres UTF-8 literais.
+
+As telas seguem esta estrutura:
+
+1. status bar de 62 px;
+2. wrapper de conteúdo com 20 px laterais;
+3. espaçamento de 24–32 px entre seções e 12–16 px entre elementos relacionados;
+4. tab bar flutuante ao final da pilha, com três itens, extremidades em cápsula, destaque verde para o destino selecionado e área tocável confortável.
+
+O layout usa frames verticais e horizontais com sizing dinâmico. Textos longos usam crescimento com largura fixa e não são posicionados por dimensões arbitrárias. O conteúdo deve caber sem corte, inclusive quando notas ou nomes de exercício forem mais extensos.
+
+## Estados e feedback
+
+O componente "State panel" segue uma estrutura única: ícone compreensível, título, explicação e ação apenas quando ela é possível.
+
+- **Carregando:** skeleton ou indicador com texto curto; a hierarquia da tela permanece reconhecível.
+- **Vazio:** explica por que não há conteúdo e qual é o próximo passo permitido. Exemplo de aluno: “Quando seu treinador publicar um treino ativo, ele aparece aqui.” Exemplo de treinador: “Nenhum aluno vinculado para acompanhar.”
+- **Erro:** explica que a carga falhou e oferece “Tentar novamente” ou atualização manual, sem descartar o contexto já visível.
+- **Sucesso:** confirma somente ações que realmente ocorrem no mobile, como finalizar treino ou salvar a avaliação própria do aluno.
+- **Offline:** aparece no contexto do treino do aluno quando o conteúdo vem do cache, sem sugerir que uma ação de edição foi sincronizada.
+
+## Interações e acessibilidade
+
+- Todo destino de tab informa visual e textualmente o item selecionado.
+- Cards de aluno, avaliação e treino mostram affordance de abertura e mantêm área tocável de pelo menos 44 px.
+- A superfície inferior de detalhes de exercício possui título, botão de fechar e retorno de foco ao gatilho.
+- Campos de login, cadastro e nova avaliação possuem label ou placeholder inequívoco, teclado apropriado e mensagem de erro próxima ao campo quando aplicável; os controles de carga e repetições da sessão guiada informam valor, unidade e série atual.
+- A ação primária fica alcançável na metade inferior da tela quando o fluxo permitir.
+- A lista de aluno pode ser atualizada manualmente; ela não depende de busca ou filtro nesta primeira referência.
+- Cópias e estados distinguem “sem conteúdo” de “não foi possível carregar”.
+
+## Handoff para implementação
+
+MUV-8 implementa as referências de aluno, incluindo a sessão guiada por exercício e série, sem remover os comportamentos funcionais existentes. MUV-16 usa a decisão de entrada por role, estrutura os guards e monta as tabs de treinador. MUV-17 implementa Início, Alunos e detalhe de aluno. MUV-18 e MUV-19 implementam as referências de leitura de avaliações e treinos.
+
+Após criar os frames, o PR de design deve listar os nomes canônicos e os IDs devolvidos pelo Pencil para cada tela top-level. Assim, cada ticket dependente poderá apontar para uma referência estável sem depender de coordenadas no canvas.
+
+### Referências Pencil materializadas
+
+| Frame | Node ID |
+| --- | --- |
+| Mobile / Components / Sessão de treino | SgkZx |
+| Mobile / Components — Muvit | t8V5h |
+| Mobile / Aluno / Cadastro / default | J6jZMI |
+| Mobile / Aluno / Cadastro / submitting-error | W7qGN |
+| Mobile / Aluno / Exercício / detalhes | TsKjV |
+| Mobile / Aluno / Hoje / carregando | jNGgW |
+| Mobile / Aluno / Hoje / erro | Uniw4 |
+| Mobile / Aluno / Hoje / sem-plano-ativo | nMLyN |
+| Mobile / Aluno / Hoje / sem-treino-hoje | QOngV |
+| Mobile / Aluno / Hoje / treino-disponível | uJLDm |
+| Mobile / Aluno / Hoje / treino-em-andamento | OVuJm |
+| Mobile / Aluno / Login / default | OII7y |
+| Mobile / Aluno / Login / submitting-error | P9kNT |
+| Mobile / Aluno / Nova avaliação / default | I2gzs |
+| Mobile / Aluno / Nova avaliação / enviando-erro-sucesso | CsaiW |
+| Mobile / Aluno / Perfil / default | q7wg2L |
+| Mobile / Aluno / Progresso / carregando-vazio-erro | U09sO |
+| Mobile / Aluno / Progresso / com-avaliações | nBQZW |
+| Mobile / Aluno / Sessão / carregando-erro | uPybj |
+| Mobile / Aluno / Sessão / descanso | IRuyd |
+| Mobile / Aluno / Sessão / exercício-atual | nerHC |
+| Mobile / Aluno / Sessão / exercício-concluído | VoY8I |
+| Mobile / Aluno / Sessão / resumo | jwmjt |
+| Mobile / Aluno / Sessão / saída | p4oS1 |
+| Mobile / Aluno / Sessão / último-exercício | I1EuxI |
+| Mobile / Aluno / Treino / visão geral | jYzas |
+| Mobile / Treinador / Aluno / carregando-erro | kf7yB |
+| Mobile / Treinador / Aluno / detalhe | SQrNm |
+| Mobile / Treinador / Alunos / carregando-vazio-erro | BVAl2 |
+| Mobile / Treinador / Alunos / lista | OWI03 |
+| Mobile / Treinador / Avaliação / detalhe | hogSh |
+| Mobile / Treinador / Avaliações / lista | xK7me |
+| Mobile / Treinador / Avaliações / vazio-erro | jjO3j |
+| Mobile / Treinador / Início / carregando-vazio-erro | zeMuT |
+| Mobile / Treinador / Início / default | LCAG3 |
+| Mobile / Treinador / Perfil / default | LReyn |
+| Mobile / Treinador / Treino / detalhe | bAwMI |
+| Mobile / Treinador / Treinos / lista | R3zGB |
+| Mobile / Treinador / Treinos / vazio-erro | r2cUN |
+
+## Alternativas descartadas
+
+- Uma quarta aba de acompanhamento para treinador foi descartada porque avaliações e treinos pertencem ao contexto de um aluno e duplicariam a navegação.
+- Um fluxo mobile completo de CRUD para treinador foi descartado por ampliar o MVP e competir com o dashboard web. A decisão aprovada é consulta e atualização simples.
+- Um seletor manual de role foi descartado porque a sessão já contém a identidade necessária e criaria uma transição ambígua.
+- Busca e filtros de alunos não aparecem na referência base porque ainda dependeriam de contrato de endpoint; a lista simples e a atualização manual atendem o fluxo essencial.
+
+## Fora do escopo
+
+- Alterar autenticação, Expo Router, chamadas de API, validators, banco ou permissões.
+- Criar, editar, excluir, publicar ou montar avaliações, planos e exercícios no fluxo de treinador.
+- Criar cadastro ou onboarding de treinador.
+- Criar deep links para o dashboard web.
+- Redesenhar as telas desktop existentes no arquivo Pencil.
+- Adicionar dependências ao monorepo.
+
+## Verificação
+
+- Conferir visualmente cada frame top-level e cada estado com screenshot do Pencil.
+- Verificar contraste, alinhamento, área tocável, conteúdo sem corte e clareza da navegação de cada role.
+- Confirmar que todos os destinos listados possuem origem e destino explícitos no design.
+- Conferir que o treinador não possui CTA mutável nos cards, listas ou detalhes.
+- Executar "git diff --check".
+- Procurar escapes Unicode de quatro dígitos no documento alterado e preservar a acentuação em UTF-8 literal.
+
+## Critérios de aceite
+
+- O arquivo Pencil contém os fluxos essenciais de aluno e treinador necessários para o Mobile MVP.
+- A sessão do aluno é executada por exercício e série, apresenta descanso, retomada, saída segura e resumo final.
+- A navegação de aluno e treinador é clara, isolada por role e não deixa decisões de experiência em aberto.
+- Os layouts documentam estados de carregamento, vazio, erro e sucesso aplicáveis.
+- Avaliações e treinos do treinador são consultáveis a partir do detalhe do aluno e não expõem criação ou edição.
+- Componentes e tokens compartilhados são identificáveis, sem alterar os frames desktop existentes.
+- Os nomes e IDs dos frames finais ficam registráveis no PR de design.

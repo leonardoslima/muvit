@@ -203,6 +203,67 @@ describe('assessments', () => {
     expect(listed.json().items[0].studentId).toBe(profileId);
   });
 
+  it('aluno cria e consulta avaliação com oito fotos em ordem', async () => {
+    const { cookie } = await signupStudent('photos@i.com');
+    const photos = Array.from({ length: 8 }, (_, index) => `https://cdn.test/${index}.jpg`);
+
+    const created = await app.inject({
+      method: 'POST',
+      url: '/students/me/assessments',
+      headers: { cookie },
+      payload: { date: '2026-10-14', photos },
+    });
+
+    expect(created.statusCode).toBe(201);
+    expect(created.json().photos).toEqual(photos);
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/students/me/assessments?limit=20',
+      headers: { cookie },
+    });
+
+    expect(listed.statusCode).toBe(200);
+    expect(listed.json().items).toHaveLength(1);
+    expect(listed.json().items[0].photos).toEqual(photos);
+  });
+
+  it('atualização conserva oito URLs', async () => {
+    const trainer = await signupTrainer('photos-trainer@a.com');
+    const studentId = await createStudent(trainer.cookie, 'Aluno com Fotos');
+    const created = await app.inject({
+      method: 'POST',
+      url: `/students/${studentId}/assessments`,
+      headers: { cookie: trainer.cookie },
+      payload: { date: '2026-10-14' },
+    });
+    expect(created.statusCode).toBe(201);
+    const photos = Array.from({ length: 8 }, (_, index) => `https://cdn.test/${index}.jpg`);
+
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: `/assessments/${created.json().id}`,
+      headers: { cookie: trainer.cookie },
+      payload: { photos },
+    });
+
+    expect(updated.statusCode).toBe(200);
+    expect(updated.json().photos).toEqual(photos);
+  });
+
+  it('rejeita URL inválida nas fotos da avaliação do aluno', async () => {
+    const { cookie } = await signupStudent('invalid-photo@i.com');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/students/me/assessments',
+      headers: { cookie },
+      payload: { date: '2026-10-14', photos: ['inválida'] },
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
   it('rejects trainer access to self-scoped assessments', async () => {
     const trainer = await signupTrainer('self-trainer@a.com');
 

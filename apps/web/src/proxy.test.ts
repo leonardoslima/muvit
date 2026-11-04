@@ -51,4 +51,18 @@ describe('proxy', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });
+  it.each([
+    '/forgot-password',
+    '/reset-password?token=valid',
+    '/reset-password?error=INVALID_TOKEN',
+  ])('permite recuperação sem sessão em %s', (path: string) => {
+    expect(proxy(request(path)).headers.get('x-middleware-next')).toBe('1');
+  });
+  it.each(['/forgot-password', '/reset-password?token=valid'])(
+    'preserva recuperação mesmo com cookie em %s',
+    (path: string) => {
+      getSessionCookie.mockReturnValue('session');
+      expect(proxy(request(path)).headers.get('x-middleware-next')).toBe('1');
+    },
+  );
 });

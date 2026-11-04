@@ -30,7 +30,7 @@ Estas regras valem para `packages/db`, incluindo schema Drizzle, client, migrati
 ## Ambiente e seed
 
 - Variaveis de banco devem ser validadas em `src/env.ts`; nao leia `process.env` diretamente em outros arquivos.
-- Desenvolvimento usa PostgreSQL do container `postgres` em `localhost:5432`; testes usam exclusivamente o container `postgres_test` em `localhost:5433`.
+- Desenvolvimento usa PostgreSQL do container `postgres` em `localhost:5432`; o padrão local de testes é `postgres_test` em `localhost:5433`. QA isolado e CI podem usar PostgreSQL descartável exclusivo em porta dedicada, com nome de banco de teste e o mesmo `DATABASE_URL` nos `.env.test` da API e de db; nunca compartilhe o banco entre execuções concorrentes.
 - Nunca use SQLite, `index.db` ou outro banco em arquivo como fallback de desenvolvimento ou teste.
 - Tabelas `auth_*` seguem o schema oficial do Better Auth; preserve nomes, constraints, indices e relacoes exigidos pelo adapter Drizzle.
 - Perfis de dominio referenciam `auth_users.id` somente para vincular a identidade; ownership de negocio continua baseado no ID do perfil.

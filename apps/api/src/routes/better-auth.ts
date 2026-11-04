@@ -46,6 +46,20 @@ export const betterAuthRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.route({
+    method: 'POST',
+    url: '/api/auth/request-password-reset',
+    config: { rateLimit: authRateLimit },
+    handler: handleBetterAuth,
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/api/auth/reset-password',
+    config: { rateLimit: authRateLimit },
+    handler: handleBetterAuth,
+  });
+
+  app.route({
     method: ['GET', 'POST'],
     url: '/api/auth/*',
     handler: handleBetterAuth,
