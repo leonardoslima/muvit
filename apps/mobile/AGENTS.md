@@ -17,14 +17,15 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 - Regras de aplicacao, montagem de payload, selecao de dados, fila offline, cache e upload devem ficar em `src/application` ou `src/lib`, nao diretamente em screens.
 - Screens devem permanecer finas: renderizam UI, conectam hooks e chamam services; dependencias concretas como storage, router, picker e query client ficam na borda.
 - Modulos em `src/application` nao devem importar `react-native`, `expo-router`, `expo-image-picker`, AsyncStorage concreto, screens ou componentes.
-- Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm.cmd --dir apps/mobile test:coverage:core`; cobertura ampla fica em `pnpm.cmd --dir apps/mobile test:coverage`.
-- Cobertura visual critica deve ser medida por `pnpm.cmd --dir apps/mobile test:coverage:ui`; screens devem usar React Native Testing Library com mocks de router, API, storage e dependencias nativas.
+- Cobertura minima bloqueante de 85% vale para o nucleo testavel medido por `pnpm --dir apps/mobile test:coverage:core`; cobertura ampla fica em `pnpm --dir apps/mobile test:coverage`.
+- Cobertura visual critica deve ser medida por `pnpm --dir apps/mobile test:coverage:ui`; screens devem usar React Native Testing Library com mocks de router, API, storage e dependencias nativas.
 
 ## Dados, permissao e notificacoes
 
 - Trate chamadas de rede com estados de loading, erro e retry quando o fluxo exigir.
 - Use `authClient.useSession()` como fonte unica de hidratacao e identidade; o plugin Expo do Better Auth e o unico responsavel por persistir a sessao no SecureStore.
 - As rotas `(auth)/forgot-password` e `(auth)/reset-password` sao publicas mesmo com sessao existente; o retorno `muvit://reset-password` recebe token ou erro na query e nunca autentica automaticamente apos redefinir.
+- A rota `(auth)/verify-email` é pública com ou sem sessão; contas não verificadas são direcionadas a ela antes das áreas privadas. O retorno `muvit://verify-email` deve consultar a sessão novamente e não pode inferir sucesso pela ausência de erro no link.
 - Encaminhe `authClient.getCookie()` no header `Cookie` das chamadas nativas e use `credentials: 'omit'`; nao crie store paralela ou tokens proprios.
 - Chamadas de dominio do aluno usam rotas self-scoped `/students/me/*`; nunca trate o ID do usuario Better Auth como `profileId`.
 - O fluxo mobile autenticável mantém isolamento por papel: `student` usa rotas self-scoped `/students/me/*` e `trainer` usa o shell protegido `/trainer`; ownership e autorização continuam sob responsabilidade da API.
@@ -52,11 +53,12 @@ Estas regras valem para `apps/mobile`, app Expo/React Native que atualmente entr
 
 ## Verificacao
 
-- Para alteracoes mobile, rode `pnpm.cmd --dir apps/mobile test`, `pnpm.cmd --dir apps/mobile typecheck` e `pnpm.cmd --dir apps/mobile doctor` conforme o risco.
+- Para alteracoes mobile, rode `pnpm --dir apps/mobile test`, `pnpm --dir apps/mobile typecheck` e `pnpm --dir apps/mobile doctor` conforme o risco.
 - Para build nativo em worktree Windows, siga `docs/operations/mobile-android-build-windows.md` e confirme APK, AVD e serial antes de declarar o resultado.
 - Quando alterar navegacao ou UI, teste pelo Expo em ao menos uma plataforma alvo quando possivel.
-- Para QA manual em emulador/dispositivo, use um Expo Development Build com `expo-dev-client` quando o fluxo exigir módulos nativos ausentes no Expo Go. Expo Go também é uma opção: execute `pnpm.cmd mobile:go` a partir da raiz e registre as limitações observadas. Para gerar e instalar a build Android localmente, execute `pnpm.cmd mobile:android:build` a partir da raiz; esse fluxo não exige conta ou login no EAS. Depois da instalação, inicie o Metro com `pnpm.cmd mobile:android` ou `pnpm.cmd --dir apps/mobile start` ou `ios`, que usam `--dev-client`. EAS Build é uma alternativa opcional.
+- Para executar e validar o app em emulador ou dispositivo, use obrigatoriamente um Expo Development Build com `expo-dev-client`; não use Expo Go nem `pnpm mobile:go`. Na raiz, gere e instale a build Android com `pnpm mobile:android:build` e inicie o Metro com `pnpm mobile:android`; esses comandos não exigem conta ou login no EAS. EAS Build é uma alternativa opcional.
+- Antes de iniciar o app Android, confirme o AVD exclusivo, o serial, o boot completo e a instalação do development build. Se o link `exp+muvit://expo-development-client` não resolver, confira a atividade instalada e o estado do emulador antes de repetir; não presuma que uma rejeição de outro comando seja bloqueio geral do Metro.
 - O perfil EAS atual gera builds iOS para dispositivo; para usar o simulador iOS, configure `ios.simulator: true` no perfil antes de gerar a build.
 - Recrie e reinstale o Development Build depois de adicionar/remover dependência nativa ou alterar configuração nativa; alterações JS/TS podem ser carregadas pelo Metro no client instalado.
 - Para testes do app em emulador ou dispositivo, use Maestro como ferramenta padrão; registre evidências observáveis e limitações de cenários não reproduzidos.
-- A suíte E2E permanente fica em `.maestro/mobile/` e usa `pnpm.cmd mobile:e2e --scenario all --device <serial-confirmado>` da raiz; consulte `docs/operations/mobile-e2e.md`. Ao alterar autenticação, navegação, avaliação ou treino, atualize os cenários afetados ou acrescente a cobertura funcional necessária. Use AVD exclusivo e banco descartável do runner; `--mode api-only` valida preparação/permissões, sem substituir o aceite Android.
+- A suíte E2E permanente fica em `.maestro/mobile/` e usa `pnpm mobile:e2e --scenario all --device <serial-confirmado>` da raiz; consulte `docs/operations/mobile-e2e.md`. Ao alterar autenticação, navegação, avaliação ou treino, atualize os cenários afetados ou acrescente a cobertura funcional necessária. Use AVD exclusivo e banco descartável do runner; `--mode api-only` valida preparação/permissões, sem substituir o aceite Android.
