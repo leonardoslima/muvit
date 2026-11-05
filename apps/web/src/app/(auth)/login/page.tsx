@@ -46,7 +46,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace(getDestination(role));
+      router.replace(result.data.user.emailVerified ? getDestination(role) : '/verify-email');
       router.refresh();
     } catch (requestError: unknown) {
       setError(getAuthErrorMessage(requestError, 'login'));

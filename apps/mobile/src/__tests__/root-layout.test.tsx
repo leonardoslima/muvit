@@ -16,7 +16,7 @@ const fontState = vi.hoisted(() => ({
 
 const authState = vi.hoisted(() => ({
   session: {
-    data: null as { user: { id: string; role: string } } | null,
+    data: null as { user: { id: string; role: string; emailVerified?: boolean } } | null,
     isPending: false,
   },
   useSession: vi.fn(),
@@ -77,6 +77,17 @@ vi.mock('../components/queue-drain', () => ({
 }));
 
 describe('RootLayout', () => {
+  it('desvia conta pendente da área privada para confirmação', () => {
+    fontState.loaded = true;
+    routerState.segments = ['(student)', '(tabs)', 'index'];
+    authState.session = {
+      data: { user: { id: 'auth-pending', role: 'student', emailVerified: false } },
+      isPending: false,
+    };
+    render(<RootLayout />);
+    expect(screen.getByText(`redirect:${mobileRoutes.verifyEmail}`)).toBeTruthy();
+    expect(screen.queryByTestId('router-slot')).toBeNull();
+  });
   beforeEach(() => {
     fontState.useFonts.mockImplementation(() => [fontState.loaded]);
     routerState.useSegments.mockReset();
@@ -105,7 +116,7 @@ describe('RootLayout', () => {
   });
 
   it('aguarda as fontes antes de montar a árvore autenticada', () => {
-    authState.session.data = { user: { id: 'auth-user-id', role: 'student' } };
+    authState.session.data = { user: { id: 'auth-user-id', role: 'student', emailVerified: true } };
     fontState.loaded = false;
 
     const { rerender } = render(<RootLayout />);
@@ -138,7 +149,7 @@ describe('RootLayout', () => {
   });
 
   it('encaminha trainer autenticado para o shell trainer', () => {
-    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer' } };
+    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer', emailVerified: true } };
     routerState.segments = ['(auth)'];
 
     const { rerender } = render(<RootLayout />);
@@ -152,7 +163,7 @@ describe('RootLayout', () => {
   });
 
   it('protege deep links cruzados antes de montar o Slot', () => {
-    authState.session.data = { user: { id: 'auth-user-id', role: 'student' } };
+    authState.session.data = { user: { id: 'auth-user-id', role: 'student', emailVerified: true } };
     routerState.segments = ['(trainer)', 'trainer', 'students'];
 
     const studentAttempt = render(<RootLayout />);
@@ -160,7 +171,7 @@ describe('RootLayout', () => {
     expect(screen.getByText(`redirect:${mobileRoutes.studentHome}`)).toBeTruthy();
     expect(screen.queryByTestId('router-slot')).toBeNull();
 
-    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer' } };
+    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer', emailVerified: true } };
     routerState.segments = ['(student)', '(tabs)'];
 
     studentAttempt.rerender(<RootLayout />);
@@ -170,7 +181,7 @@ describe('RootLayout', () => {
   });
 
   it('mantém a infraestrutura global para trainer sem efeitos do aluno', () => {
-    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer' } };
+    authState.session.data = { user: { id: 'auth-user-id', role: 'trainer', emailVerified: true } };
     routerState.segments = ['(trainer)', 'trainer', 'students'];
 
     render(<RootLayout />);

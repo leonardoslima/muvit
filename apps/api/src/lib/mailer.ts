@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '../env.js';
-import type { PasswordResetMessage } from './auth.js';
+import type { EmailVerificationMessage, PasswordResetMessage } from './auth.js';
 
 type MailMessage = {
   to: string;
@@ -31,6 +31,31 @@ function escapeHtml(value: string): string {
 
 export function passwordResetTemplate(name: string, url: string): string {
   return `<p>Olá, ${escapeHtml(name)}.</p><p>Recebemos uma solicitação para redefinir sua senha no Muvit.</p><p><a href="${escapeHtml(url)}">Redefinir senha</a></p><p>Este link expira em 1 hora e pode ser usado uma única vez. Se você não solicitou a alteração, ignore este email.</p>`;
+}
+
+export function emailVerificationTemplate(name: string, url: string): string {
+  return `<p>Olá, ${escapeHtml(name)}.</p><p>Confirme seu email para acessar o Muvit.</p><p><a href="${escapeHtml(url)}">Confirmar email</a></p><p>Este link expira em 1 hora. Se você não solicitou a confirmação, ignore este email.</p>`;
+}
+
+export async function sendVerificationEmail({
+  user,
+  url,
+}: EmailVerificationMessage): Promise<void> {
+  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+    throw new Error('Entrega de email transacional não configurada');
+  }
+  try {
+    const resend = new Resend(env.RESEND_API_KEY);
+    const { error } = await resend.emails.send({
+      from: env.EMAIL_FROM,
+      to: user.email,
+      subject: 'Confirme seu email no Muvit',
+      html: emailVerificationTemplate(user.name, url),
+    });
+    if (error) throw new Error('Falha ao enviar email transacional');
+  } catch {
+    throw new Error('Falha ao enviar email transacional');
+  }
 }
 
 export async function sendPasswordResetEmail({ user, url }: PasswordResetMessage): Promise<void> {

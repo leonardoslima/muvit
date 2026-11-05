@@ -6,6 +6,7 @@ import ForgotPasswordScreen from '../../app/(auth)/forgot-password';
 import LoginScreen from '../../app/(auth)/login';
 import ResetPasswordScreen from '../../app/(auth)/reset-password';
 import SignupScreen from '../../app/(auth)/signup';
+import VerifyEmailScreen from '../../app/(auth)/verify-email';
 import { mobileRoutes } from '../application/navigation/role-navigation';
 
 vi.mock('react-native', async (importOriginal) => {
@@ -32,6 +33,9 @@ const authState = vi.hoisted(() => ({
   signInEmail: vi.fn(),
   signOut: vi.fn(),
   signUpEmail: vi.fn(),
+  sendVerificationEmail: vi.fn(),
+  getSession: vi.fn(),
+  sessionData: null as null | { user: { email: string; emailVerified: boolean; role: string } },
 }));
 
 vi.mock('expo-router', () => ({
@@ -59,6 +63,9 @@ vi.mock('../lib/auth-client', () => ({
       atoms: { session: { get: () => ({ refetch: authState.refetchSession }) } },
     },
     requestPasswordReset: authState.requestPasswordReset,
+    sendVerificationEmail: authState.sendVerificationEmail,
+    getSession: authState.getSession,
+    useSession: () => ({ data: authState.sessionData, isPending: false }),
     resetPassword: authState.resetPassword,
     signIn: { email: authState.signInEmail },
     signOut: authState.signOut,
@@ -85,15 +92,44 @@ describe('telas de autenticação mobile', () => {
     authState.signInEmail.mockReset();
     authState.signOut.mockReset().mockResolvedValue(undefined);
     authState.signUpEmail.mockReset();
+    authState.sendVerificationEmail.mockReset();
+    authState.getSession.mockReset();
+    authState.sessionData = null;
 
     routerState.push.mockReset();
     routerState.replace.mockReset();
   });
 
+  it('permite reenviar confirmação sem sessão sem afirmar entrega', async () => {
+    authState.getSession.mockResolvedValue({ data: null });
+    authState.sendVerificationEmail.mockResolvedValue({ error: null });
+    const user = userEvent.setup();
+    render(<VerifyEmailScreen />);
+    await user.type(screen.getByLabelText('Email'), 'ana@example.com');
+    await user.press(screen.getByRole('button', { name: 'Enviar link' }));
+    expect(authState.sendVerificationEmail).toHaveBeenCalledWith({
+      email: 'ana@example.com',
+      callbackURL: 'muvit://verify-email',
+    });
+    expect(await screen.findByText(/Se houver uma conta/)).toBeTruthy();
+    expect(routerState.replace).not.toHaveBeenCalled();
+  });
+
+  it('encaminha sessão não verificada à confirmação após login', async () => {
+    authState.signInEmail.mockResolvedValueOnce({
+      data: { user: { role: 'student', emailVerified: false } },
+      error: null,
+    });
+    const user = userEvent.setup();
+    render(<LoginScreen />);
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+    await waitFor(() => expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.verifyEmail));
+  });
+
   it('mantém o login pendente desabilitado e ignora o segundo toque', async () => {
     const user = userEvent.setup();
     const pending = createDeferred<{
-      data: { user: { role: 'student' } };
+      data: { user: { role: 'student'; emailVerified: true } };
       error: null;
     }>();
     authState.signInEmail.mockReturnValueOnce(pending.promise);
@@ -127,7 +163,7 @@ describe('telas de autenticação mobile', () => {
     await user.press(pendingButton);
     expect(authState.signInEmail).toHaveBeenCalledOnce();
 
-    pending.resolve({ data: { user: { role: 'student' } }, error: null });
+    pending.resolve({ data: { user: { role: 'student', emailVerified: true } }, error: null });
     await waitFor(() => {
       expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
     });
@@ -179,7 +215,7 @@ describe('telas de autenticação mobile', () => {
   it('mantém o CTA de login vazio habilitado e envia os valores vazios existentes', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValueOnce({
-      data: { user: { role: 'student' } },
+      data: { user: { role: 'student', emailVerified: true } },
       error: null,
     });
 
@@ -198,7 +234,7 @@ describe('telas de autenticação mobile', () => {
   it('faz login pelo Better Auth sem enviar papel', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValueOnce({
-      data: { user: { role: 'student' } },
+      data: { user: { role: 'student', emailVerified: true } },
       error: null,
     });
 
@@ -299,7 +335,7 @@ describe('telas de autenticação mobile', () => {
   it('encaminha login de treinador para o shell do treinador sem logout', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValueOnce({
-      data: { user: { role: 'trainer' } },
+      data: { user: { role: 'trainer', emailVerified: true } },
       error: null,
     });
 
@@ -322,7 +358,7 @@ describe('telas de autenticação mobile', () => {
     const user = userEvent.setup();
     const pendingSession = createDeferred<void>();
     authState.signInEmail.mockResolvedValueOnce({
-      data: { user: { role: scenario.role } },
+      data: { user: { role: scenario.role, emailVerified: true } },
       error: null,
     });
     authState.refetchSession.mockReturnValueOnce(pendingSession.promise);
@@ -343,7 +379,7 @@ describe('telas de autenticação mobile', () => {
   it('preserva o login e permite tentar novamente se a atualização da sessão rejeitar', async () => {
     const user = userEvent.setup();
     authState.signInEmail.mockResolvedValue({
-      data: { user: { role: 'trainer' } },
+      data: { user: { role: 'trainer', emailVerified: true } },
       error: null,
     });
     authState.refetchSession.mockRejectedValueOnce(new Error('network unavailable'));
@@ -428,9 +464,10 @@ describe('telas de autenticação mobile', () => {
         email: 'ana@example.com',
         password: 'senha-segura',
         role: 'student',
+        callbackURL: 'muvit://verify-email',
       });
 
-      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.verifyEmail);
     });
   });
 
@@ -457,7 +494,7 @@ describe('telas de autenticação mobile', () => {
 
     pending.resolve({ data: { user: { role: 'student' } }, error: null });
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.verifyEmail);
     });
   });
 
@@ -478,7 +515,7 @@ describe('telas de autenticação mobile', () => {
     expect(
       await screen.findByText('Não foi possível criar a conta com os dados informados.'),
     ).toBeTruthy();
-    expect(routerState.replace).not.toHaveBeenCalledWith(mobileRoutes.studentHome);
+    expect(routerState.replace).not.toHaveBeenCalledWith(mobileRoutes.verifyEmail);
   });
 
   it('mantém o CTA de cadastro vazio habilitado e envia os valores vazios existentes', async () => {
@@ -500,8 +537,9 @@ describe('telas de autenticação mobile', () => {
         email: '',
         password: '',
         role: 'student',
+        callbackURL: 'muvit://verify-email',
       });
-      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.verifyEmail);
     });
   });
 
@@ -554,7 +592,7 @@ describe('telas de autenticação mobile', () => {
 
     pending.resolve({ data: { user: { role: 'student' } }, error: null });
     await waitFor(() => {
-      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.studentHome);
+      expect(routerState.replace).toHaveBeenCalledWith(mobileRoutes.verifyEmail);
     });
   });
 

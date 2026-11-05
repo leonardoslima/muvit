@@ -13,4 +13,5 @@ export type DemoIdentitySnapshot = {
 export interface DemoIdentityRepository {
   findByEmail(email: string): Promise<DemoIdentitySnapshot | undefined>;
   findByAuthUserId(authUserId: string): Promise<DemoIdentitySnapshot | undefined>;
+  markEmailVerified(authUserId: string): Promise<void>;
 }

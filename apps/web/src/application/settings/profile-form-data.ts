@@ -16,6 +16,8 @@ export type ProfileFormState = {
     Record<'name' | 'email' | 'phone' | 'bio' | 'specialties' | 'avatarUrl', string>
   >;
   success?: true;
+  emailVerificationPending?: boolean;
+  effectiveEmail?: string;
 } | null;
 
 export type ProfileSubmission =

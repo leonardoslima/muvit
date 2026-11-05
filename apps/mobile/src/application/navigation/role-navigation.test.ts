@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import {
   mobileRoutes,
   resolveInitialRoute,
@@ -8,6 +8,22 @@ import {
 } from './role-navigation';
 
 describe('política de navegação por role', () => {
+  it('mantém confirmação pública e protege ambas as áreas para sessão pendente', () => {
+    expect(resolveRouteArea(['(auth)', 'verify-email'])).toBe('verification');
+    expect(
+      resolveRouteAccess({
+        area: 'verification',
+        role: undefined,
+        isAuthenticated: false,
+        emailVerified: false,
+      }),
+    ).toEqual({ kind: 'allow' });
+    for (const role of ['student', 'trainer']) {
+      expect(
+        resolveRouteAccess({ area: 'student', role, isAuthenticated: true, emailVerified: false }),
+      ).toEqual({ kind: 'redirect', href: mobileRoutes.verifyEmail, reason: 'email-unverified' });
+    }
+  });
   it.each(['forgot-password', 'reset-password'])('mantém %s pública com e sem sessão', (route) => {
     const area = resolveRouteArea(['(auth)', route]);
     for (const role of [undefined, 'student', 'trainer']) {
@@ -44,20 +60,30 @@ describe('política de navegação por role', () => {
       href: mobileRoutes.login,
       reason: 'unauthenticated',
     });
-    expect(resolveRouteAccess({ isAuthenticated: true, role: 'student', area: 'trainer' })).toEqual(
-      {
-        kind: 'redirect',
-        href: mobileRoutes.studentHome,
-        reason: 'wrong-role',
-      },
-    );
-    expect(resolveRouteAccess({ isAuthenticated: true, role: 'trainer', area: 'student' })).toEqual(
-      {
-        kind: 'redirect',
-        href: mobileRoutes.trainerHome,
-        reason: 'wrong-role',
-      },
-    );
+    expect(
+      resolveRouteAccess({
+        isAuthenticated: true,
+        emailVerified: true,
+        role: 'student',
+        area: 'trainer',
+      }),
+    ).toEqual({
+      kind: 'redirect',
+      href: mobileRoutes.studentHome,
+      reason: 'wrong-role',
+    });
+    expect(
+      resolveRouteAccess({
+        isAuthenticated: true,
+        emailVerified: true,
+        role: 'trainer',
+        area: 'student',
+      }),
+    ).toEqual({
+      kind: 'redirect',
+      href: mobileRoutes.trainerHome,
+      reason: 'wrong-role',
+    });
     expect(resolveRouteAccess({ isAuthenticated: true, role: 'unknown', area: 'student' })).toEqual(
       {
         kind: 'unsupported-role',

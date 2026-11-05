@@ -4,6 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createMailbox } from './e2e-mailbox.mjs';
 import { runCommand, runWithResources, sanitizeRecursively } from './mobile-e2e.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -20,6 +21,7 @@ export function parseArgs(argv) {
     ports: { web: 3013, api: 3353, db: 5453 },
     artifactScope: 'web-e2e',
     headed: false,
+    webpack: false,
     scenario: 'all',
   };
   for (let i = 0; i < argv.length; i++) {
@@ -27,6 +29,10 @@ export function parseArgs(argv) {
     if (arg === '--help') return { help: true };
     if (arg === '--headed') {
       result.headed = true;
+      continue;
+    }
+    if (arg === '--webpack') {
+      result.webpack = true;
       continue;
     }
     if (
@@ -42,7 +48,8 @@ export function parseArgs(argv) {
         throw new Error(`Porta inválida: ${value}`);
       result.ports[arg.slice(2, -5)] = port;
     } else if (arg === '--scenario') {
-      if (!['all', 'jornada', 'isolamento'].includes(value)) throw new Error('Cenário inválido');
+      if (!['all', 'jornada', 'isolamento', 'confirmacao-email'].includes(value))
+        throw new Error('Cenário inválido');
       result.scenario = value;
     } else {
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) throw new Error('artifact-scope inválido');
@@ -52,6 +59,18 @@ export function parseArgs(argv) {
   if (new Set(Object.values(result.ports)).size !== 3)
     throw new Error('Portas devem ser distintas');
   return result;
+}
+
+export function nextDevArgs(options) {
+  return [
+    join(root, 'apps/web/node_modules/next/dist/bin/next'),
+    'dev',
+    ...(options.webpack ? ['--webpack'] : []),
+    '--hostname',
+    '127.0.0.1',
+    '--port',
+    String(options.ports.web),
+  ];
 }
 
 export async function assertPortFree(port) {
@@ -173,7 +192,7 @@ function startChild(command, args, options) {
     ...options,
     detached: process.platform !== 'win32',
     windowsHide: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: options.ipc ? ['ignore', 'pipe', 'pipe', 'ipc'] : ['ignore', 'pipe', 'pipe'],
   });
   let stdout = '';
   let stderr = '';
@@ -313,11 +332,13 @@ export async function run(options) {
   const webUrl = `http://127.0.0.1:${options.ports.web}`;
   const apiUrl = `http://127.0.0.1:${options.ports.api}`;
   const secrets = [password, secret, databaseUrl];
+  let mailbox;
   const report = {
     runId,
     artifactDir,
     ports: options.ports,
     scenario: options.scenario,
+    bundler: options.webpack ? 'webpack' : 'turbopack',
     status: 'failed',
     cleanupErrors: [],
     cleanupWarnings: [],
@@ -436,7 +457,11 @@ export async function run(options) {
           });
         },
         api: async (resources) => {
-          const child = startChild(process.execPath, ['--import', 'tsx', 'src/server.ts'], {
+          mailbox = await createMailbox();
+          secrets.push(mailbox.secret);
+          resources.registerCleanup('mailbox', () => mailbox.close());
+          const child = startChild(process.execPath, ['--import', 'tsx', 'test/e2e-server.ts'], {
+            ipc: true,
             cwd: join(root, 'apps/api'),
             env: env({
               NODE_ENV: 'test',
@@ -454,6 +479,9 @@ export async function run(options) {
               EMAIL_NOTIFICATIONS_ENABLED: 'false',
             }),
           });
+          child.on('message', (event) => {
+            if (event?.type === 'verification') mailbox.deliver(event.message);
+          });
           resources.registerCleanup('api-log', () =>
             writeFile(
               join(artifactDir, 'api.log'),
@@ -465,25 +493,14 @@ export async function run(options) {
           await waitHttp(`${apiUrl}/health`, child, controller.signal);
         },
         web: async (resources) => {
-          const child = startChild(
-            process.execPath,
-            [
-              join(root, 'apps/web/node_modules/next/dist/bin/next'),
-              'dev',
-              '--hostname',
-              '127.0.0.1',
-              '--port',
-              String(options.ports.web),
-            ],
-            {
-              cwd: join(root, 'apps/web'),
-              env: env({
-                NODE_ENV: 'development',
-                NEXT_PUBLIC_API_URL: apiUrl,
-                NEXT_TELEMETRY_DISABLED: '1',
-              }),
-            },
-          );
+          const child = startChild(process.execPath, nextDevArgs(options), {
+            cwd: join(root, 'apps/web'),
+            env: env({
+              NODE_ENV: 'development',
+              NEXT_PUBLIC_API_URL: apiUrl,
+              NEXT_TELEMETRY_DISABLED: '1',
+            }),
+          });
           resources.registerCleanup('web-log', () =>
             writeFile(
               join(artifactDir, 'web.log'),
@@ -507,6 +524,8 @@ export async function run(options) {
                 WEB_E2E_RUN_ID: runId,
                 WEB_E2E_ARTIFACT_DIR: artifactDir,
                 WEB_E2E_SCENARIO: options.scenario,
+                WEB_E2E_MAILBOX_URL: mailbox.url,
+                WEB_E2E_MAILBOX_SECRET: mailbox.secret,
               }),
             },
           );
@@ -539,7 +558,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const options = parseArgs(process.argv.slice(2));
     if (options.help)
       process.stdout.write(
-        'Uso: node scripts/web-e2e.mjs [--scenario all|jornada|isolamento] [--web-port porta] [--api-port porta] [--db-port porta] [--artifact-scope slug] [--headed]\n',
+        'Uso: node scripts/web-e2e.mjs [--scenario all|jornada|isolamento|confirmacao-email] [--web-port porta] [--api-port porta] [--db-port porta] [--artifact-scope slug] [--headed] [--webpack]\n',
       );
     else process.stdout.write(`${JSON.stringify(await run(options), null, 2)}\n`);
   } catch (error) {

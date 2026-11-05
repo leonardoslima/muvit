@@ -31,6 +31,12 @@ export async function signUpWithSession(app: FastifyInstance, input: SignUpInput
   const authUserId = body.user?.id;
   if (authUserId === undefined) throw new Error('Identidade de teste ausente');
 
+  // Helpers de negócio usam contas confirmadas; testes de confirmação usam o cadastro bruto.
+  await db
+    .update(schema.authUsers)
+    .set({ emailVerified: true })
+    .where(eq(schema.authUsers.id, authUserId));
+
   const profile =
     input.role === 'trainer'
       ? await db.query.trainers.findFirst({ where: eq(schema.trainers.authUserId, authUserId) })

@@ -1,7 +1,7 @@
 {
   "name": "@muvit/mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "start": "expo start --dev-client",
     "start:go": "expo start --go",

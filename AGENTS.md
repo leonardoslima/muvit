@@ -37,9 +37,10 @@ Entregue mudancas corretas, pequenas e verificaveis no projeto Muvit, respeitand
 ## Escopo e comandos
 
 - Execute comandos a partir da raiz do repositorio.
+- Antes de montar comandos manuais, procure scripts equivalentes nos `package.json` do projeto e prefira os comandos existentes quando atenderem ao objetivo; confira seus efeitos e opcoes antes de executa-los.
+- Instale as dependências na estrutura padrão `node_modules` do projeto; não mova o virtual store do pnpm para `artifacts/` ou para fora da worktree sem autorização explícita do usuário. O cache compartilhado padrão do pnpm não é o virtual store da instalação.
 - Use filtros de workspace quando fizer sentido limitar leitura, testes, lint e build.
 - Amplie para o monorepo inteiro somente quando houver motivo tecnico claro.
-- No PowerShell, se `pnpm` falhar por bloqueio de execucao de `pnpm.ps1`, use `pnpm.cmd`.
 - No Codex App, use primeiro o gerenciamento nativo de worktrees do aplicativo; nao execute `git worktree add` manualmente quando a funcionalidade nativa estiver disponivel e nao crie outra worktree quando a tarefa ja estiver em uma worktree gerenciada pelo Codex.
 - Ao criar ou usar worktree, copie arquivos `.env` locais ignorados da raiz original para a worktree antes de executar setup, testes ou builds.
 

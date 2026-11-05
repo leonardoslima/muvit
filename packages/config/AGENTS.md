@@ -15,4 +15,4 @@ Estas regras valem para `packages/config`, pacote de configuracoes compartilhada
 ## Verificacao
 
 - Rode a verificacao do workspace consumidor afetado pela mudanca.
-- Para mudancas amplas, rode `pnpm.cmd typecheck` ou `pnpm.cmd test` no monorepo quando o custo for justificavel.
+- Para mudancas amplas, rode `pnpm typecheck` ou `pnpm test` no monorepo quando o custo for justificavel.

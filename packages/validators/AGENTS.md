@@ -22,5 +22,5 @@ Estas regras valem para `packages/validators`, pacote de schemas Zod e tipos com
 ## Testes e verificacao
 
 - Testes devem validar entradas validas e invalidas sem depender de outros casos.
-- Rode `pnpm.cmd --filter @muvit/validators test` quando alterar schemas.
-- Rode `pnpm.cmd --filter @muvit/validators typecheck` quando alterar tipos inferidos ou exports.
+- Rode `pnpm --filter @muvit/validators test` quando alterar schemas.
+- Rode `pnpm --filter @muvit/validators typecheck` quando alterar tipos inferidos ou exports.

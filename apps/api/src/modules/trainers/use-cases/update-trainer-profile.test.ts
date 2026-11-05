@@ -119,6 +119,7 @@ describe('UpdateTrainerProfileUseCase', () => {
     const identityUpdater: TrainerIdentityUpdater = {
       async updateIdentity(input) {
         persistedIdentity = input.next;
+        return undefined;
       },
     };
     const useCase = new UpdateTrainerProfileUseCase(repository, identityUpdater);

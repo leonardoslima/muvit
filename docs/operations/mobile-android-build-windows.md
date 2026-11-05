@@ -33,4 +33,6 @@ O `monkey` comprova apenas que a atividade nativa abre. Para validar a inicializ
 pnpm.cmd --dir apps/mobile exec expo start --dev-client --localhost --port 8081
 ```
 
-O runner `pnpm.cmd mobile:e2e --scenario all --device <serial> --avd-name <nome-do-avd>` usa Expo Go e verifica as jornadas do aluno e professor com banco/API descartáveis. Ele não executa o APK nativo; registre separadamente build, instalação, abertura do APK com Metro e resultado do Maestro, incluindo o serial, no relatório da execução em `artifacts/<escopo>/<execucao>/`, conforme [qa-artifacts.md](qa-artifacts.md).
+O runner `pnpm mobile:e2e --scenario all --mode android --device <serial> --avd-name <nome-do-avd>` usa um development build já instalado e verifica as jornadas com banco/API descartáveis. Registre build, instalação, abertura do APK com Metro e resultado do Maestro, incluindo o serial, no relatório da execução em `artifacts/<escopo>/<execucao>/`, conforme [qa-artifacts.md](qa-artifacts.md).
+
+Mantenha o virtual store do pnpm dentro da worktree. O Metro precisa incluí-lo em `watchFolders` e o manifesto deve apontar para a entrada local `apps/mobile/index.js`, que carrega `expo-router/entry`. Após alterar `metro.config.js` ou a entrada, reinicie o Metro da própria worktree e confirme o manifesto, o bundle Android e a tela no development build; uma resposta `/status` não comprova o carregamento JavaScript.

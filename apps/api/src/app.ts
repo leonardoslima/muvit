@@ -12,8 +12,8 @@ import {
 } from 'fastify-type-provider-zod';
 import { env } from './env.js';
 import { sanitizeAuthRequestUrl } from './lib/auth-request-logging.js';
-import type { MuvitAuth, SendResetPassword } from './lib/auth.js';
-import { sendPasswordResetEmail } from './lib/mailer.js';
+import type { MuvitAuth, SendResetPassword, SendVerificationEmail } from './lib/auth.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from './lib/mailer.js';
 import type { ProfileProvisioner } from './modules/auth/profile-provisioner.js';
 import type { ProfileResolver } from './modules/auth/profile-resolver.js';
 import { createDrizzleAuth } from './modules/auth/repositories/drizzle-auth.js';
@@ -50,6 +50,7 @@ export type BuildAppOptions = {
   profileProvisioner?: ProfileProvisioner;
   profileResolver?: ProfileResolver;
   sendResetPassword?: SendResetPassword;
+  sendVerificationEmail?: SendVerificationEmail;
 };
 
 export async function buildApp(options: BuildAppOptions = {}) {
@@ -85,6 +86,12 @@ export async function buildApp(options: BuildAppOptions = {}) {
     sendResetPassword:
       options.sendResetPassword ??
       (env.RESEND_API_KEY && env.EMAIL_FROM ? sendPasswordResetEmail : undefined),
+    sendVerificationEmail:
+      options.sendVerificationEmail ??
+      (env.RESEND_API_KEY && env.EMAIL_FROM ? sendVerificationEmail : undefined),
+    onVerificationDeliveryError: () => {
+      app.log.error({ category: 'email_verification_delivery_failed' });
+    },
     onPasswordResetDeliveryError: () => {
       app.log.error({ category: 'password_reset_delivery_failed' });
     },

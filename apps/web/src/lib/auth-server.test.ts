@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ headers: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  headers: vi.fn(),
+  redirect: vi.fn((url: string) => {
+    throw new Error(url);
+  }),
+}));
 
 vi.mock('next/headers', () => ({ headers: mocks.headers }));
+vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
 
-import { getCurrentUser } from './auth-server';
+import { getCurrentUser, requireUser } from './auth-server';
 
 describe('getCurrentUser', () => {
   beforeEach(() => {
@@ -25,6 +31,7 @@ describe('getCurrentUser', () => {
             email: 'trainer@muvit.dev',
             role: 'trainer',
             image: 'https://cdn.muvit.test/avatar.png',
+            emailVerified: true,
           },
         }),
         { status: 200, headers: { 'content-type': 'application/json' } },
@@ -37,6 +44,7 @@ describe('getCurrentUser', () => {
       email: 'trainer@muvit.dev',
       role: 'trainer',
       image: 'https://cdn.muvit.test/avatar.png',
+      emailVerified: true,
     });
     expect(fetchSpy).toHaveBeenCalledWith(
       'http://localhost:3333/api/auth/get-session',
@@ -51,5 +59,25 @@ describe('getCurrentUser', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 401 }));
 
     await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
+  it('encaminha sessão pendente para confirmação', async () => {
+    mocks.headers.mockResolvedValue(new Headers({ cookie: 'session=1' }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          user: {
+            id: '1',
+            name: 'Ana',
+            email: 'ana@example.com',
+            role: 'trainer',
+            image: null,
+            emailVerified: false,
+          },
+        }),
+        { status: 200 },
+      ),
+    );
+    await expect(requireUser()).rejects.toThrow('/verify-email');
   });
 });

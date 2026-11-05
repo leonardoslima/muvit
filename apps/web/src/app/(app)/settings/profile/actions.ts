@@ -27,6 +27,9 @@ export async function updateProfileAction(
 
   revalidatePath('/settings', 'layout');
   revalidatePath('/settings/profile');
+  if (submission.body.email.toLowerCase() !== response.data.email.toLowerCase()) {
+    return { success: true, emailVerificationPending: true, effectiveEmail: response.data.email };
+  }
   return { success: true };
 }
 

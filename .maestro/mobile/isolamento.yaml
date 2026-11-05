@@ -28,7 +28,7 @@ name: Isolamento entre contas e papéis
     timeout: 30000
 - assertNotVisible: ${MAESTRO_E2E_EXERCISE_NAME}
 - takeScreenshot: isolamento-sessao-aluno
-- openLink: ${MAESTRO_EXPO_URL}/--/trainer
+- openLink: muvit://trainer
 - extendedWaitUntil:
     visible: ${MAESTRO_E2E_STUDENT_B_PLAN_NAME}
     timeout: 30000

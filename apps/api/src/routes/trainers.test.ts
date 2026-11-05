@@ -52,7 +52,7 @@ describe('trainers', () => {
     });
   });
 
-  it('atualiza o perfil e mantém a identidade Better Auth sincronizada', async () => {
+  it('atualiza o perfil e mantém o email anterior até confirmação', async () => {
     const trainer = await signUpWithSession(app, {
       name: 'Treinadora Antes',
       email: 'trainer-profile-before@example.com',
@@ -76,11 +76,11 @@ describe('trainers', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.headers['set-cookie']).toEqual(expect.any(Array));
-    expect(response.headers['set-cookie']).toHaveLength(2);
+    expect(response.headers['set-cookie']).toHaveLength(1);
     expect(response.json()).toMatchObject({
       id: trainer.profileId,
       name: 'Treinadora Depois',
-      email: 'trainer-profile-after@example.com',
+      email: 'trainer-profile-before@example.com',
       avatarUrl: 'https://cdn.example.com/avatar.png',
       phone: '+55 11 99999-0000',
       bio: 'Especialista em treinamento funcional.',
@@ -92,7 +92,7 @@ describe('trainers', () => {
       db.query.trainers.findFirst({ where: eq(schema.trainers.id, trainer.profileId) }),
     ]);
     expect(authUser).toMatchObject({
-      email: 'trainer-profile-after@example.com',
+      email: 'trainer-profile-before@example.com',
       name: 'Treinadora Depois',
       image: 'https://cdn.example.com/avatar.png',
     });
@@ -145,7 +145,7 @@ describe('trainers', () => {
 
       expect(response.statusCode).toBe(500);
       expect(response.headers['set-cookie']).toEqual(expect.any(Array));
-      expect(response.headers['set-cookie']).toHaveLength(4);
+      expect(response.headers['set-cookie']).toHaveLength(2);
 
       const [authUser, persistedTrainer] = await Promise.all([
         db.query.authUsers.findFirst({ where: eq(schema.authUsers.id, trainer.authUserId) }),
@@ -169,7 +169,7 @@ describe('trainers', () => {
     }
   });
 
-  it('retorna conflito sem dessincronizar ao tentar usar e-mail existente', async () => {
+  it('mantém resposta genérica e não dessincroniza ao solicitar e-mail existente', async () => {
     const trainer = await signUpWithSession(app, {
       name: 'Treinadora Conflito',
       email: 'trainer-conflict@example.com',
@@ -190,7 +190,7 @@ describe('trainers', () => {
       payload: { email: 'existing-student@example.com' },
     });
 
-    expect(response.statusCode).toBe(409);
+    expect(response.statusCode).toBe(200);
     const [authUser, persistedTrainer] = await Promise.all([
       db.query.authUsers.findFirst({ where: eq(schema.authUsers.id, trainer.authUserId) }),
       db.query.trainers.findFirst({ where: eq(schema.trainers.id, trainer.profileId) }),

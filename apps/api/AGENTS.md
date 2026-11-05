@@ -35,7 +35,7 @@ Leia tambem subarquivos `AGENTS.md` dentro do modulo afetado. Para autenticacao,
 - Se alterar payload, rota ou contrato, atualize validators, tipos, mocks e consumidores correspondentes no mesmo ciclo.
 - Nao acesse variaveis de ambiente diretamente fora de `src/env.ts` ou adaptadores de infraestrutura que consomem o objeto `env`.
 - Testes de rota devem criar explicitamente os dados que validam; nao dependa de seed implicito ou ordem de execucao.
-- Use `pnpm.cmd --dir apps/api test`, `pnpm.cmd --dir apps/api typecheck` e `pnpm.cmd exec biome check apps/api` conforme a mudanca exigir.
+- Use `pnpm --dir apps/api test`, `pnpm --dir apps/api typecheck` e `pnpm exec biome check apps/api` conforme a mudanca exigir.
 
 ## Checklist antes de finalizar mudancas na API
 

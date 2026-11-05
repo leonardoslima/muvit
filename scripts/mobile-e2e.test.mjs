@@ -196,3 +196,124 @@ test(
     }
   },
 );
+
+test('usa development build e expande confirmação na suíte Android', async () => {
+  const { parseArgs, metroArguments } = await runnerModule();
+  const options = parseArgs([
+    '--scenario',
+    'all',
+    '--mode',
+    'android',
+    '--device',
+    'emulator-5554',
+  ]);
+  assert.equal(options.appId, 'com.anonymous.muvit');
+  assert.match(options.launchUrl, /^exp\+muvit:\/\/expo-development-client\//);
+  assert.ok(options.scenarios.includes('confirmacao-email'));
+  assert.ok(metroArguments(8094).includes('--dev-client'));
+  assert.ok(!metroArguments(8094).includes('--go'));
+  assert.throws(() =>
+    parseArgs([
+      '--scenario',
+      'aluno',
+      '--mode',
+      'android',
+      '--device',
+      'emulator-5554',
+      '--launch-url',
+      'exp://localhost:8094',
+    ]),
+  );
+});
+
+test('fluxos aguardam launcher, login ou diálogo antes de abrir o link do servidor', async () => {
+  for (const flow of ['login.yaml', 'confirmacao-email.yaml']) {
+    const content = await readFile(join('.maestro', 'mobile', flow), 'utf8');
+    assert.match(
+      content,
+      /- launchApp\s+- extendedWaitUntil:\s+visible: "DEVELOPMENT SERVERS\|Continue\|Connected to expo-cli\|Muvit needs permissions\.\*\|Entrar"\s+timeout: \d+\s+- openLink: \$\{MAESTRO_EXPO_URL\}/,
+      `${flow} deve aguardar a inicialização do client antes de enviar o link`,
+    );
+  }
+});
+
+test('fluxos aguardam a tela ou o diálogo nativo antes de tratar overlays e exigir login', async () => {
+  for (const flow of ['login.yaml', 'confirmacao-email.yaml']) {
+    const content = await readFile(join('.maestro', 'mobile', flow), 'utf8');
+    assert.match(
+      content,
+      /- openLink: \$\{MAESTRO_EXPO_URL\}\s+- extendedWaitUntil:\s+visible: "Continue\|Connected to expo-cli\|Muvit needs permissions\.\*\|Entrar"\s+timeout: 120000\s+- runFlow: expo-overlays\.yaml\s+- extendedWaitUntil:\s+visible: Entrar\s+timeout: 120000/,
+      `${flow} deve esperar a interface carregar antes de tratar overlays e exigir login`,
+    );
+  }
+});
+
+test('confirmação Android executa UI, confirma e retorna à UI na ordem', async () => {
+  const { runVerificationScenario } = await runnerModule();
+  const calls = [];
+  const result = await runVerificationScenario(
+    { mode: 'android' },
+    { runId: 'aabbcc', artifacts: 'unused', artifactSecrets: [] },
+    {
+      runFlow: async (flow) => calls.push(flow),
+      confirm: async () => calls.push('confirmar'),
+    },
+  );
+  assert.deepEqual(calls, ['confirmacao-email', 'confirmar', 'confirmar-email-link']);
+  assert.equal(result.maestroExecuted, true);
+});
+
+test('confirmação recusa link de origem alheia antes de fazer requisição', async () => {
+  const { runVerificationScenario } = await runnerModule();
+  const originalFetch = globalThis.fetch;
+  let requested = false;
+  globalThis.fetch = async () => {
+    requested = true;
+    throw new Error('não deveria chamar');
+  };
+  try {
+    await assert.rejects(
+      runVerificationScenario(
+        { mode: 'android' },
+        {
+          runId: 'aabbcc',
+          apiUrl: 'http://127.0.0.1:3344',
+          artifacts: 'unused',
+          artifactSecrets: [],
+          mailbox: { take: () => 'https://externo.invalid/api/auth/verify-email?token=abc' },
+        },
+        { runFlow: async () => {} },
+      ),
+      /Link de confirmação E2E inválido/,
+    );
+    assert.equal(requested, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('confirmação aceita retorno nativo sem expor o token no resultado', async () => {
+  const { runVerificationScenario } = await runnerModule();
+  const previous = globalThis.fetch;
+  globalThis.fetch = async (_url, options) => {
+    assert.equal(options.redirect, 'manual');
+    return new Response(null, { status: 302, headers: { location: 'muvit://verify-email' } });
+  };
+  try {
+    const result = await runVerificationScenario(
+      { mode: 'android' },
+      {
+        runId: 'aabbcc',
+        apiUrl: 'http://127.0.0.1:3344',
+        artifacts: 'unused',
+        artifactSecrets: [],
+        mailbox: { take: () => 'http://127.0.0.1:3344/api/auth/verify-email?token=segredo' },
+      },
+      { runFlow: async () => {} },
+    );
+    assert.equal(result.result.confirmed, true);
+    assert.doesNotMatch(JSON.stringify(result), /segredo/);
+  } finally {
+    globalThis.fetch = previous;
+  }
+});

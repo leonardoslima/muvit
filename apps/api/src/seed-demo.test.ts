@@ -90,6 +90,27 @@ async function readDatabaseSnapshot() {
   };
 }
 describe('demo seed', () => {
+  it('verifica somente as identidades demo, sem alterar contas reais', async () => {
+    const signup = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      payload: { name: 'Pessoa', email: 'real@example.com', password: '12345678', role: 'student' },
+    });
+    expect(signup.statusCode).toBe(200);
+    await seedDemo(app.auth, referenceDate);
+    const identity = await db.query.authUsers.findFirst({
+      where: eq(schema.authUsers.email, 'real@example.com'),
+    });
+    const demoTrainer = await db.query.authUsers.findFirst({
+      where: eq(schema.authUsers.email, demoCredentials.trainer.email),
+    });
+    const demoStudent = await db.query.authUsers.findFirst({
+      where: eq(schema.authUsers.email, demoCredentials.independentStudent.email),
+    });
+    expect(identity?.emailVerified).toBe(false);
+    expect(demoTrainer?.emailVerified).toBe(true);
+    expect(demoStudent?.emailVerified).toBe(true);
+  });
   it('cria duas identidades Better Auth e preserva domínio e IDs no rerun', async () => {
     await seedDemo(app.auth, referenceDate);
 

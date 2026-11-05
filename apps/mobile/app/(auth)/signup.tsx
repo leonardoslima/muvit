@@ -26,13 +26,14 @@ export default function SignupScreen() {
         email,
         password,
         role: 'student',
+        callbackURL: 'muvit://verify-email',
       });
       if (result.error) {
         setError(getAuthErrorMessage(result.error, 'signup'));
         return;
       }
 
-      router.replace(mobileRoutes.studentHome);
+      router.replace(mobileRoutes.verifyEmail);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'signup'));
     } finally {
@@ -97,6 +98,7 @@ export default function SignupScreen() {
 
       <View testID="signup-actions" style={{ gap: spacing.md }}>
         <Button
+          testID="signup-submit"
           disabled={submitting}
           label={submitting ? 'Criando...' : 'Criar conta'}
           loading={submitting}

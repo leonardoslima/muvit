@@ -81,9 +81,13 @@ name: Jornada do professor
 - stopApp
 - launchApp
 - extendedWaitUntil:
-    visible: Development servers
-    timeout: 30000
-- openLink: ${MAESTRO_EXPO_URL}
+    visible: "DEVELOPMENT SERVERS|Início"
+    timeout: 120000
+- runFlow:
+    when:
+      visible: DEVELOPMENT SERVERS
+    commands:
+      - openLink: ${MAESTRO_EXPO_URL}
 - runFlow: expo-overlays.yaml
 - extendedWaitUntil:
     visible: Início

@@ -3,9 +3,12 @@ appId: ${MAESTRO_E2E_APP_ID}
 - stopApp
 - launchApp
 - extendedWaitUntil:
-    visible: Development servers
-    timeout: 30000
+    visible: "DEVELOPMENT SERVERS|Continue|Connected to expo-cli|Muvit needs permissions.*|Entrar"
+    timeout: 120000
 - openLink: ${MAESTRO_EXPO_URL}
+- extendedWaitUntil:
+    visible: "Continue|Connected to expo-cli|Muvit needs permissions.*|Entrar"
+    timeout: 120000
 - runFlow: expo-overlays.yaml
 - extendedWaitUntil:
     visible: Entrar

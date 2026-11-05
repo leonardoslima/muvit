@@ -60,7 +60,7 @@ describe('LoginPage', () => {
     ['student', '/me'],
   ] as const)('autentica sem papel e navega %s para sua área', async (role, destination) => {
     authState.signInEmail.mockResolvedValue({
-      data: { user: { role } },
+      data: { user: { role, emailVerified: true } },
       error: null,
     });
     render(<LoginPage />);
@@ -75,6 +75,16 @@ describe('LoginPage', () => {
     );
     expect(navigationState.replace).toHaveBeenCalledWith(destination);
     expect(navigationState.refresh).toHaveBeenCalledOnce();
+  });
+
+  it('encaminha conta pendente para confirmar o email', async () => {
+    authState.signInEmail.mockResolvedValue({
+      data: { user: { role: 'trainer', emailVerified: false } },
+      error: null,
+    });
+    render(<LoginPage />);
+    submitLogin();
+    await waitFor(() => expect(navigationState.replace).toHaveBeenCalledWith('/verify-email'));
   });
 
   it('mostra mensagem estável para credenciais inválidas', async () => {

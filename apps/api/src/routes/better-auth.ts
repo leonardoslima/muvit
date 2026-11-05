@@ -54,6 +54,13 @@ export const betterAuthRoutes: FastifyPluginAsync = async (app) => {
 
   app.route({
     method: 'POST',
+    url: '/api/auth/send-verification-email',
+    config: { rateLimit: { max: 3, timeWindow: '1 minute' } },
+    handler: handleBetterAuth,
+  });
+
+  app.route({
+    method: 'POST',
     url: '/api/auth/reset-password',
     config: { rateLimit: authRateLimit },
     handler: handleBetterAuth,
