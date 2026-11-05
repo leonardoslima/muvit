@@ -160,6 +160,11 @@ async function createAccount(
     throw new Error('Identidade de fixture inválida');
   }
   const authUserId = user.id;
+  // As demais jornadas E2E usam contas de negócio confirmadas; a confirmação é testada à parte.
+  await db
+    .update(schema.authUsers)
+    .set({ emailVerified: true })
+    .where(eq(schema.authUsers.id, authUserId));
   const profile =
     role === 'trainer'
       ? await db.query.trainers.findFirst({ where: eq(schema.trainers.authUserId, authUserId) })

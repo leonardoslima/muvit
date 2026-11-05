@@ -51,6 +51,11 @@ describe('proxy', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('x-middleware-next')).toBe('1');
   });
+  it('mantém a confirmação acessível com e sem sessão', () => {
+    expect(proxy(request('/verify-email')).headers.get('x-middleware-next')).toBe('1');
+    getSessionCookie.mockReturnValue('session');
+    expect(proxy(request('/verify-email')).headers.get('x-middleware-next')).toBe('1');
+  });
   it.each([
     '/forgot-password',
     '/reset-password?token=valid',

@@ -1,7 +1,10 @@
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { resolveInitialRoute } from '../../src/application/navigation/role-navigation';
+import {
+  mobileRoutes,
+  resolveInitialRoute,
+} from '../../src/application/navigation/role-navigation';
 import { AuthBrand } from '../../src/components/auth/auth-brand';
 import { Screen } from '../../src/components/ui/screen';
 import { ActionFeedback, Button, Field, Header, Text } from '../../src/components/ui/v2';
@@ -34,7 +37,7 @@ export default function LoginScreen() {
       }
 
       await authClient.$store.atoms.session.get().refetch();
-      router.replace(destination);
+      router.replace(result.data.user.emailVerified ? destination : mobileRoutes.verifyEmail);
     } catch (caughtError) {
       setError(getAuthErrorMessage(caughtError, 'login'));
     } finally {

@@ -29,6 +29,11 @@ export function ProfileForm({ profile }: { profile: GetTrainerProfileResponse })
     if (state?.success) router.refresh();
   }, [router, state?.success]);
 
+  useEffect(() => {
+    if (state?.effectiveEmail)
+      setValues((current) => ({ ...current, email: state.effectiveEmail ?? current.email }));
+  }, [state]);
+
   return (
     <form action={formAction} className="flex max-w-3xl flex-col gap-6">
       <section className="rounded-[12px] bg-card p-5 shadow-card sm:p-6">
@@ -126,7 +131,13 @@ export function ProfileForm({ profile }: { profile: GetTrainerProfileResponse })
           {state.error}
         </p>
       )}
-      {state?.success && <output className="text-sm text-success">Perfil atualizado.</output>}
+      {state?.success && (
+        <output className="text-sm text-success">
+          {state.emailVerificationPending
+            ? 'Perfil atualizado. Se o novo e-mail puder ser usado, enviaremos um link para confirmar a alteração.'
+            : 'Perfil atualizado.'}
+        </output>
+      )}
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

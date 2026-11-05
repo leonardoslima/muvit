@@ -31,6 +31,7 @@ const studentSnapshot: DemoIdentitySnapshot = {
 function createAuth(): MuvitAuth {
   return {
     handler: async () => new Response(),
+    withDeferredVerificationDelivery: async (operation) => operation(),
     api: {
       signUpEmail: vi.fn(async () => {
         throw new Error('cadastro não deveria ser chamado');
@@ -50,6 +51,7 @@ describe('orquestração do seed demo', () => {
         email === demoCredentials.trainer.email ? trainerSnapshot : studentSnapshot,
       ),
       findByAuthUserId: vi.fn(async () => undefined),
+      markEmailVerified: vi.fn(async () => undefined),
     };
     const seedData = vi.fn(async () => undefined);
     const referenceDate = new Date('2026-07-19T12:00:00.000Z');
@@ -59,6 +61,8 @@ describe('orquestração do seed demo', () => {
 
     expect(identityRepository.findByEmail).toHaveBeenCalledTimes(2);
     expect(identityRepository.findByAuthUserId).not.toHaveBeenCalled();
+    expect(identityRepository.markEmailVerified).toHaveBeenCalledWith('auth-trainer');
+    expect(identityRepository.markEmailVerified).toHaveBeenCalledWith('auth-student');
     expect(seedData).toHaveBeenCalledWith(
       {
         trainer: {

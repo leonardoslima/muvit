@@ -7,6 +7,7 @@ export type AuthUser = {
   email: string;
   role: 'trainer' | 'student';
   image: string | null;
+  emailVerified: boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -16,7 +17,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readAuthUser(payload: unknown): AuthUser | null {
   if (!isRecord(payload) || !isRecord(payload.user)) return null;
 
-  const { id, name, email, role, image } = payload.user;
+  const { id, name, email, role, image, emailVerified } = payload.user;
   if (
     typeof id !== 'string' ||
     typeof name !== 'string' ||
@@ -27,7 +28,14 @@ function readAuthUser(payload: unknown): AuthUser | null {
     return null;
   }
 
-  return { id, name, email, role, image: typeof image === 'string' ? image : null };
+  return {
+    id,
+    name,
+    email,
+    role,
+    image: typeof image === 'string' ? image : null,
+    emailVerified: emailVerified === true,
+  };
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -56,5 +64,6 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 export async function requireUser(): Promise<AuthUser> {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
+  if (!user.emailVerified) redirect('/verify-email');
   return user;
 }

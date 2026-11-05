@@ -27,6 +27,13 @@ Estas regras valem para `apps/api/src/modules/auth` e complementam `apps/api/AGE
 - Sem `RESEND_API_KEY` ou `EMAIL_FROM`, a solicitação deve retornar indisponibilidade uniforme antes de consultar a conta; falha do provedor deve manter a resposta genérica e registrar somente categoria segura, sem erro original, email ou token.
 - Não aguarde a entrega externa na resposta de solicitação; preserve a sanitização de URLs de autenticação no logger, incluindo token no caminho do callback e parâmetros de consulta.
 
+## Confirmação de email
+
+- Contas não verificadas mantêm acesso aos endpoints nativos de autenticação, recuperação, confirmação, reenvio e logout; `requireAuth` bloqueia dados de domínio com `email_not_verified` até a confirmação.
+- Emita o JWT de confirmação pelo gerador oficial do Better Auth com `authUserId` na carga e valide o vínculo antes de confirmar; condicione atomicamente o update ao ID, pois o email pode ser reutilizado por outra identidade. Tokens antigos sem vínculo são rejeitados e exigem reenvio.
+- Limite o reenvio a três solicitações por minuto por IP; trate a entrega Resend como transacional e assíncrona, sem registrar email, token ou erro do provedor. Somente identidades determinísticas do seed demo podem ser marcadas verificadas pelo próprio seed.
+- Troca de email preserva o endereço anterior até confirmação e exige a sessão da mesma identidade; o adapter Drizzle atualiza identidade e perfil na mesma transação sob a trava de perfil. Atrase o envio da troca até o PATCH terminar com sucesso e descarte mensagens em caso de falha.
+
 ## Testes
 
 - Testes de autenticação devem usar operações nativas do Better Auth e sessão por cookie.

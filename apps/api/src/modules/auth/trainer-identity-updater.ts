@@ -16,5 +16,5 @@ export interface TrainerIdentityUpdater {
     authUserId: string;
     current: TrainerIdentity;
     next: TrainerIdentity;
-  }): Promise<void>;
+  }): Promise<{ emailVerificationPending: boolean } | undefined>;
 }

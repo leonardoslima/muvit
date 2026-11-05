@@ -40,7 +40,7 @@ describe('SignupPage', () => {
     navigationState.replace.mockReset();
   });
 
-  it('cadastra o papel selecionado e navega para a área correta', async () => {
+  it('cadastra o papel selecionado e encaminha à confirmação', async () => {
     authState.signUpEmail.mockResolvedValue({
       data: { user: { role: 'student' } },
       error: null,
@@ -57,9 +57,10 @@ describe('SignupPage', () => {
         email: 'ana@muvit.test',
         password: 'segredo123',
         role: 'student',
+        callbackURL: `${window.location.origin}/verify-email`,
       }),
     );
-    expect(navigationState.replace).toHaveBeenCalledWith('/me');
+    expect(navigationState.replace).toHaveBeenCalledWith('/verify-email');
     expect(navigationState.refresh).toHaveBeenCalledOnce();
   });
 

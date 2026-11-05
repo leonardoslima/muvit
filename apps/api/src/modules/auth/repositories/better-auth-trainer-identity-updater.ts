@@ -1,5 +1,6 @@
 import type { IncomingHttpHeaders } from 'node:http';
 import { fromNodeHeaders } from 'better-auth/node';
+import { env } from '../../../env.js';
 import type { MuvitAuth } from '../../../lib/auth.js';
 import {
   type TrainerIdentity,
@@ -35,7 +36,7 @@ export class BetterAuthTrainerIdentityUpdater implements TrainerIdentityUpdater 
     authUserId: string;
     current: TrainerIdentity;
     next: TrainerIdentity;
-  }): Promise<void> {
+  }): Promise<{ emailVerificationPending: boolean }> {
     const sessionResult = await this.auth.api.getSessionWithHeaders({ headers: this.headers });
     this.setCookieHeaders.push(...sessionResult.headers.getSetCookie());
     const session = sessionResult.session;
@@ -49,7 +50,7 @@ export class BetterAuthTrainerIdentityUpdater implements TrainerIdentityUpdater 
     if (session.user.email !== nextIdentity.email) {
       const responseHeaders = await this.auth.api.changeEmail({
         headers: this.headers,
-        body: { newEmail: nextIdentity.email },
+        body: { newEmail: nextIdentity.email, callbackURL: `${env.WEB_URL}/verify-email` },
       });
       this.setCookieHeaders.push(...responseHeaders.getSetCookie());
     }
@@ -76,11 +77,16 @@ export class BetterAuthTrainerIdentityUpdater implements TrainerIdentityUpdater 
       name: updatedSession.user.name,
       image: updatedSession.user.image,
     };
-    if (updatedIdentity.email !== nextIdentity.email) {
+    const emailVerificationPending =
+      session.user.emailVerified &&
+      updatedIdentity.email === session.user.email &&
+      session.user.email !== nextIdentity.email;
+    if (updatedIdentity.email !== nextIdentity.email && !emailVerificationPending) {
       throw new TrainerIdentityConflictError();
     }
-    if (!isSameIdentity(updatedIdentity, nextIdentity)) {
+    if (!isSameIdentity(updatedIdentity, { ...nextIdentity, email: updatedIdentity.email })) {
       throw new Error('trainer identity was not updated');
     }
+    return { emailVerificationPending };
   }
 }

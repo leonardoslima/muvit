@@ -58,9 +58,8 @@ export const trainersRoutes: FastifyPluginAsyncZod = async (app) => {
       };
 
       try {
-        const profile = await makeTrainersModule(identityUpdater).updateProfile.execute(
-          request.identity,
-          request.body,
+        const profile = await app.auth.withDeferredVerificationDelivery(() =>
+          makeTrainersModule(identityUpdater).updateProfile.execute(request.identity, request.body),
         );
         forwardSetCookies();
         return profile;

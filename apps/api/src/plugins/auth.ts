@@ -49,6 +49,10 @@ export default fp<AuthPluginOptions>(async (app, options) => {
       return reply.code(401).send({ error: 'unauthorized' });
     }
 
+    if (!session.user.emailVerified) {
+      return reply.code(403).send({ error: 'email_not_verified' });
+    }
+
     request.identity = {
       authUserId: session.user.id,
       profileId,

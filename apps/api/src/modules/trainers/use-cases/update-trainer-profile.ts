@@ -73,7 +73,7 @@ export class UpdateTrainerProfileUseCase {
     const normalizedInput =
       input.email === undefined ? input : { ...input, email: input.email.trim().toLowerCase() };
     const currentIdentity = profileIdentity(currentProfile);
-    const nextIdentity: TrainerIdentity = {
+    let nextIdentity: TrainerIdentity = {
       email: normalizedInput.email ?? currentIdentity.email,
       name: normalizedInput.name ?? currentIdentity.name,
       image:
@@ -83,11 +83,14 @@ export class UpdateTrainerProfileUseCase {
 
     try {
       if (identityChanged) {
-        await this.identityUpdater.updateIdentity({
+        const result = await this.identityUpdater.updateIdentity({
           authUserId: identity.authUserId,
           current: currentIdentity,
           next: nextIdentity,
         });
+        if (result?.emailVerificationPending) {
+          nextIdentity = { ...nextIdentity, email: currentIdentity.email };
+        }
       }
     } catch (operationError) {
       await this.compensateOrThrow(
@@ -106,7 +109,10 @@ export class UpdateTrainerProfileUseCase {
     try {
       updatedProfile = await this.trainersRepository.updateProfile(
         identity.profileId,
-        normalizedInput,
+        {
+          ...normalizedInput,
+          ...(normalizedInput.email === undefined ? {} : { email: nextIdentity.email }),
+        },
         currentProfile.updatedAt,
       );
     } catch (operationError) {

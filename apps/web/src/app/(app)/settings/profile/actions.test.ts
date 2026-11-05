@@ -81,6 +81,32 @@ describe('updateProfileAction', () => {
     });
   });
 
+  it('informa quando a troca de email ainda depende de confirmação', async () => {
+    vi.mocked(updateTrainerProfile).mockResolvedValue({
+      data: {
+        id: 'trainer-1',
+        name: 'João',
+        email: 'antigo@example.com',
+        phone: null,
+        bio: null,
+        specialties: [],
+        avatarUrl: null,
+        plan: 'free',
+        onboardedAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      error: undefined,
+      request: new Request('https://api.test'),
+      response: new Response(),
+    });
+    await expect(updateProfileAction(null, formData())).resolves.toEqual({
+      success: true,
+      emailVerificationPending: true,
+      effectiveEmail: 'antigo@example.com',
+    });
+  });
+
   it('preserva cookies renovados quando a atualização retorna conflito', async () => {
     const response = new Response(null, { status: 409 });
     Object.defineProperty(response.headers, 'getSetCookie', {

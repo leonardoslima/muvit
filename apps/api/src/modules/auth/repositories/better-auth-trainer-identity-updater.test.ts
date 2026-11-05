@@ -14,12 +14,14 @@ describe('BetterAuthTrainerIdentityUpdater', () => {
       id: 'auth-user-id',
       role: 'trainer',
       email: 'antes@example.com',
+      emailVerified: true,
       name: 'Antes',
       image: null,
     };
     let sessionRead = 0;
     const auth: MuvitAuth = {
       handler: vi.fn(async () => new Response()),
+      withDeferredVerificationDelivery: async (operation) => operation(),
       api: {
         signUpEmail: vi.fn(async () => ({ user: { id: user.id } })),
         getSession: vi.fn(async () => ({ user })),

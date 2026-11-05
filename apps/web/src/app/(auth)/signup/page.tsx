@@ -43,14 +43,20 @@ export default function SignupPage() {
     setPending(true);
 
     try {
-      const result = await authClient.signUp.email({ name, email, password, role });
+      const result = await authClient.signUp.email({
+        name,
+        email,
+        password,
+        role,
+        callbackURL: `${window.location.origin}/verify-email`,
+      });
 
       if (result.error || !result.data) {
         setError(getAuthErrorMessage(result.error, 'signup'));
         return;
       }
 
-      router.replace(role === 'trainer' ? '/dashboard' : '/me');
+      router.replace('/verify-email');
       router.refresh();
     } catch (requestError: unknown) {
       setError(getAuthErrorMessage(requestError, 'signup'));

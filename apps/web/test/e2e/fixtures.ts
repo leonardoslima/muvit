@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { type APIRequestContext, type Page, test as base, expect, request } from '@playwright/test';
+import { confirmFixtureEmail, receiveVerificationLink } from './verification-helper';
 
 export type Account = { name: string; email: string; password: string; profileId: string };
 type Exercise = { id: string; name: string };
@@ -25,6 +26,12 @@ export async function createAccount(): Promise<{ account: Account; api: APIReque
       data: { name, email, password, role: 'trainer' },
     });
     if (!signup.ok()) throw new Error(`Cadastro da fixture falhou: ${signup.status()}`);
+    await confirmFixtureEmail(
+      () => receiveVerificationLink(email),
+      async (token) => (await api.get('/api/auth/verify-email', { params: { token } })).ok(),
+      webUrl,
+      apiUrl,
+    );
     const profileResponse = await api.get('/trainers/me');
     if (!profileResponse.ok())
       throw new Error(`Perfil da fixture falhou: ${profileResponse.status()}`);

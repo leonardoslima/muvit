@@ -1,4 +1,4 @@
-﻿# E2E web do personal
+# E2E web do personal
 
 A suíte verifica no Chromium a jornada do personal com API e PostgreSQL reais, além do isolamento entre treinadores. A execução é local e explícita; os testes web comuns não iniciam navegador. Não use um banco ou servidores compartilhados.
 
@@ -7,21 +7,24 @@ A suíte verifica no Chromium a jornada do personal com API e PostgreSQL reais, 
 Node 24+, pnpm 10, Docker com daemon ativo e acesso à imagem `postgres:16-alpine`. Instale dependências e o navegador na raiz da worktree:
 
 ```powershell
-pnpm.cmd install --frozen-lockfile
-pnpm.cmd --dir apps/web exec playwright install chromium
+pnpm install --frozen-lockfile
+pnpm --dir apps/web exec playwright install chromium
 ```
 
-Em Unix use `pnpm` no lugar de `pnpm.cmd`. A primeira execução compila pacotes e páginas, podendo demorar mais.
+A primeira execução compila pacotes e páginas, podendo demorar mais.
 
 ## Executar
 
 ```powershell
-pnpm.cmd web:e2e --scenario all
-pnpm.cmd web:e2e --scenario jornada --artifact-scope web-e2e
-pnpm.cmd web:e2e --scenario isolamento --headed
+pnpm web:e2e --scenario all
+pnpm web:e2e --scenario jornada --artifact-scope web-e2e
+pnpm web:e2e --scenario isolamento --headed
+pnpm web:e2e --scenario confirmacao-email
 ```
 
-As portas padrão são Web 3013, API 3353 e PostgreSQL 5453. Altere com `--web-port`, `--api-port` e `--db-port`; precisam ser distintas e livres. `--artifact-scope` aceita slug minúsculo. O runner cria credenciais e container próprios, aplica migrations, compila runtime, inicia API e Next exclusivos e executa Playwright. O Next usa o lock desta worktree: se outra instância ocupar `.next/dev`, encerre-a pelo seu responsável e execute novamente; não remova seu lock manualmente. Não são usados seed demo, R2 real ou envio de e-mail.
+As portas padrão são Web 3013, API 3353 e PostgreSQL 5453. Altere com `--web-port`, `--api-port` e `--db-port`; precisam ser distintas e livres. `--artifact-scope` aceita slug minúsculo. O runner cria credenciais e container próprios, aplica migrations, compila runtime, inicia API e Next exclusivos e executa Playwright. O Next usa o lock desta worktree: se outra instância ocupar `.next/dev`, encerre-a pelo seu responsável e execute novamente; não remova seu lock manualmente. Não são usados seed demo, R2 real ou envio externo de e-mail. Um servidor exclusivo injeta a entrega em uma caixa em memória, acessível apenas localmente com credencial efêmera; o fluxo de confirmação e as contas das demais jornadas usam o link nativo capturado.
+
+Por padrão o Next usa Turbopack. Se o virtual store físico do pnpm estiver fora da raiz observada pelo Turbopack e impedir a resolução de pacotes, acrescente `--webpack` ao comando do runner. O relatório registra o bundler utilizado; uma execução com webpack não valida Turbopack.
 
 ## Evidência e limpeza
 

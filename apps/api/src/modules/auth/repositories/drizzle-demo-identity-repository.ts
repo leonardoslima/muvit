@@ -43,6 +43,13 @@ async function buildSnapshot(
 export class DrizzleDemoIdentityRepository implements DemoIdentityRepository {
   constructor(private readonly database: Database) {}
 
+  async markEmailVerified(authUserId: string): Promise<void> {
+    await this.database
+      .update(authUsers)
+      .set({ emailVerified: true })
+      .where(eq(authUsers.id, authUserId));
+  }
+
   async findByEmail(email: string): Promise<DemoIdentitySnapshot | undefined> {
     const identity = await this.database.query.authUsers.findFirst({
       where: eq(authUsers.email, email),

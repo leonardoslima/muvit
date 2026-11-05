@@ -6,9 +6,11 @@ import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createMailbox } from './e2e-mailbox.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const scenarios = ['aluno', 'professor', 'isolamento'];
+const androidScenarios = [...scenarios, 'confirmacao-email'];
 const defaultPorts = { api: 3344, metro: 8094, db: 5444 };
 
 export function parseArgs(argv) {
@@ -40,13 +42,15 @@ export function parseArgs(argv) {
 
   if (argv.includes('--help')) return { help: true };
   const scenario = values.get('--scenario');
-  if (!scenario || ![...scenarios, 'all'].includes(scenario)) {
-    throw new Error('--scenario deve ser aluno, professor, isolamento ou all');
+  if (!scenario || ![...androidScenarios, 'all'].includes(scenario)) {
+    throw new Error('--scenario deve ser aluno, professor, isolamento, confirmacao-email ou all');
   }
   const mode = values.get('--mode') ?? 'android';
   if (!mode || !['android', 'api-only'].includes(mode)) {
     throw new Error('--mode deve ser android ou api-only');
   }
+  if (mode === 'api-only' && scenario === 'confirmacao-email')
+    throw new Error('Confirmação exige Android');
   const device = values.get('--device');
   if (mode === 'android' && !device) throw new Error('--device é obrigatório no modo android');
   if (device && !/^[A-Za-z0-9._:-]+$/.test(device)) throw new Error('--device inválido');
@@ -69,20 +73,23 @@ export function parseArgs(argv) {
   if (!/^[a-z0-9][a-z0-9-]{0,49}$/.test(artifactScope)) {
     throw new Error('--artifact-scope deve conter apenas letras minúsculas, números e hífens');
   }
-  const appId = values.get('--app-id') ?? 'host.exp.exponent';
+  const appId = values.get('--app-id') ?? 'com.anonymous.muvit';
   if (!/^[A-Za-z0-9._]+$/.test(appId)) throw new Error('--app-id inválido');
   const launchUrl = values.get('--launch-url');
-  if (launchUrl && !/^exp:\/\//.test(launchUrl))
-    throw new Error('--launch-url deve começar com exp://');
+  if (launchUrl && !launchUrl.startsWith('exp+muvit://expo-development-client/'))
+    throw new Error('--launch-url deve apontar para development build');
 
   return {
-    scenarios: scenario === 'all' ? scenarios : [scenario],
+    scenarios:
+      scenario === 'all' ? (mode === 'android' ? androidScenarios : scenarios) : [scenario],
     mode,
     device,
     ports,
     appId,
     avdName: values.get('--avd-name') ?? 'muvit-mobile-e2e',
-    launchUrl: launchUrl ?? `exp://127.0.0.1:${ports.metro}`,
+    launchUrl:
+      launchUrl ??
+      `exp+muvit://expo-development-client/?url=${encodeURIComponent(`http://127.0.0.1:${ports.metro}`)}`,
     artifactScope,
   };
 }
@@ -258,7 +265,7 @@ function startChild(command, args, options) {
   const child = spawn(command, args, {
     cwd: options.cwd,
     env: options.env,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: options.ipc ? ['ignore', 'pipe', 'pipe', 'ipc'] : ['ignore', 'pipe', 'pipe'],
     windowsHide: true,
   });
   let output = '';
@@ -430,6 +437,10 @@ function maestroEnvironment(options, credentials, manifest, apiDate) {
     E2E_TRAINER_PASSWORD: credentials.trainerA.password,
     E2E_TRAINER_B_EMAIL: credentials.trainerB.email,
     E2E_TRAINER_B_PASSWORD: credentials.trainerB.password,
+    E2E_VERIFICATION_NAME: credentials.studentA.name,
+    E2E_VERIFICATION_EMAIL: credentials.studentA.email,
+    E2E_VERIFICATION_PASSWORD: credentials.studentA.password,
+    E2E_HOME: 'Hoje',
     E2E_STUDENT_NAME: manifest.linkedStudents?.a?.name ?? '',
     E2E_PLAN_NAME:
       manifest.scenario === 'professor'
@@ -449,7 +460,7 @@ function maestroEnvironment(options, credentials, manifest, apiDate) {
     assessment: `/trainer/students/${foreign.studentId}/assessments/${foreign.assessmentId}`,
     session: `/session/${manifest.foreignIndependent?.dayId ?? foreign.dayId}`,
   }))
-    env[`E2E_FOREIGN_${key.toUpperCase()}_URL`] = `${options.launchUrl}/--${path}`;
+    env[`E2E_FOREIGN_${key.toUpperCase()}_URL`] = `muvit://${path.slice(1)}`;
   env.E2E_REFERENCE_DATE = apiDate;
   return Object.fromEntries(
     Object.entries(env).map(([key, value]) => [
@@ -478,6 +489,16 @@ async function setupAndroid(options) {
   );
   if (boot.code !== 0 || boot.stdout.trim() !== '1')
     throw new Error('AVD ainda não concluiu o boot');
+  const installed = await runCommand(
+    'adb',
+    ['-s', options.device, 'shell', 'pm', 'path', options.appId],
+    {
+      env: safeEnvironment(),
+    },
+  );
+  if (installed.code !== 0 || !installed.stdout.includes('package:')) {
+    throw new Error('Development build não está instalada no dispositivo');
+  }
   const hostDate = new Date().toLocaleDateString('en-CA');
   const deviceDate = await runCommand('adb', ['-s', options.device, 'shell', 'date', '+%F'], {
     env: safeEnvironment(),
@@ -503,6 +524,18 @@ async function setupAndroid(options) {
   return hostDate;
 }
 
+export function metroArguments(port) {
+  return [
+    join(root, 'apps/mobile/node_modules/expo/bin/cli'),
+    'start',
+    '--dev-client',
+    '--host',
+    'localhost',
+    '--port',
+    String(port),
+  ];
+}
+
 async function startMetro(options, apiUrl, resources, artifacts) {
   const metroEnv = safeEnvironment({
     NODE_ENV: 'development',
@@ -510,19 +543,10 @@ async function startMetro(options, apiUrl, resources, artifacts) {
     EXPO_PUBLIC_API_URL: apiUrl,
     CI: '1',
   });
-  const metro = startChild(
-    process.execPath,
-    [
-      join(root, 'apps/mobile/node_modules/expo/bin/cli'),
-      'start',
-      '--go',
-      '--host',
-      'localhost',
-      '--port',
-      String(options.ports.metro),
-    ],
-    { cwd: join(root, 'apps/mobile'), env: metroEnv },
-  );
+  const metro = startChild(process.execPath, metroArguments(options.ports.metro), {
+    cwd: join(root, 'apps/mobile'),
+    env: metroEnv,
+  });
   resources.registerCleanup('metro-process', () => stopChild(metro));
   resources.registerCleanup('metro-log', async () =>
     writeFile(join(artifacts, 'metro.log'), metro.output(), 'utf8'),
@@ -631,6 +655,50 @@ async function runMaestro(options, scenario, fixture, date, artifacts) {
     throw error;
   }
   return true;
+}
+
+export async function runVerificationScenario(options, context, dependencies = {}) {
+  if (options.mode !== 'android') throw new Error('Confirmação exige Android');
+  const credentials = createFixtureCredentials(`${context.runId}-confirmacao`);
+  const credential = credentials.studentA;
+  context.artifactSecrets?.push(credential.email, credential.password);
+  const fixture = { credentials, manifest: { scenario: 'confirmacao-email' } };
+  const runFlow =
+    dependencies.runFlow ??
+    ((flow) => runMaestro(options, flow, fixture, context.deviceDate, context.artifacts));
+  const confirm =
+    dependencies.confirm ??
+    (async () => {
+      let link;
+      for (let attempt = 0; attempt < 50 && !link; attempt++) {
+        link = context.mailbox.take(credential.email);
+        if (!link) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (!link) throw new Error('Mensagem de confirmação E2E não recebida');
+      const url = new URL(link);
+      if (
+        url.origin !== context.apiUrl ||
+        url.pathname !== '/api/auth/verify-email' ||
+        !url.searchParams.get('token')
+      ) {
+        throw new Error('Link de confirmação E2E inválido');
+      }
+      context.artifactSecrets?.push(link, url.searchParams.get('token'));
+      let response;
+      try {
+        response = await fetch(url, { redirect: 'manual' });
+      } catch {
+        throw new Error('Falha ao confirmar email E2E');
+      }
+      const location = response.headers.get('location');
+      if (response.status !== 302 || !location?.startsWith('muvit://verify-email')) {
+        throw new Error('Retorno de confirmação E2E inválido');
+      }
+    });
+  await runFlow('confirmacao-email');
+  await confirm();
+  await runFlow('confirmar-email-link');
+  return { scenario: 'confirmacao-email', maestroExecuted: true, result: { confirmed: true } };
 }
 
 export async function runScenario(options, scenario, context, dependencies = {}) {
@@ -767,9 +835,16 @@ export async function run(options) {
         R2_PUBLIC_URL: 'https://example.invalid/e2e',
         EMAIL_NOTIFICATIONS_ENABLED: 'false',
       });
-      const api = startChild(process.execPath, ['--import', 'tsx', 'src/server.ts'], {
+      const mailbox = await createMailbox();
+      artifactSecrets.push(mailbox.secret);
+      resources.registerCleanup('mailbox', () => mailbox.close());
+      const api = startChild(process.execPath, ['--import', 'tsx', 'test/e2e-server.ts'], {
+        ipc: true,
         cwd: join(root, 'apps/api'),
         env: apiEnv,
+      });
+      api.on('message', (event) => {
+        if (event?.type === 'verification') mailbox.deliver(event.message);
       });
       resources.registerCleanup('api-process', () => stopChild(api));
       resources.registerCleanup('api-log', async () =>
@@ -784,7 +859,7 @@ export async function run(options) {
       if (options.mode === 'android') await startMetro(options, apiUrl, resources, artifactDir);
 
       for (const scenario of options.scenarios) {
-        const outcome = await runScenario(options, scenario, {
+        const context = {
           runId,
           apiUrl,
           databaseUrl: database.databaseUrl,
@@ -792,7 +867,12 @@ export async function run(options) {
           artifacts: artifactDir,
           deviceDate,
           artifactSecrets,
-        });
+          mailbox,
+        };
+        const outcome =
+          scenario === 'confirmacao-email'
+            ? await runVerificationScenario(options, context)
+            : await runScenario(options, scenario, context);
         outcomes.push({
           scenario: outcome.scenario,
           maestroExecuted: outcome.maestroExecuted,
@@ -816,7 +896,7 @@ export async function run(options) {
 
 function printHelp() {
   process.stdout.write(
-    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>]\n',
+    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|confirmacao-email|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>]\n',
   );
 }
 

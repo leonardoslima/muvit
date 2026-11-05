@@ -5,6 +5,14 @@ appId: ${MAESTRO_E2E_APP_ID}
       visible: Continue
     commands:
       - tapOn: Continue
+      - extendedWaitUntil:
+          visible: "Close|Entrar"
+          timeout: 30000
+- runFlow:
+    when:
+      visible: "Connected to:.*"
+    commands:
+      - tapOn: Close
 - runFlow:
     when:
       visible: "Connected to expo-cli"

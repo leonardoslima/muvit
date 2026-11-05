@@ -1,6 +1,7 @@
 ﻿import assert from 'node:assert/strict';
 import { createServer } from 'node:net';
 import { test } from 'node:test';
+import * as runner from './web-e2e.mjs';
 import { assertOwnedContainer, assertPortFree, parseArgs, runStages } from './web-e2e.mjs';
 
 test('valida argumentos antes de criar recursos', () => {
@@ -8,6 +9,7 @@ test('valida argumentos antes de criar recursos', () => {
     ports: { web: 3013, api: 3353, db: 5453 },
     artifactScope: 'web-e2e',
     headed: false,
+    webpack: false,
     scenario: 'all',
   });
   for (const args of [
@@ -18,6 +20,27 @@ test('valida argumentos antes de criar recursos', () => {
     ['--scenario', 'bad'],
   ])
     assert.throws(() => parseArgs(args));
+});
+
+test('usa webpack apenas quando solicitado para iniciar o Next', () => {
+  const defaults = parseArgs([]);
+  const webpack = parseArgs(['--webpack', '--web-port', '3020']);
+  assert.equal(webpack.webpack, true);
+  assert.deepEqual(runner.nextDevArgs(defaults).slice(-5), [
+    'dev',
+    '--hostname',
+    '127.0.0.1',
+    '--port',
+    '3013',
+  ]);
+  assert.deepEqual(runner.nextDevArgs(webpack).slice(-6), [
+    'dev',
+    '--webpack',
+    '--hostname',
+    '127.0.0.1',
+    '--port',
+    '3020',
+  ]);
 });
 
 test('rejeita porta ocupada', async () => {

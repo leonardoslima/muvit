@@ -75,6 +75,7 @@ async function ensureDemoIdentity(
   }
 
   const profileId = resolveProfileId(identity, credential);
+  await identityRepository.markEmailVerified(identity.authUserId);
   return {
     authUserId: identity.authUserId,
     profileId,

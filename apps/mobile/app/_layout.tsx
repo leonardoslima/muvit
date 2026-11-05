@@ -37,6 +37,7 @@ function AuthenticatedRootLayout() {
   const decision = resolveRouteAccess({
     area: resolveRouteArea(segments),
     isAuthenticated: Boolean(session.data),
+    emailVerified: session.data?.user.emailVerified,
     role: session.data?.user.role,
   });
 
