@@ -6,7 +6,7 @@
 4. Subir **banco e API juntos** antes de testes de integração/E2E ou fluxos de UI dependentes. Verificar migrations, healthchecks e credenciais de seed; executar seeds existentes ou preparar credenciais de teste apropriadas, sem dados reais. API saudável e conectada ao banco fazem parte do gate.
 5. Para paralelismo entre cards, separar portas, redes, containers e banco. Se não for possível garantir isolamento, rodadas conflitantes não começam juntas.
 6. Executar validação de backend: esquema/migrations, comandos de tests e endpoints reais; o build isolado não substitui checagem de comportamento.
-7. Desligar/remover **somente** containers, volumes, emuladores e processos que a rodada criou, depois de salvar evidências. Não limpar estado necessário para review pendente ou retomada sem decisão segura. Nunca rodar `git clean`/`git reset` indiscriminadamente.
+7. Após a entrega concluída e o salvamento das evidências, encerrar os processos e emuladores exclusivos da rodada conforme `closure-and-recovery.md`. Preservar os containers, volumes e dados Docker exclusivos para possíveis correções, sem interromper o Docker compartilhado. Não limpar estado necessário para review pendente ou retomada sem decisão segura. Nunca rodar `git clean`/`git reset` indiscriminadamente.
 8. Não atribuir falhas de Docker, rede, dependência ou autenticação à capacidade do modelo. Investigar a causa técnica preservando os perfis fixos; mudanças que invalidem o plano voltam ao planejador.
 
 ## Cuidados específicos
