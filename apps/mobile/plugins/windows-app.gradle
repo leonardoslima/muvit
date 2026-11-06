@@ -1,0 +1,4 @@
+if (System.getenv('MUVIT_WORKSPACE_ALIAS')) {
+    android.externalNativeBuild.cmake.buildStagingDirectory = gradle.ext.muvitNativeStaging('app')
+    android.defaultConfig.externalNativeBuild.cmake.arguments '-DCMAKE_OBJECT_PATH_MAX=230'
+}

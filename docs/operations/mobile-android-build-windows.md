@@ -1,5 +1,24 @@
 # Build Android nativo em worktree Windows
 
+## Mitigação para worktree longa já existente
+
+Quando não for possível usar caminho curto, o plugin Expo versionado `apps/mobile/plugins/with-windows-long-paths.js` ajusta autolinking, codegen e CMake durante o prebuild. A mitigação só é ativada com `MUVIT_WORKSPACE_ALIAS` e `MUVIT_NATIVE_ROOT`; ela mantém `node_modules` e o virtual store na worktree e usa um alias para acessar os mesmos arquivos. Confira que a letra escolhida está livre antes de executar `subst`. Em builds simultâneos na mesma máquina, reserve uma letra diferente por worktree e mantenha as variáveis no processo de cada build; duas worktrees não podem compartilhar o mesmo alias. O plugin exige alias absoluto para esta worktree e staging absoluto no diretório reservado `apps/mobile/android/.cxx-muvit`; também verifica os destinos e caminhos existentes dos módulos para rejeitar redirecionamentos por junction ou link. Use `R:/` ou `R:\` como alias de uma unidade mapeada; `R:` é relativo à unidade e será rejeitado.
+
+Na raiz da worktree, escolha uma letra livre e um diretório de staging exclusivo dentro do Android gerado, confirme nome, serial e boot do AVD próprio e execute:
+
+```powershell
+if (Get-PSDrive -Name R -ErrorAction SilentlyContinue) { throw 'R: já está em uso' }
+subst R: "$PWD"
+if ($LASTEXITCODE -ne 0) { throw 'Não foi possível reservar R:' }
+$env:MUVIT_WORKSPACE_ALIAS = 'R:/'
+$env:MUVIT_NATIVE_ROOT = 'R:/apps/mobile/android/.cxx-muvit'
+$env:ANDROID_SERIAL = '<serial-do-avd-confirmado>'
+pnpm.cmd --dir apps/mobile exec expo prebuild --platform android --no-install
+pnpm.cmd mobile:android:build --device <nome-do-avd-confirmado> --no-bundler
+```
+
+Ao terminar, remova o alias somente após conferir que `subst` ainda o associa a esta worktree: `subst R: /D`. Não remova nem reutilize aliases alheios. As variáveis são locais ao processo e devem ser definidas novamente em builds com a mitigação; em outros ambientes o plugin não ativa os ajustes. O autolinking regenera o CMake a cada build para restaurar os caminhos físicos quando o alias deixa de ser usado. Após o prebuild, `pnpm.cmd mobile:test:android-paths` executa no Windows as regressões de caminhos, junctions e alternância de alias usando o Gradle gerado. Após alterar versões Expo, React Native ou Gradle, valide novamente o build nativo, pois a mitigação depende dos pontos de integração dessas ferramentas. Avisos de comprimento de objeto não comprovam sucesso: confira resultado, APK e instalação.
+
 Use uma worktree Orca de caminho curto, como `C:\Dev\orca-wt\muv-42-pendencias`, para limitar os caminhos gerados por pnpm e CMake. O build antigo da MUV-36 falhou em uma worktree longa durante `app:assembleDebug`; um alias `subst` isolado não é uma correção confiável porque o autolinking pode manter os caminhos absolutos originais. Crie a worktree no caminho curto antes da instalação das dependências. Não copie `node_modules` nem os diretórios `.cxx` de outra worktree.
 
 Execute da raiz da worktree, depois de copiar os `.env` locais ignorados conforme o `AGENTS.md`:

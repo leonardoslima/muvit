@@ -1,0 +1,76 @@
+if (System.getenv('MUVIT_WORKSPACE_ALIAS')) {
+// Preserve o node_modules da worktree ao encurtar caminhos no Windows.
+def muvitRoot = new File(rootDir, '../../..').canonicalFile.toPath()
+def muvitAlias = System.getenv('MUVIT_WORKSPACE_ALIAS')
+if (!new File(muvitAlias).toPath().isAbsolute()) {
+  throw new GradleException('MUVIT_WORKSPACE_ALIAS deve ser um caminho absoluto para esta worktree.')
+}
+def normalizedAlias = new File(muvitAlias).toPath().normalize().toString().replace('\\', '/')
+if (!normalizedAlias.endsWith('/')) normalizedAlias += '/'
+gradle.ext.muvitWorkspaceAlias = normalizedAlias
+if (!System.getenv('MUVIT_NATIVE_ROOT')) {
+  throw new GradleException('MUVIT_NATIVE_ROOT deve apontar para um diretório de staging exclusivo.')
+}
+if (!java.nio.file.Files.isSameFile(muvitRoot, new File(muvitAlias).toPath())) {
+  throw new GradleException('MUVIT_WORKSPACE_ALIAS deve apontar para esta worktree.')
+}
+def nativeRoot = new File(System.getenv('MUVIT_NATIVE_ROOT')).toPath()
+if (!nativeRoot.isAbsolute()) {
+  throw new GradleException('MUVIT_NATIVE_ROOT deve ser absoluto e apontar para android/.cxx-muvit.')
+}
+nativeRoot = nativeRoot.normalize()
+def androidRoot = rootDir.toPath().toRealPath()
+if (nativeRoot.fileName == null || nativeRoot.parent == null || nativeRoot.fileName.toString() != '.cxx-muvit' ||
+    !java.nio.file.Files.exists(nativeRoot.parent) ||
+    !java.nio.file.Files.isSameFile(nativeRoot.parent, androidRoot)) {
+  throw new GradleException('MUVIT_NATIVE_ROOT deve apontar para android/.cxx-muvit desta worktree.')
+}
+def validateNativeRoot = {
+  if (java.nio.file.Files.exists(nativeRoot, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+    def resolved = nativeRoot.toRealPath()
+    if (!java.nio.file.Files.isDirectory(resolved) || resolved.fileName.toString() != '.cxx-muvit' ||
+        !java.nio.file.Files.isSameFile(resolved.parent, androidRoot)) {
+      throw new GradleException('MUVIT_NATIVE_ROOT não pode redirecionar para outro diretório.')
+    }
+  }
+}
+validateNativeRoot()
+gradle.ext.muvitNativeStaging = { String name ->
+  validateNativeRoot()
+  def component = java.nio.file.Paths.get(name)
+  if (component.isAbsolute() || component.nameCount != 1 || name == '.' || name == '..') {
+    throw new GradleException('MUVIT_NATIVE_ROOT recebeu nome de destino inválido.')
+  }
+  def destination = nativeRoot.resolve(component)
+  if (java.nio.file.Files.exists(destination, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+    def resolved = destination.toRealPath()
+    if (!java.nio.file.Files.isDirectory(resolved) || resolved.fileName.toString() != name ||
+        !java.nio.file.Files.isSameFile(resolved.parent, nativeRoot)) {
+      throw new GradleException("MUVIT_NATIVE_ROOT contém destino redirecionado: ${name}.")
+    }
+    def entries = java.nio.file.Files.walk(destination)
+    try {
+      entries.forEach { entry ->
+        def expected = resolved.resolve(destination.relativize(entry))
+        if (entry.toRealPath() != expected) {
+          throw new GradleException("MUVIT_NATIVE_ROOT contém caminho redirecionado em ${name}.")
+        }
+      }
+    } finally {
+      entries.close()
+    }
+  }
+  return destination.toFile()
+}
+def remapMuvitProjects
+remapMuvitProjects = { descriptor ->
+  gradle.ext.muvitNativeStaging(descriptor.name)
+  def target = descriptor.projectDir.canonicalFile.toPath()
+  if (muvitAlias && target.startsWith(muvitRoot) && target.toString().contains('node_modules')) {
+    descriptor.projectDir = new File(normalizedAlias, muvitRoot.relativize(target).toString())
+  }
+  descriptor.children.each { child -> remapMuvitProjects(child) }
+}
+rootProject.children.each { child -> remapMuvitProjects(child) }
+
+}
