@@ -14,10 +14,10 @@ class MuvitContractTests(unittest.TestCase):
     def test_skill_metadata(self):
         skill=self.read('SKILL.md')
         self.assertIn('name: muvit-autonomous', skill)
-        self.assertIn('version: "8.2.0"', skill)
+        self.assertIn('version: "9.0.0"', skill)
 
     def test_standalone_files(self):
-        for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','references/selection-and-state.md',
+        for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','agents.toml','references/selection-and-state.md',
                   'references/environment.md','references/superpowers-and-delegation.md',
                   'references/pr-and-review-loop.md','references/quality-and-qa.md',
                   'references/mobile.md','references/web-and-design.md',
@@ -37,12 +37,11 @@ class MuvitContractTests(unittest.TestCase):
         commands = re.findall(r'^ORCA orchestration worker-start .+$', protocol, re.MULTILINE)
         self.assertEqual(len(commands), 1, 'Manter um exemplo de lançamento verificável')
         args = shlex.split(commands[0])
-        profile_path = ROOT.parents[2] / '.codex/agents/muvit-planner.toml'
-        profile = tomllib.loads(profile_path.read_text(encoding='utf-8'))
+        profile = tomllib.loads((ROOT / 'agents.toml').read_text(encoding='utf-8'))['profiles']['hybrid_go']['planner']
         expected = {
-            '--agent': 'codex',
+            '--agent': profile['agent'],
             '--model': profile['model'],
-            '--effort': profile['model_reasoning_effort'],
+            '--effort': profile['effort'],
             '--worktree': '<seletor-exato-da-worktree-do-card>',
         }
         for flag, value in expected.items():
@@ -75,32 +74,70 @@ class MuvitContractTests(unittest.TestCase):
         for phrase in ['Docker','PostgreSQL','API','adb','Orca','Pen CLI']:
             self.assertIn(phrase.lower(),s.lower())
 
-    def test_fixed_project_profiles(self):
+    def test_skill_owned_profiles(self):
         project = ROOT.parents[2]
+        profiles = tomllib.loads((ROOT / 'agents.toml').read_text(encoding='utf-8'))
         coordinator_path = project / '.codex/config.toml'
         self.assertTrue(coordinator_path.is_file())
         coordinator = tomllib.loads(coordinator_path.read_text(encoding='utf-8'))
-        self.assertEqual(coordinator['model'], 'gpt-6.1-terra')
-        self.assertEqual(coordinator['model_reasoning_effort'], 'medium')
+        self.assertEqual(coordinator['model'], profiles['profiles']['hybrid_go']['coordinator']['model'])
+        self.assertEqual(coordinator['model_reasoning_effort'], profiles['profiles']['hybrid_go']['coordinator']['effort'])
         self.assertEqual(coordinator['agents']['max_concurrent_threads_per_session'], 3)
-        expected = {
-            'planner': ('gpt-6.1-sol', 'high'),
-            'implementer': ('gpt-6.1-terra', 'xhigh'),
-            'reviewer': ('gpt-6.1-sol', 'high'),
-            'quality-verifier': ('gpt-6-luna', 'medium'),
-            'visual-qa': ('gpt-6.1-terra', 'medium'),
+        hybrid = {
+            'planner': ('codex', 'gpt-6.1-sol', 'medium'),
+            'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
+            'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
+            'reviewer': ('codex', 'gpt-6.1-sol', 'medium'),
+            'quality_verifier': ('opencode', 'opencode-go/mimo-v2.6-flash', None),
+            'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
+            'escalation': ('codex', 'gpt-6.1-terra', 'high'),
+            'coordinator': ('codex', 'gpt-6-luna', 'xhigh'),
         }
-        for role, profile in expected.items():
-            with self.subTest(role=role):
-                path = project / '.codex/agents' / f'muvit-{role}.toml'
-                self.assertTrue(path.is_file(), str(path))
-                config = tomllib.loads(path.read_text(encoding='utf-8'))
-                self.assertEqual(config['name'], f'muvit-{role}')
-                self.assertEqual((config['model'], config['model_reasoning_effort']), profile)
-                self.assertTrue(config['description'].strip())
-                self.assertTrue(config['developer_instructions'].strip())
-                for key in ['sandbox_mode', 'approval_policy', 'model_provider', 'mcp_servers']:
-                    self.assertNotIn(key, config)
+        codex_only = dict(hybrid)
+        codex_only.update({
+            'planner': ('codex', 'gpt-6-luna', 'medium'),
+            'implementer': ('codex', 'gpt-6-luna', 'medium'),
+            'implementer_aux': ('codex', 'gpt-6-luna', 'medium'),
+            'quality_verifier': ('codex', 'gpt-6-luna', 'medium'),
+            'visual_qa': ('codex', 'gpt-6.1-terra', 'medium'),
+            'escalation': ('codex', 'gpt-6.1-sol', 'high'),
+        })
+        for mode, expected in [('hybrid_go', hybrid), ('codex_only', codex_only)]:
+            for role, route in expected.items():
+                with self.subTest(mode=mode, role=role):
+                    config = profiles['profiles'][mode][role]
+                    self.assertEqual((config['agent'], config['model'], config.get('effort')), route)
+                    self.assertTrue(profiles['roles'][role]['instructions'].strip())
+        for role in ('planner', 'implementer'):
+            config = profiles['profiles']['codex_only'][f'{role}_complex']
+            self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.1-sol', 'medium'))
+        self.assertFalse(list((project / '.codex/agents').glob('muvit-*.toml')))
+
+    def test_hybrid_profiles_and_delegation_contract(self):
+        protocol = self.read('references/superpowers-and-delegation.md')
+        profiles = self.read('agents.toml')
+        self.assertIn('opencode-go/deepseek-v4.1-flash', profiles)
+        self.assertIn('opencode-go/mimo-v2.6-flash', profiles)
+        self.assertNotIn('opencode/deepseek-v4.1-flash-free', profiles)
+        self.assertIn('agents.toml', protocol)
+        self.assertIn('--from <handle-do-pai>', protocol)
+        self.assertIn('quatro agentes', protocol.lower())
+        self.assertIn('dois níveis', protocol.lower())
+        self.assertIn('revisor', protocol.lower())
+        self.assertIn('verificador', protocol.lower())
+        self.assertIn('não iniciam outros agentes', protocol.lower())
+
+    def test_codex_only_mode_is_selected_before_claim(self):
+        skill = self.read('SKILL.md')
+        protocol = self.read('references/superpowers-and-delegation.md')
+        self.assertIn('codex_only', skill)
+        self.assertIn('hybrid_go', skill)
+        self.assertIn('antes do claim', protocol.lower())
+        self.assertIn('sem OpenCode Go', protocol)
+        self.assertIn('não troque', protocol.lower())
+        self.assertIn('planner_complex', protocol)
+        self.assertIn('implementer_complex', protocol)
+        self.assertIn('antes do claim', protocol.lower())
 
     def test_not_updater(self):
         self.assertFalse((ROOT/'apply.py').exists())

@@ -1,0 +1,128 @@
+# Fonte dos papéis da muvit-autonomous. O Orca não carrega este arquivo automaticamente.
+# O coordenador aplica o perfil escolhido no lançamento e inclui as instruções no briefing.
+
+[roles.coordinator]
+instructions = """
+Coordene uma rodada de um card, preserve claim e worktree e controle até quatro agentes vivos incluindo descendentes. Somente você altera Linear e executa commit, push e PR após os gates. Não faça merge. Aplique o perfil escolhido, registre recibos Orca e confira evidências reais antes de concluir.
+"""
+
+[roles.planner]
+instructions = """
+Planeje somente o card delegado com aceite, AGENTS.md, documentos e padrões reais. Aplique Superpowers e entregue tarefas delimitadas, contratos, riscos e comandos de validação. Pode convocar somente o verificador para um check necessário ao plano, com vaga concedida; acompanhe o resultado antes de concluir. Preserve alterações alheias. Não implemente produto, altere Linear, faça commit, push, PR ou merge.
+"""
+
+[roles.implementer]
+instructions = """
+Implemente somente o plano e os caminhos atribuídos, seguindo AGENTS.md e Superpowers. Execute checks específicos e corrija findings, preservando alterações alheias. Pode convocar implementador auxiliar com arquivos disjuntos, verificador para diagnóstico, QA visual para interface pronta ou planejador quando o plano for materialmente invalidado; use somente vagas concedidas e acompanhe cada auxiliar. Não altere Linear, faça commit, push, PR ou merge. Retorne arquivos, comandos, resultados e pendências.
+"""
+
+[roles.implementer_aux]
+instructions = """
+Implemente apenas a subtarefa e os arquivos atribuídos, sem sobrepor outro implementador. Siga AGENTS.md e Superpowers pertinentes, preserve alterações alheias e reporte diff, checks e pendências ao implementador principal. Não inicie outros agentes, altere Linear, faça commit, push, PR ou merge.
+"""
+
+[roles.quality_verifier]
+instructions = """
+Execute somente o check ou diagnóstico solicitado, a partir da raiz e com ambiente correto. Registre comandos, exit codes, logs e limites em artifacts/<issue-ou-escopo>/<execucao>/ conforme docs/operations/qa-artifacts.md. Não edite código ou testes, reduza checks, inicie outros agentes, altere Linear, faça commit, push, PR ou merge. Devolva evidências ao chamador.
+"""
+
+[roles.visual_qa]
+instructions = """
+Teste fluxos reais da interface somente após comprovar acesso a capturas e ferramentas necessárias. Use adb e emulador dedicado para mobile ou navegador Orca para web conforme o escopo, sem inventar evidências. Salve capturas e relatório em artifacts/<issue-ou-escopo>/<execucao>/. Pode convocar somente o verificador para investigar logs ou defeito observado, com vaga concedida; acompanhe o resultado. Não edite código ou testes, altere Linear, faça commit, push, PR ou merge.
+"""
+
+[roles.reviewer]
+instructions = """
+Revise somente o diff e a HEAD integrada contra aceite, plano e AGENTS.md. Trabalhe em leitura e reporte achados acionáveis com gravidade, arquivo, linha, cenário e evidência. Pode convocar somente o verificador para reproduzir um defeito, com vaga concedida; acompanhe o resultado. Não convoque implementador, edite código, altere Linear, faça commit, push, PR, merge ou aprovação humana formal. Revisão não substitui testes nem QA visual.
+"""
+
+[roles.escalation]
+instructions = """
+Investigue apenas o bloqueio técnico concreto escalado pelo coordenador, com evidências das tentativas anteriores. Recomende solução delimitada e verificações; não assuma ownership da rodada nem substitua revisão independente. Preserve alterações alheias. Não altere Linear, faça commit, push, PR ou merge.
+"""
+
+[profiles.hybrid_go.coordinator]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "xhigh"
+
+[profiles.hybrid_go.planner]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "medium"
+
+[profiles.hybrid_go.implementer]
+agent = "opencode"
+model = "opencode-go/deepseek-v4.1-flash"
+
+[profiles.hybrid_go.implementer_aux]
+agent = "opencode"
+model = "opencode-go/deepseek-v4.1-flash"
+
+[profiles.hybrid_go.quality_verifier]
+agent = "opencode"
+model = "opencode-go/mimo-v2.6-flash"
+
+[profiles.hybrid_go.visual_qa]
+agent = "opencode"
+model = "opencode-go/deepseek-v4.1-flash"
+
+[profiles.hybrid_go.reviewer]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "medium"
+
+[profiles.hybrid_go.escalation]
+agent = "codex"
+model = "gpt-6.1-terra"
+effort = "high"
+
+[profiles.codex_only.coordinator]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "xhigh"
+
+[profiles.codex_only.planner]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "medium"
+
+[profiles.codex_only.planner_complex]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "medium"
+
+[profiles.codex_only.implementer]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "medium"
+
+[profiles.codex_only.implementer_complex]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "medium"
+
+[profiles.codex_only.implementer_aux]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "medium"
+
+[profiles.codex_only.quality_verifier]
+agent = "codex"
+model = "gpt-6-luna"
+effort = "medium"
+
+[profiles.codex_only.visual_qa]
+agent = "codex"
+model = "gpt-6.1-terra"
+effort = "medium"
+
+[profiles.codex_only.reviewer]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "medium"
+
+[profiles.codex_only.escalation]
+agent = "codex"
+model = "gpt-6.1-sol"
+effort = "high"

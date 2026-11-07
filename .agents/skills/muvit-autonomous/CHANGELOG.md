@@ -1,5 +1,17 @@
 # Changelog
 
+## 9.0.0 — 2026-11-07
+
+- Coordenador dos dois perfis ajustado para Luna xhigh; max fica fora do padrão até haver ganho medido que compense tempo e cota.
+- Reorganizado `codex_only` para Plus: rota `bounded` usa Luna medium no planejamento e na implementação; rota `complex` usa Sol medium nessas etapas. Sol medium permanece na revisão independente; Terra medium no QA visual; escalação técnica comprovada usa Sol high. A rota é registrada antes do claim, sem troca automática por cota.
+- Dois perfis explícitos no mesmo `agents.toml`: `hybrid_go` e `codex_only`; colaboradores sem Go podem usar Codex Plus para todos os papéis sem perder os gates.
+- Seleção e registro do perfil antes do claim; falha ou cota durante a rodada não muda o perfil automaticamente.
+- Perfis e instruções dos papéis agora vivem em `agents.toml` dentro da skill; removidos os TOMLs de `.codex/agents/`. `.codex/config.toml` permanece como espelho do perfil do coordenador para o host.
+- Roteamento híbrido: Codex Luna xhigh coordena, Sol medium planeja e revisa; OpenCode Go DeepSeek implementa e faz QA visual quando comprovado, MiMo verifica sob demanda.
+- Workers podem convocar auxiliares conforme matriz de papéis, com dois níveis, ownership delimitado e teto de quatro agentes vivos incluindo o coordenador.
+- IDs Go são aplicados no lançamento Orca, sem `--effort`; não há fallback automático para outro perfil.
+- Testes estáticos não comprovam lançamento, subdelegação ou QA visual reais; a primeira rodada deve verificar essas capacidades antes de depender delas.
+
 ## 8.2.0 — 2026-11-04
 
 - Especialistas passam a usar workers supervisionados do Orca, com chat nativo preferencial e CLI como fallback autorizado, preservando modelos e esforços.
