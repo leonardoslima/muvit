@@ -1,0 +1,56 @@
+project(':app').tasks.matching { it.name == 'generateAutolinkingNewArchitectureFiles' }.configureEach { task ->
+  task.outputs.upToDateWhen { false }
+  if (System.getenv('MUVIT_WORKSPACE_ALIAS')) {
+    task.doLast {
+      def generated = new File(project(':app').buildDir, 'generated/autolinking/src/main/jni/Android-autolinking.cmake')
+      if (generated.exists()) {
+        def workspace = new File(rootProject.projectDir, '../../..').canonicalPath.replace('\\', '/')
+        generated.text = generated.getText('UTF-8').replace(workspace + '/', gradle.ext.muvitWorkspaceAlias)
+      }
+    }
+  }
+}
+project(':app').tasks.matching { it.name.startsWith('configureCMake') }.configureEach { task ->
+  task.dependsOn(':app:generateAutolinkingNewArchitectureFiles')
+}
+
+if (System.getenv('MUVIT_WORKSPACE_ALIAS')) {
+// Encurte caminhos nativos sem mover o virtual store do pnpm.
+def workspaceRoot = new File(rootProject.projectDir, '../../..').canonicalFile.toPath()
+def muvitAlias = gradle.ext.muvitWorkspaceAlias
+def resolveAliasedPackage = { packageName ->
+  def command = ['node', '--print', "require.resolve('${packageName}/package.json')"]
+  def physical = new File(command.execute(null, rootProject.projectDir).text.trim()).parentFile.toPath()
+  return new File(muvitAlias, workspaceRoot.relativize(physical).toString())
+}
+project(':app').ext.REACT_NATIVE_NODE_MODULES_DIR = resolveAliasedPackage('react-native')
+project(':app').ext.REACT_NATIVE_WORKLETS_NODE_MODULES_DIR = resolveAliasedPackage('react-native-worklets')
+subprojects { project ->
+  if (project.projectDir.absolutePath.contains('node_modules')) {
+    project.layout.buildDirectory.set(new File(project.projectDir, 'build'))
+    project.plugins.withId('com.android.library') {
+      project.android.externalNativeBuild.cmake.buildStagingDirectory = gradle.ext.muvitNativeStaging(project.name)
+      project.android.defaultConfig.externalNativeBuild.cmake.arguments '-DCMAKE_OBJECT_PATH_MAX=230'
+    }
+    if (project.name == 'expo-modules-core') {
+      project.afterEvaluate {
+        project.android.defaultConfig.externalNativeBuild.cmake.arguments "-DREACT_NATIVE_DIR=${resolveAliasedPackage('react-native').path.replace('\\', '/')}"
+      }
+    }
+    project.tasks.matching { it.name == 'generateCodegenSchemaFromJavaScript' || it.name == 'generateCodegenArtifactsFromSchema' }.configureEach { task ->
+      task.doFirst {
+        ['codegenDir', 'reactNativeDir'].each { property ->
+          if (task.hasProperty(property)) {
+            def existing = task."${property}".get().asFile.toPath()
+            def workspace = new File(rootProject.projectDir, '../../..').canonicalFile.toPath()
+            if (existing.startsWith(workspace)) {
+              task."${property}".set(new File(muvitAlias, workspace.relativize(existing).toString()))
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+}

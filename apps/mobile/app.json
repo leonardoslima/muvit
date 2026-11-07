@@ -38,7 +38,8 @@
           "cameraPermission": "Permita que o Muvit use a câmera para tirar fotos da avaliação.",
           "photosPermission": "Permita que o Muvit acesse suas fotos para adicionar imagens à avaliação."
         }
-      ]
+      ],
+      "./plugins/with-windows-long-paths"
     ]
   }
 }
