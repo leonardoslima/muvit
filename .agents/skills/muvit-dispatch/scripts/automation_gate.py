@@ -50,7 +50,7 @@ def evaluate(snapshot: object, repo_id: str, started: int,
         agents = worktree.get('agents')
         if not isinstance(agents, list) or not all(isinstance(agent, dict) for agent in agents):
             return decision
-        live_agents += len(agents)
+        live_agents += sum(agent.get('state') not in {'done', 'exited'} for agent in agents)
         if worktree.get('unverifiableTerminalCount', 0):
             return decision
     if not matched_repo or not matched_path:

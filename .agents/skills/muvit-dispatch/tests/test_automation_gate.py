@@ -34,6 +34,15 @@ class AutomationGateTests(unittest.TestCase):
         self.assertTrue(decision['allowed'])
         self.assertEqual(decision['live_agents'], 1)
 
+    def test_completed_chats_do_not_consume_live_agent_slots(self):
+        snapshot = self.snapshot((3,))
+        snapshot['result']['worktrees'][0]['agents'] = [
+            {'state': 'working'}, {'state': 'done'}, {'state': 'done'},
+        ]
+        decision = gate.evaluate(snapshot, 'repo-muvit', 0)
+        self.assertTrue(decision['allowed'])
+        self.assertEqual(decision['live_agents'], 1)
+
     def test_denies_second_launch_without_worker_slot(self):
         decision = gate.evaluate(self.snapshot((1, 2)), 'repo-muvit', 1)
         self.assertFalse(decision['allowed'])
