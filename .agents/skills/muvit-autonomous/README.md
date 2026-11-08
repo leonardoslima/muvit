@@ -1,12 +1,12 @@
-# muvit-autonomous — v9 local
+# muvit-autonomous — v9.1 local
 
-Fluxo v9 do Muvit com workers supervisionados do Orca: chat nativo preferencial e CLI como fallback autorizado, conforme a configuração do aplicativo. `agents.toml` nesta skill define dois perfis: `hybrid_go` combina Codex Plus e OpenCode Go; `codex_only` usa só Codex Plus e escolhe uma rota `bounded` (Luna) ou `complex` (Sol) pelo escopo do card. Perfil e rota são registrados antes do claim e não mudam por cota durante a rodada. O coordenador aplica agente, modelo, esforço quando aceito e instruções explicitamente no lançamento Orca. As permissões de delegação estão em `references/superpowers-and-delegation.md`.
+Fluxo v9 do Muvit com workers supervisionados do Orca: chat nativo preferencial e CLI como fallback autorizado, conforme a configuração do aplicativo. `agents.toml` nesta skill define dois perfis: `hybrid_go` combina Codex Plus e OpenCode Go; `codex_only` usa só Codex Plus e escolhe uma rota `bounded` (Luna) ou `complex` (Sol) pelo escopo do card. Em rodada manual, perfil e rota são registrados antes do claim; após handoff de `$muvit-dispatch`, o coordenador os registra antes de alterar o Linear ou lançar workers. Não mudam por cota durante a rodada. O coordenador aplica agente, modelo, esforço quando aceito e instruções explicitamente no lançamento Orca. As permissões de delegação estão em `references/superpowers-and-delegation.md`.
 
 ## Dependências de execução
 
 - Orca operacional, com orquestração, coordenador apto a receber eventos e Codex Plus autenticado. OpenCode Go é exigido somente por `hybrid_go`; `codex_only` atende colaboradores sem Go. Carregar os guias versionados `orchestration` e `orca-cli` pelo executável resolvido para a sessão.
 - Superpowers 7.0.1 incluído em `.agents/skills/superpowers/`, com origem e versão em `UPSTREAM.md`; acesso real ao GitHub, Linear e ferramentas necessárias ao card.
-- Ao instalar em outro checkout, levar as pastas `muvit-autonomous/` e `superpowers/` de `.agents/skills/`. `.codex/config.toml` espelha somente o perfil do coordenador para o host; os perfis dos workers permanecem dentro da skill. Superpowers não exige instalação global; Orca precisa estar disponível, e OpenCode somente para `hybrid_go`.
+- Ao instalar em outro checkout para a automação, levar `muvit-dispatch/`, `muvit-autonomous/` e `superpowers/` de `.agents/skills/`; para uma rodada manual, apenas as duas últimas são necessárias. `.codex/config.toml` espelha somente o perfil do coordenador para o host; os perfis dos workers permanecem dentro da skill. Superpowers não exige instalação global; Orca precisa estar disponível, e OpenCode somente para `hybrid_go`.
 
 ## Executar e validar
 
@@ -22,7 +22,9 @@ O QA visual testa os fluxos da aplicação em execução quando houver interface
 
 A reserva de cards usa `python -B -X utf8 .agents/skills/muvit-autonomous/scripts/local_lock.py` e fica no diretório Git comum, compartilhado pelas worktrees do mesmo clone. Veja aquisição, liberação e retomada em `references/selection-and-state.md`. Nenhuma branch remota de reserva é criada; o primeiro push da branch de entrega ocorre na preparação da PR.
 
-Cada execução seleciona somente cards `agent_ready` atribuídos ao usuário autenticado no Linear. Cada colaborador precisa usar sua própria conexão; cards sem responsável ou de outro usuário não entram na fila. O precheck Orca em `scripts/precheck.ps1` consulta `--assignee me`, e a skill repete o filtro inclusive em execuções manuais e após adquirir a trava.
+O agente inicial da automação usa a skill irmã `$muvit-dispatch`. O coordenador desta skill recebe um card e uma worktree já reservados, confere ownership e prossegue sem duplicar a trava ou o checkout. Execuções manuais desta skill continuam podendo selecionar um card conforme `references/selection-and-state.md`.
+
+Cada rodada usa somente um card `agent_ready` atribuído ao usuário autenticado no Linear. Cada colaborador precisa usar sua própria conexão; cards sem responsável ou de outro usuário não entram na fila. O coordenador repete o filtro inclusive em execuções manuais e após adquirir ou receber a trava.
 
 ## Origem
 

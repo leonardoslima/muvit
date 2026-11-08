@@ -14,7 +14,7 @@ class MuvitContractTests(unittest.TestCase):
     def test_skill_metadata(self):
         skill=self.read('SKILL.md')
         self.assertIn('name: muvit-autonomous', skill)
-        self.assertIn('version: "9.0.0"', skill)
+        self.assertIn('version: "9.1.0"', skill)
 
     def test_standalone_files(self):
         for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','agents.toml','references/selection-and-state.md',

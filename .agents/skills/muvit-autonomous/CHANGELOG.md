@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0 — 2026-11-08
+
+- O despachante da automação passou para a skill separada `muvit-dispatch`, com precheck, gate, seleção de até dois cards novos e relatório da execução.
+- `muvit-autonomous` concentra a rodada de um card, inclusive validação do handoff, estados e labels do Linear, workers, QA, PR e retomada pelo coordenador.
+- O script de trava local permanece aqui como contrato compartilhado pelas duas skills; a automação foi apontada para o novo precheck e para `$muvit-dispatch`.
+
 ## 9.0.0 — 2026-11-07
 
 - Coordenador dos dois perfis ajustado para Luna xhigh; max fica fora do padrão até haver ganho medido que compense tempo e cota.

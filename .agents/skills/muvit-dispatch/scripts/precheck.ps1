@@ -15,7 +15,8 @@ function Get-CandidateCount {
         $_.team.key -eq 'MUV' -and
         $_.state.type -in @('triage', 'backlog', 'unstarted') -and
         -not [string]::IsNullOrWhiteSpace($_.assignee.id) -and
-        @($_.labels | Where-Object { $_.name -eq 'agent_ready' }).Count -gt 0
+        @($_.labels | Where-Object { $_.name -eq 'agent_ready' }).Count -gt 0 -and
+        @($_.labels | Where-Object { $_.name -in @('agent_in_progress', 'agent_blocked', 'agent_review') }).Count -eq 0
     }).Count
 }
 

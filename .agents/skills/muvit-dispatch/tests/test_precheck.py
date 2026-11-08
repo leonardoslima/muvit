@@ -54,6 +54,13 @@ exit """ + str(exit_code), encoding='utf-8-sig')
         result, _ = self.run_precheck([self.issue])
         self.assertEqual(result.returncode, 1, result.stderr)
 
+    def test_card_with_conflicting_automation_label_does_not_start_run(self):
+        for label in ('agent_in_progress', 'agent_blocked', 'agent_review'):
+            with self.subTest(label=label):
+                self.issue['labels'] = [{'name': 'agent_ready'}, {'name': label}]
+                result, _ = self.run_precheck([self.issue])
+                self.assertEqual(result.returncode, 1, result.stderr)
+
     def test_partial_response_blocks_run(self):
         result, _ = self.run_precheck([self.issue], partial=True)
         self.assertEqual(result.returncode, 2, result.stderr)
