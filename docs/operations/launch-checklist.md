@@ -4,7 +4,13 @@ Cada item exige evidência no ambiente correspondente antes de convidar usuário
 
 ## Decisões e infraestrutura
 
-- [ ] Alternativa A/B, região, tratamento internacional dos dados, teto de custo e titularidade aprovados pelo proprietário.
+- [ ] Escolha Web/API/PostgreSQL na mesma Hostinger KVM 2 registrada; Brasil confirmado disponível na conta antes do setup. Se indisponível, interromper e solicitar nova decisão sem escolher alternativa.
+- [ ] Topologia física de staging/produção decidida separadamente, sem presumir ambos na VPS inicial; tratamento dos dados, titularidade e isolamento aprovados.
+- [ ] Owner e plantão do host compartilhado definidos: patches/SO, acesso individual por chaves, firewall, TLS/renovação, isolamento de permissões e serviços supervisionados.
+- [ ] Recursos agregados, logs/disco e capacidade sob carga medidos; impacto conjunto de falha/reboot/manutenção e recuperação acordado, sem presumir HA ou suficiência pelo anúncio.
+- [ ] Carga de CPU medida na topologia compartilhada e preparação para saturação/throttling comprovada; créditos/burst tratados conforme limite do provedor, sem presumir monitor de saldo se o painel não o expuser.
+- [ ] Ausência de cifragem em repouso de disco/backups/snapshots avaliada e controles para dados/secrets aprovados antes de dados sensíveis; cópias externas cifradas e chaves recuperáveis.
+- [ ] Contratação autorizada separadamente com pagamento antecipado, renovação e adicionais pendentes no fluxo de caixa; mensalização da oferta não tratada como cobrança mensal.
 - [ ] Owners nominais e substitutos para billing, IAM, DNS/TLS, banco/mídia, plantão e lojas registrados em controle restrito; MFA e recuperação de contas conferidos.
 - [ ] Domínio real e redirects canônicos definidos; DNS externo e TLS válido/renovação verificados para Web e API.
 - [ ] API persistente, sem sleep, roteada para API_PORT e API_HOST corretos; timezone declarado e cron coordenado/idempotente inclusive durante rolling deploy.
@@ -13,7 +19,7 @@ Cada item exige evidência no ambiente correspondente antes de convidar usuário
 ## Variáveis e autenticação
 
 - [ ] Matriz nominal de [variáveis e secrets](public-deployment.md#variáveis-e-secrets) conferida no destino, com menor privilégio, rotação e revogação; sem copiar env local.
-- [ ] DATABASE_URL aponta para o banco correto; segredo Better Auth exclusivo por ambiente e somente no servidor.
+- [ ] DATABASE_URL aponta para o PostgreSQL local/privado correto, sem endpoint público; segredo Better Auth exclusivo por ambiente e somente no servidor.
 - [ ] URLs públicas de Web/mobile corretas no build e sem credenciais; origins/callbacks exatos, sem wildcard.
 - [ ] Gate de cookie API/Next/Server Actions comprovado: Set-Cookie, Secure/SameSite, encaminhamento Cookie, login, renovação, logout e isolamento entre ambientes.
 - [ ] [Confirmação de email](email-verification.md) e [recuperação de senha](password-recovery.md) validadas com Better Auth em Web/mobile, incluindo bloqueio da conta pendente.
@@ -28,7 +34,8 @@ Cada item exige evidência no ambiente correspondente antes de convidar usuário
 
 ## Banco, backup e deploy
 
-- [ ] [Runbook de backups](backups.md) revisado pelo plantão; agenda diária ativa e último sucesso dentro de 24h, com ponto manual inicial.
+- [ ] [Runbook de backups](backups.md) revisado pelo plantão; política de imagem do host e limites de semanal padrão, diário pago, retenção e snapshot temporário conhecidos. Diário Hostinger somente se aprovado e contratado.
+- [ ] Política DB independente e frequência aprovadas para o RPO; ponto lógico recuperável recente verificado, sem confundir backup semanal da VPS com RPO de 24h.
 - [ ] Export externo cifrado e recuperação de mídia disponíveis; RPO/RTO e retenção aprovados e medidos em ensaio isolado conjunto DB/objetos.
 - [ ] CI verde, artefatos por SHA/lockfile e build das dependências workspace comprovados; migrator com cwd e secrets de destino ensaiados.
 - [ ] Migration única compatível concluída antes da promoção API → Web; falhas bloqueiam promoção; clientes mobile antigos suportados.
@@ -50,6 +57,7 @@ Cada item exige evidência no ambiente correspondente antes de convidar usuário
 - [ ] Logs com retenção e redação de PII/tokens/cookies/links; alertas de 5xx/latência, DB, email, cron, backup e custo chegam ao plantão designado.
 - [ ] Canal de suporte e responsável pela semana de lançamento definidos; Analytics não substitui monitoramento de incidentes.
 - [ ] Janela, usuários iniciais, orçamento completo e reação a estouro de custo acordados.
+- [ ] Nova HEAD integrada verificada e revisada pelo coordenador após o delta Hostinger; revisão anterior da PR #40 não reutilizada como aprovação da mudança.
 - [ ] Go/no-go registrado com evidências e decisões humanas; qualquer gate crítico pendente impede convite a usuários reais.
 
 Registrar execuções futuras conforme [artefatos de QA](qa-artifacts.md), sem dados pessoais ou credenciais. Nenhum item foi executado ou aprovado por esta atualização documental.

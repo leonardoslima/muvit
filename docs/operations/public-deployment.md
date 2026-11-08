@@ -1,6 +1,6 @@
 # Implantação pública do Muvit
 
-Proposta documental de 08/11/2026, reconciliada com a HEAD `2500d373fcebbf7ca36f94bc987ddeb33ecd2bbf`. A alternativa A é recomendada condicionalmente por continuidade dos runbooks; nenhuma conta, contratação, região, domínio ou decisão humana está confirmada por este documento. A publicação depende dos gates abaixo e do [checklist de lançamento](launch-checklist.md).
+Atualização documental de 08/11/2026, elaborada após a HEAD `24a04cbe2762024a046566f02a2b9613b8289008`; inventário original baseado em `2500d373fcebbf7ca36f94bc987ddeb33ecd2bbf`. O usuário decidiu hospedar inicialmente Web, API e PostgreSQL juntos na mesma VPS Hostinger KVM 2. Brasil é a região preferida, somente se disponível na conta durante o setup; se indisponível, interromper e solicitar nova decisão, sem escolher outra região. A topologia física de staging/produção permanece sem escolha. Nenhuma compra, contratação, configuração ou implantação foi autorizada neste card. A publicação depende dos gates abaixo e do [checklist de lançamento](launch-checklist.md).
 
 ## Inventário comprovado
 
@@ -15,32 +15,32 @@ Proposta documental de 08/11/2026, reconciliada com a HEAD `2500d373fcebbf7ca36f
 | Expo Push e cron | `apps/api/src/lib/push.ts`, `apps/api/src/jobs/notifications.ts` | Adaptador presente; registro de tokens/cliente e credenciais APNs/FCM operantes não comprovados; cron diário dentro da API |
 | Billing local | `apps/api/src/modules/billing/use-cases/update-subscription.ts` | Atualiza plano no banco; não comprova gateway financeiro nem exige contratar um |
 
-Fluxo proposto: navegador → Web Next e API HTTPS; mobile → API HTTPS; API → PostgreSQL privado, Resend e R2; clientes → PUT assinado R2 e leitura conforme política de mídia aprovada. Analytics permanece separado da operação de incidentes. Não há necessidade demonstrada de Redis, Kubernetes ou fila nesta proposta.
+Fluxo definido para o desenho inicial: navegador/mobile → endpoints HTTPS → Web Next e API Fastify na mesma VPS Hostinger KVM 2; API → PostgreSQL na interface local/rede privada dessa VPS, Resend e R2; clientes → PUT assinado R2 e leitura conforme política aprovada. PostgreSQL não terá endpoint público. Analytics permanece separado da operação de incidentes; sua presença no pacote não obriga hospedagem Vercel nem comprova funcionamento fora dela. Não há necessidade demonstrada de Redis, Kubernetes ou fila nesta proposta.
 
-## Alternativas e região
+## Arquitetura escolhida, alternativas superadas e região
 
-Premissas comuns: staging e produção isolados, mesma carga, retenção, política de acesso, email, mídia, mobile e suporte operacional. Comparar custo total, incluindo operação humana.
+Web, API e PostgreSQL compartilham o mesmo host KVM 2 por decisão do usuário. As comparações anteriores de plataformas gerenciadas foram superadas por essa decisão e não são parcelas do orçamento vigente. API em funções efêmeras continua incompatível com o processo persistente e cron observados, exigindo redesign fora deste card.
 
-| Alternativa | Custo / operação | Stack / segurança | Disponibilidade / portabilidade | Parecer |
-| --- | --- | --- | --- | --- |
-| A: Web Vercel Pro; API e DB Railway Pro; R2, Resend, EAS | Dois provedores de compute; mínimos e consumo em Custos; Next gerenciado reduz trabalho da Web | Mantém Fastify persistente, DB privado junto da API; sessão cross-host ainda precisa gate | Uma réplica inicial, sem HA comprovada; Node e PostgreSQL portáveis; signer acoplado ao endpoint R2 | Recomendada condicionalmente, não aprovada |
-| B: Web, API e DB Railway Pro; mesmos R2, Resend, EAS | Retira plano Vercel; acrescenta processo Next e seu consumo, build e operação | `next start` existe; mesmos gates de sessão, mídia, isolamento e secrets de A | Concentra falha no Railway; mesma portabilidade Node/PostgreSQL | Válida; economia só após reestimar Next sob carga equivalente |
-| C: API inteira em funções Vercel | Exigiria redesign e orçamento próprio | Ciclo efêmero não corresponde ao processo persistente e cron observado | Não equivalente ao runtime atual | Rejeitada para implantação inicial |
+A [oferta Hostinger](https://www.hostinger.com/vps-hosting?lang=en), consultada no plano em 08/11/2026, anuncia 2 vCPU, 8 GB RAM, 100 GB NVMe e 8 TB/mês para KVM 2. São limites anunciados, não capacidade medida. SO, proxy HTTPS, Web, API, PostgreSQL, logs e eventual build competem por CPU/RAM/disco/rede. Avaliar build fora do runtime para reduzir competição; não há configuração de CI/host pronta. Medir carga e margem de recursos antes de publicar: o anúncio não prova usuários suportados, throughput, latência, suficiência ou HA.
 
-Vercel Hobby destina-se a uso pessoal não comercial ([política oficial](https://vercel.com/docs/plans/hobby), consulta 08/11/2026). Proposta: API e DB juntos em US East/Virginia, região listada pelo [Railway](https://docs.railway.com/deployments/regions), consulta 08/11/2026; não há latência brasileira medida ou residência no Brasil comprovada. Escolher compute Web próximo da API conforme oferta do plano. CDN não define residência dos dados. Localização de DB, objetos, backups e provedores de email requer revisão humana de tratamento internacional dos dados. Targets comerciais não são SLA próprio nem disponibilidade observada.
+Segundo a [documentação oficial de créditos de CPU da Hostinger](https://www.hostinger.com/support/how-cpu-credits-work-on-hostinger-vps/), consultada em 08/11/2026, créditos permitem burst até 100%; a reserva cheia suporta aproximadamente três horas a 100% dos vCPUs alocados. Quando o saldo se esgota, KVM 2 fica temporariamente limitada a 30% até recompor créditos. São estimativas e limites do provedor, não medições do Muvit; medir carga e preparar a operação para saturação/throttling na topologia compartilhada. Não presumir monitoramento de saldo sem confirmar que o painel expõe esse dado.
+
+Falha, reboot, manutenção, disco cheio, saturação ou comprometimento do host podem afetar Web, API e banco simultaneamente. Processos separados não criam domínio de falha independente. Planejar janela, recuperação e monitoramento conjunto, sem pressupor alta disponibilidade. Runtime Node e export PostgreSQL continuam portáveis, mas a imagem da VPS não equivale a export lógico portátil.
+
+Brasil consta como opção VPS na [localização oficial Hostinger](https://www.hostinger.com/support/1583267-where-are-hostinger-servers-located/), consultada no plano em 08/11/2026. Confirmar disponibilidade efetiva na conta durante o setup antes de contratar/configurar; se ausente, parar e pedir nova decisão. Região fica fixa após configuração inicial; troca exige reconstrução/migração planejada. Latência brasileira não foi medida. Confirmar residência efetiva de DB, objetos, backups e email; selecionar Brasil para o host não comprova residência de todas as integrações nem elimina revisão de tratamento internacional dos dados.
 
 ## Ambientes e domínio/TLS
 
 | Ambiente | Recursos e acesso propostos | Entrega |
 | --- | --- | --- |
 | Desenvolvimento | Recursos locais e dados sintéticos; sem credenciais de produção | Desenvolvimento interno |
-| Staging | Projeto/serviços, DB, bucket, chaves, remetente, URLs, backups e permissões próprios; acesso restrito e destinatários autorizados | SHA candidato; nenhum dado real copiado da produção |
+| Staging | Serviços, DB, bucket, chaves, remetente, URLs, backups e permissões logicamente isolados; acesso restrito e destinatários autorizados | SHA candidato; nenhum dado real copiado da produção |
 | Produção | Recursos e identidade próprios; acesso mínimo, auditoria e backup obrigatório | SHA aprovado após staging e gate operacional |
 | Preview Web | Sem secrets/dados de produção; sem origem wildcard autorizada na API | Recursos sintéticos ou acesso bloqueado até integração explícita |
 
-Propor Web e API em subdomínios distintos sob o mesmo domínio registrável, com nomes separados por ambiente. Domínio real, registrador e titular dependem do proprietário. Exigir TLS gerenciado válido em cada endpoint, redirecionamento canônico, renovação e alertas com responsável; alterar DNS somente em rodada autorizada. DB sem exposição pública permanente; migração deve usar acesso temporário controlado.
+Propor Web e API em subdomínios distintos sob o mesmo domínio registrável, com nomes separados por ambiente. Domínio real, registrador e titular dependem do proprietário. Definir roteamento HTTPS/reverse proxy e TLS válido em cada endpoint, redirecionamento canônico, renovação e alertas com responsável, sem presumir automação gerenciada pronta; alterar DNS somente em rodada autorizada. PostgreSQL somente na interface local/rede privada, sem endpoint público; migração deve usar acesso administrativo controlado. A topologia física de staging/produção não foi decidida: esta matriz não coloca ambos na VPS inicial nem presume outra VPS. Preservar isolamento de dados, identidades, segredos, URLs e acesso qualquer que seja a futura topologia.
 
-Gate de autenticação: o cookie atual da API não tem domínio compartilhado explicitamente configurado. Cookie host-only pode não chegar ao servidor Next/Server Actions. Mesmo domínio registrável não resolve isso sozinho. Antes de publicar, provar Set-Cookie, Secure/SameSite, CORS com origens exatas, envio de Cookie pelo navegador e encaminhamento no Next, login, renovação, logout e isolamento staging/produção. Compartilhar domínio de cookie ou introduzir proxy exige mudança de produto e revisão de segurança separadas; não presumir configuração pronta.
+Gate de autenticação: o cookie atual da API não tem domínio compartilhado explicitamente configurado. Cookie host-only pode não chegar ao servidor Next/Server Actions. Mesmo domínio registrável ou coabitação física na VPS não resolve isso sozinho. Antes de publicar, provar Set-Cookie, Secure/SameSite, CORS com origens exatas, envio de Cookie pelo navegador e encaminhamento no Next, login, renovação, logout e isolamento staging/produção. Compartilhar domínio de cookie ou introduzir proxy exige mudança de produto e revisão de segurança separadas; não presumir configuração pronta.
 
 ## Variáveis e secrets
 
@@ -58,11 +58,11 @@ Inventário nominal, sem valores; fontes: `apps/api/src/env.ts` e exemplos versi
 | Web | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_BASE_URL` | Públicas e embutidas no cliente; mudar exige novo build |
 | Mobile | `EXPO_PUBLIC_API_URL` | Pública e embutida no cliente; nunca incluir credencial |
 
-Usar secret stores dos provedores, MFA, menor privilégio e acesso individual. Proprietário designará owner e substituto por conta, DNS/TLS, billing, IAM, banco, mídia e lojas antes de contratar. Registrar recuperação de conta, acesso de emergência, revogação e rotação por ambiente em controle restrito. Rotação de Better Auth pode invalidar sessões; rotação de DB/storage/email exige janela e verificação do consumidor. Nunca inserir chaves em variáveis públicas, logs, documentos ou artefatos.
+Definir armazenamento e injeção de secrets da VPS fora do repositório, com permissões por processo, acesso individual e menor privilégio; não presumir secret store gerenciado. Nas contas externas, usar controles de secrets e MFA disponíveis. Acesso administrativo ao host deve ser individual por chaves, com recuperação e revogação documentadas. Proprietário designará owner e substituto por conta, DNS/TLS, billing, IAM, banco, mídia e lojas antes de contratar. Registrar recuperação de conta, acesso de emergência, revogação e rotação por ambiente em controle restrito. Rotação de Better Auth pode invalidar sessões; rotação de DB/storage/email exige janela e verificação do consumidor. Nunca inserir chaves em variáveis públicas, logs, documentos ou artefatos.
 
 ## CI/CD e deploy
 
-A CI atual em `.github/workflows/ci.yml` executa Biome, testes com PostgreSQL 16, build e typecheck. Não comprova deploy. Node >=24 e pnpm 10 seguem a raiz. Pipeline futuro, ainda não configurado:
+A CI atual em `.github/workflows/ci.yml` executa Biome, testes com PostgreSQL 16, build e typecheck. Não comprova deploy. Node >=24 e pnpm 10 seguem a raiz. Na VPS, definir responsáveis por SO/patches, firewall, acesso administrativo, isolamento de processos/permissões, supervisão/reinício dos serviços, roteamento HTTPS/TLS e monitoramento de host/disco. Software de proxy e supervisor ainda não foi escolhido e nenhuma configuração foi instalada. Pipeline futuro, ainda não configurado:
 
 1. Checks existentes verdes para o SHA candidato; instalar com lockfile congelado e construir artefatos imutáveis identificados por SHA.
 2. Preparar staging isolado; executar uma migration controlada, iniciar API e Web e fazer smoke de autenticação, confirmação/recuperação, aluno, treino e upload com dados sintéticos.
@@ -79,7 +79,7 @@ pnpm --filter @muvit/web start
 pnpm --filter @muvit/db migrate
 ```
 
-Os prebuilds da API constroem validators/db e os da Web constroem validators fora do Turbo; `turbo.json` ordena `^build`. Preservar dependências workspace e artefatos `dist` no runtime; não instalar só o diretório da aplicação. Web start usa porta 3000 no script atual. Na API, configurar o roteamento do provedor para `API_PORT` e binding `API_HOST=0.0.0.0`: o código não lê `PORT` genérico.
+Os prebuilds da API constroem validators/db e os da Web constroem validators fora do Turbo; `turbo.json` ordena `^build`. Preservar dependências workspace e artefatos `dist` no runtime; não instalar só o diretório da aplicação. Web start usa porta 3000 no script atual. Na API, definir o roteamento interno do proxy HTTPS para `API_PORT` e binding `API_HOST=0.0.0.0`: o código não lê `PORT` genérico.
 
 API sempre ativa, sem sleep, inicialmente uma réplica. O cron `0 9 * * *` inicia fora de test em cada processo, sem timezone explícito. Propor timezone operacional UTC e aprovar sua correspondência com o horário de negócio antes de ativar. Rolling deploy pode sobrepor processos mesmo com uma réplica: coordenação/idempotência do job é pendência técnica antes de habilitar envios dependentes de execução única. `EMAIL_NOTIFICATIONS_ENABLED=false` não desliga cron nem push e não controla confirmação/recuperação. Staging deve impedir envio a destinatários reais por restrição operacional e configuração ensaiada; a flag sozinha não basta.
 
@@ -93,7 +93,7 @@ Rollback de aplicação: voltar ao SHA imutável anterior apenas se schema e cli
 
 ## Backup e restauração
 
-O [runbook de backups](backups.md) governa agenda nativa, export externo, mídia e ensaio conjunto. RPO <=24h e RTO <=4h são propostas para aprovação humana e medição, não garantias. Backup do volume PostgreSQL não cobre objetos R2. Exigir inventário de referências e cópia recuperável de mídia no mesmo plano de consistência antes de publicar fotos.
+O [runbook de backups](backups.md) governa imagem/snapshot do host, export lógico externo e mídia com ensaio conjunto. O backup semanal padrão do host não atende por si só ao RPO proposto de 24h; backup diário Hostinger é adicional pago sem preço confirmado. Discos, backups e snapshots são anunciados sem cifragem em repouso; definir proteção para dados sensíveis antes de publicar. Export cifrado não cifra automaticamente disco ou imagem. RPO <=24h e RTO <=4h são propostas para aprovação humana e medição, não garantias. Imagem da VPS não prova consistência transacional do PostgreSQL nem cobre objetos R2; recuperação lógica do banco local ainda deve ser implementada e ensaiada. Exigir inventário de referências e cópia recuperável de mídia no mesmo plano de consistência antes de publicar fotos.
 
 ## Email, storage e observabilidade
 
@@ -101,7 +101,7 @@ Resend e remetente autorizado são obrigatórios para liberar usuários: confirm
 
 R2: CORS de PUT limitado às origens aprovadas, chave por bucket e acesso mínimo. Hoje o signer devolve URL pública para foto de avaliação: URL conhecida não prova autorização. Política de acesso, consentimento, retenção e exclusão de fotos é decisão humana bloqueante. Fotos privadas exigem solução separada de autorização de leitura e teste de isolamento antes de publicação; não liberar por simples obscuridade do endereço. CORS não protege leitura pública.
 
-Fastify já tem logger; definir retenção e redação de tokens, cookies, links e PII antes da operação. Responsável e canal de plantão devem receber alertas de 5xx/latência, saturação/conexões DB, entrega de email, cron duplicado/falho, backup vencido e custo. `/health` mede liveness; readiness do DB precisa evidência adicional. Vercel Analytics não comprova cobertura de incidentes. Não há contratação de observabilidade autorizada nem SLA próprio estabelecido.
+Fastify já tem logger; definir retenção e redação de tokens, cookies, links e PII antes da operação. Responsável e canal de plantão devem receber alertas de 5xx/latência, saturação/conexões DB, entrega de email, cron duplicado/falho, backup vencido, CPU/RAM, disco/logs e custo. `/health` mede liveness; readiness do DB precisa evidência adicional. Vercel Analytics não comprova cobertura de incidentes. Não há contratação de observabilidade autorizada nem SLA próprio estabelecido.
 
 ## Mobile Android/iOS
 
@@ -113,44 +113,45 @@ Separar build, submissão e aprovação das lojas. Em rodada autorizada, usar in
 
 ## Custos e fórmulas
 
-Referências não vinculantes em USD, sem impostos/conversão; consulta 08/11/2026. Revalidar billing, disponibilidade e limites antes de contratar. Franquia gratuita não garante conta final zero.
+Referências não vinculantes em USD, sem impostos/conversão. Dados Hostinger consultados pelo plano em 08/11/2026; preços das integrações abaixo preservam a pesquisa anterior de 08/11/2026, sem nova cotação neste delta. Revalidar billing, disponibilidade e limites antes de contratar. Franquia gratuita não garante conta final zero.
 
 | Serviço | Piso, cotas e excedentes | Fonte oficial e data |
 | --- | --- | --- |
-| Vercel Pro | USD 20/mês com uma seat de deploy e USD 20 de crédito de uso; seat extra USD 20/mês; excedentes separados | [Pro](https://vercel.com/docs/plans/pro-plan), [pricing](https://vercel.com/pricing), 08/11/2026 |
-| Railway Pro | Compromisso mínimo USD 20/mês aplicado a USD 20 de uso do workspace; cobrar consumo acima disso; não multiplicar assinatura por ambiente sem contas distintas | [Pricing](https://railway.com/pricing), [billing](https://docs.railway.com/pricing/understanding-your-bill), 08/11/2026 |
+| Hostinger KVM 2 | Oferta USD 210,96 adiantados por 24 meses, equivalente USD 8,79/mês; renovação exibida USD 14,99/mês pelo mesmo prazo. Mensalização não é cobrança mensal garantida | [Hostinger VPS](https://www.hostinger.com/vps-hosting?lang=en), 08/11/2026 |
 | R2 Standard | Franquia mensal 10 GB-mês, 1 milhão A, 10 milhões B; acima: USD 0,015/GB-mês, USD 4,50/milhão A, USD 0,36/milhão B; egress grátis | [R2](https://developers.cloudflare.com/r2/pricing/), 08/11/2026 |
 | Resend | Free: 3.000 emails/mês, 100/dia; Pro: USD 20/mês para 50.000, excedente USD 0,90/1.000 | [Resend](https://resend.com/pricing), 08/11/2026 |
 | EAS | Free USD 0: 15 builds Android e 15 iOS/mês, fila baixa; Starter USD 19/mês com USD 45 de crédito de build e 3 mil MAU; Production USD 199/mês com USD 225 de crédito e 50 mil MAU; consumo adicional separado | [Expo](https://expo.dev/pricing), 08/11/2026 |
 | Apple Developer Program | USD 99/ano, preço local pode variar | [Apple](https://developer.apple.com/help/account/membership/program-enrollment), 08/11/2026 |
 | Google Play Console | USD 25 uma vez; verificação e requisitos adicionais conforme conta | [Google](https://support.google.com/googleplay/android-developer/answer/6112435), 08/11/2026 |
-| Domínio, backup externo, tributos e operação humana | Sem cotação: domínio/titular, volume/retensão externa e serviço ainda dependem de decisão; não representar como zero | Confirmar com registrador/provedor escolhido antes da contratação |
+| Domínio, backup externo, tributos e operação humana | Sem cotação: domínio/titular, volume/retenção externa e serviço ainda dependem de decisão; não representar como zero | Confirmar com registrador/provedor escolhido antes da contratação |
 
 Fórmulas de referência, usando os preços da tabela (08/11/2026):
 
-- Railway mensal = `max(20, U)`, onde U é consumo agregado de staging e produção do workspace (compute, volumes, rede e itens faturáveis). Não somar crédito novamente.
-- Vercel mensal = `20 × seats + max(0, consumo elegível - 20) + extras não cobertos`; crédito de uso uma vez, não por seat extra.
 - R2 mensal = `max(0, GB-mês - 10) × 0,015 + max(0, A - 1.000.000)/1.000.000 × 4,50 + max(0, B - 10.000.000)/1.000.000 × 0,36`, observados arredondamentos de faturamento. Franquia compartilhada da conta, não replicada por ambiente.
 - Resend Pro = `20 + max(0, emails - 50.000)/1.000 × 0,90`, sujeito às unidades de cobrança. Free exige respeitar também 100/dia.
 - EAS Starter mensal = `USD 19 + max(USD 0, custo elegível mensal de builds em USD - USD 45 de crédito mensal) + outros excedentes mensais em USD`; EAS Production mensal = `USD 199 + max(USD 0, custo elegível mensal de builds em USD - USD 225 de crédito mensal) + outros excedentes mensais em USD`. MAU e outros serviços têm limites próprios, não crédito em dinheiro reutilizável. Essas fórmulas são dos planos pagos; no Free, preservar as cotas da tabela e não presumir cobrança para continuar após atingir um limite: respeitar bloqueios e condições do plano ([Expo](https://expo.dev/pricing), 08/11/2026).
-- A = Vercel + Railway(API/DB dos ambientes) + R2 + Resend + EAS + backup externo + domínio anual/12 + extras/tributos. B retira Vercel e recalcula Railway incluindo Next sob a mesma carga.
 
-Exemplo hipotético, não medição: U Railway = USD 40, uma seat Vercel sem excedentes, R2 Standard de 100 GB-mês com franquia disponível e operações dentro dela. Storage R2 = `(100 - 10) × 0,015 = USD 1,35`; subtotal A = USD 61,35/mês antes de email/EAS/domínio/backup/tributos. Se adicionar Resend Pro e EAS Starter sem excedentes, subtotal A = USD 100,35/mês, ainda incompleto. Para B, se U total incluindo Next fosse USD 40, subtotal correspondente seria USD 41,35 (ou USD 80,35 com os mesmos planos de email/EAS); essa hipótese precisa medição do processo Next. Fontes e data: tabela acima, 08/11/2026.
+Desembolso inicial conhecido para uma VPS Web/API/DB: USD 210,96 antecipados por 24 meses; mensalização aritmética `210,96 / 24 = 8,79`. Renovação exibida de USD 14,99/mês pelo mesmo prazo equivale aritmeticamente a `14,99 × 24 = USD 359,76` por 24 meses; esse cálculo não é nova cotação ou garantia de pagamento mensal ([Hostinger](https://www.hostinger.com/vps-hosting?lang=en), consulta do plano 08/11/2026). Revalidar checkout, moeda, tributos, prazo e condições antes de pagar; reservar caixa para renovação e contingência.
 
-Piso de planos A = USD 40/mês e B = USD 20/mês, sem consumo adicional e despesas desconhecidas; não são orçamento completo nem teto ([Vercel](https://vercel.com/docs/plans/pro-plan), [Railway](https://railway.com/pricing), 08/11/2026). Lojas novas somam USD 124 no primeiro ano, Apple recorrente e Google único, sem converter isso em assinatura mensal ([Apple](https://developer.apple.com/help/account/membership/program-enrollment), [Google](https://support.google.com/googleplay/android-developer/answer/6112435), 08/11/2026). Domínio e backup externo exigem cotação após definir nome, titular e volume; não há preço comprovado para esses itens.
+Orçamento parcial do período inicial = `USD 210,96 da VPS + integrações no período + domínio + backup/export externo + adicional diário se autorizado + operação + eventuais hosts conforme topologia de ambientes + tributos e extras`. Não há plano de banco externo selecionado nem preço adicional de DB a inventar; o banco local consome os recursos compartilhados. Não multiplicar automaticamente por dois hosts: topologia física de staging/produção e número de hosts não foram decididos. Adicional diário Hostinger, export externo, domínio/renovação, operação e hosts ainda indefinidos exigem cotação; pendência não é custo zero. O valor conhecido não é teto de operação nem assinatura cobrada mês a mês.
+
+Exemplo preservado somente de storage, não medição: R2 Standard com 100 GB-mês, franquia disponível e operações dentro dela resulta em `(100 - 10) × 0,015 = USD 1,35/mês`, sujeito às condições de conta ([R2](https://developers.cloudflare.com/r2/pricing/), pesquisa anterior de 08/11/2026). Lojas novas somam USD 124 no primeiro ano, Apple recorrente e Google único ([Apple](https://developer.apple.com/help/account/membership/program-enrollment), [Google](https://support.google.com/googleplay/android-developer/answer/6112435), pesquisa anterior de 08/11/2026). Não misturar despesas mensais, anuais, pontuais e pagamento antecipado da VPS sem definir período e fluxo de caixa.
 
 ## Decisões humanas e owners
 
 | Decisão bloqueante para publicação/contratação | Papel que deve assumir a decisão e evidência futura |
 | --- | --- |
-| A ou B, orçamento, teto mensal, alertas e resposta a estouro | Proprietário financeiro; aprovação registrada e billing por conta, com substituto |
+| Contratação KVM 2, prazo/pagamento antecipado, renovação, orçamento completo, teto e contingência | Proprietário financeiro; arquitetura Web/API/DB já decidida, compra ainda não autorizada; registrar billing, alertas e substituto |
+| Topologia física de staging/produção | Produto e operação; decidir separação e número de hosts sem perder isolamento lógico ou presumir coabitação |
 | Domínio, titularidade de contas, DNS/TLS, MFA e emergência | Proprietário do produto e administrador designado; contatos e recuperação em cofre |
-| Região, tratamento internacional e política de fotos | Responsável pelo produto/dados; política de acesso/consentimento/retenção/exclusão aprovada |
+| Disponibilidade Brasil no setup, residência dos dados e política de fotos | Responsável pelo produto/dados; Brasil é a preferência já decidida; indisponibilidade exige parar e obter nova decisão antes de setup |
+| Cifragem em repouso e proteção de dados/secrets | Responsável por segurança/dados e administrador; avaliar ausência de cifragem anunciada para disco/backups/snapshots e aprovar controles antes de dados sensíveis |
+| SO/patches, acesso por chaves, firewall, TLS e serviços supervisionados | Administrador e substituto; operação de host compartilhado, monitoramento de recursos e recuperação ensaiados |
 | RPO/RTO, retenção, export externo e restauração | Owner de banco/mídia e substituto; aprovação e ensaio medido conforme runbook |
 | Timezone, cron, rollback, plantão e monitoramento | Engenharia/operação; coordenação técnica validada, alertas e canal atendidos |
 | Android/iOS, signing, contas e ordem de lançamento | Titular das lojas e responsável mobile; identificadores e credenciais recuperáveis |
 
-Nenhum nome pessoal ou aprovação foi presumido. Cookies entre API/Next, privacidade de mídia, coordenação de cron e launcher de migrations precisam solução técnica em escopo separado; responsáveis nominais devem ser designados antes de publicar.
+A escolha Web/API/PostgreSQL na KVM 2 e a preferência Brasil são decisões do usuário; nenhum nome pessoal, aprovação de contratação ou topologia de ambientes foi presumido. Cookies entre API/Next, privacidade de mídia, coordenação de cron e launcher de migrations precisam solução técnica em escopo separado; responsáveis nominais devem ser designados antes de publicar.
 
 ## Limites de evidência
 
