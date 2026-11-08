@@ -28,7 +28,7 @@ Não marcar `agent_review` apenas por abrir a PR: revisão automática pendente 
 
 - A regra de responsável vale para a rodada recebida, execução manual e retomada. Ao retomar, confira também se o card continua atribuído ao usuário autenticado; uma transferência de responsável exige encerrar a execução anterior e reconciliar a reserva, sem continuar trabalho em nome de outra pessoa.
 - Cada colaborador usa sua própria conexão do Linear. `me` significa o dono dessa conexão, não quem iniciou o computador ou escreveu a mensagem. Não fixar Leonardo/Sergio nem seus IDs pessoais na skill compartilhada. Com conta compartilhada não existe separação automática: reportar o conflito de identidade antes da rodada.
-- O precheck do despachante é apenas um filtro preventivo: não resolve dependências nem adquire trava. O coordenador sempre repete identificação, filtro de responsável, elegibilidade e conferência da reserva recebida.
+- O despachante valida cards na própria sessão, pela conexão Linear disponível no harness ou pelo CLI Orca como fallback. O coordenador sempre repete identificação, filtro de responsável, elegibilidade e conferência da reserva recebida na conexão que usar.
 
 ## Trava local por card
 
