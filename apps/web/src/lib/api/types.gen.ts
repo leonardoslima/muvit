@@ -52,6 +52,48 @@ export type PostApiAuthSignInEmailResponses = {
     200: unknown;
 };
 
+export type PostApiAuthRequestPasswordResetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/request-password-reset';
+};
+
+export type PostApiAuthRequestPasswordResetResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type PostApiAuthSendVerificationEmailData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/send-verification-email';
+};
+
+export type PostApiAuthSendVerificationEmailResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
+export type PostApiAuthResetPasswordData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/reset-password';
+};
+
+export type PostApiAuthResetPasswordResponses = {
+    /**
+     * Default Response
+     */
+    200: unknown;
+};
+
 export type GetApiAuthBy__Data = {
     body?: never;
     path: {
@@ -135,7 +177,7 @@ export type GetTrainerSubscriptionResponses = {
             plan: 'free' | 'starter' | 'pro' | 'team';
             billingInterval: 'monthly' | 'annual';
             amountCents: number;
-            currency?: string;
+            currency: string;
             status: 'issued' | 'paid' | 'void';
             issuedAt: string;
             paidAt: string | null;
@@ -185,7 +227,7 @@ export type UpdateTrainerSubscriptionResponses = {
             plan: 'free' | 'starter' | 'pro' | 'team';
             billingInterval: 'monthly' | 'annual';
             amountCents: number;
-            currency?: string;
+            currency: string;
             status: 'issued' | 'paid' | 'void';
             issuedAt: string;
             paidAt: string | null;
@@ -226,7 +268,7 @@ export type GetTrainerInvoiceResponses = {
         plan: 'free' | 'starter' | 'pro' | 'team';
         billingInterval: 'monthly' | 'annual';
         amountCents: number;
-        currency?: string;
+        currency: string;
         status: 'issued' | 'paid' | 'void';
         issuedAt: string;
         paidAt: string | null;
@@ -250,22 +292,22 @@ export type GetTrainerNotificationPreferencesResponses = {
     200: {
         inactivity: {
             enabled: boolean;
-            afterDays?: number;
-            channel?: 'email' | 'push' | 'both';
+            afterDays: number;
+            channel: 'email' | 'push' | 'both';
         };
         workoutPlanExpiring: {
             enabled: boolean;
-            daysBefore?: number;
-            channel?: 'email' | 'push' | 'both';
+            daysBefore: number;
+            channel: 'email' | 'push' | 'both';
         };
         pendingAssessment: {
             enabled: boolean;
-            staleAfterDays?: number;
-            channel?: 'email' | 'push' | 'both';
+            staleAfterDays: number;
+            channel: 'email' | 'push' | 'both';
         };
         newStudentRegistration: {
             enabled: boolean;
-            channel?: 'email' | 'push' | 'both';
+            channel: 'email' | 'push' | 'both';
         };
     };
 };
@@ -306,22 +348,22 @@ export type UpdateTrainerNotificationPreferencesResponses = {
     200: {
         inactivity: {
             enabled: boolean;
-            afterDays?: number;
-            channel?: 'email' | 'push' | 'both';
+            afterDays: number;
+            channel: 'email' | 'push' | 'both';
         };
         workoutPlanExpiring: {
             enabled: boolean;
-            daysBefore?: number;
-            channel?: 'email' | 'push' | 'both';
+            daysBefore: number;
+            channel: 'email' | 'push' | 'both';
         };
         pendingAssessment: {
             enabled: boolean;
-            staleAfterDays?: number;
-            channel?: 'email' | 'push' | 'both';
+            staleAfterDays: number;
+            channel: 'email' | 'push' | 'both';
         };
         newStudentRegistration: {
             enabled: boolean;
-            channel?: 'email' | 'push' | 'both';
+            channel: 'email' | 'push' | 'both';
         };
     };
 };
@@ -466,8 +508,10 @@ export type PostStudentsMePushTokenResponses = {
     /**
      * Default Response
      */
-    204: unknown;
+    204: void;
 };
+
+export type PostStudentsMePushTokenResponse = PostStudentsMePushTokenResponses[keyof PostStudentsMePushTokenResponses];
 
 export type GetStudentsData = {
     body?: never;
@@ -723,7 +767,7 @@ export type GetExercisesResponses = {
             equipment: string | null;
             videoUrl: string | null;
             instructions: string | null;
-            createdAt: string | string;
+            createdAt: string;
         }>;
         total: number;
         facets: {
@@ -759,7 +803,7 @@ export type PostExercisesResponses = {
         equipment: string | null;
         videoUrl: string | null;
         instructions: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -836,7 +880,7 @@ export type PatchExercisesByIdResponses = {
         equipment: string | null;
         videoUrl: string | null;
         instructions: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1010,7 +1054,8 @@ export type GetStudentsMeAssessmentsResponses = {
             } | null;
             photos: Array<string> | null;
             notes: string | null;
-            createdAt: string | string;
+            createdAt: string;
+            dateAssessmentCount: number;
         }>;
         total: number;
     };
@@ -1067,7 +1112,7 @@ export type PostStudentsMeAssessmentsResponses = {
         } | null;
         photos: Array<string> | null;
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1110,7 +1155,8 @@ export type GetStudentsByStudentIdAssessmentsResponses = {
             } | null;
             photos: Array<string> | null;
             notes: string | null;
-            createdAt: string | string;
+            createdAt: string;
+            dateAssessmentCount: number;
         }>;
         total: number;
     };
@@ -1169,7 +1215,7 @@ export type PostStudentsByStudentIdAssessmentsResponses = {
         } | null;
         photos: Array<string> | null;
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1235,7 +1281,7 @@ export type GetAssessmentsByIdResponses = {
         } | null;
         photos: Array<string> | null;
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1303,7 +1349,7 @@ export type PatchAssessmentsByIdResponses = {
         } | null;
         photos: Array<string> | null;
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1348,8 +1394,8 @@ export type GetStudentsByStudentIdWorkoutPlanDraftsResponses = {
             };
             selectedDayOrder: number;
             revision: number;
-            createdAt: string | string;
-            updatedAt: string | string;
+            createdAt: string;
+            updatedAt: string;
             exerciseReferences: Array<{
                 id: string;
                 name: string;
@@ -1421,8 +1467,8 @@ export type PostWorkoutPlanDraftsResponses = {
         };
         selectedDayOrder: number;
         revision: number;
-        createdAt: string | string;
-        updatedAt: string | string;
+        createdAt: string;
+        updatedAt: string;
         exerciseReferences: Array<{
             id: string;
             name: string;
@@ -1482,8 +1528,8 @@ export type GetWorkoutPlanDraftsByIdResponses = {
         };
         selectedDayOrder: number;
         revision: number;
-        createdAt: string | string;
-        updatedAt: string | string;
+        createdAt: string;
+        updatedAt: string;
         exerciseReferences: Array<{
             id: string;
             name: string;
@@ -1553,7 +1599,7 @@ export type PostWorkoutPlanDraftsByIdPublishResponses = {
         endDate: string | null;
         status: 'active' | 'archived' | 'draft';
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
         days: Array<{
             id: string;
             planId: string;
@@ -1623,7 +1669,7 @@ export type PostWorkoutPlansResponses = {
         endDate: string | null;
         status: 'active' | 'archived' | 'draft';
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
         days: Array<{
             id: string;
             planId: string;
@@ -1672,7 +1718,7 @@ export type GetStudentsMeWorkoutPlansResponses = {
             startDate: string | null;
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
-            createdAt: string | string;
+            createdAt: string;
             days: Array<{
                 id: string;
                 planId: string;
@@ -1707,7 +1753,7 @@ export type GetStudentsByStudentIdWorkoutPlansResponses = {
             startDate: string | null;
             endDate: string | null;
             status: 'active' | 'archived' | 'draft';
-            createdAt: string | string;
+            createdAt: string;
             days: Array<{
                 id: string;
                 planId: string;
@@ -1769,7 +1815,7 @@ export type GetWorkoutPlansByIdResponses = {
         endDate: string | null;
         status: 'active' | 'archived' | 'draft';
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
         days: Array<{
             id: string;
             planId: string;
@@ -1851,7 +1897,7 @@ export type PatchWorkoutPlansByIdResponses = {
         endDate: string | null;
         status: 'active' | 'archived' | 'draft';
         notes: string | null;
-        createdAt: string | string;
+        createdAt: string;
         days: Array<{
             id: string;
             planId: string;
@@ -1913,7 +1959,7 @@ export type PostWorkoutLogsResponses = {
         durationMin: number | null;
         rpe: number | null;
         completed: boolean;
-        createdAt: string | string;
+        createdAt: string;
     };
 };
 
@@ -1969,7 +2015,7 @@ export type PatchWorkoutLogsByIdFinishResponses = {
         durationMin: number | null;
         rpe: number | null;
         completed: boolean;
-        createdAt: string | string;
+        createdAt: string;
         notes: string | null;
         sets: Array<{
             id: string;
@@ -2021,7 +2067,7 @@ export type GetWorkoutLogsByIdResponses = {
         durationMin: number | null;
         rpe: number | null;
         completed: boolean;
-        createdAt: string | string;
+        createdAt: string;
         notes: string | null;
         sets: Array<{
             id: string;
@@ -2066,7 +2112,7 @@ export type GetStudentsMeWorkoutLogsResponses = {
             durationMin: number | null;
             rpe: number | null;
             completed: boolean;
-            createdAt: string | string;
+            createdAt: string;
         }>;
     };
 };
@@ -2100,7 +2146,7 @@ export type GetStudentsByStudentIdWorkoutLogsResponses = {
             durationMin: number | null;
             rpe: number | null;
             completed: boolean;
-            createdAt: string | string;
+            createdAt: string;
         }>;
     };
 };

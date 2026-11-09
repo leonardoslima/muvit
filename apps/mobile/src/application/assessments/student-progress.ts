@@ -1,3 +1,4 @@
+import { canCompareAssessmentDates } from '@muvit/validators';
 import type { Assessment } from './assessment-data';
 
 export type StudentProgressReadout = {
@@ -7,11 +8,12 @@ export type StudentProgressReadout = {
   weightComparison?: string;
   bodyFatComparison?: string;
   heightLabel?: string;
+  dateAmbiguityMessage?: string;
 };
 
 export function buildStudentProgressReadout(
-  assessment: Assessment,
-  previousAssessment?: Assessment,
+  assessment: Assessment & { dateAssessmentCount?: number },
+  previousAssessment?: Assessment & { dateAssessmentCount?: number },
 ): StudentProgressReadout {
   const weight = toNumber(assessment.weightKg);
   const bodyFat = toNumber(assessment.bodyFatPct);
@@ -19,16 +21,29 @@ export function buildStudentProgressReadout(
   const previousBodyFat = toNumber(previousAssessment?.bodyFatPct);
   const height = toNumber(assessment.heightCm);
 
+  const canCompare =
+    previousAssessment !== undefined &&
+    canCompareAssessmentDates(
+      { date: assessment.date, dateAssessmentCount: assessment.dateAssessmentCount ?? 0 },
+      {
+        date: previousAssessment.date,
+        dateAssessmentCount: previousAssessment.dateAssessmentCount ?? 0,
+      },
+    );
   return {
+    dateAmbiguityMessage:
+      (assessment.dateAssessmentCount ?? 0) > 1
+        ? 'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.'
+        : undefined,
     dateLabel: formatDate(assessment.date),
     weightLabel: formatMetric(weight, 'kg'),
     bodyFatLabel: formatBodyFat(bodyFat),
     weightComparison:
-      weight === null || previousWeight === null
+      !canCompare || weight === null || previousWeight === null
         ? undefined
         : formatComparison(weight, previousWeight, 'kg'),
     bodyFatComparison:
-      bodyFat === null || previousBodyFat === null
+      !canCompare || bodyFat === null || previousBodyFat === null
         ? undefined
         : formatComparison(bodyFat, previousBodyFat, 'p.p.'),
     heightLabel: height === null ? undefined : `${formatNumber(height)} cm`,

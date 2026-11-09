@@ -1,3 +1,5 @@
+import { db, schema } from '@muvit/db';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { signUpWithSession } from '../../test/helpers/auth.js';
@@ -51,6 +53,78 @@ afterAll(async () => {
 });
 
 describe('assessments', () => {
+  it('preserva desempate técnico e contagem global antes da paginação', async () => {
+    const owner = await signupStudent('chronology@i.com');
+    const other = await signupStudent('other-chronology@i.com');
+    const trainer = await signupTrainer('chronology-trainer@i.com');
+    await db
+      .update(schema.students)
+      .set({ trainerId: trainer.profileId, isIndependent: false })
+      .where(eq(schema.students.id, owner.id));
+    const ids = [
+      '00000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-000000000002',
+      '00000000-0000-4000-8000-000000000003',
+    ];
+    for (const id of [...ids].reverse()) {
+      await db.insert(schema.assessments).values({
+        id,
+        studentId: owner.id,
+        date: '2026-04-02',
+        createdAt: new Date('2026-04-02T12:00:00Z'),
+      });
+    }
+    await db.insert(schema.assessments).values([
+      { studentId: owner.id, date: '2026-04-01' },
+      { studentId: other.id, date: '2026-04-02' },
+    ]);
+    for (let repeat = 0; repeat < 2; repeat++) {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/students/me/assessments',
+        headers: { cookie: owner.cookie },
+      });
+      expect(response.statusCode).toBe(200);
+      const trainerResponse = await app.inject({
+        method: 'GET',
+        url: `/students/${owner.id}/assessments`,
+        headers: { cookie: trainer.cookie },
+      });
+      expect(trainerResponse.statusCode).toBe(200);
+      expect(trainerResponse.json()).toEqual(response.json());
+      expect(response.json().total).toBe(4);
+      expect(
+        response
+          .json()
+          .items.slice(0, 3)
+          .map((item: { id: string }) => item.id),
+      ).toEqual(ids);
+      expect(
+        response
+          .json()
+          .items.map((item: { dateAssessmentCount: number }) => item.dateAssessmentCount),
+      ).toEqual([3, 3, 3, 1]);
+      expect(response.json().items[0].createdAt).toBe('2026-04-02T12:00:00.000Z');
+    }
+    for (const [offset, id] of ids.entries()) {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/students/${owner.id}/assessments?limit=1&offset=${offset}`,
+        headers: { cookie: trainer.cookie },
+      });
+      const self = await app.inject({
+        method: 'GET',
+        url: `/students/me/assessments?limit=1&offset=${offset}`,
+        headers: { cookie: owner.cookie },
+      });
+      expect(self.statusCode).toBe(200);
+      expect(self.json()).toEqual(response.json());
+      expect(response.statusCode).toBe(200);
+      expect(response.json().items).toHaveLength(1);
+      expect(response.json().items[0]).toMatchObject({ id, dateAssessmentCount: 3 });
+    }
+  });
+
   it('trainer creates an assessment for own student', async () => {
     const trainer = await signupTrainer('a@a.com');
     const studentId = await createStudent(trainer.cookie, 'Aluno Teste');

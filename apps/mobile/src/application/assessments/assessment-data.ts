@@ -1,4 +1,8 @@
-import type { assessmentSchema, createAssessmentSchema } from '@muvit/validators';
+import type {
+  assessmentListItemSchema,
+  assessmentSchema,
+  createAssessmentSchema,
+} from '@muvit/validators';
 import type { z } from 'zod';
 import type { ApiRequester } from '../../lib/api';
 
@@ -7,8 +11,10 @@ export const TRAINER_ASSESSMENTS_PAGE_SIZE = 25;
 export type Assessment = z.infer<typeof assessmentSchema>;
 export type CreateAssessmentInput = z.infer<typeof createAssessmentSchema>;
 
+export type AssessmentListItem = z.infer<typeof assessmentListItemSchema>;
+
 export type AssessmentsPage = {
-  items: Assessment[];
+  items: AssessmentListItem[];
   total: number;
 };
 

@@ -15,6 +15,7 @@ describe('InvoicePage', () => {
         plan: 'pro',
         billingInterval: 'monthly',
         amountCents: 4900,
+        currency: 'BRL',
         status: 'paid',
         issuedAt: '2026-08-01T00:00:00.000Z',
         paidAt: '2026-08-01T00:00:00.000Z',

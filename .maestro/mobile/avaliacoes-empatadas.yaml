@@ -1,0 +1,83 @@
+appId: ${MAESTRO_E2E_APP_ID}
+name: Avaliações empatadas entre professor e aluno
+---
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_TRAINER_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_TRAINER_PASSWORD}
+      E2E_HOME: Início
+- tapOn: Ver alunos
+- tapOn:
+    id: trainer-students-search
+- inputText: ${MAESTRO_E2E_STUDENT_NAME}
+- hideKeyboard
+- tapOn:
+    text: Abrir ${MAESTRO_E2E_STUDENT_NAME}
+- scrollUntilVisible:
+    element: Nova avaliação
+    direction: DOWN
+- tapOn: Nova avaliação
+- tapOn: 'Ex.: 70,5'
+- inputText: '78.5'
+- hideKeyboard
+- tapOn: 'Ex.: 170'
+- inputText: '170'
+- pressKey: Back
+- repeat:
+    times: 12
+    while:
+      notVisible: Adicione observações sobre a avaliação
+    commands:
+      - swipe:
+          start: 6%, 50%
+          end: 6%, 20%
+          duration: 400
+- assertVisible: Adicione observações sobre a avaliação
+- tapOn: Adicione observações sobre a avaliação
+- inputText: Avaliacao E2E
+- pressKey: Back
+- repeat:
+    times: 6
+    while:
+      notVisible: Salvar avaliação
+    commands:
+      - swipe:
+          start: 6%, 50%
+          end: 6%, 20%
+          duration: 400
+- assertVisible: Salvar avaliação
+- tapOn: Salvar avaliação
+- extendedWaitUntil:
+    visible: Abrir avaliação de .*
+    timeout: 30000
+- runFlow: logout.yaml
+- runFlow:
+    file: login.yaml
+    env:
+      E2E_EMAIL: ${MAESTRO_E2E_STUDENT_EMAIL}
+      E2E_PASSWORD: ${MAESTRO_E2E_STUDENT_PASSWORD}
+      E2E_HOME: Hoje
+- tapOn: Progresso
+- scrollUntilVisible:
+    element: 78,5 kg
+    direction: DOWN
+- assertVisible: 78,5 kg
+- assertVisible: Há mais de uma avaliação nesta data. A ordem das medições não foi informada.
+- assertNotVisible: '.*kg a (mais|menos).*'
+- assertNotVisible: '.*% a (mais|menos).*'
+- assertNotVisible: 'Sem alteração.*'
+- takeScreenshot: empate-78-5
+- scrollUntilVisible:
+    element: Suas avaliações
+    direction: UP
+- scrollUntilVisible:
+    element: 80 kg
+    direction: DOWN
+- assertVisible: 80 kg
+- assertVisible: Há mais de uma avaliação nesta data. A ordem das medições não foi informada.
+- assertNotVisible: '.*kg a (mais|menos).*'
+- assertNotVisible: '.*% a (mais|menos).*'
+- assertNotVisible: 'Sem alteração.*'
+- takeScreenshot: empate-80
+- runFlow: logout.yaml

@@ -1,4 +1,5 @@
 import {
+  assessmentListItemSchema,
   assessmentSchema,
   createAssessmentSchema,
   listAssessmentsQuerySchema,
@@ -24,7 +25,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
         tags: ['assessments'],
         querystring: listAssessmentsQuerySchema,
         response: {
-          200: z.object({ items: z.array(assessmentSchema), total: z.number() }),
+          200: z.object({ items: z.array(assessmentListItemSchema), total: z.number() }),
         },
       },
     },
@@ -73,7 +74,7 @@ export const assessmentsRoutes: FastifyPluginAsyncZod = async (app) => {
         params: z.object({ studentId: z.string().guid() }),
         querystring: listAssessmentsQuerySchema,
         response: {
-          200: z.object({ items: z.array(assessmentSchema), total: z.number() }),
+          200: z.object({ items: z.array(assessmentListItemSchema), total: z.number() }),
         },
       },
     },

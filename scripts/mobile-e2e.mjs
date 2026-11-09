@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { createMailbox } from './e2e-mailbox.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const scenarios = ['aluno', 'professor', 'isolamento'];
+const scenarios = ['aluno', 'professor', 'isolamento', 'avaliacoes-empatadas'];
 const androidScenarios = [...scenarios, 'confirmacao-email'];
 const defaultPorts = { api: 3344, metro: 8094, db: 5444 };
 
@@ -43,7 +43,9 @@ export function parseArgs(argv) {
   if (argv.includes('--help')) return { help: true };
   const scenario = values.get('--scenario');
   if (!scenario || ![...androidScenarios, 'all'].includes(scenario)) {
-    throw new Error('--scenario deve ser aluno, professor, isolamento, confirmacao-email ou all');
+    throw new Error(
+      '--scenario deve ser aluno, professor, isolamento, avaliacoes-empatadas, confirmacao-email ou all',
+    );
   }
   const mode = values.get('--mode') ?? 'android';
   if (!mode || !['android', 'api-only'].includes(mode)) {
@@ -441,7 +443,7 @@ function maestroEnvironment(options, credentials, manifest, apiDate) {
     E2E_VERIFICATION_EMAIL: credentials.studentA.email,
     E2E_VERIFICATION_PASSWORD: credentials.studentA.password,
     E2E_HOME: 'Hoje',
-    E2E_STUDENT_NAME: manifest.linkedStudents?.a?.name ?? '',
+    E2E_STUDENT_NAME: manifest.tiedStudent?.name ?? manifest.linkedStudents?.a?.name ?? '',
     E2E_PLAN_NAME:
       manifest.scenario === 'professor'
         ? (manifest.plans?.trainerStudentA?.name ?? '')
@@ -896,7 +898,7 @@ export async function run(options) {
 
 function printHelp() {
   process.stdout.write(
-    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|confirmacao-email|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>]\n',
+    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|avaliacoes-empatadas|confirmacao-email|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>]\n',
   );
 }
 

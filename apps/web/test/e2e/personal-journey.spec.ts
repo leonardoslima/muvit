@@ -154,4 +154,79 @@ test('autentica e cadastra aluno, avaliação e plano ativo com persistência', 
     await expect(reopenedExercise).toContainText(/3x12.*24(?:\.0+)?kg.*60s desc/);
     await page.screenshot({ path: testInfo.outputPath('jornada-final.png') });
   });
+  // A fixture autentica trainer; equivalência self/trainer está coberta no teste API.
+  await test.step('empate de data entre formulário e fronteira HTTP', async () => {
+    const ambiguityWarning =
+      'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.';
+    const displayDate = referenceDate.split('-').reverse().join('/');
+    const created = await api.post(`/students/${studentId}/assessments`, {
+      data: { date: referenceDate, weightKg: 80, notes: 'Registro via HTTP' },
+    });
+    expect(created.ok()).toBeTruthy();
+    const httpAssessment: { id: string } = await created.json();
+    const listed = await api.get(`/students/${studentId}/assessments`);
+    const data: { items: Array<{ id: string; dateAssessmentCount: number }> } = await listed.json();
+    expect(data.items).toHaveLength(2);
+    expect(data.items.map((item) => item.dateAssessmentCount)).toEqual([2, 2]);
+    const ids = data.items.map((item) => item.id);
+    expect(ids).toEqual([...ids].sort());
+    await page.goto(`/students/${studentId}/assessments`);
+    await expect(page.getByText(ambiguityWarning)).toHaveCount(1);
+    await expect(page.getByText('Mais recente', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Data mais recente', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/Atual:/)).toHaveCount(0);
+    await expect(page.getByRole('table', { name: 'Dados de evolução de Peso' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Registro' })).toHaveCount(0);
+    await expect(page.getByText('Registro via HTTP')).toBeVisible();
+    const desktopHistoryText = await page.locator('body').innerText();
+    for (const id of ids) expect(desktopHistoryText).not.toContain(id);
+    await page.screenshot({ path: testInfo.outputPath('avaliacoes-empatadas-desktop.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByText(ambiguityWarning)).toHaveCount(1);
+    await expect(page.getByText(/Atual:/)).toHaveCount(0);
+    await expect(page.getByText('Registro via HTTP')).toBeVisible();
+    const narrowHistoryText = await page.locator('body').innerText();
+    for (const id of ids) expect(narrowHistoryText).not.toContain(id);
+    await page.screenshot({ path: testInfo.outputPath('avaliacoes-empatadas-estreito.png') });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto(`/students/${studentId}`);
+    const latestAssessmentCard = page.locator('#ultima-avaliacao');
+    await expect(page.getByRole('heading', { name: 'Última avaliação' })).toBeVisible();
+    await expect(page.getByText(ambiguityWarning)).toBeVisible();
+    await expect(page.getByText(notes)).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Ver histórico de avaliações' })).toBeVisible();
+    await latestAssessmentCard.scrollIntoViewIfNeeded();
+    await expect(latestAssessmentCard).toBeInViewport({ ratio: 0.9 });
+    await page.screenshot({ path: testInfo.outputPath('resumo-aluno-empatado-desktop.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole('heading', { name: 'Última avaliação' })).toBeVisible();
+    await expect(page.getByText(ambiguityWarning)).toBeVisible();
+    await latestAssessmentCard.scrollIntoViewIfNeeded();
+    await expect(latestAssessmentCard).toBeInViewport({ ratio: 0.9 });
+    await page.screenshot({ path: testInfo.outputPath('resumo-aluno-empatado-estreito.png') });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    const laterDate = new Date(`${referenceDate}T12:00:00Z`);
+    laterDate.setUTCDate(laterDate.getUTCDate() + 1);
+    const third = await api.post(`/students/${studentId}/assessments`, {
+      data: { date: laterDate.toISOString().slice(0, 10), weightKg: 79 },
+    });
+    expect(third.ok()).toBeTruthy();
+    const refreshed = await api.get(`/students/${studentId}/assessments`);
+    expect(refreshed.ok()).toBeTruthy();
+    const history: { items: Array<{ id: string; dateAssessmentCount: number }> } =
+      await refreshed.json();
+    expect(history.items.map((item) => item.dateAssessmentCount)).toEqual([1, 2, 2]);
+    expect(history.items.slice(1).map((item) => item.id)).toEqual(ids);
+    await page.goto(`/students/${studentId}/assessments`);
+    await expect(page.getByText(/Atual:/)).toHaveCount(0);
+    const historicalSummary = page
+      .locator('summary')
+      .filter({ hasText: `Detalhes de ${displayDate} — 80 kg` });
+    await historicalSummary.focus();
+    await historicalSummary.press('Enter');
+    await expect(page.getByText('Registro via HTTP')).toBeVisible();
+    const detailsHistoryText = await page.locator('body').innerText();
+    for (const id of ids) expect(detailsHistoryText).not.toContain(id);
+    expect(ids).toContain(httpAssessment.id);
+  });
 });

@@ -25,11 +25,14 @@ vi.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'View',
 }));
 
-function assessmentFixture(overrides: Partial<Assessment> = {}): Assessment {
+function assessmentFixture(
+  overrides: Partial<Assessment & { dateAssessmentCount: number }> = {},
+): Assessment & { dateAssessmentCount: number } {
   return {
     id: 'assessment-1',
     studentId: 'student-1',
     date: '2026-09-03',
+    dateAssessmentCount: 1,
     weightKg: '82.5',
     heightCm: null,
     bodyFatPct: '18.4',

@@ -57,6 +57,7 @@ describe('StudentDetailPage', () => {
             id: 'assessment-1',
             studentId: 'student-1',
             date: '2026-06-20',
+            dateAssessmentCount: 1,
             weightKg: '72.5',
             heightCm: '170',
             bodyFatPct: '18.2',
@@ -94,6 +95,46 @@ describe('StudentDetailPage', () => {
         ],
       }),
     );
+  });
+
+  it('mostra aviso e link sem escolher detalhes do extremo recente empatado', async () => {
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({
+        total: 3,
+        items: [
+          {
+            id: 'ambiguous',
+            studentId: 'student-1',
+            date: '2026-06-25',
+            dateAssessmentCount: 3,
+            weightKg: '79',
+            heightCm: '170',
+            bodyFatPct: '20',
+            measurements: { waist: 91 },
+            photos: ['https://example.com/photo.jpg'],
+            notes: 'Nota singular',
+            createdAt: '2026-06-25T00:00:00Z',
+          },
+        ],
+      }),
+    );
+    render(await StudentDetailPage({ params: Promise.resolve({ id: 'student-1' }) }));
+    const heading = screen.getByRole('heading', { name: 'Última avaliação' });
+    const card = heading.closest('[data-slot="card"]');
+    expect(card).toBeInstanceOf(HTMLElement);
+    if (!(card instanceof HTMLElement)) throw new Error('Card do resumo não encontrado');
+    expect(
+      within(card).getByText(
+        'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.',
+      ),
+    ).toBeInTheDocument();
+    const historyLink = within(card).getByRole('link', { name: 'Ver histórico de avaliações' });
+    expect(historyLink).toHaveAttribute('href', '/students/student-1/assessments');
+    expect(historyLink).toHaveClass('inline-flex');
+    expect(screen.queryByText('Nota singular')).not.toBeInTheDocument();
+    expect(screen.queryByText('79 kg')).not.toBeInTheDocument();
+    expect(screen.queryByText('91 cm')).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /progresso/i })).not.toBeInTheDocument();
   });
 
   it('confirma a exclusão com o identificador do aluno', async () => {
@@ -200,6 +241,7 @@ describe('StudentDetailPage', () => {
             id: 'assessment-1',
             studentId: 'student-1',
             date: '2026-06-24',
+            dateAssessmentCount: 2,
             weightKg: '72.5',
             heightCm: '170',
             bodyFatPct: '18.2',
@@ -212,6 +254,7 @@ describe('StudentDetailPage', () => {
             id: 'assessment-2',
             studentId: 'student-1',
             date: '2026-06-24',
+            dateAssessmentCount: 2,
             weightKg: '72.1',
             heightCm: '170',
             bodyFatPct: '18.0',
@@ -224,6 +267,7 @@ describe('StudentDetailPage', () => {
             id: 'assessment-3',
             studentId: 'student-1',
             date: '2026-06-25',
+            dateAssessmentCount: 1,
             weightKg: '71.9',
             heightCm: '170',
             bodyFatPct: '17.9',
@@ -252,6 +296,7 @@ describe('StudentDetailPage', () => {
       {
         id: 'assessment-3',
         date: '2026-06-25',
+        dateAssessmentCount: 1,
         weightKg: '71.9',
         heightCm: '170',
         bodyFatPct: '17.9',
@@ -261,6 +306,7 @@ describe('StudentDetailPage', () => {
       {
         id: 'assessment-1',
         date: '2026-06-24',
+        dateAssessmentCount: 2,
         weightKg: '72.5',
         heightCm: '170',
         bodyFatPct: '18.2',
@@ -270,6 +316,7 @@ describe('StudentDetailPage', () => {
       {
         id: 'assessment-2',
         date: '2026-06-24',
+        dateAssessmentCount: 2,
         weightKg: '72.1',
         heightCm: '170',
         bodyFatPct: '18.0',
@@ -278,8 +325,6 @@ describe('StudentDetailPage', () => {
       },
     ];
 
-    expect(buildWeightChartPoints(assessments).map((point) => point.weight)).toEqual([
-      72.5, 72.1, 71.9,
-    ]);
+    expect(buildWeightChartPoints(assessments)).toEqual([]);
   });
 });

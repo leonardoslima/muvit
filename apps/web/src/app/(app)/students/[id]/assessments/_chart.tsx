@@ -10,7 +10,12 @@ import {
   YAxis,
 } from 'recharts';
 
-export type MetricPoint = { date: string; value: number | null };
+export type MetricPoint = {
+  date: string;
+  value: number | null;
+  dateAssessmentCount: number;
+  id?: string;
+};
 
 type MetricEvolutionChartProps = {
   title: string;
@@ -62,6 +67,38 @@ export function MetricEvolutionChart({
       (point): point is MetricPoint & { value: number; chartId: string } => point.value !== null,
     );
 
+  const ambiguous = points.some((point) => point.dateAssessmentCount !== 1);
+  if (ambiguous) {
+    return (
+      <section className="flex flex-col gap-4">
+        <h2 className="font-display text-base font-semibold">{title}</h2>
+        <div className="overflow-x-auto">
+          <table aria-label={`Dados de evolução de ${metricLabel}`} className="w-full text-sm">
+            <thead className="bg-muted/60">
+              <tr>
+                <th scope="col" className="px-5 py-3 text-left font-medium">
+                  Data
+                </th>
+                <th scope="col" className="px-5 py-3 text-left font-medium">
+                  {metricLabel}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {points.map((point, index) => (
+                <tr key={point.id ?? `${point.date}-${index}`} className="border-t border-border">
+                  <td className="px-5 py-3">{formatFullDate(point.date)}</td>
+                  <td className="px-5 py-3">
+                    {point.value === null ? '—' : formatValue(point.value, unit)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  }
   const first = recorded.at(0);
   if (!first) {
     return (
@@ -85,12 +122,14 @@ export function MetricEvolutionChart({
           <h2 className="font-display text-base font-semibold">{title}</h2>
           <p className="mt-1 text-sm font-medium">Atual: {formatValue(latest.value, unit)}</p>
         </div>
-        <div className="text-right text-xs">
-          <p className={periodDelta <= 0 ? 'text-success' : 'text-warning'}>
-            Variação: {formatDelta(periodDelta, unit)}
-          </p>
-          <p className="mt-1 text-muted-foreground">{trendLabel(periodDelta)}</p>
-        </div>
+        {recorded.length > 1 && (
+          <div className="text-right text-xs">
+            <p className={periodDelta <= 0 ? 'text-success' : 'text-warning'}>
+              Variação: {formatDelta(periodDelta, unit)}
+            </p>
+            <p className="mt-1 text-muted-foreground">{trendLabel(periodDelta)}</p>
+          </div>
+        )}
       </div>
 
       {recorded.length >= 2 ? (
