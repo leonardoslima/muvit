@@ -14,6 +14,7 @@ Cada item exige evidência no ambiente correspondente antes de convidar usuário
 - [ ] Owners nominais e substitutos para billing, IAM, DNS/TLS, banco/mídia, plantão e lojas registrados em controle restrito; MFA e recuperação de contas conferidos.
 - [ ] Domínio real e redirects canônicos definidos; DNS externo e TLS válido/renovação verificados para Web e API.
 - [ ] API persistente, sem sleep, roteada para API_PORT e API_HOST corretos; timezone declarado e cron coordenado/idempotente inclusive durante rolling deploy.
+- [ ] Porta raw Fastify/API_PORT sem acesso público: API nativa com proxy no mesmo host usa loopback; containers/outra rede privada exigem binding restrito à rede e firewall externo, impedindo contornar o proxy HTTPS.
 - [ ] Staging/produção isolados em DB, mídia, chaves, remetente e URLs; previews sem secrets ou dados de produção; staging restrito a destinatários e dados sintéticos.
 
 ## Variáveis e autenticação
