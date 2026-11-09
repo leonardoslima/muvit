@@ -8,8 +8,8 @@ import { AssessmentMetric } from './assessment-metric';
 import { AssessmentPhotoGrid } from './assessment-photo-grid';
 
 export type StudentAssessmentCardProps = {
-  assessment: Assessment;
-  previousAssessment?: Assessment;
+  assessment: Assessment & { dateAssessmentCount?: number };
+  previousAssessment?: Assessment & { dateAssessmentCount?: number };
   onOpenPhoto: (index: number) => void;
 };
 
@@ -31,6 +31,9 @@ export function StudentAssessmentCard({
       testID={`assessment-card-${assessment.id}`}
     >
       <Text variant="sectionTitle">{readout.dateLabel}</Text>
+      {readout.dateAmbiguityMessage ? (
+        <Text variant="support">{readout.dateAmbiguityMessage}</Text>
+      ) : null}
 
       <View className="gap-3">
         <View className="flex-row items-start gap-4" testID="student-assessment-primary-metrics">

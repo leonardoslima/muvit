@@ -8,11 +8,163 @@ async function runnerModule() {
   return import('./mobile-e2e.mjs');
 }
 
+async function assessmentFlow() {
+  return readFile(join('.maestro', 'mobile', 'avaliacoes-empatadas.yaml'), 'utf8');
+}
+
+function escapedPattern(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Rolagem crítica pós-Back: repeat limitado, swipe em percentuais dentro do ScrollView
+// (gutter esquerdo, fora dos TextInputs) e confirmação explícita do alvo.
+function criticalScroll(content, target) {
+  const escaped = escapedPattern(target);
+  const pattern = new RegExp(
+    [
+      '- pressKey: Back',
+      '- repeat:',
+      'times: (?<times>\\d+)',
+      'while:',
+      `notVisible: ${escaped}`,
+      'commands:',
+      '- swipe:',
+      'start: (?<startX>\\d+)%, (?<startY>\\d+)%',
+      'end: (?<endX>\\d+)%, (?<endY>\\d+)%',
+      'duration: (?<duration>\\d+)',
+      `- assertVisible: ${escaped}`,
+      `- tapOn: ${escaped}`,
+    ].join('\\s+'),
+  );
+  const match = pattern.exec(content);
+
+  assert.ok(
+    match,
+    `rolagem até "${target}" deve dispensar o teclado, repetir de forma limitada com swipe próprio, confirmar e tocar o alvo`,
+  );
+
+  return {
+    duration: Number(match.groups.duration),
+    endX: Number(match.groups.endX),
+    endY: Number(match.groups.endY),
+    startX: Number(match.groups.startX),
+    startY: Number(match.groups.startY),
+    times: Number(match.groups.times),
+  };
+}
+
+test('nova avaliação não usa scrollUntilVisible central após altura e revela observações', async () => {
+  const content = await assessmentFlow();
+
+  assert.doesNotMatch(
+    content,
+    /scrollUntilVisible:\s+element: Adicione observações sobre a avaliação/,
+    'scrollUntilVisible inicia o swipe no centro da tela, sobre Altura, e reabre o teclado',
+  );
+  criticalScroll(content, 'Adicione observações sobre a avaliação');
+});
+
+test('nova avaliação não usa scrollUntilVisible central após observações e revela salvar', async () => {
+  const content = await assessmentFlow();
+
+  assert.doesNotMatch(
+    content,
+    /scrollUntilVisible:\s+element: Salvar avaliação/,
+    'scrollUntilVisible inicia o swipe no centro da tela e pode reabrir o teclado dos campos',
+  );
+  criticalScroll(content, 'Salvar avaliação');
+});
+
+test('rolagens críticas partem do gutter do ScrollView, acima dos TextInputs e do teclado', async () => {
+  const content = await assessmentFlow();
+
+  for (const target of ['Adicione observações sobre a avaliação', 'Salvar avaliação']) {
+    const scroll = criticalScroll(content, target);
+    const label = `rolagem até "${target}"`;
+
+    // ScrollView começa em 42/1080 (3,9% da largura) e os EditText em 86/1080 (8,0%).
+    assert.ok(
+      scroll.startX >= 4 && scroll.startX <= 8,
+      `${label}: início deve ficar no gutter do ScrollView, fora dos TextInputs`,
+    );
+    assert.equal(scroll.endX, scroll.startX, `${label}: swipe deve ser vertical`);
+    assert.ok(
+      scroll.startY >= 25 && scroll.startY <= 50,
+      `${label}: início deve ficar acima do teclado`,
+    );
+    assert.ok(
+      scroll.endY >= 15 && scroll.endY < scroll.startY,
+      `${label}: fim deve subir dentro do ScrollView`,
+    );
+    assert.ok(scroll.times >= 1 && scroll.times <= 12, `${label}: repetição deve ser limitada`);
+    assert.ok(
+      scroll.duration >= 200 && scroll.duration <= 2000,
+      `${label}: duração do swipe deve ser responsiva`,
+    );
+  }
+});
+
+test('nenhum repeat do fluxo de avaliações fica sem limite de iterações', async () => {
+  const content = await assessmentFlow();
+  const blocks = content.split(/- repeat:/).slice(1);
+
+  assert.ok(blocks.length >= 2, 'o fluxo deve repetir a rolagem até os alvos móveis');
+  for (const block of blocks) {
+    const header = block.split(/- assertVisible:/)[0];
+    assert.match(header, /^\s+times: [1-9]\d*$/m, 'todo repeat deve declarar times finito');
+    assert.doesNotMatch(
+      header,
+      /while:\s+true:/,
+      'repeat não pode depender de condição sempre verdadeira',
+    );
+  }
+});
+
+test('avaliação salva segue direto para o logout sem reabrir o Development Client', async () => {
+  const content = await assessmentFlow();
+
+  assert.doesNotMatch(
+    content,
+    /- (openLink|launchApp|stopApp):/,
+    'o fluxo não pode relançar o Development Client: openLink após salvar derruba o app no launcher Android',
+  );
+
+  const saved = content.indexOf('- tapOn: Salvar avaliação');
+  assert.ok(saved >= 0, 'o cenário deve salvar a avaliação');
+
+  const verification =
+    /- extendedWaitUntil:\s+visible: Abrir avaliação de \.\*\s+timeout: \d+/.exec(
+      content.slice(saved),
+    );
+  assert.ok(verification, 'após salvar, o cenário deve aguardar a avaliação aparecer na lista');
+
+  const afterVerification = content.slice(saved + verification.index + verification[0].length);
+  const logout = /- runFlow: logout\.yaml/.exec(afterVerification);
+  assert.ok(logout, 'após a avaliação salva, o cenário deve encerrar a sessão do professor');
+
+  assert.equal(
+    afterVerification.slice(0, logout.index).trim(),
+    '',
+    'entre a avaliação na lista e o logout não pode haver openLink, espera de Início ou relaunch',
+  );
+});
+
+test('login dispensa o teclado antes de verificar e tocar em Entrar sem rolagem', async () => {
+  const content = await readFile(join('.maestro', 'mobile', 'login.yaml'), 'utf8');
+
+  assert.match(
+    content,
+    /- inputText: \$\{E2E_PASSWORD\}\s+- pressKey: Back\s+- assertVisible:\s+text: Entrar\s+below: Senha\s+- tapOn:\s+text: Entrar\s+below: Senha/,
+    'após preencher a senha, deve dispensar o teclado antes de verificar e submeter o login',
+  );
+  assert.doesNotMatch(content, /- scrollUntilVisible:/, 'login não deve depender de rolagem');
+});
+
 test('expande all nos três cenários suportados', async () => {
   const { parseArgs } = await runnerModule();
   const options = parseArgs(['--scenario', 'all', '--mode', 'api-only']);
 
-  assert.deepEqual(options.scenarios, ['aluno', 'professor', 'isolamento']);
+  assert.deepEqual(options.scenarios, ['aluno', 'professor', 'isolamento', 'avaliacoes-empatadas']);
   assert.equal(options.mode, 'api-only');
 });
 
@@ -316,4 +468,13 @@ test('confirmação aceita retorno nativo sem expor o token no resultado', async
   } finally {
     globalThis.fetch = previous;
   }
+});
+
+test('aceita avaliações empatadas e inclui em all com Android', async () => {
+  const { parseArgs } = await runnerModule();
+  const args = ['--mode', 'android', '--device', 'emulator-5590', '--avd-name', 'exclusive'];
+  assert.deepEqual(parseArgs(['--scenario', 'avaliacoes-empatadas', ...args]).scenarios, [
+    'avaliacoes-empatadas',
+  ]);
+  assert.ok(parseArgs(['--scenario', 'all', ...args]).scenarios.includes('avaliacoes-empatadas'));
 });

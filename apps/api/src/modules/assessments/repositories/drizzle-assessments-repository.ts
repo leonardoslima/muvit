@@ -1,6 +1,6 @@
 import { db, schema } from '@muvit/db';
 import type { NewAssessment } from '@muvit/db/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import type {
   AssessmentsRepository,
   CreateAssessmentInput,
@@ -23,10 +23,13 @@ export class DrizzleAssessmentsRepository implements AssessmentsRepository {
     const where = eq(schema.assessments.studentId, studentId);
 
     const items = await db
-      .select()
+      .select({
+        ...getTableColumns(schema.assessments),
+        dateAssessmentCount: sql<number>`(count(*) over (partition by ${schema.assessments.studentId}, ${schema.assessments.date}))::int`,
+      })
       .from(schema.assessments)
       .where(where)
-      .orderBy(desc(schema.assessments.date))
+      .orderBy(desc(schema.assessments.date), asc(schema.assessments.id))
       .limit(limit)
       .offset(offset);
     const countResult = await db

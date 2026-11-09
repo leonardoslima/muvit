@@ -3,11 +3,14 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Assessment } from '../../application/assessments/assessment-data';
 import { StudentAssessmentCard } from './student-assessment-card';
 
-function assessment(overrides: Partial<Assessment> = {}): Assessment {
+function assessment(
+  overrides: Partial<Assessment & { dateAssessmentCount: number }> = {},
+): Assessment & { dateAssessmentCount: number } {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     studentId: '22222222-2222-4222-8222-222222222222',
     date: '2026-10-14',
+    dateAssessmentCount: 1,
     weightKg: null,
     heightCm: null,
     bodyFatPct: null,
@@ -20,6 +23,21 @@ function assessment(overrides: Partial<Assessment> = {}): Assessment {
 }
 
 describe('StudentAssessmentCard', () => {
+  it('exibe aviso de ambiguidade sem evolução arbitrária', () => {
+    render(
+      <StudentAssessmentCard
+        assessment={assessment({ weightKg: 80, dateAssessmentCount: 2 })}
+        previousAssessment={assessment({ weightKg: 78.5, dateAssessmentCount: 2 })}
+        onOpenPhoto={() => undefined}
+      />,
+    );
+    expect(
+      screen.getByText(
+        'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.',
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Peso: .*a mais/)).toBeNull();
+  });
   it('exibe somente altura e circunferências recebidas', () => {
     render(
       <StudentAssessmentCard
@@ -59,7 +77,7 @@ describe('StudentAssessmentCard', () => {
     render(
       <StudentAssessmentCard
         assessment={assessment({ weightKg: 72.4, bodyFatPct: 21.6 })}
-        previousAssessment={assessment({ weightKg: 73.2, bodyFatPct: 22 })}
+        previousAssessment={assessment({ date: '2026-10-13', weightKg: 73.2, bodyFatPct: 22 })}
         onOpenPhoto={() => undefined}
       />,
     );

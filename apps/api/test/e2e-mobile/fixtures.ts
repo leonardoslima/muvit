@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { db, queryClient, schema } from '@muvit/db';
 import { and, eq, inArray, isNull, like } from 'drizzle-orm';
 
-export type Scenario = 'aluno' | 'professor' | 'isolamento';
+export type Scenario = 'aluno' | 'professor' | 'isolamento' | 'avaliacoes-empatadas';
 export type FixtureCredentials = {
   studentA: { name: string; email: string; password: string };
   studentB: { name: string; email: string; password: string };
@@ -28,6 +28,7 @@ type Assessment = {
   weightKg: string;
   heightCm: string | null;
   notes: string | null;
+  dateAssessmentCount?: number;
 };
 
 export async function cleanupScenarioFixture(input: {
@@ -70,6 +71,8 @@ export async function cleanupScenarioFixture(input: {
 }
 
 export type FixtureManifest = {
+  tiedStudent?: FixtureAccount;
+  tiedTrainer?: FixtureAccount;
   runId: string;
   scenario: Scenario;
   referenceDate: string;
@@ -323,6 +326,36 @@ export async function prepareScenario(input: {
     plans: {},
     assessments: {},
   };
+
+  if (input.scenario === 'avaliacoes-empatadas') {
+    const trainer = await createAccount(input.apiUrl, input.credentials.trainerA, 'trainer');
+    const student = await createAccount(input.apiUrl, input.credentials.studentA, 'student');
+    expectStatus(
+      await api(input.apiUrl, '/trainers/onboarding', {
+        method: 'POST',
+        cookie: trainer.cookie,
+        body: {},
+      }),
+      200,
+      'Onboarding professor',
+    );
+    // Vínculo de fixture; avaliações e leituras continuam atravessando HTTP autenticado.
+    await db
+      .update(schema.students)
+      .set({ trainerId: trainer.profileId })
+      .where(eq(schema.students.id, student.profileId));
+    manifest.tiedStudent = publicAccount(student);
+    manifest.tiedTrainer = publicAccount(trainer);
+    manifest.assessments.trainerStudentA = await createAssessment(
+      input.apiUrl,
+      trainer,
+      { id: student.profileId, name: student.name },
+      input.date,
+      80,
+      'Baseline empate E2E',
+    );
+    return manifest;
+  }
 
   if (input.scenario === 'aluno' || input.scenario === 'isolamento') {
     const a = await createAccount(input.apiUrl, input.credentials.studentA, 'student');
@@ -611,6 +644,73 @@ export async function verifyScenario(input: {
   const checks: Check[] = [];
   const add = (name: string) => checks.push({ name, status: 'passed' });
   const { manifest } = input;
+  if (manifest.scenario === 'avaliacoes-empatadas') {
+    if (!manifest.tiedStudent || !manifest.tiedTrainer)
+      throw new Error('Fixture de empate incompleta');
+    const student = await signInAccount(
+      input.apiUrl,
+      input.credentials.studentA,
+      'student',
+      manifest.tiedStudent,
+    );
+    const trainer = await signInAccount(
+      input.apiUrl,
+      input.credentials.trainerA,
+      'trainer',
+      manifest.tiedTrainer,
+    );
+    const teacherList = await assessmentList(input.apiUrl, trainer.cookie, student.profileId);
+    const selfList = await assessmentList(input.apiUrl, student.cookie);
+    const expectedCount = input.stage === 'result' ? 2 : 1;
+    const baseline = manifest.assessments.trainerStudentA;
+    for (const list of [teacherList, selfList]) {
+      if (list.total !== expectedCount || list.items.length !== expectedCount)
+        throw new Error('Quantidade de avaliações empatadas incorreta');
+      if (new Set(list.items.map((item) => item.id)).size !== expectedCount)
+        throw new Error('IDs duplicados');
+      const original = list.items.find((item) => item.id === baseline?.id);
+      if (!original || Number(original.weightKg) !== 80 || original.notes !== 'Baseline empate E2E')
+        throw new Error('Baseline alterado');
+      if (
+        list.items.some(
+          (item) =>
+            item.date !== manifest.referenceDate ||
+            item.dateAssessmentCount !== expectedCount ||
+            Number(item.heightCm) !== 170,
+        )
+      )
+        throw new Error('Data, contagem ou altura incorreta');
+      if (
+        expectedCount === 2 &&
+        !list.items.some(
+          (item) =>
+            item.id !== baseline?.id &&
+            Number(item.weightKg) === 78.5 &&
+            item.notes === 'Avaliacao E2E',
+        )
+      )
+        throw new Error('Nova avaliação incorreta');
+    }
+    if (JSON.stringify(teacherList) !== JSON.stringify(selfList))
+      throw new Error('Leituras professor/aluno divergentes');
+    for (const item of selfList.items) {
+      for (const owner of [student, trainer]) {
+        const detail = expectStatus(
+          await api<Assessment>(input.apiUrl, `/assessments/${item.id}`, { cookie: owner.cookie }),
+          200,
+          'Detalhe autorizado',
+        );
+        if (
+          detail.id !== item.id ||
+          detail.date !== item.date ||
+          Number(detail.weightKg) !== Number(item.weightKg)
+        )
+          throw new Error('Detalhe divergente');
+      }
+    }
+    add('mesmos IDs, métricas, datas e contagens nas leituras autorizadas');
+    return { checks };
+  }
   if (input.stage === 'setup') {
     if (manifest.independentStudents) {
       const metadata = manifest.independentStudents.a;
@@ -1004,7 +1104,12 @@ async function main(): Promise<void> {
   const apiUrl = process.env.E2E_API_URL;
   const scenario = process.env.E2E_SCENARIO;
   const runId = process.env.E2E_RUN_ID;
-  if (!apiUrl || !scenario || !runId || !['aluno', 'professor', 'isolamento'].includes(scenario)) {
+  if (
+    !apiUrl ||
+    !scenario ||
+    !runId ||
+    !['aluno', 'professor', 'isolamento', 'avaliacoes-empatadas'].includes(scenario)
+  ) {
     throw new Error('Configuração de fixture inválida');
   }
   const credentials = credentialsFromEnvironment();

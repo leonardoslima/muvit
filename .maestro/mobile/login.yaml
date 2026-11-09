@@ -37,11 +37,10 @@ appId: ${MAESTRO_E2E_APP_ID}
     id: login-password
     focused: true
 - inputText: ${E2E_PASSWORD}
-- scrollUntilVisible:
-    element:
-      text: Entrar
-      below: Senha
-    direction: DOWN
+- pressKey: Back
+- assertVisible:
+    text: Entrar
+    below: Senha
 - tapOn:
     text: Entrar
     below: Senha

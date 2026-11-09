@@ -8,3 +8,4 @@ export * from './billing.js';
 export * from './reports.js';
 export * from './workout-plan-drafts.js';
 export * from './workout-evolution.js';
+export * from './assessment-chronology.js';

@@ -1,5 +1,5 @@
 import { getStudentsById, getStudentsByStudentIdAssessments } from '@/lib/api/sdk.gen';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AssessmentsListPage from './page';
 
@@ -38,6 +38,7 @@ const student = {
 };
 const assessment = {
   id: 'assessment-1',
+  dateAssessmentCount: 1,
   studentId: 'student-1',
   date: '2026-03-15',
   weightKg: 62.5,
@@ -50,8 +51,159 @@ const assessment = {
 };
 
 describe('AssessmentsListPage', () => {
+  const ambiguityWarning =
+    'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.';
+
   beforeEach(() => {
     vi.mocked(getStudentsById).mockResolvedValue(apiOk(student));
+  });
+
+  it('preserva detalhes empatados sem selecionar medição atual', async () => {
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({
+        items: [
+          {
+            ...assessment,
+            dateAssessmentCount: 2,
+            notes: 'Primeiro registro',
+            measurements: { waist: 80 },
+          },
+          {
+            ...assessment,
+            id: 'assessment-2',
+            dateAssessmentCount: 2,
+            weightKg: 70,
+            notes: 'Segundo registro',
+            measurements: { waist: 90 },
+          },
+        ],
+        total: 2,
+      }),
+    );
+    const { container } = render(
+      await AssessmentsListPage({ params: Promise.resolve({ id: student.id }) }),
+    );
+    expect(screen.getAllByText(ambiguityWarning)).toHaveLength(1);
+    expect(screen.queryByText('Mais recente')).not.toBeInTheDocument();
+    expect(screen.queryByText('Data mais recente')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Atual:/)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')[0]).not.toHaveClass('bg-primary/5');
+    expect(screen.getByRole('heading', { name: 'Avaliações de 15/03/2026' })).toBeInTheDocument();
+    expect(container).not.toHaveTextContent('assessment-1');
+    expect(container).not.toHaveTextContent('assessment-2');
+    expect(screen.getByText('Primeiro registro')).toBeInTheDocument();
+    expect(screen.getByText('Segundo registro')).toBeInTheDocument();
+    expect(screen.getByText('2 registros nesta data.')).toBeInTheDocument();
+    const comparison = screen.getByRole('table', { name: 'Comparação de avaliações' });
+    for (const value of ['80 cm', '90 cm']) {
+      expect(screen.getAllByText(value)).toHaveLength(2);
+      expect(within(comparison).getByText(value)).toBeInTheDocument();
+      expect(screen.getByText(value, { selector: 'dd' })).toBeInTheDocument();
+    }
+  });
+  it('informa quantos registros do grupo mais recente não foram carregados e mantém os detalhes', async () => {
+    const tiedAssessments = Array.from({ length: 100 }, (_, index) => ({
+      ...assessment,
+      id: `assessment-${index + 1}`,
+      dateAssessmentCount: 101,
+      weightKg: 60 + index,
+    }));
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({ items: tiedAssessments, total: 101 }),
+    );
+    render(await AssessmentsListPage({ params: Promise.resolve({ id: student.id }) }));
+
+    expect(
+      screen.getByText('Exibindo 100 de 101 registros nesta data. 1 registro não foi carregado.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('100 registros nesta data.')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: /^Registro com / })).toHaveLength(100);
+    expect(screen.getByRole('heading', { name: 'Registro com 60 kg' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Registro com 159 kg' })).toBeInTheDocument();
+  });
+  it('usa plural correto quando mais de um registro do grupo recente não foi carregado', async () => {
+    const tiedAssessments = [0, 1].map((index) => ({
+      ...assessment,
+      id: `assessment-${index + 1}`,
+      dateAssessmentCount: 5,
+      weightKg: 70 + index,
+    }));
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({ items: tiedAssessments, total: 5 }),
+    );
+    render(await AssessmentsListPage({ params: Promise.resolve({ id: student.id }) }));
+
+    expect(
+      screen.getByText('Exibindo 2 de 5 registros nesta data. 3 registros não foram carregados.'),
+    ).toBeInTheDocument();
+  });
+  it('permite consultar os detalhes de cada empate antigo após uma data única recente', async () => {
+    vi.mocked(getStudentsByStudentIdAssessments).mockResolvedValue(
+      apiOk({
+        items: [
+          { ...assessment, id: 'recent', date: '2026-03-16', notes: 'Registro recente' },
+          {
+            ...assessment,
+            dateAssessmentCount: 2,
+            weightKg: 78.5,
+            notes: 'Registro Web',
+            measurements: { hip: 91 },
+            photos: ['https://cdn.test/web.jpg'],
+          },
+          {
+            ...assessment,
+            id: 'assessment-2',
+            dateAssessmentCount: 2,
+            weightKg: 80,
+            notes: 'Registro via HTTP',
+            measurements: { hip: 95 },
+            photos: ['https://cdn.test/http.jpg'],
+          },
+        ],
+        total: 3,
+      }),
+    );
+    const { container } = render(
+      await AssessmentsListPage({ params: Promise.resolve({ id: student.id }) }),
+    );
+    expect(screen.getAllByText(ambiguityWarning)).toHaveLength(1);
+    expect(screen.getAllByText('Registro recente')).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Medidas mais recentes' })).toBeVisible();
+    expect(screen.queryByText(/Atual:|Variação:|Tendência/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('img', { name: 'Gráfico de evolução de Peso' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Dados de evolução de Peso' })).toBeInTheDocument();
+    const disclosures = container.querySelectorAll('details');
+    expect(disclosures).toHaveLength(2);
+    const expectedDisclosures = [
+      {
+        summary: screen.getByText('Detalhes de 15/03/2026 — 78,5 kg'),
+        note: 'Registro Web',
+        measurement: '91 cm',
+        photo: 'https://cdn.test/web.jpg',
+      },
+      {
+        summary: screen.getByText('Detalhes de 15/03/2026 — 80 kg'),
+        note: 'Registro via HTTP',
+        measurement: '95 cm',
+        photo: 'https://cdn.test/http.jpg',
+      },
+    ];
+    for (const expected of expectedDisclosures) {
+      const disclosure = expected.summary.closest('details');
+      expect(disclosure).toBeInstanceOf(HTMLElement);
+      if (!(disclosure instanceof HTMLElement)) throw new Error('Detalhes não encontrados');
+      expect(disclosure).not.toHaveAttribute('open');
+      fireEvent.click(expected.summary);
+      expect(disclosure).toHaveAttribute('open');
+      expect(within(disclosure).getByText(expected.note)).toBeVisible();
+      expect(within(disclosure).getByText(expected.measurement)).toBeVisible();
+      expect(within(disclosure).getByRole('img')).toHaveAttribute('src', expected.photo);
+      expect(within(disclosure).queryByText(/mais recentes/)).not.toBeInTheDocument();
+    }
+    expect(container).not.toHaveTextContent('assessment-1');
+    expect(container).not.toHaveTextContent('assessment-2');
   });
 
   it('mostra um estado de erro sem transformar falha em histórico vazio', async () => {
@@ -128,6 +280,11 @@ describe('AssessmentsListPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Atual: 60 kg')).toBeInTheDocument();
     expect(screen.getByText('Variação: −2,5 kg')).toBeInTheDocument();
+    const [highlightedAssessment] = screen.getAllByRole('listitem');
+    expect(highlightedAssessment).toBeDefined();
+    if (!highlightedAssessment) throw new Error('Avaliação mais recente não encontrada');
+    expect(highlightedAssessment).toHaveClass('bg-primary/5');
+    expect(within(highlightedAssessment).getByText('Mais recente')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Foto de progresso de 15/05/2026' })).toHaveAttribute(
       'src',
       'https://cdn.test/front.jpg',

@@ -14,7 +14,7 @@ export interface AssessmentsRepository {
   listForStudent(
     studentId: string,
     query: ListAssessmentsQuery,
-  ): Promise<{ items: Assessment[]; total: number }>;
+  ): Promise<{ items: Array<Assessment & { dateAssessmentCount: number }>; total: number }>;
   create(studentId: string, input: CreateAssessmentInput): Promise<Assessment>;
   findById(id: string): Promise<Assessment | null>;
   update(id: string, input: UpdateAssessmentInput): Promise<Assessment>;

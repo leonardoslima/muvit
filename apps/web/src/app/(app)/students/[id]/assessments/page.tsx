@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { configureServerClient } from '@/lib/api-client';
 import { getStudentsById, getStudentsByStudentIdAssessments } from '@/lib/api/sdk.gen';
-import { ChevronLeft, ChevronRight, ClipboardList, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Plus, TriangleAlert } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -15,6 +15,7 @@ interface Props {
 
 type Assessment = {
   id: string;
+  dateAssessmentCount: number;
   date: string;
   weightKg: string | number | null;
   heightCm: string | number | null;
@@ -35,6 +36,27 @@ function formatDate(value: string): string {
   return date.toLocaleDateString('pt-BR');
 }
 
+const AMBIGUOUS_DATE_NOTICE =
+  'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.';
+
+function assessmentLabel(assessment: Assessment): string {
+  const weight = toNum(assessment.weightKg);
+  if (weight !== null) return `${weight.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} kg`;
+  const bodyFat = toNum(assessment.bodyFatPct);
+  if (bodyFat !== null) return `${bodyFat.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  return 'sem peso informado';
+}
+
+function formatTiedGroupCount(loaded: number, declared: number): string {
+  if (loaded < declared) {
+    const missing = declared - loaded;
+    return `Exibindo ${loaded} de ${declared} registros nesta data. ${
+      missing === 1 ? '1 registro não foi carregado.' : `${missing} registros não foram carregados.`
+    }`;
+  }
+  return loaded === 1 ? '1 registro nesta data.' : `${loaded} registros nesta data.`;
+}
+
 function bmi(assessment: Assessment): number | null {
   const weight = toNum(assessment.weightKg);
   const height = toNum(assessment.heightCm);
@@ -52,17 +74,21 @@ export default async function AssessmentsListPage({ params }: Props) {
   if (studentResponse.error || !studentResponse.data) notFound();
   const student = studentResponse.data as { id?: string; name: string };
   const listError = !!listResponse.error || !listResponse.data;
-  const items = listError
-    ? []
-    : ([...(listResponse.data?.items ?? [])] as Assessment[]).sort((a, b) =>
-        b.date.localeCompare(a.date),
-      );
+  const items = listError ? [] : ([...(listResponse.data?.items ?? [])] as Assessment[]);
   const latest = items[0];
-  const series = [...items].reverse().map((assessment) => ({
-    date: assessment.date,
-    weight: toNum(assessment.weightKg),
-    bodyFat: toNum(assessment.bodyFatPct),
-  }));
+  const hasAmbiguousDate = items.some((assessment) => assessment.dateAssessmentCount > 1);
+  const latestIsUnique = latest !== undefined && latest.dateAssessmentCount === 1;
+  const latestTiedAssessments =
+    latest && !latestIsUnique ? items.filter((item) => item.date === latest.date) : [];
+  const series = [...items]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((assessment) => ({
+      date: assessment.date,
+      dateAssessmentCount: assessment.dateAssessmentCount,
+      id: assessment.id,
+      weight: toNum(assessment.weightKg),
+      bodyFat: toNum(assessment.bodyFatPct),
+    }));
 
   return (
     <div className="flex flex-col gap-6" data-responsive-layout="assessment-history">
@@ -113,6 +139,13 @@ export default async function AssessmentsListPage({ params }: Props) {
         </Link>
       </nav>
 
+      {!listError && hasAmbiguousDate && (
+        <output className="flex items-start gap-3 rounded-[12px] border border-warning bg-warning-bg px-4 py-3 text-[#7A5C00]">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+          <span className="text-sm leading-relaxed">{AMBIGUOUS_DATE_NOTICE}</span>
+        </output>
+      )}
+
       {listError ? (
         <Card role="alert" className="items-center py-12 text-center">
           <h2 className="font-display text-lg font-semibold">
@@ -152,11 +185,11 @@ export default async function AssessmentsListPage({ params }: Props) {
               {items.map((assessment, index) => (
                 <li
                   key={assessment.id}
-                  className={`px-5 py-4 ${index === 0 ? 'bg-primary/5' : ''}`}
+                  className={`px-5 py-4 ${index === 0 && latestIsUnique ? 'bg-primary/5' : ''}`}
                 >
                   <p className="font-display text-sm font-semibold">
                     {formatDate(assessment.date)}
-                    {index === 0 && (
+                    {index === 0 && latestIsUnique && (
                       <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
                         Mais recente
                       </span>
@@ -184,7 +217,7 @@ export default async function AssessmentsListPage({ params }: Props) {
                   metricLabel="Peso"
                   unit="kg"
                   color="var(--primary)"
-                  points={series.map((point) => ({ date: point.date, value: point.weight }))}
+                  points={series.map((point) => ({ ...point, value: point.weight }))}
                 />
               </Card>
               <Card>
@@ -193,12 +226,47 @@ export default async function AssessmentsListPage({ params }: Props) {
                   metricLabel="Gordura corporal"
                   unit="%"
                   color="var(--secondary)"
-                  points={series.map((point) => ({ date: point.date, value: point.bodyFat }))}
+                  points={series.map((point) => ({ ...point, value: point.bodyFat }))}
                 />
               </Card>
             </div>
-            <Comparison assessments={items.slice(0, 3).reverse()} />
-            {latest && <LatestDetails assessment={latest} />}
+            <Comparison
+              assessments={items.slice(0, 3).sort((a, b) => a.date.localeCompare(b.date))}
+            />
+            {latestTiedAssessments.length > 0 && latest ? (
+              <section aria-labelledby="latest-tied-heading" className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1">
+                  <h2 id="latest-tied-heading" className="font-display text-base font-semibold">
+                    Avaliações de {formatDate(latest.date)}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {formatTiedGroupCount(latestTiedAssessments.length, latest.dateAssessmentCount)}
+                  </p>
+                </div>
+                {latestTiedAssessments.map((item) => (
+                  <div key={item.id} className="flex flex-col gap-3">
+                    <h3 className="font-display text-sm font-semibold">
+                      Registro com {assessmentLabel(item)}
+                    </h3>
+                    <LatestDetails assessment={item} />
+                  </div>
+                ))}
+              </section>
+            ) : (
+              latest && <LatestDetails assessment={latest} isLatest />
+            )}
+            {items
+              .filter((item) => item.date !== latest?.date)
+              .map((item) => (
+                <details key={item.id} className="rounded-xl border border-border p-5">
+                  <summary className="cursor-pointer font-display text-sm font-semibold focus-visible:outline-2 focus-visible:outline-primary">
+                    Detalhes de {formatDate(item.date)} — {assessmentLabel(item)}
+                  </summary>
+                  <div className="mt-4">
+                    <LatestDetails assessment={item} />
+                  </div>
+                </details>
+              ))}
           </div>
         </div>
       )}
@@ -239,7 +307,7 @@ function Comparison({ assessments }: { assessments: Assessment[] }) {
               {assessments.map((item, index) => (
                 <th key={item.id} className="px-4 py-3 text-left">
                   {formatDate(item.date)}
-                  {index === assessments.length - 1 && (
+                  {index === assessments.length - 1 && item.dateAssessmentCount === 1 && (
                     <span className="ml-2 text-[10px] text-primary">Mais recente</span>
                   )}
                 </th>
@@ -271,12 +339,25 @@ function Comparison({ assessments }: { assessments: Assessment[] }) {
   );
 }
 
-function LatestDetails({ assessment }: { assessment: Assessment }) {
+function LatestDetails({
+  assessment,
+  isLatest = false,
+}: { assessment: Assessment; isLatest?: boolean }) {
   const measurements = Object.entries(assessment.measurements ?? {});
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <Card>
-        <h2 className="font-display text-base font-semibold">Medidas mais recentes</h2>
+        {assessment.notes && (
+          <div className="flex flex-col gap-1">
+            <span className="font-display text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Observações
+            </span>
+            <p className="text-sm text-muted-foreground">{assessment.notes}</p>
+          </div>
+        )}
+        <h2 className="font-display text-base font-semibold">
+          {isLatest ? 'Medidas mais recentes' : 'Medidas registradas'}
+        </h2>
         {measurements.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma medida de circunferência registrada.
@@ -293,7 +374,9 @@ function LatestDetails({ assessment }: { assessment: Assessment }) {
         )}
       </Card>
       <Card>
-        <h2 className="font-display text-base font-semibold">Fotos mais recentes</h2>
+        <h2 className="font-display text-base font-semibold">
+          {isLatest ? 'Fotos mais recentes' : 'Fotos registradas'}
+        </h2>
         {!assessment.photos?.length ? (
           <p className="text-sm text-muted-foreground">Nenhuma foto de progresso registrada.</p>
         ) : (

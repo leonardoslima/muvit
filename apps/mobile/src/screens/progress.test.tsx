@@ -65,6 +65,46 @@ beforeEach(() => {
 });
 
 describe('ProgressScreen', () => {
+  it.each([
+    [2, 1],
+    [1, 3],
+    [undefined, 1],
+    [1, undefined],
+  ])('bloqueia delta com contagens atual %s e anterior %s', async (currentCount, previousCount) => {
+    apiState.request.mockResolvedValueOnce({
+      total: 2,
+      items: [
+        {
+          id: 'current',
+          date: '2026-06-12',
+          dateAssessmentCount: currentCount,
+          weightKg: 80,
+          bodyFatPct: 19,
+          notes: null,
+        },
+        {
+          id: 'previous',
+          date: '2026-05-12',
+          dateAssessmentCount: previousCount,
+          weightKg: 82,
+          bodyFatPct: 21,
+          notes: null,
+        },
+      ],
+    });
+    renderWithQueryClient();
+    const card = await screen.findByTestId('assessment-card-current');
+    expect(within(card).getByText('80 kg')).toBeTruthy();
+    expect(within(card).queryByText(/Peso:/)).toBeNull();
+    expect(within(card).queryByText(/Gordura:/)).toBeNull();
+    if (currentCount === 2)
+      expect(
+        within(card).getByText(
+          'Há mais de uma avaliação nesta data. A ordem das medições não foi informada.',
+        ),
+      ).toBeTruthy();
+  });
+
   it('exibe carregamento enquanto busca as avaliações', () => {
     apiState.request.mockReturnValueOnce(new Promise<never>(() => undefined));
 
@@ -168,6 +208,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-new',
           date: '2026-06-12',
+          dateAssessmentCount: 1,
           weightKg: 80,
           bodyFatPct: 19,
           notes: 'Evoluiu',
@@ -175,6 +216,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-previous',
           date: '2026-05-12',
+          dateAssessmentCount: 1,
           weightKg: 82,
           bodyFatPct: 21,
           notes: null,
@@ -208,6 +250,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-gain',
           date: '2026-06-12',
+          dateAssessmentCount: 1,
           weightKg: 82,
           bodyFatPct: 23,
           notes: null,
@@ -215,6 +258,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-before-gain',
           date: '2026-05-12',
+          dateAssessmentCount: 1,
           weightKg: 80,
           bodyFatPct: 21,
           notes: null,
@@ -236,6 +280,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-without-measures',
           date: 'data não informada',
+          dateAssessmentCount: 1,
           weightKg: null,
           bodyFatPct: null,
           notes: null,
@@ -258,6 +303,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-newest',
           date: '2026-10-14',
+          dateAssessmentCount: 1,
           weightKg: 80,
           bodyFatPct: null,
           notes: null,
@@ -265,6 +311,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-adjacent-without-measures',
           date: '2026-09-14',
+          dateAssessmentCount: 1,
           weightKg: null,
           bodyFatPct: null,
           notes: null,
@@ -272,6 +319,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-older',
           date: '2026-08-14',
+          dateAssessmentCount: 1,
           weightKg: 84,
           bodyFatPct: 22,
           notes: null,
@@ -298,6 +346,7 @@ describe('ProgressScreen', () => {
         {
           id: 'assessment-kept',
           date: '2026-10-14',
+          dateAssessmentCount: 1,
           weightKg: 80,
           bodyFatPct: 19,
           notes: 'Histórico preservado',

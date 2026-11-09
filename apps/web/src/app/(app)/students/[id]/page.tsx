@@ -2,13 +2,14 @@ import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { configureServerClient } from '@/lib/api-client';
 import {
   getStudentsById,
   getStudentsByStudentIdAssessments,
   getStudentsByStudentIdWorkoutPlans,
 } from '@/lib/api/sdk.gen';
-import { ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActiveWorkoutCard } from './_active-workout-card';
@@ -37,6 +38,7 @@ type Student = {
 };
 
 type Assessment = {
+  dateAssessmentCount: number;
   id: string;
   date: string;
   weightKg: string | number | null;
@@ -104,6 +106,7 @@ function formatChartMonth(date: string): string {
 }
 
 export function buildWeightChartPoints(assessments: Assessment[]) {
+  if (assessments.some((item) => item.dateAssessmentCount > 1)) return [];
   return assessments
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -131,9 +134,7 @@ export default async function StudentDetailPage({ params }: Props) {
   ]);
   if (res.error || !res.data) notFound();
   const s = res.data as Student;
-  const assessments = ((assessmentsRes.data?.items ?? []) as Assessment[]).sort((a, b) =>
-    b.date.localeCompare(a.date),
-  );
+  const assessments = (assessmentsRes.data?.items ?? []) as Assessment[];
   const assessmentsLoadFailed = Boolean(assessmentsRes.error);
   const activeWorkoutPlans = ((workoutPlansRes.data?.items ?? []) as WorkoutPlan[]).filter(
     (plan) => plan.status === 'active',
@@ -245,12 +246,34 @@ export default async function StudentDetailPage({ params }: Props) {
           activeWorkoutPlan={activeWorkoutPlan}
           loadFailed={workoutPlansLoadFailed}
         />
-        <LatestAssessmentCard
-          studentId={s.id}
-          latestAssessment={latestAssessment}
-          weightChartPoints={weightChartPoints}
-          loadFailed={assessmentsLoadFailed}
-        />
+        {latestAssessment && latestAssessment.dateAssessmentCount > 1 ? (
+          <Card id="ultima-avaliacao" className="gap-0 overflow-hidden p-0">
+            <CardHeader className="border-b border-border px-5 py-4">
+              <CardTitle>Última avaliação</CardTitle>
+            </CardHeader>
+            <CardContent className="gap-4 px-5 py-5">
+              <output className="flex items-start gap-2 rounded-lg border border-warning bg-warning-bg px-3.5 py-2.5 text-[#7A5C00]">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+                <span className="text-sm leading-relaxed">
+                  Há mais de uma avaliação nesta data. A ordem das medições não foi informada.
+                </span>
+              </output>
+              <p className="text-sm text-muted-foreground">
+                Os detalhes de cada registro estão disponíveis no histórico de avaliações.
+              </p>
+              <Button asChild variant="secondary" size="sm" className="self-start">
+                <Link href={`/students/${s.id}/assessments`}>Ver histórico de avaliações</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <LatestAssessmentCard
+            studentId={s.id}
+            latestAssessment={latestAssessment}
+            weightChartPoints={weightChartPoints}
+            loadFailed={assessmentsLoadFailed}
+          />
+        )}
       </div>
     </>
   );

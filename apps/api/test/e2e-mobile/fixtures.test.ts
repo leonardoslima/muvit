@@ -63,6 +63,59 @@ afterAll(async () => {
 });
 
 describe('fixtures E2E mobile', () => {
+  it('prepara empate entre clientes e verifica mesmas avaliações nas leituras autorizadas', async () => {
+    const runId = randomUUID().replaceAll('-', '').slice(0, 12);
+    const scenario = 'avaliacoes-empatadas';
+    const runCredentials = credentials(runId, scenario);
+    const manifest = await prepareTestScenario({
+      apiUrl: baseUrl,
+      credentials: runCredentials,
+      date: localDate(),
+      runId,
+      scenario,
+    });
+    await verifyScenario({
+      apiUrl: baseUrl,
+      credentials: runCredentials,
+      manifest,
+      stage: 'setup',
+    });
+    await expect(
+      verifyScenario({ apiUrl: baseUrl, credentials: runCredentials, manifest, stage: 'result' }),
+    ).rejects.toThrow();
+    const login = await fetch(new URL('/api/auth/sign-in/email', baseUrl), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'muvit://' },
+      body: JSON.stringify(runCredentials.trainerA),
+    });
+    expect(login.status).toBe(200);
+    const cookie = login.headers
+      .getSetCookie()
+      .map((value) => value.split(';', 1)[0])
+      .join('; ');
+    const created = await fetch(
+      new URL(`/students/${manifest.tiedStudent?.profileId}/assessments`, baseUrl),
+      {
+        method: 'POST',
+        headers: { cookie, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          date: localDate(),
+          weightKg: 78.5,
+          heightCm: 170,
+          notes: 'Avaliacao E2E',
+        }),
+      },
+    );
+    expect(created.status).toBe(201);
+    const result = await verifyScenario({
+      apiUrl: baseUrl,
+      credentials: runCredentials,
+      manifest,
+      stage: 'result',
+    });
+    expect(result.checks.length).toBeGreaterThan(0);
+    expect(result.checks.every((check) => check.status === 'passed')).toBe(true);
+  }, 60_000);
   it('prepara aluno independente com perfil próprio, plano e avaliação baseline', async () => {
     const runId = randomUUID().replaceAll('-', '').slice(0, 12);
     const scenario = 'aluno';
