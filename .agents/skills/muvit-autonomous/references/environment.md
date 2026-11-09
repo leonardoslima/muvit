@@ -11,6 +11,31 @@
 
 ## Cuidados específicos
 
+- Quando o usuário utilizar Orca, criar, reutilizar e controlar todos os terminais de trabalho pelo Orca, conforme o guia versionado `orca-cli`, no contexto/worktree da rodada. Isso inclui setup, testes, builds e serviços que abrem portas, como API, Metro e web. Não usar janelas externas de PowerShell/cmd, PTYs avulsos do executor, `Start-Process`, jobs ou processos destacados para executar esse trabalho fora do Orca. O executor pode chamar a CLI Orca para controlar os terminais internos.
+- Reutilizar os shells auxiliares da tarefa e fechá-los pelo Orca assim que os comandos terminarem e as evidências forem salvas. Antes de fechar, confirmar no estado atual que são shells próprios e ociosos, sem servidor, agente ou tarefa ativa; não acumular abas de validação nem fechar sessões do usuário por título ou handle histórico.
+- Antes de iniciar um serviço, conferir a disponibilidade da porta e seu proprietário; registrar o terminal Orca, PID e porta utilizados para acompanhamento e encerramento. Portas são recursos do sistema operacional: a exigência de serem internas significa que os processos de trabalho que as utilizam são iniciados e gerenciados pelo Orca. Containers continuam sujeitos ao isolamento Docker descrito acima, com seus comandos de operação executados nos terminais internos. Se o Orca estiver indisponível, registrar o bloqueio, sem fallback para terminal externo.
 - No Windows, build Android/CMake pode falhar com caminhos físicos longos mesmo se aliases com `SUBST` encurtarem o shell; documentar e corrigir na camada de path/toolchain.
 - Testes não podem afirmar sucesso usando mock quando a aceitação exige API/DB reais. Se serviço indisponível, marcar `NOT_PROVEN` com motivo.
 - Se os recursos não puderem subir por falta de permissão, bloqueio operacional documentado em vez de improvisar credenciais.
+
+## Provisionamento e ciclo de vida (uso explícito)
+
+`scripts/prepare_environment.py` é independente do host/agente e separado dos runners E2E existentes; não é disparado automaticamente pela automação. Requer Windows, Python 3.10+, Git e as ferramentas dos recursos selecionados (Docker e/ou Android SDK). Não usa CLI, variáveis de ambiente ou APIs do Orca e não instala SDK, imagens ou dependências. Execute da raiz; quando o host for Orca, o chamador deve usar seus terminais internos.
+
+| Ação | Efeito |
+| --- | --- |
+| `prepare --card MUV-N --run-id <execução> --backend --android --system-image <id-instalado> --apply` | Cria/reutiliza PostgreSQL e a definição do AVD exclusivos; não inicia o emulador. Use somente os seletores necessários. Sem ação explícita, mantém compatibilidade com `prepare`. |
+| `run-android --card MUV-N --run-id <execução> --apply` | Executa o emulador em primeiro plano no terminal do chamador, até seu encerramento. Não abre terminal, janela de shell ou processo destacado. |
+| `status --card MUV-N --run-id <execução>` | Consulta os recursos reais e verifica ownership, sem confiar no último status salvo. |
+| `stop --card MUV-N --run-id <execução> --apply` | Para somente o container e o emulador próprios; preserva banco, volumes, AVD e evidências. |
+| `remove --card MUV-N --run-id <execução> --apply --delete-data` | Exclui container/volumes e AVD próprios já parados. Não para recursos implicitamente. Só usar quando a exclusão dos dados estiver no escopo autorizado; fechamento automático usa `stop`. |
+
+Sem `--apply`, ações mutáveis só mostram o plano e não alteram recursos. `status` dispensa essa opção. Somente `prepare` aceita `--backend`, `--android` e `--system-image`; as demais ações leem o estado. As ações curtas imprimem um objeto JSON; `run-android` encaminha os logs do emulador e propaga seu exit code. Exit diferente de zero bloqueia avanço. Não confundir plano sem aplicação com recursos disponíveis.
+
+O auxiliar cria PostgreSQL 16 com porta local atribuída pelo Docker. Para Android, `prepare` retorna `android_launch`, um vetor de argumentos para executar `run-android` em outro terminal do host. Em Orca, o chamador abre esse terminal pela CLI Orca e conserva seu handle fora da lógica de infraestrutura. Em PowerShell comum ou outro agente Windows, executa o mesmo vetor no terminal apropriado. Consulte `status` em outro shell até `android_booted=true` antes do QA; `prepared=true` só confirma a preparação do banco/AVD.
+
+Estado v2 em `artifacts/<card>/<execução>/environment/state.json` vincula worktree/card/execução, ID Docker/label, caminho AVD, porta e PID observado. Cleanup verifica todos os recursos antes de agir, recusa container substituído, AVD redirecionado, serial alheio ou emulador offline e confirma o resultado. Não fecha terminais por handle histórico, não executa prune nem encerra ADB compartilhado. `run-android` libera a trava antes de aguardar o filho, permitindo `stop` em outro shell. Depois de encerramento manual/inesperado, execute `stop` para reconciliar o lançamento antes de tentar iniciá-lo novamente.
+
+Não editar o estado para contornar recusas. Estado legado do protótipo ou recibo incompleto exige reconciliação manual; não há adoção automática por nome. Se interrompido, confira PID e recursos antes de remover manualmente `prepare.lock`; não tente novamente às cegas. Após `remove`, use novo `run-id` para criar outro ambiente; evidências e estado de remoção são preservados.
+
+O sucesso de `prepare` comprova conexão SQL e criação do AVD, sem boot, migrations, seed, API, Metro, instalação do Development Build ou QA visual. O boot é comprovado por `status`. Não substitui automaticamente bancos gerenciados pelos runners E2E. A senha aleatória fica na configuração Docker, não no relatório. Verificações de recusa: `python -B -X utf8 -m unittest discover -s .agents/skills/muvit-autonomous/scripts -p test_environment_lifecycle.py -v`.
