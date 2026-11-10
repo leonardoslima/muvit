@@ -51,8 +51,12 @@ export function StudentListTable({ state }: StudentListTableProps) {
         </CardHeader>
 
         {state.status === 'error' ? (
-          <CardContent className="px-5 py-10 text-center text-sm text-muted-foreground">
-            {state.message}
+          <CardContent role="alert" className="items-center px-5 py-10 text-center">
+            <p className="text-sm text-muted-foreground">{state.message}</p>
+            <p className="text-sm text-muted-foreground">Tente novamente em alguns instantes.</p>
+            <Button asChild variant="secondary" size="sm">
+              <a href="/dashboard">Tentar novamente</a>
+            </Button>
           </CardContent>
         ) : (
           <CardContent className="gap-0 overflow-x-auto p-0">
@@ -81,36 +85,12 @@ export function StudentListTable({ state }: StudentListTableProps) {
           </CardContent>
         )}
 
-        <CardFooter className="justify-between px-5 py-3 pt-3">
-          <span className="text-xs text-muted-foreground">
-            Mostrando {state.rows.length} de {state.total} alunos
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="h-8 px-3 text-xs"
-              disabled
-            >
-              Anterior
-            </Button>
-            <span className="grid size-8 place-items-center rounded-md bg-primary font-display text-xs font-semibold text-primary-foreground">
-              1
+        {state.status === 'ready' && (
+          <CardFooter className="justify-between px-5 py-3 pt-3">
+            <span className="text-xs text-muted-foreground">
+              Mostrando {state.rows.length} de {state.total} alunos
             </span>
-            {pageCount > 1 && (
-              <Link
-                href="/students"
-                className="grid size-8 place-items-center rounded-md font-display text-xs text-muted-foreground hover:bg-card-hover"
-              >
-                2
-              </Link>
-            )}
-            {hasMoreStudents ? (
-              <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
-                <Link href="/students">Próxima</Link>
-              </Button>
-            ) : (
+            <div className="flex items-center gap-1">
               <Button
                 type="button"
                 variant="secondary"
@@ -118,11 +98,37 @@ export function StudentListTable({ state }: StudentListTableProps) {
                 className="h-8 px-3 text-xs"
                 disabled
               >
-                Próxima
+                Anterior
               </Button>
-            )}
-          </div>
-        </CardFooter>
+              <span className="grid size-8 place-items-center rounded-md bg-primary font-display text-xs font-semibold text-primary-foreground">
+                1
+              </span>
+              {pageCount > 1 && (
+                <Link
+                  href="/students"
+                  className="grid size-8 place-items-center rounded-md font-display text-xs text-muted-foreground hover:bg-card-hover"
+                >
+                  2
+                </Link>
+              )}
+              {hasMoreStudents ? (
+                <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
+                  <Link href="/students">Próxima</Link>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  disabled
+                >
+                  Próxima
+                </Button>
+              )}
+            </div>
+          </CardFooter>
+        )}
       </Card>
     </section>
   );

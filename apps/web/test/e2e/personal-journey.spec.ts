@@ -13,10 +13,18 @@ test('autentica e cadastra aluno, avaliação e plano ativo com persistência', 
   const planName = `Plano E2E ${suffix}`;
   let studentId = '';
   let workoutId = '';
-  await test.step('autenticação e cadastro', async () => {
+  await test.step('carteira vazia válida antes do cadastro', async () => {
     await loginAs(page, account);
     await page.screenshot({ path: testInfo.outputPath('apos-login.png') });
-    await page.getByRole('link', { name: 'Novo aluno' }).first().click();
+    await page.getByRole('link', { name: 'Alunos', exact: true }).first().click();
+    await expect(page).toHaveURL(/\/students$/);
+    await expect(page.getByText('0 alunos cadastrados')).toBeVisible();
+    await expect(page.getByText('Nenhum aluno cadastrado ainda.')).toBeVisible();
+    await page.getByRole('link', { name: 'Cadastrar primeiro aluno' }).click();
+    await expect(page).toHaveURL(/\/students\/new$/);
+    await page.screenshot({ path: testInfo.outputPath('carteira-vazia.png') });
+  });
+  await test.step('autenticação e cadastro', async () => {
     await page.getByLabel('Nome completo').fill(studentName);
     await page.getByLabel('E-mail').fill(`aluno-${suffix}@example.invalid`);
     await page.getByRole('button', { name: 'Continuar' }).click();
@@ -121,6 +129,33 @@ test('autentica e cadastra aluno, avaliação e plano ativo com persistência', 
     const student = await api.get(`/students/${studentId}`);
     expect(student.ok()).toBeTruthy();
     expect(await student.json()).toMatchObject({ id: studentId, name: studentName });
+  });
+  await test.step('carteira e dashboard com dados reais', async () => {
+    await page.getByRole('link', { name: 'Alunos', exact: true }).first().click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/students');
+    const assertWallet = async () => {
+      await expect(page.getByText('1 aluno cadastrado')).toBeVisible();
+      await expect(page.getByRole('link', { name: new RegExp(studentName) }).first()).toBeVisible();
+    };
+    await assertWallet();
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    await assertWallet();
+    await page.screenshot({ path: testInfo.outputPath('carteira-com-aluno.png') });
+
+    await page.getByRole('link', { name: 'Dashboard', exact: true }).first().click();
+    await expect.poll(() => new URL(page.url()).pathname).toBe('/dashboard');
+    const assertDashboard = async () => {
+      const activeStudents = page.getByRole('article', { name: 'Alunos ativos' });
+      await expect(activeStudents).toContainText('1');
+      await expect(activeStudents).toContainText(/\+1 esta semana|1 no total/);
+      await expect(page.getByText(studentName).first()).toBeVisible();
+      await expect(page.getByText('Mostrando 1 de 1 alunos')).toBeVisible();
+    };
+    await assertDashboard();
+    await page.reload();
+    await assertDashboard();
+    await page.screenshot({ path: testInfo.outputPath('dashboard-com-aluno.png') });
   });
   await test.step('reabertura após sair', async () => {
     await page.getByRole('button', { name: 'Sair' }).click();

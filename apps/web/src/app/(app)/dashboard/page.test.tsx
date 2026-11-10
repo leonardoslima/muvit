@@ -57,6 +57,27 @@ function mockSummary() {
   );
 }
 
+function mockSummaryZeros() {
+  vi.mocked(getTrainerSummary).mockResolvedValue(
+    apiOk({
+      students: {
+        total: 0,
+        active: 0,
+        paused: 0,
+        inactive: 0,
+        newThisWeek: 0,
+        inactive7d: 0,
+      },
+      workouts: { activePlans: 0, expiringThisWeek: 0 },
+      assessments: { last30d: 0, pending: 0 },
+    }),
+  );
+}
+
+function mockEmptyStudents() {
+  vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [], total: 0 }));
+}
+
 function mockStudents(total = 1) {
   vi.mocked(getStudents).mockResolvedValue(
     apiOk({
@@ -221,5 +242,128 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('region', { name: 'Lista de alunos' })).toHaveTextContent(
       'Não foi possível carregar a lista de alunos.',
     );
+  });
+
+  it('isola indisponibilidade do resumo e mantém a lista carregada', async () => {
+    vi.mocked(getTrainerSummary).mockResolvedValue(apiError());
+
+    render(await DashboardPage());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Indicadores indisponíveis');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Não foi possível carregar os indicadores. Tente novamente em alguns instantes.',
+    );
+    expect(screen.getByRole('link', { name: 'Tentar novamente' })).toHaveAttribute(
+      'href',
+      '/dashboard',
+    );
+    expect(screen.queryAllByRole('article')).toHaveLength(0);
+    expect(screen.queryByText('Todas em dia')).not.toBeInTheDocument();
+    expect(screen.queryByText('Todos em movimento')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nenhum vencimento')).not.toBeInTheDocument();
+    expect(screen.getByText('Ana Lima')).toBeInTheDocument();
+    expect(screen.getByText('Mostrando 1 de 1 alunos')).toBeInTheDocument();
+  });
+
+  it('trata rejeição e ausência de data do resumo como indisponibilidade', async () => {
+    vi.mocked(getTrainerSummary).mockRejectedValue(new Error('network down'));
+    const rejected = render(await DashboardPage());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Indicadores indisponíveis');
+    expect(screen.queryAllByRole('article')).toHaveLength(0);
+    rejected.unmount();
+
+    vi.mocked(getTrainerSummary).mockResolvedValue({
+      data: undefined,
+      error: undefined,
+      request: new Request('https://api.test'),
+      response: new Response(null, { status: 200 }),
+    });
+    render(await DashboardPage());
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Indicadores indisponíveis');
+    expect(screen.queryAllByRole('article')).toHaveLength(0);
+  });
+
+  it('mantém métricas e hints positivos quando o resumo traz zeros reais', async () => {
+    mockSummaryZeros();
+
+    render(await DashboardPage());
+
+    const metrics = screen.getAllByRole('article');
+    expect(metrics).toHaveLength(4);
+    expect(screen.getByText('Todas em dia')).toBeInTheDocument();
+    expect(screen.getByText('Todos em movimento')).toBeInTheDocument();
+    expect(screen.getByText('Nenhum vencimento')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    for (const metric of metrics) expect(metric).toHaveTextContent('0');
+  });
+
+  it('mantém as métricas e remove rodapé e paginação quando só a lista falha', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiError());
+
+    render(await DashboardPage());
+
+    const section = screen.getByRole('region', { name: 'Lista de alunos' });
+    expect(within(section).getByRole('alert')).toHaveTextContent(
+      'Não foi possível carregar a lista de alunos.',
+    );
+    expect(screen.getAllByRole('article')).toHaveLength(4);
+    expect(within(section).queryByText('Mostrando 0 de 0 alunos')).not.toBeInTheDocument();
+    expect(within(section).queryByText('Nenhum aluno encontrado.')).not.toBeInTheDocument();
+    expect(within(section).queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
+    expect(within(section).queryByRole('button', { name: 'Próxima' })).not.toBeInTheDocument();
+  });
+
+  it('trata falha simultânea das duas seções sem inventar zeros ou vazio', async () => {
+    vi.mocked(getTrainerSummary).mockResolvedValue(apiError());
+    vi.mocked(getStudents).mockResolvedValue(apiError());
+
+    render(await DashboardPage());
+
+    expect(screen.getAllByRole('alert')).toHaveLength(2);
+    expect(screen.queryAllByRole('article')).toHaveLength(0);
+    expect(screen.queryByText('Mostrando 0 de 0 alunos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nenhum aluno encontrado.')).not.toBeInTheDocument();
+  });
+
+  it('recupera a lista de erro para dados reais e volta ao erro sem reter valor antigo', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiError());
+    const failed = render(await DashboardPage());
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de alunos' })).getByRole('alert'),
+    ).toHaveTextContent('Não foi possível carregar a lista de alunos.');
+    failed.unmount();
+
+    mockStudents();
+    const recovered = render(await DashboardPage());
+    expect(screen.getByText('Ana Lima')).toBeInTheDocument();
+    expect(screen.getByText('Mostrando 1 de 1 alunos')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    recovered.unmount();
+
+    vi.mocked(getStudents).mockResolvedValue(apiError());
+    render(await DashboardPage());
+    expect(screen.queryByText('Ana Lima')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de alunos' })).getByRole('alert'),
+    ).toBeInTheDocument();
+  });
+
+  it('recupera a lista do erro para carteira realmente vazia restaurando a apresentação', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiError());
+    const failed = render(await DashboardPage());
+    expect(
+      within(screen.getByRole('region', { name: 'Lista de alunos' })).getByRole('alert'),
+    ).toBeInTheDocument();
+    failed.unmount();
+
+    mockEmptyStudents();
+    render(await DashboardPage());
+
+    const section = screen.getByRole('region', { name: 'Lista de alunos' });
+    expect(within(section).getByText('Nenhum aluno encontrado.')).toBeInTheDocument();
+    expect(within(section).getByText('Mostrando 0 de 0 alunos')).toBeInTheDocument();
+    expect(within(section).queryByRole('alert')).not.toBeInTheDocument();
   });
 });
