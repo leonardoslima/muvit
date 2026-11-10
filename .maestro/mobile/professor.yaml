@@ -57,10 +57,16 @@ name: Jornada do professor
     element: Editar treino
     direction: DOWN
 - tapOn: Editar treino
-- scrollUntilVisible:
-    element:
-      text: Carga
-    direction: DOWN
+- repeat:
+    times: 6
+    while:
+      notVisible: Carga
+    commands:
+      - swipe:
+          start: 8%, 50%
+          end: 8%, 15%
+          duration: 600
+- assertVisible: Carga
 - tapOn:
     text: Carga
     point: "95%,50%"
