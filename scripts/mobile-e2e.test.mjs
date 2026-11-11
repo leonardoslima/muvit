@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { test } from 'node:test';
 
 async function runnerModule() {
@@ -500,9 +500,16 @@ test('agrupa artefatos sem alterar execução ou permitir traversal', async () =
     artifactDirectory(defaults, 'a1b2c3d4e5f6'),
     resolve('artifacts', 'mobile-e2e', 'a1b2c3d4e5f6'),
   );
+  const groupedDirectory = artifactDirectory(grouped, 'a1b2c3d4e5f6');
   assert.equal(
-    artifactDirectory(grouped, 'a1b2c3d4e5f6'),
-    resolve('artifacts', 'mobile-e2e', group, 'a1b2c3d4e5f6'),
+    groupedDirectory,
+    resolve('artifacts', 'mobile-e2e', `${group}-a1b2c3d4e5f6`),
+    'o grupo deve compor o nome da execução',
+  );
+  assert.equal(
+    relative(resolve('artifacts'), groupedDirectory).split(sep).length,
+    2,
+    'o caminho agrupado deve manter apenas escopo e execução sob artifacts',
   );
 });
 

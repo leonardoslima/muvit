@@ -103,13 +103,8 @@ export function parseArgs(argv) {
 }
 
 export function artifactDirectory(options, runId) {
-  return resolve(
-    root,
-    'artifacts',
-    options.artifactScope,
-    ...(options.artifactGroup ? [options.artifactGroup] : []),
-    runId,
-  );
+  const runDirectory = options.artifactGroup ? `${options.artifactGroup}-${runId}` : runId;
+  return resolve(root, 'artifacts', options.artifactScope, runDirectory);
 }
 
 export function containerNameForRun(runId) {
