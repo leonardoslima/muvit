@@ -27,6 +27,7 @@ export function parseArgs(argv) {
     '--launch-url',
     '--avd-name',
     '--artifact-scope',
+    '--artifact-group',
   ]);
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -75,6 +76,10 @@ export function parseArgs(argv) {
   if (!/^[a-z0-9][a-z0-9-]{0,49}$/.test(artifactScope)) {
     throw new Error('--artifact-scope deve conter apenas letras minúsculas, números e hífens');
   }
+  const artifactGroup = values.get('--artifact-group');
+  if (artifactGroup !== undefined && !/^[a-z0-9][a-z0-9-]{0,49}$/.test(artifactGroup)) {
+    throw new Error('--artifact-group deve conter apenas letras minúsculas, números e hífens');
+  }
   const appId = values.get('--app-id') ?? 'com.anonymous.muvit';
   if (!/^[A-Za-z0-9._]+$/.test(appId)) throw new Error('--app-id inválido');
   const launchUrl = values.get('--launch-url');
@@ -93,7 +98,13 @@ export function parseArgs(argv) {
       launchUrl ??
       `exp+muvit://expo-development-client/?url=${encodeURIComponent(`http://127.0.0.1:${ports.metro}`)}`,
     artifactScope,
+    artifactGroup,
   };
+}
+
+export function artifactDirectory(options, runId) {
+  const runDirectory = options.artifactGroup ? `${options.artifactGroup}-${runId}` : runId;
+  return resolve(root, 'artifacts', options.artifactScope, runDirectory);
 }
 
 export function containerNameForRun(runId) {
@@ -758,7 +769,7 @@ export async function runScenario(options, scenario, context, dependencies = {})
 
 export async function run(options) {
   const runId = randomBytes(6).toString('hex');
-  const artifactDir = resolve(root, 'artifacts', options.artifactScope, runId);
+  const artifactDir = artifactDirectory(options, runId);
   await mkdir(artifactDir, { recursive: true });
   const outcomes = [];
   const artifactSecrets = [];
@@ -898,7 +909,7 @@ export async function run(options) {
 
 function printHelp() {
   process.stdout.write(
-    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|avaliacoes-empatadas|confirmacao-email|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>]\n',
+    'Uso: node scripts/mobile-e2e.mjs --scenario aluno|professor|isolamento|avaliacoes-empatadas|confirmacao-email|all --mode android|api-only [--device <serial>] [--avd-name <nome>] [--api-port <porta>] [--metro-port <porta>] [--db-port <porta>] [--artifact-scope <slug>] [--artifact-group <slug>]\n',
   );
 }
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative, resolve, sep } from 'node:path';
 import { test } from 'node:test';
 
 async function runnerModule() {
@@ -10,6 +10,10 @@ async function runnerModule() {
 
 async function assessmentFlow() {
   return readFile(join('.maestro', 'mobile', 'avaliacoes-empatadas.yaml'), 'utf8');
+}
+
+async function professorFlow() {
+  return readFile(join('.maestro', 'mobile', 'professor.yaml'), 'utf8');
 }
 
 function escapedPattern(text) {
@@ -467,6 +471,140 @@ test('confirmação aceita retorno nativo sem expor o token no resultado', async
     assert.doesNotMatch(JSON.stringify(result), /segredo/);
   } finally {
     globalThis.fetch = previous;
+  }
+});
+
+test('agrupa artefatos sem alterar execução ou permitir traversal', async () => {
+  const { artifactDirectory, parseArgs } = await runnerModule();
+  const group = '790a8167-9e0e-42fe-a2e9-2711d1df5a43';
+  const base = ['--scenario', 'aluno', '--mode', 'api-only'];
+  const defaults = parseArgs(base);
+
+  assert.equal(defaults.artifactGroup, undefined);
+  assert.deepEqual(defaults.scenarios, ['aluno']);
+
+  const grouped = parseArgs([...base, '--artifact-group', group]);
+  assert.equal(grouped.artifactGroup, group);
+  assert.deepEqual(grouped.scenarios, ['aluno']);
+  assert.equal(grouped.artifactScope, defaults.artifactScope);
+
+  for (const invalid of ['../x', 'grupo/outro', 'C:\\absoluto', '']) {
+    assert.throws(
+      () => parseArgs([...base, '--artifact-group', invalid]),
+      /artifact-group/,
+      `--artifact-group deve rejeitar "${invalid}"`,
+    );
+  }
+
+  assert.equal(
+    artifactDirectory(defaults, 'a1b2c3d4e5f6'),
+    resolve('artifacts', 'mobile-e2e', 'a1b2c3d4e5f6'),
+  );
+  const groupedDirectory = artifactDirectory(grouped, 'a1b2c3d4e5f6');
+  assert.equal(
+    groupedDirectory,
+    resolve('artifacts', 'mobile-e2e', `${group}-a1b2c3d4e5f6`),
+    'o grupo deve compor o nome da execução',
+  );
+  assert.equal(
+    relative(resolve('artifacts'), groupedDirectory).split(sep).length,
+    2,
+    'o caminho agrupado deve manter apenas escopo e execução sob artifacts',
+  );
+});
+
+test('professor rola o formulário pelo gutter do ScrollView antes de tocar Carga', async () => {
+  const content = await professorFlow();
+
+  assert.doesNotMatch(
+    content,
+    /scrollUntilVisible:\s+element:\s+Carga/,
+    'scrollUntilVisible inicia o swipe no centro do formulário, sobre o campo Nome do treino',
+  );
+
+  const pattern = new RegExp(
+    [
+      '- repeat:',
+      'times: (?<times>\\d+)',
+      'while:',
+      'notVisible: Carga',
+      'commands:',
+      '- swipe:',
+      'start: (?<startX>\\d+)%, (?<startY>\\d+)%',
+      'end: (?<endX>\\d+)%, (?<endY>\\d+)%',
+      'duration: (?<duration>\\d+)',
+    ].join('\\s+'),
+  );
+  const match = pattern.exec(content);
+  assert.ok(
+    match,
+    'professor deve rolar até Carga com swipe próprio e confirmar o alvo fora do repeat',
+  );
+  assert.match(
+    content.slice(match.index + match[0].length),
+    /^\r?\n- assertVisible: Carga/,
+    'a confirmação de Carga deve vir depois do repeat limitado',
+  );
+
+  const scroll = {
+    duration: Number(match.groups.duration),
+    endX: Number(match.groups.endX),
+    endY: Number(match.groups.endY),
+    startX: Number(match.groups.startX),
+    startY: Number(match.groups.startY),
+    times: Number(match.groups.times),
+  };
+  assert.ok(scroll.startX >= 4 && scroll.startX <= 8, 'swipe deve partir do gutter do ScrollView');
+  assert.equal(scroll.endX, scroll.startX, 'swipe deve ser vertical');
+  assert.ok(scroll.startY >= 25 && scroll.startY <= 50, 'swipe deve começar acima do teclado');
+  assert.ok(
+    scroll.endY >= 15 && scroll.endY < scroll.startY,
+    'swipe deve subir dentro do ScrollView',
+  );
+  assert.ok(scroll.times >= 1 && scroll.times <= 12, 'repetição deve ser limitada');
+  assert.ok(scroll.duration >= 200 && scroll.duration <= 2000, 'swipe deve ser responsivo');
+
+  for (const kept of [
+    'eraseText',
+    "inputText: '24'",
+    'Carga: 24 kg',
+    '2 séries · 10 reps',
+    'Avaliacao E2E',
+    '78,5 kg',
+    '170 cm',
+  ]) {
+    assert.ok(content.includes(kept), `professor deve preservar a asserção ${kept}`);
+  }
+  assert.match(
+    content,
+    /- runFlow: logout\.yaml/,
+    'professor deve preservar o logout compartilhado da MUV-58',
+  );
+});
+
+test('confirmação dispensa o teclado antes de tocar a senha do cadastro', async () => {
+  const content = await readFile(join('.maestro', 'mobile', 'confirmacao-email.yaml'), 'utf8');
+
+  assert.match(
+    content,
+    /- inputText: \$\{MAESTRO_E2E_VERIFICATION_EMAIL\}\s+- hideKeyboard\s+- tapOn:\s+id: signup-password/,
+    'o teclado aberto após o email cobre o campo de senha; a senha deve ser tocada após dispensá-lo',
+  );
+  assert.match(
+    content,
+    /- inputText: \$\{MAESTRO_E2E_VERIFICATION_PASSWORD\}\s+- hideKeyboard\s+- tapOn:\s+id: signup-submit/,
+    'o cadastro deve continuar enviando com o teclado dispensado',
+  );
+
+  for (const kept of [
+    'Confirme seu email',
+    'Enviar link',
+    'Aguarde.*s',
+    'INVALID_TOKEN',
+    'Este link é inválido ou expirou. Solicite outro link.',
+    'id: signup-submit',
+  ]) {
+    assert.ok(content.includes(kept), `confirmação deve preservar a asserção ${kept}`);
   }
 });
 
