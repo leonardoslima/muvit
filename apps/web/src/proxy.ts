@@ -9,15 +9,10 @@ const PUBLIC_PATHS = [
   '/reset-password',
   '/verify-email',
 ];
-const AUTH_PATHS = ['/login', '/signup'];
 
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const sessionCookie = getSessionCookie(req, { cookiePrefix: 'muvit' });
-
-  if (sessionCookie && AUTH_PATHS.includes(pathname)) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
-  }
 
   const isPublic = PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/api');
   if (!sessionCookie && !isPublic) {

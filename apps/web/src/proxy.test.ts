@@ -27,14 +27,29 @@ describe('proxy', () => {
     expect(response.headers.get('location')).toBe('http://localhost:3000/login?next=%2Fstudents');
   });
 
-  it('redireciona sessão presente para dashboard ao abrir login', () => {
-    getSessionCookie.mockReturnValue('session');
-    const req = request('/login');
-    const response = proxy(req);
+  it.each(['/login', '/signup'])(
+    'permite abrir %s mesmo com cookie de sessão presente',
+    (path: string) => {
+      getSessionCookie.mockReturnValue('session');
+      const response = proxy(request(path));
 
-    expect(getSessionCookie).toHaveBeenCalledWith(req, { cookiePrefix: 'muvit' });
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toBe('http://localhost:3000/dashboard');
+      expect(getSessionCookie).toHaveBeenCalledWith(expect.any(NextRequest), {
+        cookiePrefix: 'muvit',
+      });
+      expect(response.status).toBe(200);
+      expect(response.headers.get('x-middleware-next')).toBe('1');
+      expect(response.headers.get('location')).toBeNull();
+    },
+  );
+
+  it('não entra em ciclo quando a sessão é inválida e o cookie permanece presente', () => {
+    getSessionCookie.mockReturnValue('invalid-session');
+    const dashboard = proxy(request('/dashboard'));
+    expect(dashboard.headers.get('x-middleware-next')).toBe('1');
+
+    const login = proxy(request('/login'));
+    expect(login.headers.get('x-middleware-next')).toBe('1');
+    expect(login.headers.get('location')).toBeNull();
   });
 
   it('trata o cookie somente como sinal otimista para liberar rota protegida', () => {

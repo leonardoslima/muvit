@@ -107,7 +107,87 @@ describe('updateProfileAction', () => {
     });
   });
 
-  it('preserva cookies renovados quando a atualização retorna conflito', async () => {
+  it('encaminha cookies reais muvit com atributos completos e valor contendo =', async () => {
+    const response = new Response();
+    const expires = new Date('2026-10-21T07:28:00.000Z');
+    Object.defineProperty(response.headers, 'getSetCookie', {
+      value: () => [
+        'muvit.session_token=YWJj.ZGVm==; Path=/; HttpOnly; Secure; SameSite=Lax; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Max-Age=2592000',
+        'muvit.session_data=YWJj.ZGVm==; Path=/; HttpOnly; SameSite=Strict; Max-Age=0',
+      ],
+    });
+    vi.mocked(updateTrainerProfile).mockResolvedValue({
+      data: {
+        id: 'trainer-1',
+        name: 'João Pereira',
+        email: 'novo@example.com',
+        phone: null,
+        bio: null,
+        specialties: ['Hipertrofia'],
+        avatarUrl: null,
+        plan: 'pro',
+        onboardedAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      error: undefined,
+      request: new Request('https://api.test'),
+      response,
+    });
+
+    await expect(updateProfileAction(null, formData())).resolves.toEqual({ success: true });
+    expect(cookieSet).toHaveBeenCalledTimes(2);
+    expect(cookieSet).toHaveBeenNthCalledWith(1, 'muvit.session_token', 'YWJj.ZGVm==', {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      expires,
+      maxAge: 2592000,
+    });
+    expect(cookieSet).toHaveBeenNthCalledWith(2, 'muvit.session_data', 'YWJj.ZGVm==', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 0,
+    });
+  });
+
+  it('desfaz a codificação do cookie Better Auth antes de gravar no Next', async () => {
+    const response = new Response();
+    Object.defineProperty(response.headers, 'getSetCookie', {
+      value: () => [
+        'muvit.session_token=YWJj.ZGVm%2BZ2hp%3D; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000',
+      ],
+    });
+    vi.mocked(updateTrainerProfile).mockResolvedValue({
+      data: {
+        id: 'trainer-1',
+        name: 'João Pereira',
+        email: 'novo@example.com',
+        phone: null,
+        bio: null,
+        specialties: ['Hipertrofia'],
+        avatarUrl: null,
+        plan: 'pro',
+        onboardedAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      error: undefined,
+      request: new Request('https://api.test'),
+      response,
+    });
+
+    await expect(updateProfileAction(null, formData())).resolves.toEqual({ success: true });
+    expect(cookieSet).toHaveBeenCalledWith(
+      'muvit.session_token',
+      'YWJj.ZGVm+Z2hp=',
+      expect.objectContaining({ httpOnly: true, path: '/', maxAge: 2592000 }),
+    );
+  });
+
+  it('propaga cookies renovados quando a atualização retorna conflito', async () => {
     const response = new Response(null, { status: 409 });
     Object.defineProperty(response.headers, 'getSetCookie', {
       value: () => [

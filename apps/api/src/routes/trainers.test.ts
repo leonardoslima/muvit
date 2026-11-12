@@ -1,5 +1,5 @@
 import { db, queryClient, schema } from '@muvit/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { signUpWithSession } from '../../test/helpers/auth.js';
@@ -7,6 +7,36 @@ import { buildTestApp } from '../../test/helpers/build.js';
 import { closeDb, truncateAll } from '../../test/helpers/db.js';
 
 let app: FastifyInstance;
+
+type SetCookieHeaders = string | string[] | undefined;
+
+function setCookieList(setCookie: SetCookieHeaders): string[] {
+  if (setCookie === undefined) return [];
+  return Array.isArray(setCookie) ? setCookie : [setCookie];
+}
+
+/** Aplica os Set-Cookie da resposta como um navegador faria, sem reaproveitar o cookie antigo cegamente. */
+function applySetCookieJar(current: string, setCookie: SetCookieHeaders): string {
+  const jar = new Map<string, string>();
+  for (const pair of current.split(';')) {
+    const trimmed = pair.trim();
+    const separator = trimmed.indexOf('=');
+    if (separator < 1) continue;
+    jar.set(trimmed.slice(0, separator), trimmed.slice(separator + 1));
+  }
+  for (const header of setCookieList(setCookie)) {
+    const [pair, ...attributes] = header.split(';').map((part) => part.trim());
+    if (!pair) continue;
+    const separator = pair.indexOf('=');
+    if (separator < 1) continue;
+    const name = pair.slice(0, separator);
+    const value = pair.slice(separator + 1);
+    const expired = attributes.some((attribute) => /^max-age=0$/i.test(attribute));
+    if (value === '' || expired) jar.delete(name);
+    else jar.set(name, value);
+  }
+  return [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
+}
 
 beforeEach(async () => {
   app = await buildTestApp();
@@ -101,6 +131,135 @@ describe('trainers', () => {
       name: authUser?.name,
       avatarUrl: authUser?.image,
     });
+  });
+
+  it('mantém sessão e persiste nome após atualização isolada', async () => {
+    const email = 'trainer-name-only@example.com';
+    const password = '12345678';
+    const trainer = await signUpWithSession(app, {
+      name: 'Treinadora Antes',
+      email,
+      password,
+      role: 'trainer',
+    });
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: '/trainers/me',
+      headers: { cookie: trainer.cookie },
+      payload: { name: 'Treinadora Somente Nome' },
+    });
+
+    expect(patch.statusCode).toBe(200);
+    const renewal = setCookieList(patch.headers['set-cookie']).filter((header) =>
+      header.startsWith('muvit.session_token='),
+    );
+    expect(renewal).toHaveLength(1);
+    expect(renewal[0]).toMatch(/HttpOnly/i);
+    expect(renewal[0]).toMatch(/SameSite=Lax/i);
+    expect(renewal[0]).toMatch(/Max-Age=\d+/i);
+    expect(renewal[0]).not.toMatch(/Max-Age=0(?:;|$)/i);
+    expect(renewal[0]).not.toMatch(/^muvit\.session_token=;/);
+
+    const effectiveCookie = applySetCookieJar(trainer.cookie, patch.headers['set-cookie']);
+    expect(effectiveCookie).toContain('muvit.session_token=');
+
+    const session = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: effectiveCookie },
+    });
+    expect(session.statusCode).toBe(200);
+    expect(session.json()).toMatchObject({
+      user: {
+        id: trainer.authUserId,
+        role: 'trainer',
+        email,
+        emailVerified: true,
+        name: 'Treinadora Somente Nome',
+      },
+    });
+
+    const profile = await app.inject({
+      method: 'GET',
+      url: '/trainers/me',
+      headers: { cookie: effectiveCookie },
+    });
+    expect(profile.statusCode).toBe(200);
+    expect(profile.json()).toMatchObject({
+      id: trainer.profileId,
+      email,
+      name: 'Treinadora Somente Nome',
+    });
+
+    const signOut = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-out',
+      headers: { cookie: effectiveCookie, origin: 'http://localhost:3000' },
+    });
+    expect(signOut.statusCode).toBe(200);
+
+    const signIn = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      payload: { email, password },
+    });
+    expect(signIn.statusCode).toBe(200);
+    const reauthenticatedCookie = applySetCookieJar('', signIn.headers['set-cookie']);
+    const reauthenticated = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: reauthenticatedCookie },
+    });
+    expect(reauthenticated.json()).toMatchObject({
+      user: { id: trainer.authUserId, email, name: 'Treinadora Somente Nome' },
+    });
+  });
+
+  it('renova sessão elegível ao updateAge sem invalidar o cookie ao salvar o nome', async () => {
+    const email = 'trainer-name-renewal@example.com';
+    const trainer = await signUpWithSession(app, {
+      name: 'Treinadora Renovação',
+      email,
+      password: '12345678',
+      role: 'trainer',
+    });
+    // Sessão a 10 dias do vencimento: elegível à renovação de updateAge (1 dia), sem esperar tempo real.
+    await db.execute(
+      sql`UPDATE auth_sessions SET expires_at = now() + interval '10 days' WHERE user_id = ${trainer.authUserId}`,
+    );
+
+    const patch = await app.inject({
+      method: 'PATCH',
+      url: '/trainers/me',
+      headers: { cookie: trainer.cookie },
+      payload: {
+        name: 'Treinadora Renovada',
+        email,
+        phone: null,
+        bio: null,
+        specialties: [],
+        avatarUrl: null,
+      },
+    });
+
+    expect(patch.statusCode).toBe(200);
+    const effectiveCookie = applySetCookieJar(trainer.cookie, patch.headers['set-cookie']);
+    const session = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: effectiveCookie },
+    });
+    expect(session.statusCode).toBe(200);
+    expect(session.json()).toMatchObject({
+      user: { id: trainer.authUserId, role: 'trainer', email, name: 'Treinadora Renovada' },
+    });
+
+    const [persisted] = await db
+      .select()
+      .from(schema.authSessions)
+      .where(eq(schema.authSessions.userId, trainer.authUserId));
+    expect(persisted?.expiresAt.getTime()).toBeGreaterThan(Date.now() + 29 * 24 * 60 * 60 * 1000);
   });
 
   it('compensa a identidade quando a persistência do perfil falha', async () => {
