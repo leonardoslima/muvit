@@ -11,7 +11,8 @@ export default defineConfig({
     },
   },
   test: {
-    server: { deps: { inline: ['lucide-react-native'] } },
+    // lucide-react-native deve ser externalizado: inlinar o barrel de ~1600 ícones custa ~8s
+    // de transform e estoura o hookTimeout padrão dos beforeAll que importam telas.
     environment: 'node',
     globals: true,
     include: ['app/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
