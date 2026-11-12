@@ -20,9 +20,6 @@ type StudentListTableProps = {
 };
 
 export function StudentListTable({ state }: StudentListTableProps) {
-  const pageCount = Math.max(1, Math.ceil(state.total / state.pageSize));
-  const hasMoreStudents = state.status === 'ready' && state.total > state.rows.length;
-
   return (
     <section aria-label="Lista de alunos">
       <Card className="gap-0 overflow-hidden p-0">
@@ -90,43 +87,9 @@ export function StudentListTable({ state }: StudentListTableProps) {
             <span className="text-xs text-muted-foreground">
               Mostrando {state.rows.length} de {state.total} alunos
             </span>
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="h-8 px-3 text-xs"
-                disabled
-              >
-                Anterior
-              </Button>
-              <span className="grid size-8 place-items-center rounded-md bg-primary font-display text-xs font-semibold text-primary-foreground">
-                1
-              </span>
-              {pageCount > 1 && (
-                <Link
-                  href="/students"
-                  className="grid size-8 place-items-center rounded-md font-display text-xs text-muted-foreground hover:bg-card-hover"
-                >
-                  2
-                </Link>
-              )}
-              {hasMoreStudents ? (
-                <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
-                  <Link href="/students">Próxima</Link>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  disabled
-                >
-                  Próxima
-                </Button>
-              )}
-            </div>
+            <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
+              <Link href="/students">Ver todos os alunos</Link>
+            </Button>
           </CardFooter>
         )}
       </Card>

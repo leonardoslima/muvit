@@ -8,19 +8,28 @@ import { useEffect, useState, useTransition } from 'react';
 export function StudentSearch() {
   const router = useRouter();
   const params = useSearchParams();
-  const [value, setValue] = useState(params.get('q') ?? '');
-  const [isPending, startTransition] = useTransition();
   const query = params.toString();
+  const currentTerm = params.get('q') ?? '';
+  const [value, setValue] = useState(currentTerm);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const t = setTimeout(() => {
+    setValue(currentTerm);
+  }, [currentTerm]);
+
+  useEffect(() => {
+    if (value === currentTerm) return;
+
+    const timer = setTimeout(() => {
       const next = new URLSearchParams(query);
       if (value) next.set('q', value);
       else next.delete('q');
+      next.delete('page');
       startTransition(() => router.replace(`?${next.toString()}`));
     }, 300);
-    return () => clearTimeout(t);
-  }, [query, router, value]);
+
+    return () => clearTimeout(timer);
+  }, [currentTerm, query, router, value]);
 
   return (
     <div className="relative w-72">

@@ -56,7 +56,9 @@ test('isola sessões e recursos entre treinadores', async ({
     await expect(page.getByText(studentName)).toHaveCount(0);
     await page.getByPlaceholder('Buscar aluno…').fill(studentName);
     await expect(page).toHaveURL(/\?q=/);
-    await expect(page.getByText('Nenhum aluno encontrado para esta busca.')).toBeVisible();
+    await expect(
+      page.getByText('Nenhum aluno encontrado para os filtros aplicados.'),
+    ).toBeVisible();
     await expect(page.getByText(studentName)).toHaveCount(0);
     await page.goto(`/students/${student.id}`);
     await expect(page.getByText(studentName)).toHaveCount(0);

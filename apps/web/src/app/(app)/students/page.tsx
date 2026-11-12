@@ -1,9 +1,14 @@
+import {
+  buildStudentListHref,
+  parseStudentListPage,
+} from '@/application/students/student-list-navigation';
 import { TopBar } from '@/components/top-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { configureServerClient } from '@/lib/api-client';
 import { loadStudentList } from '@/lib/student-list';
+import type { StudentListState } from '@/lib/student-list';
 import { Plus, Search } from 'lucide-react';
 import Link from 'next/link';
 import { StudentSearch } from './_search';
@@ -11,6 +16,7 @@ import { StudentSearch } from './_search';
 interface SearchParams {
   q?: string;
   status?: 'active' | 'inactive' | 'paused';
+  page?: string;
 }
 
 export default async function StudentsPage({
@@ -20,8 +26,14 @@ export default async function StudentsPage({
 }) {
   const params = await searchParams;
   const client = await configureServerClient();
-  const state = await loadStudentList(client, { q: params.q, status: params.status });
-  const retryHref = buildStudentsHref(params);
+  const page = parseStudentListPage(params.page);
+  const state = await loadStudentList(client, {
+    q: params.q,
+    status: params.status,
+    page,
+  });
+  const retryHref = buildStudentListHref({ q: params.q, status: params.status, page });
+  const filtered = Boolean(params.q || params.status);
 
   return (
     <>
@@ -29,7 +41,9 @@ export default async function StudentsPage({
         title="Alunos"
         subtitle={
           state.status === 'ready'
-            ? `${state.total} ${state.total === 1 ? 'aluno cadastrado' : 'alunos cadastrados'}`
+            ? `${state.portfolioTotal} ${
+                state.portfolioTotal === 1 ? 'aluno cadastrado' : 'alunos cadastrados'
+              }`
             : undefined
         }
         actions={
@@ -44,7 +58,14 @@ export default async function StudentsPage({
 
       <section className="overflow-hidden rounded-[12px] bg-card shadow-card">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="font-display text-lg font-bold">Lista de alunos</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="font-display text-lg font-bold">Lista de alunos</h2>
+            {filtered && state.status === 'ready' && (
+              <span className="text-sm text-muted-foreground">
+                {state.total} {state.total === 1 ? 'aluno encontrado' : 'alunos encontrados'}
+              </span>
+            )}
+          </div>
           <StudentSearch />
         </div>
 
@@ -73,11 +94,11 @@ export default async function StudentsPage({
               <div className="grid place-items-center px-5 py-16 text-center">
                 <Search className="mb-3 size-8 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
-                  {params.q
-                    ? 'Nenhum aluno encontrado para esta busca.'
+                  {filtered
+                    ? 'Nenhum aluno encontrado para os filtros aplicados.'
                     : 'Nenhum aluno cadastrado ainda.'}
                 </p>
-                {!params.q && (
+                {!filtered && (
                   <Button asChild className="mt-4">
                     <Link href="/students/new" className="gap-2">
                       <Plus />
@@ -138,16 +159,70 @@ export default async function StudentsPage({
             )}
           </>
         )}
+
+        {state.status === 'ready' && (
+          <StudentListFooter
+            state={state}
+            previousHref={buildStudentListHref({
+              q: params.q,
+              status: params.status,
+              page: state.page - 1,
+            })}
+            nextHref={buildStudentListHref({
+              q: params.q,
+              status: params.status,
+              page: state.page + 1,
+            })}
+          />
+        )}
       </section>
     </>
   );
 }
 
-function buildStudentsHref({ q, status }: SearchParams): string {
-  const search = new URLSearchParams();
-  if (q) search.set('q', q);
-  if (status) search.set('status', status);
-  const query = search.toString();
+function StudentListFooter({
+  state,
+  previousHref,
+  nextHref,
+}: {
+  state: Extract<StudentListState, { status: 'ready' }>;
+  previousHref: string;
+  nextHref: string;
+}) {
+  const pageCount = Math.max(1, Math.ceil(state.total / state.pageSize));
+  const start = state.items.length === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+  const end = start === 0 ? 0 : start + state.items.length - 1;
+  const range =
+    start === 0
+      ? `Mostrando 0 de ${state.total} alunos`
+      : `Mostrando ${start}–${end} de ${state.total} alunos`;
 
-  return query ? `/students?${query}` : '/students';
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3">
+      <span className="text-sm text-muted-foreground">{range}</span>
+      <nav aria-label="Paginação de alunos" className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          Página {state.page} de {pageCount}
+        </span>
+        {state.page > 1 ? (
+          <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
+            <Link href={previousHref}>Anterior</Link>
+          </Button>
+        ) : (
+          <Button type="button" variant="secondary" size="sm" className="h-8 px-3 text-xs" disabled>
+            Anterior
+          </Button>
+        )}
+        {state.page < pageCount ? (
+          <Button asChild variant="secondary" size="sm" className="h-8 px-3 text-xs">
+            <Link href={nextHref}>Próxima</Link>
+          </Button>
+        ) : (
+          <Button type="button" variant="secondary" size="sm" className="h-8 px-3 text-xs" disabled>
+            Próxima
+          </Button>
+        )}
+      </nav>
+    </div>
+  );
 }
