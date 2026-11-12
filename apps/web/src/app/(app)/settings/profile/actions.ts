@@ -88,5 +88,23 @@ function parseSetCookie(
       options.sameSite = attributeValue.toLowerCase() as ForwardedCookieOptions['sameSite'];
     }
   }
-  return { name: pair.slice(0, separator), value: pair.slice(separator + 1), options };
+  return {
+    name: pair.slice(0, separator),
+    value: decodeCookieValue(pair.slice(separator + 1)),
+    options,
+  };
+}
+
+/**
+ * O Better Auth serializa o cookie assinado com `encodeURIComponent` e o Next
+ * codifica o valor novamente em `cookies().set`. Desfazer a codificação uma vez
+ * evita que o navegador receba um token com `%` duplicado e a sessão seja invalidada.
+ */
+function decodeCookieValue(value: string): string {
+  if (!value.includes('%')) return value;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }

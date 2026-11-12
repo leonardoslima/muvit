@@ -15,6 +15,7 @@ import { getCurrentUser, requireUser } from './auth-server';
 describe('getCurrentUser', () => {
   beforeEach(() => {
     mocks.headers.mockReset();
+    mocks.redirect.mockClear();
     vi.restoreAllMocks();
   });
 
@@ -48,7 +49,11 @@ describe('getCurrentUser', () => {
     });
     expect(fetchSpy).toHaveBeenCalledWith(
       'http://localhost:3333/api/auth/get-session',
-      expect.objectContaining({ credentials: 'include', headers: expect.any(Headers) }),
+      expect.objectContaining({
+        credentials: 'include',
+        cache: 'no-store',
+        headers: expect.any(Headers),
+      }),
     );
     const requestHeaders = fetchSpy.mock.calls[0]?.[1]?.headers;
     expect(new Headers(requestHeaders).get('cookie')).toBe(cookie);
@@ -59,6 +64,41 @@ describe('getCurrentUser', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 401 }));
 
     await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
+  it('retorna null quando o payload nao traz usuario', async () => {
+    mocks.headers.mockResolvedValue(new Headers({ cookie: 'muvit.session_token=invalido' }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('null', { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+
+    await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
+  it('redireciona para login quando a sessao esta ausente', async () => {
+    mocks.headers.mockResolvedValue(new Headers({ cookie: 'muvit.session_token=invalido' }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 401 }));
+
+    await expect(requireUser()).rejects.toThrow('/login');
+    expect(mocks.redirect).toHaveBeenCalledWith('/login');
+  });
+
+  it('propaga indisponibilidade da API sem tratar como logout', async () => {
+    mocks.headers.mockResolvedValue(new Headers({ cookie: 'muvit.session_token=valido' }));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 503 }));
+
+    await expect(getCurrentUser()).rejects.toThrow('Falha ao consultar a sessão atual.');
+    await expect(requireUser()).rejects.toThrow('Falha ao consultar a sessão atual.');
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
+
+  it('propaga erro de rede sem redirecionar', async () => {
+    mocks.headers.mockResolvedValue(new Headers({ cookie: 'muvit.session_token=valido' }));
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+
+    await expect(getCurrentUser()).rejects.toThrow('fetch failed');
+    await expect(requireUser()).rejects.toThrow('fetch failed');
+    expect(mocks.redirect).not.toHaveBeenCalled();
   });
 
   it('encaminha sessão pendente para confirmação', async () => {

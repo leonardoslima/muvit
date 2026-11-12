@@ -1,4 +1,28 @@
+import { type Page, request } from '@playwright/test';
 import { expect, loginAs, test } from './fixtures';
+
+type SessionPayload = {
+  user: { id: string; name: string; email: string; role: string; emailVerified: boolean };
+};
+
+async function readBrowserSession(page: Page): Promise<SessionPayload> {
+  const cookie = (await page.context().cookies())
+    .map((item) => `${item.name}=${item.value}`)
+    .join('; ');
+  const context = await request.newContext({
+    baseURL: process.env.WEB_E2E_API_URL,
+    extraHTTPHeaders: { cookie },
+  });
+  try {
+    const response = await context.get('/api/auth/get-session');
+    expect(response.ok()).toBeTruthy();
+    const payload = (await response.json()) as SessionPayload;
+    expect(payload?.user).toBeTruthy();
+    return payload;
+  } finally {
+    await context.dispose();
+  }
+}
 
 test('autentica e cadastra aluno, avaliação e plano ativo com persistência', async ({
   page,
@@ -264,4 +288,128 @@ test('autentica e cadastra aluno, avaliação e plano ativo com persistência', 
     for (const id of ids) expect(detailsHistoryText).not.toContain(id);
     expect(ids).toContain(httpAssessment.id);
   });
+});
+
+test('salva apenas o nome preservando sessão e persistência', async ({
+  page,
+  account,
+  api,
+}, testInfo) => {
+  await loginAs(page, account);
+
+  const initialSession = await readBrowserSession(page);
+  expect(initialSession.user).toMatchObject({
+    email: account.email,
+    role: 'trainer',
+  });
+
+  const suffix = testInfo.testId.slice(-4);
+  const firstName = `Treinador Perfil ${suffix} A`;
+  const secondName = `Treinador Perfil ${suffix} B`;
+
+  await page.getByRole('link', { name: 'Configurações', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+  await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();
+
+  const saveName = async (name: string) => {
+    await page.waitForFunction(() => {
+      const form = document.querySelector('form');
+      return form !== null && Object.keys(form).some((key) => key.startsWith('__reactFiber'));
+    });
+    await page.getByLabel('Nome', { exact: true }).fill(name);
+    await page.getByRole('button', { name: 'Salvar alterações' }).click();
+    await expect(page.getByText('Perfil atualizado.', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Nome', { exact: true })).toHaveValue(name);
+  };
+
+  await saveName(firstName);
+  await page.reload();
+  await expect(page.getByLabel('Nome', { exact: true })).toHaveValue(firstName);
+  const afterFirstSave = await readBrowserSession(page);
+  expect(afterFirstSave.user).toMatchObject({
+    id: initialSession.user.id,
+    email: account.email,
+    role: 'trainer',
+    name: firstName,
+  });
+
+  await saveName(secondName);
+  await page.reload();
+  await expect(page.getByLabel('Nome', { exact: true })).toHaveValue(secondName);
+
+  await page.getByRole('link', { name: 'Dashboard', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText(secondName).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(secondName).first()).toBeVisible();
+  const afterSecondSave = await readBrowserSession(page);
+  expect(afterSecondSave.user).toMatchObject({
+    id: initialSession.user.id,
+    email: account.email,
+    role: 'trainer',
+    name: secondName,
+  });
+
+  const persisted = await api.get('/trainers/me');
+  expect(persisted.ok()).toBeTruthy();
+  expect(await persisted.json()).toMatchObject({
+    id: account.profileId,
+    email: account.email,
+    name: secondName,
+  });
+
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await page.getByLabel('E-mail').fill(account.email);
+  await page.getByLabel('Senha').fill(account.password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page.getByText(secondName).first()).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('perfil-nome-persistido.png') });
+});
+
+test('recupera sessão inválida com cookie presente sem ciclo de redirecionamentos', async ({
+  page,
+  account,
+}) => {
+  await loginAs(page, account);
+  const cookie = (await page.context().cookies())
+    .map((item) => `${item.name}=${item.value}`)
+    .join('; ');
+  const revoker = await request.newContext({
+    baseURL: process.env.WEB_E2E_API_URL,
+    extraHTTPHeaders: { cookie, origin: process.env.WEB_E2E_BASE_URL ?? '' },
+  });
+  try {
+    expect((await revoker.post('/api/auth/sign-out')).ok()).toBeTruthy();
+  } finally {
+    await revoker.dispose();
+  }
+  expect((await page.context().cookies()).some((item) => item.name === 'muvit.session_token')).toBe(
+    true,
+  );
+
+  const redirects: number[] = [];
+  page.on('response', (response) => {
+    if ([301, 302, 303, 307, 308].includes(response.status())) redirects.push(response.status());
+  });
+  await page.goto('/dashboard').catch(() => undefined);
+  await expect(page.getByLabel('E-mail')).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(redirects.length).toBeLessThanOrEqual(3);
+
+  await page.context().addCookies([
+    {
+      name: 'muvit.session_token',
+      value: 'cookie-malformado',
+      url: process.env.WEB_E2E_BASE_URL ?? '',
+    },
+  ]);
+  await page.goto('/login');
+  await expect(page.getByLabel('E-mail')).toBeVisible();
+  await page.getByLabel('E-mail').fill(account.email);
+  await page.getByLabel('Senha').fill(account.password);
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  await expect(page.getByText(account.name).first()).toBeVisible();
 });
