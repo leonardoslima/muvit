@@ -55,6 +55,10 @@ export async function loadStudentList(
         total = clamped.data.total;
 
         if (items.length === 0) {
+          if (total > 0) {
+            return buildStudentListError();
+          }
+
           effectivePage = 1;
         }
       }

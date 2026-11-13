@@ -221,6 +221,24 @@ describe('loadStudentList', () => {
     });
   });
 
+  it('retorna erro quando a página limitada esvazia mas o total continua positivo', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }))
+      .mockResolvedValueOnce(apiOk({ items: [], total: 50 }));
+
+    const state = await loadStudentList(client, { page: 999 });
+
+    expect(getStudents).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(getStudents).mock.calls[1]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 50 },
+    });
+    expect(state).toEqual({
+      status: 'error',
+      message: 'Não foi possível carregar a lista de alunos.',
+    });
+  });
+
   it('normaliza página inválida recebida diretamente pelo loader', async () => {
     vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 1 }));
 
