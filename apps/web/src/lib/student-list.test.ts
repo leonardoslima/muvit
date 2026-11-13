@@ -43,6 +43,12 @@ const student = {
   createdAt: '2026-06-20T00:00:00.000Z',
 };
 
+const secondStudent = {
+  ...student,
+  id: 'student-2',
+  name: 'Bia Souza',
+};
+
 describe('loadStudentList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -83,12 +89,20 @@ describe('loadStudentList', () => {
     });
   });
 
-  it('retorna os alunos e o total reais no sucesso', async () => {
+  it('retorna os alunos, o total e a página efetiva no sucesso sem filtros', async () => {
     vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 1 }));
 
     const state = await loadStudentList(client, {});
 
-    expect(state).toEqual({ status: 'ready', items: [student], total: 1 });
+    expect(state).toEqual({
+      status: 'ready',
+      items: [student],
+      total: 1,
+      portfolioTotal: 1,
+      page: 1,
+      pageSize: 50,
+    });
+    expect(getStudents).toHaveBeenCalledTimes(1);
   });
 
   it('distingue carteira genuinamente vazia de erro', async () => {
@@ -96,17 +110,156 @@ describe('loadStudentList', () => {
 
     const state = await loadStudentList(client, {});
 
-    expect(state).toEqual({ status: 'ready', items: [], total: 0 });
+    expect(state).toEqual({
+      status: 'ready',
+      items: [],
+      total: 0,
+      portfolioTotal: 0,
+      page: 1,
+      pageSize: 50,
+    });
   });
 
-  it('encaminha q, status e limit 50 usando o mesmo cliente recebido', async () => {
+  it('encaminha q, status, limit 50 e offset da página sem enviar page', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [student, secondStudent], total: 52 }))
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }));
+
+    const state = await loadStudentList(client, {
+      q: 'Ana Lima',
+      status: 'paused',
+      page: 2,
+    });
+
+    expect(vi.mocked(getStudents).mock.calls[0]?.[0]).toEqual({
+      client,
+      query: { q: 'Ana Lima', status: 'paused', limit: 50, offset: 50 },
+    });
+    expect(state).toMatchObject({ status: 'ready', total: 52, portfolioTotal: 52, page: 2 });
+  });
+
+  it('busca o total global em consulta própria quando há filtro', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [student, secondStudent], total: 2 }))
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }));
+
+    const state = await loadStudentList(client, { q: 'Ana' });
+
+    expect(getStudents).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(getStudents).mock.calls[1]?.[0]).toEqual({
+      client,
+      query: { limit: 1, offset: 0 },
+    });
+    expect(state).toMatchObject({ status: 'ready', total: 2, portfolioTotal: 52, page: 1 });
+  });
+
+  it('não repete a consulta global quando não há busca nem status', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 52 }));
+
+    const state = await loadStudentList(client, { page: 1 });
+
+    expect(getStudents).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getStudents).mock.calls[0]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 0 },
+    });
+    expect(state).toMatchObject({ total: 52, portfolioTotal: 52 });
+  });
+
+  it('retorna erro se a consulta do total global falhar', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [student], total: 1 }))
+      .mockResolvedValueOnce(apiError());
+
+    const state = await loadStudentList(client, { status: 'active' });
+
+    expect(state.status).toBe('error');
+  });
+
+  it('limita página acima do último resultado e reconsulta uma vez', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }))
+      .mockResolvedValueOnce(apiOk({ items: [student, secondStudent], total: 52 }));
+
+    const state = await loadStudentList(client, { page: 999 });
+
+    expect(getStudents).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(getStudents).mock.calls[0]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 49900 },
+    });
+    expect(vi.mocked(getStudents).mock.calls[1]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 50 },
+    });
+    expect(state).toMatchObject({ status: 'ready', page: 2, total: 52, portfolioTotal: 52 });
+  });
+
+  it('mantém página 1 sem reconsulta quando a carteira está vazia', async () => {
     vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [], total: 0 }));
 
-    await loadStudentList(client, { q: 'Ana Lima', status: 'active' });
+    const state = await loadStudentList(client, { page: 999 });
 
-    expect(getStudents).toHaveBeenCalledWith({
-      client,
-      query: { q: 'Ana Lima', status: 'active', limit: 50 },
+    expect(getStudents).toHaveBeenCalledTimes(1);
+    expect(state).toMatchObject({ status: 'ready', page: 1, total: 0, items: [] });
+  });
+
+  it('encerra sem terceira consulta quando a página limitada esvazia por exclusão concorrente', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }))
+      .mockResolvedValueOnce(apiOk({ items: [], total: 0 }));
+
+    const state = await loadStudentList(client, { page: 999 });
+
+    expect(getStudents).toHaveBeenCalledTimes(2);
+    expect(state).toMatchObject({
+      status: 'ready',
+      page: 1,
+      items: [],
+      total: 0,
+      portfolioTotal: 0,
     });
+  });
+
+  it('retorna erro quando a página limitada esvazia mas o total continua positivo', async () => {
+    vi.mocked(getStudents)
+      .mockResolvedValueOnce(apiOk({ items: [], total: 52 }))
+      .mockResolvedValueOnce(apiOk({ items: [], total: 50 }));
+
+    const state = await loadStudentList(client, { page: 999 });
+
+    expect(getStudents).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(getStudents).mock.calls[1]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 50 },
+    });
+    expect(state).toEqual({
+      status: 'error',
+      message: 'Não foi possível carregar a lista de alunos.',
+    });
+  });
+
+  it('normaliza página inválida recebida diretamente pelo loader', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 1 }));
+
+    const state = await loadStudentList(client, { page: 1.5 });
+
+    expect(vi.mocked(getStudents).mock.calls[0]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 0 },
+    });
+    expect(state).toMatchObject({ page: 1 });
+  });
+
+  it('nunca envia offset não seguro para a API', async () => {
+    vi.mocked(getStudents).mockResolvedValue(apiOk({ items: [student], total: 1 }));
+
+    const state = await loadStudentList(client, { page: 180143985094821 });
+
+    expect(vi.mocked(getStudents).mock.calls[0]?.[0]).toEqual({
+      client,
+      query: { q: undefined, status: undefined, limit: 50, offset: 0 },
+    });
+    expect(state).toMatchObject({ page: 1 });
   });
 });

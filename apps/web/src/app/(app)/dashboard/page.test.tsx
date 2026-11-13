@@ -196,8 +196,15 @@ describe('DashboardPage', () => {
     expect(openLink).toHaveAttribute('href', '/students/student-1');
     expect(openLink).toHaveClass('inline-flex');
     expect(within(section).getByText('Mostrando 1 de 1 alunos')).toBeInTheDocument();
-    expect(within(section).getByRole('button', { name: 'Anterior' })).toBeDisabled();
-    expect(within(section).getByRole('button', { name: 'Próxima' })).toBeDisabled();
+    expect(within(section).getByRole('link', { name: 'Ver todos os alunos' })).toHaveAttribute(
+      'href',
+      '/students',
+    );
+    expect(within(section).queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
+    expect(within(section).queryByRole('button', { name: 'Próxima' })).not.toBeInTheDocument();
+    expect(within(section).queryByRole('link', { name: 'Anterior' })).not.toBeInTheDocument();
+    expect(within(section).queryByRole('link', { name: 'Próxima' })).not.toBeInTheDocument();
+    expect(within(section).queryByRole('link', { name: '2' })).not.toBeInTheDocument();
   });
 
   it('mantém as quatro métricas antes da Lista de alunos', async () => {
@@ -221,18 +228,29 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('article', { name: 'Inativos (7+ dias)' })).toHaveTextContent('2');
   });
 
-  it('oferece caminho real para ver mais alunos quando existe outra pagina', async () => {
-    mockStudents(6);
+  it.each([
+    [0, 'Mostrando 0 de 0 alunos'],
+    [1, 'Mostrando 1 de 1 alunos'],
+    [52, 'Mostrando 1 de 52 alunos'],
+  ])(
+    'mostra CTA para a carteira completa sem paginação falsa com %s alunos',
+    async (total, label) => {
+      if (total === 0) mockEmptyStudents();
+      else mockStudents(total);
 
-    render(await DashboardPage());
+      render(await DashboardPage());
 
-    const section = screen.getByRole('region', { name: 'Lista de alunos' });
-    expect(within(section).getByRole('link', { name: '2' })).toHaveAttribute('href', '/students');
-    expect(within(section).getByRole('link', { name: 'Próxima' })).toHaveAttribute(
-      'href',
-      '/students',
-    );
-  });
+      const section = screen.getByRole('region', { name: 'Lista de alunos' });
+      expect(within(section).getByText(label)).toBeInTheDocument();
+      expect(within(section).getByRole('link', { name: 'Ver todos os alunos' })).toHaveAttribute(
+        'href',
+        '/students',
+      );
+      expect(within(section).queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
+      expect(within(section).queryByRole('button', { name: 'Próxima' })).not.toBeInTheDocument();
+      expect(within(section).queryByRole('link', { name: '2' })).not.toBeInTheDocument();
+    },
+  );
 
   it('mostra erro claro quando a lista de alunos falha', async () => {
     vi.mocked(getStudents).mockResolvedValue(apiError());
@@ -313,6 +331,9 @@ describe('DashboardPage', () => {
     expect(within(section).queryByText('Nenhum aluno encontrado.')).not.toBeInTheDocument();
     expect(within(section).queryByRole('button', { name: 'Anterior' })).not.toBeInTheDocument();
     expect(within(section).queryByRole('button', { name: 'Próxima' })).not.toBeInTheDocument();
+    expect(
+      within(section).queryByRole('link', { name: 'Ver todos os alunos' }),
+    ).not.toBeInTheDocument();
   });
 
   it('trata falha simultânea das duas seções sem inventar zeros ou vazio', async () => {
