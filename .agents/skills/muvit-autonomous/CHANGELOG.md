@@ -1,5 +1,9 @@
 # Changelog
 
+## 9.2.0
+
+- Entrega autorizada em `hybrid_go` até merge em `develop` e fechamento verificado no Linear. O gate exige evidência na HEAD, SHA esperado e ruleset ativo.
+
 ## 9.1.0 — 2026-11-08
 
 - O despachante da automação passou para a skill separada `muvit-dispatch`, com precheck, gate, seleção de até dois cards novos e relatório da execução.

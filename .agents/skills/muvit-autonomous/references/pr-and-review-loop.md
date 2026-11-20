@@ -1,31 +1,45 @@
-# PR, Codex Review e loop contínuo de correções
+# PR, revisão e merge em develop
 
-## 1. Antes da PR
+## Antes de abrir o PR
 
-- Branch com título curto e vinculado ao card; commits e push somente do trabalho aprovado para escopo do card; base do PR conferida no remoto.
-- O primeiro push ocorre nesta preparação, após validação e revisão local. Publicar somente a branch de entrega do card; branches auxiliares de agendamento e reservas não são publicadas.
-- Checar diff, testes, lint/typecheck/build, migrações e QA prático. Descrever intenção, critérios, evidências, riscos e dependências.
-- Abrir PR na branch remota, vincular ao Linear e colocar em **revisão humana** ao final do ciclo técnico. **Não fazer merge** automaticamente.
+- Publique só a branch de entrega do card, após validar a mudança integrada. Abra PR no mesmo repositório, com base `develop`, e vincule o URL do PR ao card no Linear. Use o ID imutável do card na mesma conexão e workspace do claim.
+- Confirme no precheck que o ruleset ativo de `develop` corresponde à política de [proteção da branch](develop-protection.md), que squash está habilitado e que a conta da rodada tem permissão normal de merge. Proteção indisponível ou divergente bloqueia a entrega e deve ser reportada. A rodada não altera regras.
+- Use referência comum ao card no título/corpo e vínculo no Linear. Evite palavras-chave de fechamento automático no GitHub ou na integração do Linear e confirme que a integração não antecipa as transições de estado controladas pelo coordenador.
 
-## 2. Após criar PR e após cada push
+## Após abrir o PR e após cada push
 
-1. Consultar GitHub e confirmar se Codex Review automático foi disparado. Não presumir que configuração está ativa só porque existe PR.
-2. Checar status para HEAD SHA atual; distinguir comentários/reviews antigos de novos. Se a revisão ainda não chegou, consultar a cada **5 minutos**, no máximo **6 checagens por espera** (~30 minutos). O tempo é por espera de review, não limite global da rodada.
-3. Ao receber findings, triagem com evidência: local, severidade, cenário reproduzível, versão da HEAD e decisão técnica. `P0/P1` acionáveis devem ser corrigidos; `P2/P3` podem ser adiados apenas com justificativa técnica objetiva, com registro de pendência quando aplicável. Findings inválidos precisam explicação verificável.
-4. Delegar correções a `muvit-implementer`, rodar testes e QA afetados e obter nova revisão independente de `muvit-reviewer`. Fazer push e recomeçar a espera da **nova revisão na HEAD corrigida**. Mesmo finding repetido exige conferência do patch atual; não ignorar P1 por já ter aparecido antes.
-5. **Repetir sem limite fixo de ciclos enquanto houver findings acionáveis e execução viável.** É proibido `maxReviewCycles`, `maxFixRounds` ou teto agregado de 90 minutos. Não usar limite de 2 rodadas do playbook `review-gate` da Alethe para encerrar o workflow Muvit.
-6. Se 6 polls transcorrerem sem resposta em uma espera, registrar `REVIEW_PENDING`/bloqueio, HEAD e próxima ação necessária. Não tratar timeout de revisão como PASS nem notificar que PR está totalmente revisada.
+1. Compare a HEAD do PR com a HEAD local. Registre revisão independente de `muvit-reviewer` sobre a HEAD final, validação integrada, QA aplicável e os checks do GitHub. Se QA for inaplicável, registre a justificativa na mesma HEAD.
+2. Confira se o Codex Review do GitHub está habilitado. Quando ativo, confirme a revisão para a HEAD corrente. Consulte a cada **5 minutos**, até **6 checagens por espera**. Se a revisão esperada não chegar, registre `REVIEW_PENDING` e bloqueie a entrega. Quando desabilitado, registre a constatação e prossiga com a revisão independente obrigatória.
+3. Trate threads e achados com evidência, severidade, arquivo, cenário e HEAD. Corrija `P0/P1` acionáveis. Adie `P2/P3` somente com justificativa objetiva e pendência rastreável. Registre a decisão nas threads que couberem ao coordenador. Se a conversa continuar aberta ou exigir a decisão do autor, preserve o bloqueio do GitHub.
+4. Após cada correção, push ou atualização da branch, invalide evidências da HEAD anterior. Rode checks e QA afetados e obtenha nova revisão independente na HEAD remota atual. Repita **sem limite fixo de ciclos**. Preserve o histórico no template `review-iteration.md`.
+5. Somente com os gates comprovados, confirme no Linear o vínculo com o PR exato e passe para `In Review` com `agent_review`. Essa etapa registra validação técnica para merge, sem aprovação humana rotineira.
 
-## 3. Condições para concluir
+## Executar merge e fechar
 
-- PR existe e corresponde à HEAD testada;
-- CI/checks e QA pertinentes foram comprovados;
-- review da HEAD atual foi concluído, **sem findings acionáveis**; os menores adiados foram explicitamente justificados e rastreados;
-- card e PR estão preparados para **revisão humana final**;
-- nenhum merge foi feito por automação.
+Somente o coordenador de uma rodada autorizada usa `scripts/delivery_gate.py`, na worktree reservada. Antes de chamar o script, confirme exclusividade da execução no Orca e reconcilie GitHub/Linear. A trava local não protege contra outro clone. O coordenador não muda o destino do PR e deve bloquear se outro executor estiver editando o mesmo PR ou card.
 
-Sem review, com problemas P0/P1, CI reprovado ou ambiente irrecuperável, termina **como bloqueado/pendente documentado**, não como concluído.
+Salve o registro JSON da rodada antes da primeira tentativa, em `artifacts/<escopo>/<execução>/`. Os campos são:
+
+- `card`, `issue_id`, `workspace_id`, `assignee_id`, `run_id`, `profile` (`hybrid_go`), `pr` (número), `branch` e `head` (SHA completo).
+- `review`, `qa` e `threads`, cada um com `head`, `result` e `evidence`. Use `PASS` ou, somente para QA inaplicável, `NOT_APPLICABLE`. Em `evidence`, aponte para recibos da revisão, relatório de QA ou inspeção/decisões das threads. O coordenador valida o conteúdo dessas evidências.
+- Em outro JSON, grave uma leitura recente do Linear com `card`, `issue_id`, `workspace_id`, `assignee_id`, `state`, `labels` (nomes) e `links` (URLs canônicos vinculados). Leia pela mesma conexão usada no claim e confira o responsável autenticado.
+
+```powershell
+python -B -X utf8 .agents/skills/muvit-autonomous/scripts/delivery_gate.py merge --record $muvitDeliveryRecord --linear $muvitLinearSnapshot
+```
+
+O gate confere trava, identidade do PR, evidências, ruleset e checks bem-sucedidos da HEAD. O GitHub aplica as regras no momento do squash via API de PR com `sha` obrigatório. Não use `--admin`, `--auto`, merge local, push direto, alteração de regras ou método alternativo para contornar uma recusa. O GitHub garante a HEAD esperada, mas a API não oferece condição atômica para a base do PR. A leitura mais recente e a prova pós-merge conferem `develop`. Se a base mudar ou a resposta ficar incerta, suspenda a entrega e reconcilie antes de agir.
+
+Após o merge, releia o Linear, atualize o snapshot e rode:
+
+```powershell
+python -B -X utf8 .agents/skills/muvit-autonomous/scripts/delivery_gate.py close-plan --record $muvitDeliveryRecord --linear $muvitLinearSnapshot
+```
+
+O script autoriza o fechamento somente após ler o PR correto como mesclado, confirmar que o commit de merge integra `develop` e conferir o vínculo com o card. Em `UPDATE_LINEAR`, atualize esse card para `Done` e retire só as labels de automação listadas, preservando as demais e o vínculo. Use o conector Linear da rodada, sem copiar credenciais. Registre os SHAs da HEAD e do merge e releia estado, labels e vínculo. `DONE_CONFIRMED` confirma uma releitura já consistente. Preserve a trava até essa confirmação.
+
+Após timeout, recusa ou reinício, reconcilie o mesmo PR, HEAD, card e trava antes de repetir. Se a mesma HEAD já foi mesclada, confirme o merge e retome somente o fechamento pendente. Se o PR ainda estiver aberto e a HEAD mudou, refaça os gates e persista as novas evidências antes de nova tentativa. Se a escrita no Linear ficou incerta, releia e aplique só o delta restante. Estado ou ownership divergente exige bloqueio e relatório com a ação concreta pendente.
 
 ## Registro por iteração
 
-`head_sha`, `review_id`, `timestamp`, `poll_count`, `findings`, `severity`, `accepted/rejected`, `rationale`, `correction_commit`, `checks`, `review_status`, `remaining`. Preserve rastro pequeno, seguro e reprodutível. Veja template `review-iteration.md`.
+`head_sha`, `review_id`, `timestamp`, `poll_count`, `findings`, `severity`, `accepted/rejected`, `rationale`, `correction_commit`, `checks`, `review_status`, `remaining`. Preserve rastro pequeno, seguro e reprodutível. Veja `templates/review-iteration.md`.

@@ -1,18 +1,18 @@
 # muvit-autonomous — v9.1 local
 
-Fluxo v9 do Muvit com workers supervisionados do Orca: chat nativo preferencial e CLI como fallback autorizado, conforme a configuração do aplicativo. `agents.toml` nesta skill define dois perfis: `hybrid_go` combina Codex Plus e OpenCode Go; `codex_only` usa só Codex Plus e escolhe uma rota `bounded` (Luna) ou `complex` (Sol) pelo escopo do card. Em rodada manual, perfil e rota são registrados antes do claim; após handoff de `$muvit-dispatch`, o coordenador os registra antes de alterar o Linear ou lançar workers. Não mudam por cota durante a rodada. O coordenador aplica agente, modelo, esforço quando aceito e instruções explicitamente no lançamento Orca. As permissões de delegação estão em `references/superpowers-and-delegation.md`.
+Fluxo do Muvit com workers supervisionados do Orca. Para entrega autônoma, o perfil obrigatório é `hybrid_go` (Codex Plus + OpenCode Go). Consulte `agents.toml` para papéis e modelos.
 
 ## Dependências de execução
 
-- Orca operacional, com orquestração, coordenador apto a receber eventos e Codex Plus autenticado. OpenCode Go é exigido somente por `hybrid_go`; `codex_only` atende colaboradores sem Go. Carregar os guias versionados `orchestration` e `orca-cli` pelo executável resolvido para a sessão.
+- Orca operacional, com orquestração, coordenador apto a receber eventos e Codex Plus e OpenCode Go autenticados. Carregue os guias versionados `orchestration` e `orca-cli` pelo executável resolvido para a sessão.
 - Superpowers 7.0.1 incluído em `.agents/skills/superpowers/`, com origem e versão em `UPSTREAM.md`; acesso real ao GitHub, Linear e ferramentas necessárias ao card.
 - Ao instalar em outro checkout para a automação, levar `muvit-dispatch/`, `muvit-autonomous/` e `superpowers/` de `.agents/skills/`; para uma rodada manual, apenas as duas últimas são necessárias. `.codex/config.toml` espelha somente o perfil do coordenador para o host; os perfis dos workers permanecem dentro da skill. Superpowers não exige instalação global; Orca precisa estar disponível, e OpenCode somente para `hybrid_go`.
 
 ## Executar e validar
 
-Pedir ao principal uma rodada de `muvit-autonomous` autoriza trabalhar em exatamente um card elegível até os gates de PR/review ou um bloqueio documentado, sem merge. Consultar ou editar os arquivos autoriza somente manutenção. A execução sequencial dos especialistas é o padrão.
+Uma rodada autônoma autorizada abrange exatamente um card elegível até o merge do PR em `develop` e confirmação de `Done` no Linear, ou um bloqueio documentado. Consultar ou editar a skill é manutenção.
 
-A configuração do projeto não troca o modelo de uma sessão já iniciada. No host, confira Luna xhigh como principal e o suporte ao perfil escolhido antes da rodada; uma seleção explícita do host pode prevalecer. `agents.toml` não é registro automático de agentes Orca. Os IDs de lançamento são `codex` e, no híbrido, `opencode`, com modelo explícito; `--effort` é usado somente com Codex. Sem perfil indicado, use `hybrid_go` quando Go e Codex estiverem disponíveis; sem Go, selecione e registre `codex_only` antes do claim. Na rota `bounded`, Luna medium planeja e implementa tarefas localizadas com critérios e checks claros; na rota `complex`, Sol medium assume essas etapas. Sol medium revisa ambas; Terra medium faz QA visual aplicável. Não troque perfil ou rota por cota ou falha durante a rodada.
+Confira Luna xhigh no coordenador e os modelos obrigatórios antes da rodada. Lance `codex` e `opencode` com modelo explícito e use `--effort` somente com Codex. Go indisponível é bloqueio. O manifesto mantém `codex_only` para trabalhos com autorização separada.
 
 O coordenador usa `worker-start`, registra o recibo real de chat/CLI e encerra o turno para ser retomado pelo evento Orca. Workers podem convocar subworkers somente conforme a matriz da referência, com vaga e ownership delimitados no briefing. Correções usam `orchestration send`; o worker conclui pelo protocolo `worker_done` após tratar seus auxiliares. Fim de turno não encerra rodada nem libera trava. Não fazer polling de workers nem substituir Orca por subagentes internos do chat. O teto de quatro agentes incluindo o principal precisa ser contado pelo coordenador: o limite interno de threads Codex não limita workers Orca.
 

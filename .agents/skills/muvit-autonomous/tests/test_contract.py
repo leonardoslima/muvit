@@ -14,7 +14,7 @@ class MuvitContractTests(unittest.TestCase):
     def test_skill_metadata(self):
         skill=self.read('SKILL.md')
         self.assertIn('name: muvit-autonomous', skill)
-        self.assertIn('version: "9.1.0"', skill)
+        self.assertIn('version: "9.2.0"', skill)
 
     def test_standalone_files(self):
         for p in ['README.md','MIGRATION-NOTE.md','SKILL.md','agents.toml','references/selection-and-state.md',
@@ -66,7 +66,7 @@ class MuvitContractTests(unittest.TestCase):
 
     def test_review_rules(self):
         s=self.read('references/pr-and-review-loop.md')
-        for phrase in ['5 minutos','6 checagens','sem limite fixo','P0/P1','P2/P3','revisão humana','não fazer merge']:
+        for phrase in ['5 minutos','6 checagens','sem limite fixo','P0/P1','P2/P3','revisão independente','close-plan']:
             self.assertIn(phrase.lower(),s.lower())
 
     def test_qa_rules(self):
@@ -84,10 +84,10 @@ class MuvitContractTests(unittest.TestCase):
         self.assertEqual(coordinator['model_reasoning_effort'], profiles['profiles']['hybrid_go']['coordinator']['effort'])
         self.assertEqual(coordinator['agents']['max_concurrent_threads_per_session'], 3)
         hybrid = {
-            'planner': ('codex', 'gpt-6.1-sol', 'medium'),
+            'planner': ('codex', 'gpt-6.2-sol', 'medium'),
             'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
             'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
-            'reviewer': ('codex', 'gpt-6.1-sol', 'medium'),
+            'reviewer': ('codex', 'gpt-6.2-sol', 'medium'),
             'quality_verifier': ('opencode', 'opencode-go/mimo-v2.6-flash', None),
             'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
             'escalation': ('codex', 'gpt-6.1-terra', 'high'),
@@ -100,7 +100,7 @@ class MuvitContractTests(unittest.TestCase):
             'implementer_aux': ('codex', 'gpt-6-luna', 'medium'),
             'quality_verifier': ('codex', 'gpt-6-luna', 'medium'),
             'visual_qa': ('codex', 'gpt-6.1-terra', 'medium'),
-            'escalation': ('codex', 'gpt-6.1-sol', 'high'),
+            'escalation': ('codex', 'gpt-6.2-sol', 'high'),
         })
         for mode, expected in [('hybrid_go', hybrid), ('codex_only', codex_only)]:
             for role, route in expected.items():
@@ -110,7 +110,7 @@ class MuvitContractTests(unittest.TestCase):
                     self.assertTrue(profiles['roles'][role]['instructions'].strip())
         for role in ('planner', 'implementer'):
             config = profiles['profiles']['codex_only'][f'{role}_complex']
-            self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.1-sol', 'medium'))
+            self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.2-sol', 'medium'))
         self.assertFalse(list((project / '.codex/agents').glob('muvit-*.toml')))
 
     def test_hybrid_profiles_and_delegation_contract(self):
@@ -127,13 +127,13 @@ class MuvitContractTests(unittest.TestCase):
         self.assertIn('verificador', protocol.lower())
         self.assertIn('não iniciam outros agentes', protocol.lower())
 
-    def test_codex_only_mode_is_selected_before_claim(self):
+    def test_hybrid_go_mode_is_required_for_autonomous_delivery(self):
         skill = self.read('SKILL.md')
         protocol = self.read('references/superpowers-and-delegation.md')
         self.assertIn('codex_only', skill)
         self.assertIn('hybrid_go', skill)
         self.assertIn('antes do claim', protocol.lower())
-        self.assertIn('sem OpenCode Go', protocol)
+        self.assertIn('Go ou modelo indisponível exige bloqueio', protocol)
         self.assertIn('não troque', protocol.lower())
         self.assertIn('planner_complex', protocol)
         self.assertIn('implementer_complex', protocol)

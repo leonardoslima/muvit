@@ -18,6 +18,9 @@
 - Evidência ADB/web/Pen:
 - PR e último push:
 - Codex review (HEAD/revisão/polls/findings):
-- Status: PRECHECK / IN_PROGRESS / REVIEW_PENDING / HUMAN_REVIEW / BLOCKED
+- Revisão independente, threads, CI e QA na HEAD final:
+- Tentativa de merge, HEAD aprovada e commit confirmado em develop:
+- Leitura posterior do Linear (vínculo, estado e labels):
+- Status: PRECHECK / IN_PROGRESS / REVIEW_PENDING / MERGE_PENDING / LINEAR_PENDING / DONE / BLOCKED
 - Limpeza segura:
 - Próxima ação (se pendente):

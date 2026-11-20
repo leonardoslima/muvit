@@ -5,7 +5,7 @@
 3. Se houver vários, selecione conforme prioridade, bloqueios e prontidão. **Exatamente um card por rodada**. Uma dependência incompleta torna o card inelegível; itens dependentes não podem ser executados apenas porque parecem independentes. Quando receber um card de `$muvit-dispatch`, não selecione outro.
 4. Antes de modificar o Linear ou código, verifique PR/worktree/execução concorrente e adquira a trava local abaixo. Depois da aquisição, releia o card na mesma conexão e workspace: `assignee.id` deve continuar igual ao ID autenticado, a label `agent_ready` deve existir e os demais critérios devem permanecer válidos. Se responsável/label/estado mudar, libere somente a própria trava e encerre sem editar o card ou código. Somente se continuar elegível, o coordenador registra a tomada, move o estado para `In Progress`, remove `agent_ready`, adiciona `agent_in_progress` e confirma a leitura posterior. Em caso de corrida ou falha de claim, interrompa a tomada; se uma escrita ficar incerta ou parcial, leia o card antes de qualquer nova tentativa e reconcilie as labels. A label comunica disponibilidade; a criação exclusiva do arquivo evita a corrida entre worktrees locais.
 5. Vincule branch e worktree com identificador curto, por exemplo `muv-42`/`MUV-42`; confirme que não colide com branches ativos. Trabalho paralelo em rodadas separadas é permitido quando cards forem de fato independentes.
-6. Não fazer merge, fechar card como Done, criar releases ou remover branch remota automaticamente. Ao finalizar entrega validada, mover para `In Review` e trocar a label de andamento por `agent_review`, conforme o quadro abaixo. GitHub/Linear devem refletir o estado **real**, não só o plano.
+6. O coordenador só mescla o PR em `develop` e fecha o card na rodada autorizada pelo protocolo de `pr-and-review-loop.md`. Use o estado que corresponde às evidências. Criação de releases e remoção de branches ficam fora da rodada.
 7. Se o card já tiver PR, branch ou trabalho em andamento, não sobrescrever. Retomada segura e documentada cabe somente ao coordenador responsável por aquela rodada ou a uma solicitação específica de retomada.
 
 Registro mínimo de claim: ID, título, prioridade, estado/label antes/depois, dependências, branch, worktree, data de início e link para PR quando existir. Não inserir dados sensíveis em logs.
@@ -20,9 +20,10 @@ Confirme no time e workspace autenticados que os estados e labels abaixo existem
 | Claim validado e trabalho iniciado | `In Progress` | Remover `agent_ready`, `agent_blocked` e `agent_review`; adicionar `agent_in_progress`. |
 | Rodada bloqueada, sem entrega pronta | Manter `In Progress` | Remover `agent_in_progress` e `agent_review`; adicionar `agent_blocked`. Preservar trava, worktree e contexto para retomada. |
 | Bloqueio resolvido e mesma rodada retomada | `In Progress` | Remover `agent_blocked` e `agent_review`; adicionar `agent_in_progress` após reconciliar ownership e elegibilidade. |
-| PR e revisão da HEAD validadas, pronta para revisão humana | `In Review` | Remover `agent_in_progress` e `agent_blocked`; adicionar `agent_review`. |
+| PR vinculado, CI, QA aplicável, threads e revisão da HEAD validados para merge | `In Review` | Remover `agent_in_progress` e `agent_blocked`; adicionar `agent_review`. |
+| Merge e vínculo comprovados pelo gate | `Done` | Remover somente labels de automação e preservar as demais. |
 
-Não marcar `agent_review` apenas por abrir a PR: revisão automática pendente ou findings acionáveis mantêm `agent_in_progress`, ou `agent_blocked` se a rodada realmente parou por impedimento. Não recolocar `agent_ready` em card com trabalho, PR ou trava pendente. Não mover para `Done` antes do procedimento humano do projeto. Se um estado/label esperado estiver ausente ou a escrita falhar, preserve os dados da rodada, registre o bloqueio e não declare a transição concluída.
+A abertura do PR por si só mantém `agent_in_progress`. Se houver bloqueio, use `agent_blocked` e preserve a reserva. Se o merge já ocorreu e o Linear ficou parcialmente atualizado, preserve o estado real, registre a pendência e retome pelo gate de fechamento. Não reponha `agent_ready` em card com trabalho, PR ou trava pendente. Estado ou label ausente e falha de escrita exigem reconciliação e relatório.
 
 ## Responsável na rodada
 
@@ -52,7 +53,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Tomada interrompida; conferir a reserva local.
 ## Liberação e retomada
 
 - Sem candidato elegível, não criar trava. Se a elegibilidade desaparecer após adquirir a trava e antes de iniciar trabalho, liberar somente a própria reserva e encerrar.
-- Após entregar a PR validada em revisão humana e registrar esse estado no Linear, liberar a própria trava. Retirar `agent_ready` e os checks de PR/estado impedem que uma nova rodada retome essa entrega como card novo.
+- Após confirmar `Done`, vínculo e labels efetivos em nova leitura do Linear, libere somente a própria trava. Merge sem confirmação do Linear ainda é entrega pendente.
 - Para liberar: `python -B -X utf8 .agents/skills/muvit-autonomous/scripts/local_lock.py release --card MUV-15 --run-id $muvitRunId`. O script exige o `run_id` gravado; dono divergente, JSON inválido ou falha de leitura não autorizam remoção.
 - Bloqueio, interrupção ou review pendente preservam a trava, UUID e dados de retomada. Não usar TTL, idade do arquivo ou ausência do PID do script para apagar automaticamente uma reserva.
 - Ao retomar uma reserva existente, conferir dono/execução, worktree, Git, PR e Linear. Prosseguir na mesma rodada somente com ownership comprovado e sem executor concorrente; preservar o UUID existente. Uma reserva órfã só pode ser liberada após comprovar que o executor anterior terminou e reconciliar trabalho e estado do card; registrar a decisão nas evidências antes da liberação. Em caso de dúvida, reportar bloqueio.

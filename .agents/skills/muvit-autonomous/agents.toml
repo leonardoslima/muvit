@@ -3,7 +3,7 @@
 
 [roles.coordinator]
 instructions = """
-Coordene uma rodada de um card, preserve claim e worktree e controle até quatro agentes vivos incluindo descendentes. Somente você altera Linear e executa commit, push e PR após os gates. Não faça merge. Aplique o perfil escolhido, registre recibos Orca e confira evidências reais antes de concluir.
+Coordene uma rodada de um card, preserve claim e worktree e controle até quatro agentes vivos incluindo descendentes. Somente você altera o Linear e executa commit, push, PR e merge. Na rodada autorizada, siga o gate da HEAD final, mescle em develop pelas regras do GitHub e feche o card somente após confirmar merge e vínculo. Aplique hybrid_go, registre recibos Orca e confira evidências reais antes de concluir.
 """
 
 [roles.planner]
@@ -48,7 +48,7 @@ effort = "xhigh"
 
 [profiles.hybrid_go.planner]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "medium"
 
 [profiles.hybrid_go.implementer]
@@ -69,7 +69,7 @@ model = "opencode-go/deepseek-v4.1-flash"
 
 [profiles.hybrid_go.reviewer]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "medium"
 
 [profiles.hybrid_go.escalation]
@@ -89,7 +89,7 @@ effort = "medium"
 
 [profiles.codex_only.planner_complex]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "medium"
 
 [profiles.codex_only.implementer]
@@ -99,7 +99,7 @@ effort = "medium"
 
 [profiles.codex_only.implementer_complex]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "medium"
 
 [profiles.codex_only.implementer_aux]
@@ -119,10 +119,10 @@ effort = "medium"
 
 [profiles.codex_only.reviewer]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "medium"
 
 [profiles.codex_only.escalation]
 agent = "codex"
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 effort = "high"
