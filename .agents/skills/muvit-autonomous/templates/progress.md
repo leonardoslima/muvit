@@ -2,7 +2,7 @@
 
 - Card selecionado:
 - Identidade Linear (conexão/workspace, ID autenticado e assignee.id reconferido após a trava):
-- Linear (status e label):
+- Linear (estado e ID antes/depois da reserva e estado efetivo após transição):
 - Dependências conferidas:
 - Branch/worktree:
 - Trava local (caminho, run_id, horário e estado preservada/liberada):
@@ -20,7 +20,8 @@
 - Codex review (HEAD/revisão/polls/findings):
 - Revisão independente, threads, CI e QA na HEAD final:
 - Tentativa de merge, HEAD aprovada e commit confirmado em develop:
-- Leitura posterior do Linear (vínculo, estado e labels):
+- Leitura posterior do Linear (vínculo e estado):
 - Status: PRECHECK / IN_PROGRESS / REVIEW_PENDING / MERGE_PENDING / LINEAR_PENDING / DONE / BLOCKED
+- Bloqueio, evidência e condição de retomada:
 - Limpeza segura:
 - Próxima ação (se pendente):

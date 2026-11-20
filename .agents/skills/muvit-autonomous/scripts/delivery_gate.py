@@ -13,7 +13,7 @@ REPO = 'leonardoslima/muvit'
 BASE = 'develop'
 ACTIONS_APP = 15368
 CHECKS = ('Check (Biome)', 'Test (Turborepo)', 'Build (Turborepo)', 'TypeScript Check')
-AUTOMATION_LABELS = {'agent_ready', 'agent_in_progress', 'agent_blocked', 'agent_review'}
+WORKSPACE_ID = '18309e87-272d-4c09-aa18-ed1711c84dcf'
 
 
 class Blocked(ValueError):
@@ -33,6 +33,7 @@ def verify_identity(record: dict, linear: dict) -> str:
     require(record['profile'] == 'hybrid_go', 'A entrega exige o perfil hybrid_go.')
     require(type(record['pr']) is int and record['pr'] > 0 and sha_valid(record['head']),
             'Número do PR ou HEAD inválidos.')
+    require(record['workspace_id'] == WORKSPACE_ID, 'Workspace fora do escopo Muvit.')
     for key in ('card', 'issue_id', 'workspace_id', 'assignee_id'):
         require(bool(record[key]) and linear[key] == record[key],
                 f'Identidade divergente no Linear: {key}.')
@@ -73,9 +74,7 @@ def merge(github: 'Github', record: dict, linear: dict) -> dict:
         return merge_proof(github, pr)
 
     require(pr['state'] == 'open' and pr['draft'] is False, 'PR precisa estar aberto e pronto.')
-    require(linear['state'] == 'In Review' and 'agent_review' in linear['labels']
-            and AUTOMATION_LABELS.intersection(linear['labels']) == {'agent_review'},
-            'Reconciliar estado e labels do card antes do merge.')
+    require(linear['state'] == 'In Review', 'Reconciliar estado do card antes do merge.')
     github.require_protection()
     checks = github.read_checks(record['head'])
     for name in CHECKS:
@@ -104,13 +103,11 @@ def close_plan(github: 'Github', record: dict, linear: dict) -> dict:
     pr = github.read_pr(record['pr'])
     verify_pr(pr, record, url)
     proof = merge_proof(github, pr)
-    require(linear['state'] in {'In Review', 'In Progress', 'Done'}
-            and 'agent_ready' not in linear['labels'],
+    require(linear['state'] in {'In Review', 'In Progress', 'Done'},
             'Estado do card divergente: reconciliar ownership antes de fechar.')
-    remove = sorted(AUTOMATION_LABELS.intersection(linear['labels']))
-    status = 'DONE_CONFIRMED' if linear['state'] == 'Done' and not remove else 'UPDATE_LINEAR'
+    status = 'DONE_CONFIRMED' if linear['state'] == 'Done' else 'UPDATE_LINEAR'
     return {**proof, 'status': status, 'issue_id': record['issue_id'],
-            'state': 'Done', 'remove_labels': remove}
+            'state': 'Done'}
 
 
 class Github:

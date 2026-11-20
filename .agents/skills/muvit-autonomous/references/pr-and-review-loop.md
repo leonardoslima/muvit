@@ -12,7 +12,7 @@
 2. Confira se o Codex Review do GitHub está habilitado. Quando ativo, confirme a revisão para a HEAD corrente. Consulte a cada **5 minutos**, até **6 checagens por espera**. Se a revisão esperada não chegar, registre `REVIEW_PENDING` e bloqueie a entrega. Quando desabilitado, registre a constatação e prossiga com a revisão independente obrigatória.
 3. Trate threads e achados com evidência, severidade, arquivo, cenário e HEAD. Corrija `P0/P1` acionáveis. Adie `P2/P3` somente com justificativa objetiva e pendência rastreável. Registre a decisão nas threads que couberem ao coordenador. Se a conversa continuar aberta ou exigir a decisão do autor, preserve o bloqueio do GitHub.
 4. Após cada correção, push ou atualização da branch, invalide evidências da HEAD anterior. Rode checks e QA afetados e obtenha nova revisão independente na HEAD remota atual. Repita **sem limite fixo de ciclos**. Preserve o histórico no template `review-iteration.md`.
-5. Somente com os gates comprovados, confirme no Linear o vínculo com o PR exato e passe para `In Review` com `agent_review`. Essa etapa registra validação técnica para merge, sem aprovação humana rotineira.
+5. Somente com os gates comprovados, confirme no Linear o vínculo com o PR exato e passe para `In Review`, preservando todas as labels. Essa etapa registra validação técnica para merge, sem aprovação humana rotineira.
 
 ## Executar merge e fechar
 
@@ -22,7 +22,7 @@ Salve o registro JSON da rodada antes da primeira tentativa, em `artifacts/<esco
 
 - `card`, `issue_id`, `workspace_id`, `assignee_id`, `run_id`, `profile` (`hybrid_go`), `pr` (número), `branch` e `head` (SHA completo).
 - `review`, `qa` e `threads`, cada um com `head`, `result` e `evidence`. Use `PASS` ou, somente para QA inaplicável, `NOT_APPLICABLE`. Em `evidence`, aponte para recibos da revisão, relatório de QA ou inspeção/decisões das threads. O coordenador valida o conteúdo dessas evidências.
-- Em outro JSON, grave uma leitura recente do Linear com `card`, `issue_id`, `workspace_id`, `assignee_id`, `state`, `labels` (nomes) e `links` (URLs canônicos vinculados). Leia pela mesma conexão usada no claim e confira o responsável autenticado.
+- Em outro JSON, grave uma leitura recente do Linear com `card`, `issue_id`, `workspace_id`, `assignee_id`, `state` e `links` (URLs canônicos vinculados). Leia pela mesma conexão usada no claim e confira time `MUV`, workspace e responsável autenticado.
 
 ```powershell
 python -B -X utf8 .agents/skills/muvit-autonomous/scripts/delivery_gate.py merge --record $muvitDeliveryRecord --linear $muvitLinearSnapshot
@@ -36,7 +36,7 @@ Após o merge, releia o Linear, atualize o snapshot e rode:
 python -B -X utf8 .agents/skills/muvit-autonomous/scripts/delivery_gate.py close-plan --record $muvitDeliveryRecord --linear $muvitLinearSnapshot
 ```
 
-O script autoriza o fechamento somente após ler o PR correto como mesclado, confirmar que o commit de merge integra `develop` e conferir o vínculo com o card. Em `UPDATE_LINEAR`, atualize esse card para `Done` e retire só as labels de automação listadas, preservando as demais e o vínculo. Use o conector Linear da rodada, sem copiar credenciais. Registre os SHAs da HEAD e do merge e releia estado, labels e vínculo. `DONE_CONFIRMED` confirma uma releitura já consistente. Preserve a trava até essa confirmação.
+O script autoriza o fechamento somente após ler o PR correto como mesclado, confirmar que o commit de merge integra `develop` e conferir o vínculo com o card. Em `UPDATE_LINEAR`, atualize somente o estado desse card para `Done`, preservando o vínculo e todas as labels. Use o conector Linear da rodada, sem copiar credenciais. Registre os SHAs da HEAD e do merge e releia estado e vínculo. `DONE_CONFIRMED` confirma uma releitura já consistente. Preserve a trava até essa confirmação.
 
 Após timeout, recusa ou reinício, reconcilie o mesmo PR, HEAD, card e trava antes de repetir. Se a mesma HEAD já foi mesclada, confirme o merge e retome somente o fechamento pendente. Se o PR ainda estiver aberto e a HEAD mudou, refaça os gates e persista as novas evidências antes de nova tentativa. Se a escrita no Linear ficou incerta, releia e aplique só o delta restante. Estado ou ownership divergente exige bloqueio e relatório com a ação concreta pendente.
 

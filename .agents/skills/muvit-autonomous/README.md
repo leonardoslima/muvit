@@ -24,7 +24,7 @@ A reserva de cards usa `python -B -X utf8 .agents/skills/muvit-autonomous/script
 
 O agente inicial da automação usa a skill irmã `$muvit-dispatch`. O coordenador desta skill recebe um card e uma worktree já reservados, confere ownership e prossegue sem duplicar a trava ou o checkout. Execuções manuais desta skill continuam podendo selecionar um card conforme `references/selection-and-state.md`.
 
-Cada rodada usa somente um card `agent_ready` atribuído ao usuário autenticado no Linear. Cada colaborador precisa usar sua própria conexão; cards sem responsável ou de outro usuário não entram na fila. O coordenador repete o filtro inclusive em execuções manuais e após adquirir ou receber a trava.
+Cada rodada nova admite somente um card do time `MUV` no workspace `18309e87-272d-4c09-aa18-ed1711c84dcf`, em estado exato `Todo`, atribuído ao usuário autenticado e aprovado nos demais gates. O coordenador repete a leitura após adquirir ou receber a trava e preserva todas as labels durante a rodada. Retomadas autorizadas reconciliam a reserva existente.
 
 ## Origem
 

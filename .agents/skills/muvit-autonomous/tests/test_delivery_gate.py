@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 
-from delivery_gate import Blocked, CHECKS, Github as GithubApi, REPO, close_plan, merge
+from delivery_gate import Blocked, CHECKS, Github as GithubApi, REPO, WORKSPACE_ID, close_plan, merge
 
 HEAD = 'a' * 40
 MERGED = 'b' * 40
@@ -53,13 +53,13 @@ class DeliveryTest(unittest.TestCase):
     def setUp(self):
         self.github = Github()
         self.record = {'pr': 99, 'branch': 'muv-999', 'head': HEAD, 'card': 'MUV-999',
-                       'issue_id': 'issue-fixture', 'workspace_id': 'workspace-fixture',
+                       'issue_id': 'issue-fixture', 'workspace_id': WORKSPACE_ID,
                        'assignee_id': 'owner-fixture', 'profile': 'hybrid_go',
                        'review': {'head': HEAD, 'result': 'PASS', 'evidence': 'recibo Orca'},
                        'qa': {'head': HEAD, 'result': 'NOT_APPLICABLE', 'evidence': 'escopo documental'},
                        'threads': {'head': HEAD, 'result': 'PASS', 'evidence': 'inspeção do PR'}}
         self.linear = {'card': 'MUV-999', 'issue_id': 'issue-fixture',
-                       'workspace_id': 'workspace-fixture', 'assignee_id': 'owner-fixture',
+                       'workspace_id': WORKSPACE_ID, 'assignee_id': 'owner-fixture',
                        'state': 'In Review', 'links': [URL], 'labels': ['agent_review', 'Mobile']}
 
     def do_merge(self):
@@ -121,17 +121,51 @@ class DeliveryTest(unittest.TestCase):
         with self.assertRaises(Blocked):
             close_plan(self.github, self.record, self.linear)
         self.linear['links'] = [URL]
-        self.assertEqual(close_plan(self.github, self.record, self.linear)['remove_labels'], ['agent_review'])
-        self.linear['state'] = 'Done'
         self.assertEqual(close_plan(self.github, self.record, self.linear)['status'], 'UPDATE_LINEAR')
-        self.linear['labels'].remove('agent_review')
+        self.linear['state'] = 'Done'
         self.assertEqual(close_plan(self.github, self.record, self.linear)['status'], 'DONE_CONFIRMED')
+
+    def test_entrega_preserva_labels_e_aceita_snapshot_sem_labels(self):
+        for labels in (None, [], ['Mobile', 'Bug', 'agent_ready', 'agent_in_progress',
+                                  'agent_review', 'agent_blocked']):
+            with self.subTest(labels=labels):
+                self.setUp()
+                if labels is None:
+                    self.linear.pop('labels')
+                else:
+                    self.linear['labels'] = labels
+                snapshot = deepcopy(self.linear)
+                self.assertEqual(self.do_merge()['merge_sha'], MERGED)
+                plan = close_plan(self.github, self.record, self.linear)
+                self.assertEqual(plan['status'], 'UPDATE_LINEAR')
+                self.assertEqual(plan['state'], 'Done')
+                self.assertNotIn('remove_labels', plan)
+                self.assertEqual(self.linear, snapshot)
+                self.linear['state'] = 'Done'
+                self.assertEqual(close_plan(self.github, self.record, self.linear)['status'], 'DONE_CONFIRMED')
+
+    def test_label_legada_nao_autoriza_merge_ou_fechamento_em_todo(self):
+        self.linear['state'] = 'Todo'
+        with self.assertRaises(Blocked):
+            self.do_merge()
+        self.assertEqual(self.github.calls, [])
+        self.linear['state'] = 'In Review'
+        self.do_merge()
+        self.linear['state'] = 'Todo'
+        with self.assertRaises(Blocked):
+            close_plan(self.github, self.record, self.linear)
 
     def test_bloqueia_escrita_linear_com_responsável_alterado(self):
         self.do_merge()
         self.linear['assignee_id'] = 'outro'
         with self.assertRaises(Blocked):
             close_plan(self.github, self.record, self.linear)
+
+    def test_bloqueia_workspace_fora_do_muvit_mesmo_se_os_snapshots_coincidem(self):
+        self.record['workspace_id'] = self.linear['workspace_id'] = 'outro'
+        with self.assertRaises(Blocked):
+            self.do_merge()
+        self.assertEqual(self.github.calls, [])
 
     def test_revalida_base_imediatamente_antes_do_merge(self):
         with patch.object(self.github, 'read_pr', side_effect=[

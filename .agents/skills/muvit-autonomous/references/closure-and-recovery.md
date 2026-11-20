@@ -9,9 +9,9 @@
 - Preservar os containers e volumes Docker exclusivos da rodada, inclusive o banco e seus dados, para possíveis correções após a PR. Não executar `docker compose down`, remover containers/volumes ou parar o Docker compartilhado no fechamento automático. Para workers Orca, seguir o ciclo de liberação do guia versionado e os recibos, sem fechar terminais diretamente.
 - Para recursos provisionados por `scripts/prepare_environment.py` com estado v2, usar `stop --card <card> --run-id <execução> --apply` conforme `environment.md` e conferir a saída. Isso preserva também o AVD para retomada; `remove --delete-data` não pertence ao fechamento automático. Estado legado/incompleto ou ownership divergente bloqueia o cleanup, sem fallback para matar processos por nome ou excluir caminhos manualmente.
 - Não apagar a worktree, seus arquivos ignorados, artefatos, branch ou metadados do Git no fechamento automático; a exclusão da worktree fica para o usuário pelo Orca. Manter PR e histórico de execução acessíveis para revisão e retomada.
-- Se qualquer etapa estiver bloqueada por ambiente, cota, dependência, conflito ou review após 6 polls, documentar precisamente e manter dados necessários para retomar. Não declarar como PASS nem apagar histórico útil.
+- Se qualquer etapa estiver bloqueada por ambiente, cota, dependência, conflito ou review após 6 polls, registre motivo, evidência e condição de retomada no relatório da rodada. Preserve trava, worktree, estado do Linear e todas as labels.
 - Não iniciar outra issue nesta rodada para preencher tempo após finalizar uma. Paralelismo só entre execuções distintas de cards independentes.
-- Na retomada, confira GitHub antes de repetir merge e Linear antes de repetir a atualização. Se o merge exato já estiver comprovado, só reconcilie o fechamento. Sem prova ou com ownership divergente, preserve a trava e reporte o bloqueio.
+- Na retomada autorizada, confira o UUID da mesma reserva, ausência de executor concorrente, identidade autenticada, responsável, time, workspace e estado no Linear. O requisito de `Todo` só se aplica à admissão de trabalho novo. Confira GitHub antes de repetir merge e Linear antes de repetir a transição. Se o merge exato já estiver comprovado, reconcilie somente o fechamento. Sem prova ou com ownership divergente, preserve a trava e reporte o bloqueio.
 
 ## Resultado final mínimo
 

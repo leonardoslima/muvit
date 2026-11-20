@@ -4,7 +4,7 @@
 - Linear: CLI Orca ou fallback nativo/MCP usado, falhas de rota e dados confirmados:
 - Identidade Linear: workspace e ID autenticado na mesma conexão, sem credenciais:
 - Perfil obrigatório `hybrid_go` confirmado em cada briefing:
-- Candidatos: identificador, decisão (selecionado/descartado) e motivo verificável, incluindo dependências, labels e trabalho existente:
+- Candidatos: identificador, estado inicial e após a reserva, decisão (selecionado/descartado) e motivo verificável, incluindo dependências, bloqueios e trabalho existente:
 - Rodada 1: card, run_id, trava, worktree, branch, HEAD base, gate, recibo do lançamento e handle:
 - Rodada 2: card, run_id, trava, worktree, branch, HEAD base, gate, recibo do lançamento e handle; ou motivo de não iniciar:
 - Capacidade: agentes vivos observados, disponibilidade do modelo e colisões de recursos observadas; isolamento efetivo a confirmar pelo coordenador:
