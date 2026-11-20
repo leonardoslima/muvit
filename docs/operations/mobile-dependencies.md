@@ -6,9 +6,17 @@ Data da auditoria: 23 de outubro de 2026. O baseline é o commit 6c98af86a2174a0
 
 Mantivemos Expo SDK 54, React Native 0.81.5, React 19.1.0, Expo Router 6, NativeWind 4.2.7 e Better Auth 1.6.23. Atualizamos o patch do Expo para 54.0.38, as bibliotecas Navigation para um conjunto compatível com Expo Doctor e ferramentas/runtime selecionados dentro das linhas existentes. 14 de 53 dependências diretas tiveram especificador de manifesto alterado; a tabela mostra a faixa do manifesto e a versão resolvida no lockfile antes e depois. Algumas faixas foram apenas estreitadas para alinhar com o catálogo do SDK, sem alteração da versão resolvida.
 
+## Expo SDK 55
+
+Em 20/11/2026, a worktree muvit-expo-55 migrou o app do SDK 54 para o SDK 55 a partir de develop no commit 931ee7e, que inclui o PR 56. A matriz segue o `bundledNativeModules.json` de `expo@55.0.32`: Expo 55.0.32, React Native 0.83.10, React e React DOM 19.2.0, Expo Router 55.0.18, Reanimated 4.2.1, Worklets 0.7.4, react-native-screens 4.23.0, react-native-svg 15.15.3 e gesture-handler 2.30.0. As demais bibliotecas Expo usam a mesma linha 55 indicada pelo catálogo.
+
+A configuração removeu `newArchEnabled` e `edgeToEdgeEnabled`, retirados do schema do SDK 55, e o override `@expo/cli@54.0.28>tar`, cuja cadeia não existe mais na CLI 55. NativeWind 4.2.7, react-native-css-interop 0.2.7, Tailwind 3.4.19, Better Auth 1.6.23, o contrato de sessão e o React do workspace web foram preservados.
+
+Verificações executadas nesta etapa: instalação frozen, `expo install --check`, Expo Doctor 20/20, typecheck, 971 testes, export Android, autolinking com 34 módulos e build debug Android em AVD isolado com abertura da tela de login. iOS e os demais cenários nativos permanecem sem comprovação nesta etapa.
+
 A dependência compartilhada Zod migrou de 3.25.76 para 4.6.7 em mobile, validators e API, com fastify-type-provider-zod 6.1.0. A migração preserva defaults de PATCH, IP IPv4/IPv6, datas serializadas como ISO e tipos OpenAPI; testes específicos protegem esses contratos. Os transforms de `Date` para ISO declaram saída `z.string()` para manter os campos de data tipados no OpenAPI. A API substitui o removedor .ip() por união IPv4/IPv6. O formato de UUID usa .guid() onde o contrato legado aceita valores que Zod 4 .uuid() passou a rejeitar. Consulte o [guia oficial de migração do Zod 4](https://zod.dev/v4/changelog).
 
-O lockfile fixa tar 7.5.22 somente na cadeia @expo/cli@54.0.28, dentro da faixa upstream ^7.5.2. Isso remove a versão 7.5.15 afetada pelo [GHSA-23hp-3jrh-7fpw](https://github.com/advisories/GHSA-23hp-3jrh-7fpw); a seleção é documentada pelo mecanismo de [overrides do pnpm](https://pnpm.io/settings/dependency-resolution).
+No SDK 54, o lockfile fixava tar 7.5.22 somente na cadeia @expo/cli@54.0.28, dentro da faixa upstream ^7.5.2. Isso removeu a versão 7.5.15 afetada pelo [GHSA-23hp-3jrh-7fpw](https://github.com/advisories/GHSA-23hp-3jrh-7fpw); a seleção foi documentada pelo mecanismo de [overrides do pnpm](https://pnpm.io/settings/dependency-resolution). A migração para o SDK 55 removeu esse override porque a CLI 55 não depende mais de tar; o lockfile atual não contém o pacote.
 
 ## Inventário direto mobile
 
