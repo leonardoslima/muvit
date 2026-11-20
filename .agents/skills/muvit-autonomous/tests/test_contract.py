@@ -84,10 +84,10 @@ class MuvitContractTests(unittest.TestCase):
         self.assertEqual(coordinator['model_reasoning_effort'], profiles['profiles']['hybrid_go']['coordinator']['effort'])
         self.assertEqual(coordinator['agents']['max_concurrent_threads_per_session'], 3)
         hybrid = {
-            'planner': ('codex', 'gpt-6.1-sol', 'medium'),
+            'planner': ('codex', 'gpt-6.2-sol', 'medium'),
             'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
             'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
-            'reviewer': ('codex', 'gpt-6.1-sol', 'medium'),
+            'reviewer': ('codex', 'gpt-6.2-sol', 'medium'),
             'quality_verifier': ('opencode', 'opencode-go/mimo-v2.6-flash', None),
             'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
             'escalation': ('codex', 'gpt-6.1-terra', 'high'),
@@ -100,7 +100,7 @@ class MuvitContractTests(unittest.TestCase):
             'implementer_aux': ('codex', 'gpt-6-luna', 'medium'),
             'quality_verifier': ('codex', 'gpt-6-luna', 'medium'),
             'visual_qa': ('codex', 'gpt-6.1-terra', 'medium'),
-            'escalation': ('codex', 'gpt-6.1-sol', 'high'),
+            'escalation': ('codex', 'gpt-6.2-sol', 'high'),
         })
         for mode, expected in [('hybrid_go', hybrid), ('codex_only', codex_only)]:
             for role, route in expected.items():
@@ -110,7 +110,7 @@ class MuvitContractTests(unittest.TestCase):
                     self.assertTrue(profiles['roles'][role]['instructions'].strip())
         for role in ('planner', 'implementer'):
             config = profiles['profiles']['codex_only'][f'{role}_complex']
-            self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.1-sol', 'medium'))
+            self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.2-sol', 'medium'))
         self.assertFalse(list((project / '.codex/agents').glob('muvit-*.toml')))
 
     def test_hybrid_profiles_and_delegation_contract(self):

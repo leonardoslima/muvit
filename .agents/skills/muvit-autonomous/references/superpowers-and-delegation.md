@@ -52,7 +52,7 @@ Há no máximo **dois níveis** de delegação abaixo do coordenador: coordenado
 3. Inicie com `--agent codex --model ... --effort ...` para Codex e `--agent opencode --model ...` para Go, sem `--effort`. O exemplo é do planejador do perfil `hybrid_go` e da rota `complex` do `codex_only`; na rota `bounded`, use Luna medium. Para cada papel use os campos de `[profiles.<perfil>.<rota>]` em `agents.toml`.
 
 ```text
-ORCA orchestration worker-start --worktree "<seletor-exato-da-worktree-do-card>" --agent codex --model gpt-6.1-sol --effort medium --spec-file "artifacts/<issue-ou-escopo>/<execucao>/planner.md" --json
+ORCA orchestration worker-start --worktree "<seletor-exato-da-worktree-do-card>" --agent codex --model gpt-6.2-sol --effort medium --spec-file "artifacts/<issue-ou-escopo>/<execucao>/planner.md" --json
 ```
 
 Para subworker, o pai usa `worker-start` conforme o guia versionado com `--from <handle-do-pai>`, `--parent <task-id-do-pai>`, worktree exata e perfil permitido. Essas flags no help não provam subdelegação funcional: antes de depender dela na primeira rodada, confirme uma chamada real e o retorno ao pai. Se o runtime recusar antes de criar recursos, o pai usa `orchestration ask` para o coordenador iniciar o auxiliar na mesma Run; o coordenador encaminha o resultado ao pai por `send`, preservando ownership e teto. Se o resultado for desconhecido, reconcilie o Dispatch antes de qualquer novo lançamento. Não apresente tentativa recusada como auxiliar executado.
