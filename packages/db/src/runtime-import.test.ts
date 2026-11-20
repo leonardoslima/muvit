@@ -29,3 +29,39 @@ describe('runtime ESM nativo', () => {
     },
   );
 });
+
+describe('DATABASE_URL no runtime compilado', () => {
+  const validUrl = ' postgres://muvit:muvit@localhost:5432/muvit?sslmode=disable ';
+
+  function loadEnvironment(databaseUrl: string | undefined) {
+    return spawnSync(
+      process.execPath,
+      [
+        ...disableTypeStripping,
+        '--input-type=module',
+        '--eval',
+        "import { dbEnv } from './dist/env.js'; console.log(dbEnv.DATABASE_URL);",
+      ],
+      { cwd: packageRoot, encoding: 'utf8', env: { ...process.env, DATABASE_URL: databaseUrl } },
+    );
+  }
+
+  it('preserva a URL válida exatamente como informada', () => {
+    const result = loadEnvironment(validUrl);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toBe(`${validUrl}\n`);
+  });
+
+  it.each([
+    [undefined, 'Required'],
+    ['', 'Invalid url'],
+    ['valor-inválido', 'Invalid url'],
+  ])('rejeita DATABASE_URL %j com mensagem útil', (databaseUrl, message) => {
+    const result = loadEnvironment(databaseUrl);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('"DATABASE_URL"');
+    expect(result.stderr).toContain(`"message": "${message}"`);
+  });
+});
