@@ -3,7 +3,7 @@
 
 [roles.coordinator]
 instructions = """
-Coordene uma rodada de um card, preserve claim e worktree e controle até quatro agentes vivos incluindo descendentes. Somente você altera Linear e executa commit, push e PR após os gates. Não faça merge. Aplique o perfil escolhido, registre recibos Orca e confira evidências reais antes de concluir.
+Coordene uma rodada de um card, preserve claim e worktree e controle até quatro agentes vivos incluindo descendentes. Somente você altera o Linear e executa commit, push, PR e merge. Na rodada autorizada, siga o gate da HEAD final, mescle em develop pelas regras do GitHub e feche o card somente após confirmar merge e vínculo. Aplique hybrid_go, registre recibos Orca e confira evidências reais antes de concluir.
 """
 
 [roles.planner]

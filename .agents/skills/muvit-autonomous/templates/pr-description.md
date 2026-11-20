@@ -24,7 +24,8 @@
 - Findings acionáveis restantes: ...
 - Findings P2/P3 adiados com justificativa: ...
 
-## Gate humano
+## Entrega
 
-- [ ] PR pronta para revisão humana (marcar apenas após checks/review comprovados)
-- Não realizar merge automático.
+- Revisão independente e QA vinculados à HEAD:
+- Threads tratadas e CI obrigatório:
+- Após o merge, registrar o SHA, o vínculo e o estado confirmado no Linear.

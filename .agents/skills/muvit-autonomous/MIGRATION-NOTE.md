@@ -34,7 +34,7 @@ O usuário pediu uma versão **completa da skill**, não um atualizador. Esta en
 - mobile via `adb`, web com browser Orca, `.pen` via Pen CLI;
 - PR, Codex Review após PR/push, polling 5 min/6 checks por espera;
 - reparos ilimitados, P0/P1 obrigatórios, P2/P3 com justificativa;
-- PR para revisão humana, sem merge automático; limpeza segura;
+- Na política histórica desta migração, PR para revisão humana e limpeza segura. O fluxo vigente consta de `references/pr-and-review-loop.md`.
 - sem agentes com modelo/effort fixo, sem `model-router`.
 
 ## Instalação segura
