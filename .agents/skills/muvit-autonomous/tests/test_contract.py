@@ -89,8 +89,8 @@ class MuvitContractTests(unittest.TestCase):
             'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
             'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
             'reviewer': ('codex', 'gpt-6.2-sol', 'medium'),
-            'quality_verifier': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
-            'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
+            'quality_verifier': ('opencode', 'opencode-go/glm-5.3-flash', 'high'),
+            'visual_qa': ('opencode', 'opencode-go/qwen3.8-flash', 'medium'),
             'escalation': ('codex', 'gpt-6.1-terra', 'high'),
             'coordinator': ('codex', 'gpt-6-luna', 'xhigh'),
         }
@@ -122,7 +122,8 @@ class MuvitContractTests(unittest.TestCase):
                 route = profile[role]
                 provider, model = route['model'].split('/', 1)
                 settings = config['providers'][provider]['models'][model]['settings']
-                self.assertEqual(settings['reasoningEffort'], route['effort'])
+                effort_field = 'effort' if role == 'visual_qa' else 'reasoningEffort'
+                self.assertEqual(settings, {effort_field: route['effort']})
 
     def test_hybrid_profiles_and_delegation_contract(self):
         protocol = self.read('references/superpowers-and-delegation.md')

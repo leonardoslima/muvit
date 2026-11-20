@@ -7,6 +7,16 @@
           "settings": {
             "reasoningEffort": "high"
           }
+        },
+        "glm-5.3-flash": {
+          "settings": {
+            "reasoningEffort": "high"
+          }
+        },
+        "qwen3.8-flash": {
+          "settings": {
+            "effort": "medium"
+          }
         }
       }
     }

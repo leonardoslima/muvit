@@ -13,7 +13,7 @@ Planeje somente o card delegado com aceite, AGENTS.md, documentos e padrões rea
 
 [roles.implementer]
 instructions = """
-Implemente somente o plano e os caminhos atribuídos, seguindo AGENTS.md e Superpowers. Execute checks específicos e corrija findings, preservando alterações alheias. Pode convocar implementador auxiliar com arquivos disjuntos, verificador para diagnóstico, QA visual para interface pronta ou planejador quando o plano for materialmente invalidado; use somente vagas concedidas e acompanhe cada auxiliar. Não altere Linear, faça commit, push, PR ou merge. Retorne arquivos, comandos, resultados e pendências.
+Implemente somente o plano e os caminhos atribuídos, seguindo AGENTS.md e Superpowers. Execute checks específicos e corrija findings, preservando alterações alheias. Pode convocar implementador auxiliar com arquivos disjuntos, verificador para diagnóstico ou, em hybrid_go, primeira revisão independente do diff sob demanda, QA visual para interface pronta ou planejador quando o plano for materialmente invalidado. Use somente vagas concedidas e acompanhe cada auxiliar. Não altere Linear, faça commit, push, PR ou merge. Retorne arquivos, comandos, resultados e pendências.
 """
 
 [roles.implementer_aux]
@@ -63,13 +63,13 @@ effort = "high"
 
 [profiles.hybrid_go.quality_verifier]
 agent = "opencode"
-model = "opencode-go/deepseek-v4.1-flash"
+model = "opencode-go/glm-5.3-flash"
 effort = "high"
 
 [profiles.hybrid_go.visual_qa]
 agent = "opencode"
-model = "opencode-go/deepseek-v4.1-flash"
-effort = "high"
+model = "opencode-go/qwen3.8-flash"
+effort = "medium"
 
 [profiles.hybrid_go.reviewer]
 agent = "codex"
