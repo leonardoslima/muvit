@@ -1,4 +1,5 @@
 """Testes estáticos do contrato da skill standalone. Não executam repo/CLI/Linear reais."""
+import json
 from pathlib import Path
 import re
 import shlex
@@ -85,11 +86,11 @@ class MuvitContractTests(unittest.TestCase):
         self.assertEqual(coordinator['agents']['max_concurrent_threads_per_session'], 3)
         hybrid = {
             'planner': ('codex', 'gpt-6.2-sol', 'medium'),
-            'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
-            'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
+            'implementer': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
+            'implementer_aux': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
             'reviewer': ('codex', 'gpt-6.2-sol', 'medium'),
-            'quality_verifier': ('opencode', 'opencode-go/mimo-v2.6-flash', None),
-            'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', None),
+            'quality_verifier': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
+            'visual_qa': ('opencode', 'opencode-go/deepseek-v4.1-flash', 'high'),
             'escalation': ('codex', 'gpt-6.1-terra', 'high'),
             'coordinator': ('codex', 'gpt-6-luna', 'xhigh'),
         }
@@ -113,11 +114,20 @@ class MuvitContractTests(unittest.TestCase):
             self.assertEqual((config['agent'], config['model'], config['effort']), ('codex', 'gpt-6.2-sol', 'medium'))
         self.assertFalse(list((project / '.codex/agents').glob('muvit-*.toml')))
 
+    def test_opencode_project_applies_manifest_effort(self):
+        profile = tomllib.loads(self.read('agents.toml'))['profiles']['hybrid_go']
+        config = json.loads((ROOT.parents[2] / 'opencode.jsonc').read_text(encoding='utf-8'))
+        for role in ('implementer', 'implementer_aux', 'quality_verifier', 'visual_qa'):
+            with self.subTest(role=role):
+                route = profile[role]
+                provider, model = route['model'].split('/', 1)
+                settings = config['providers'][provider]['models'][model]['settings']
+                self.assertEqual(settings['reasoningEffort'], route['effort'])
+
     def test_hybrid_profiles_and_delegation_contract(self):
         protocol = self.read('references/superpowers-and-delegation.md')
         profiles = self.read('agents.toml')
         self.assertIn('opencode-go/deepseek-v4.1-flash', profiles)
-        self.assertIn('opencode-go/mimo-v2.6-flash', profiles)
         self.assertNotIn('opencode/deepseek-v4.1-flash-free', profiles)
         self.assertIn('agents.toml', protocol)
         self.assertIn('--from <handle-do-pai>', protocol)

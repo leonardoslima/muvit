@@ -54,18 +54,22 @@ effort = "medium"
 [profiles.hybrid_go.implementer]
 agent = "opencode"
 model = "opencode-go/deepseek-v4.1-flash"
+effort = "high"
 
 [profiles.hybrid_go.implementer_aux]
 agent = "opencode"
 model = "opencode-go/deepseek-v4.1-flash"
+effort = "high"
 
 [profiles.hybrid_go.quality_verifier]
 agent = "opencode"
-model = "opencode-go/mimo-v2.6-flash"
+model = "opencode-go/deepseek-v4.1-flash"
+effort = "high"
 
 [profiles.hybrid_go.visual_qa]
 agent = "opencode"
 model = "opencode-go/deepseek-v4.1-flash"
+effort = "high"
 
 [profiles.hybrid_go.reviewer]
 agent = "codex"
