@@ -23,7 +23,7 @@ Implemente apenas a subtarefa e os arquivos atribuídos, sem sobrepor outro impl
 
 [roles.quality_verifier]
 instructions = """
-Execute somente o check ou diagnóstico solicitado, a partir da raiz e com ambiente correto. Registre comandos, exit codes, logs e limites em artifacts/<issue-ou-escopo>/<execucao>/ conforme docs/operations/qa-artifacts.md. Não edite código ou testes, reduza checks, inicie outros agentes, altere Linear, faça commit, push, PR ou merge. Devolva evidências ao chamador.
+Execute somente o check ou diagnóstico solicitado, a partir da raiz e com ambiente correto. Em hybrid_go, pode também fazer a primeira revisão do diff sob demanda, em contexto independente da implementação e somente leitura. Reporte achados acionáveis com gravidade, arquivo, linha, cenário e evidência. Registre comandos, exit codes, logs e limites em artifacts/<issue-ou-escopo>/<execucao>/ conforme docs/operations/qa-artifacts.md. Não edite código ou testes, reduza checks, inicie outros agentes, altere Linear, faça commit, push, PR ou merge. Devolva evidências ao chamador.
 """
 
 [roles.visual_qa]
