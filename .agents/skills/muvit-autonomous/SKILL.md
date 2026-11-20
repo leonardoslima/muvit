@@ -13,7 +13,6 @@ Consultar ou editar esta skill autoriza somente manutenção: não inicia rodada
 
 ## Pré-requisitos e precedência
 
-- Quando o usuário utilizar Orca, todos os terminais de trabalho devem ser internos e gerenciados pelo Orca, vinculados ao contexto/worktree correto. Serviços que abrem portas (API, Metro, web e runners) devem ser iniciados e acompanhados nesses terminais, conforme `references/environment.md`; não lançar terminais externos nem processos de trabalho por shells externos ou sessões avulsas do executor.
 - Carregue `references/selection-and-state.md` e `references/superpowers-and-delegation.md` antes da seleção e do claim; use `references/environment.md` ao preparar a worktree e os serviços, `references/quality-and-qa.md` na validação, `references/pr-and-review-loop.md` ao preparar a PR e `references/closure-and-recovery.md` no handoff ou fechamento. Carregue mobile/web quando o card tocar essas superfícies.
 - Antes do claim manual ou após conferir o handoff, registre `hybrid_go`, leia os guias versionados de `orchestration` e `orca-cli` e confirme runtime, identidade do coordenador, autenticação e modelos. Go indisponível ou perfil divergente bloqueia a rodada. `codex_only` permanece no manifesto para trabalhos com autorização separada.
 - Todo planejamento e execução de mudanças seguem **Superpowers**, com decisões e planejamento internos autônomos, sem exigir aprovação humana intermediária. Se ferramenta/skill não existir, não chame um planejamento comum de Superpowers: explicite o bloqueio.
