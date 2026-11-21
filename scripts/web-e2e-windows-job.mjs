@@ -7,6 +7,12 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const windowsJobScriptPath = join(root, 'scripts/web-e2e-windows-job.ps1');
+// O runner hospedado do Windows tem admissão lenta: >20 s a frio e
+// 10-12 s em regime; 40 s cobre o pior caso observado com margem.
+export const DEFAULT_STARTUP_TIMEOUT_MS = 40000;
+export function resolveStartupTimeoutMs(options = {}) {
+  return options.startupTimeoutMs ?? DEFAULT_STARTUP_TIMEOUT_MS;
+}
 const supervisorExecutable = join(
   process.env.SystemRoot ?? 'C:\\Windows',
   'System32',
@@ -246,7 +252,7 @@ class WindowsJobSession extends EventEmitter {
     this._token = token;
     this._nonce = nonce;
     this._eventNonce = eventNonce;
-    const startupTimeoutMs = this.options.startupTimeoutMs ?? 20000;
+    const startupTimeoutMs = resolveStartupTimeoutMs(this.options);
     const authTimeoutMs = this.options.authTimeoutMs ?? startupTimeoutMs;
     const inputServer = createServer();
     const outputServer = createServer();

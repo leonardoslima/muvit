@@ -7,6 +7,8 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
+  DEFAULT_STARTUP_TIMEOUT_MS,
+  resolveStartupTimeoutMs,
   startWindowsJob,
   windowsCommandLine,
   windowsJobScriptPath,
@@ -14,6 +16,7 @@ import {
 import { StopNotProvenError, runAbortableCommand, runWithNextEnvLock } from './web-e2e.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ADMISSION_TIMEOUT_MS = DEFAULT_STARTUP_TIMEOUT_MS;
 const windowsOnly =
   process.platform === 'win32'
     ? {}
@@ -116,10 +119,16 @@ function baseOptions(overrides = {}) {
     cwd: root,
     env: inheritedEnvironment(),
     stopTimeoutMs: 5000,
-    startupTimeoutMs: 20000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     ...overrides,
   };
 }
+
+test('janela padrão de admissão Windows é 40s e aceita override explícito', () => {
+  assert.equal(DEFAULT_STARTUP_TIMEOUT_MS, 40000);
+  assert.equal(resolveStartupTimeoutMs({}), 40000);
+  assert.equal(resolveStartupTimeoutMs({ startupTimeoutMs: 2500 }), 2500);
+});
 
 function transcriptOf(transcript) {
   if (Array.isArray(transcript)) return { frames: [], lines: transcript };
@@ -343,7 +352,7 @@ test(
         runAbortableCommand(process.execPath, ['-e', leaderCode], {
           ...baseOptions(),
           signal: controller.signal,
-          timeoutMs: 15000,
+          timeoutMs: ADMISSION_TIMEOUT_MS,
           windowsJob: true,
           onOutput: (stdout) => {
             const value = Number(stdout.trim());
@@ -450,7 +459,7 @@ test(
       stdio: ['ignore', 'ignore', 'inherit'],
     });
     try {
-      const deadline = Date.now() + 20000;
+      const deadline = Date.now() + ADMISSION_TIMEOUT_MS;
       while (!existsSync(infoFile) && Date.now() < deadline)
         await new Promise((done) => setTimeout(done, 50));
       assert.equal(existsSync(infoFile), true, 'Node pai não registrou os processos');
@@ -555,7 +564,7 @@ test(
       const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.includes('=')));
       const marker = resultFile + '.marker';
       const session = startWindowsJob(process.execPath, ['-e', ${JSON.stringify(`require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'executou')`)}], {
-        cwd: ${JSON.stringify(root)}, env, stopTimeoutMs: 2000, startupTimeoutMs: 20000, testHook: 'resume-delay', testDelayMs: 1500,
+        cwd: ${JSON.stringify(root)}, env, stopTimeoutMs: 2000, startupTimeoutMs: ${ADMISSION_TIMEOUT_MS}, testHook: 'resume-delay', testDelayMs: 1500,
       });
       session.on('error', () => {});
       const result = { ready: false, entry: process.argv[1], argv: process.argv.slice(2) };
@@ -716,7 +725,7 @@ test(
 
     const batch = await runAbortableCommand(batchFile, ['x y', 'z'], {
       ...baseOptions(),
-      timeoutMs: 20000,
+      timeoutMs: ADMISSION_TIMEOUT_MS,
       windowsJob: true,
     }).catch((error) => error);
     assert.equal(batch.code, 4);
@@ -778,7 +787,7 @@ test(
       ['-e', 'process.stdout.write("ok");process.exit(9)'],
       {
         ...baseOptions(),
-        timeoutMs: 15000,
+        timeoutMs: ADMISSION_TIMEOUT_MS,
         windowsJob: true,
       },
     );
@@ -1120,7 +1129,7 @@ test(
       env: inheritedEnvironment({ MUVIT_SEGREDO_AUTH: secret }),
       supervisorScript: launcher,
       authTimeoutMs: 3000,
-      startupTimeoutMs: 15000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
@@ -1176,7 +1185,7 @@ test(
       env: inheritedEnvironment({ MUVIT_SEGREDO_AUTH: secret }),
       supervisorScript: launcher,
       authTimeoutMs: 3000,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
@@ -1274,7 +1283,7 @@ test('Windows recusa ready sem prova HMAC no canal de eventos', windowsOnly, asy
         ...baseOptions(),
         supervisorScript: launcher,
         authTimeoutMs: 3000,
-        startupTimeoutMs: 15000,
+        startupTimeoutMs: ADMISSION_TIMEOUT_MS,
       });
       session.on('error', () => {});
       try {
@@ -1320,7 +1329,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
@@ -1329,7 +1338,7 @@ test(
           (value) => ({ value }),
           (error) => ({ error }),
         ),
-        delay(10000).then(() => ({ timeout: true })),
+        delay(ADMISSION_TIMEOUT_MS).then(() => ({ timeout: true })),
       ]);
       assert.equal(outcome.timeout, undefined, 'completion pendurou após o sufixo');
       assert.ok(
@@ -1352,7 +1361,7 @@ test('Windows rejeita duplicata no canal de entrada após a autenticação', win
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
   });
   session.on('error', () => {});
   try {
@@ -1361,7 +1370,7 @@ test('Windows rejeita duplicata no canal de entrada após a autenticação', win
         () => ({ ready: true }),
         (error) => ({ error }),
       ),
-      delay(5000).then(() => ({ timeout: true })),
+      delay(ADMISSION_TIMEOUT_MS).then(() => ({ timeout: true })),
     ]);
     assert.ok(outcome.error, `ready aceitou dados duplicados: ${JSON.stringify(outcome)}`);
     assert.equal(outcome.error.stage, 'protocol');
@@ -1380,7 +1389,7 @@ test('Windows rejeita sufixo sem newline no EOF do canal de entrada', windowsOnl
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
   });
   session.on('error', () => {});
   try {
@@ -1413,7 +1422,7 @@ test('Windows não fecha a liquidação antes do EOF do canal de entrada', windo
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     testHook: 'hold-control-after-leader-exit',
   });
   session.on('error', () => {});
@@ -1441,7 +1450,7 @@ test('Windows não conclui a liquidação antes do EOF do canal de entrada', win
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     testHook: 'hold-control-after-leader-exit',
   });
   session.on('error', () => {});
@@ -1471,7 +1480,7 @@ test('Windows não ignora erros de transporte após o stopped', windowsOnly, asy
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
       testHook: 'hold-control-after-leader-exit',
     });
     session.on('error', () => {});
@@ -1510,7 +1519,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     const started = Date.now();
@@ -1550,7 +1559,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
       settlementTimeoutMs: 30000,
     });
     session.on('error', () => {});
@@ -1609,7 +1618,7 @@ test(
           session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
             ...baseOptions(),
             supervisorScript: launcher,
-            startupTimeoutMs: 10000,
+            startupTimeoutMs: ADMISSION_TIMEOUT_MS,
             settlementTimeoutMs: 30000,
           });
           session.on('error', () => {});
@@ -1696,9 +1705,9 @@ test(
           runAbortableCommand(process.execPath, ['-e', 'process.exit(0)'], {
             ...baseOptions(),
             supervisorScript: launcher,
-            startupTimeoutMs: 10000,
+            startupTimeoutMs: ADMISSION_TIMEOUT_MS,
             stopTimeoutMs: 400,
-            timeoutMs: 15000,
+            timeoutMs: ADMISSION_TIMEOUT_MS,
             windowsJob: true,
           }),
       ).catch((error) => error);
@@ -1755,7 +1764,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
@@ -1813,7 +1822,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: brokenSupervisor,
-      startupTimeoutMs: 15000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     const started = Date.now();
@@ -1879,7 +1888,7 @@ test(
         ...baseOptions(),
         testHook: 'suspend-reader',
         testDelayMs: 800,
-        startupTimeoutMs: 15000,
+        startupTimeoutMs: ADMISSION_TIMEOUT_MS,
       },
     );
     session.on('error', () => {});
@@ -2026,7 +2035,7 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
@@ -2046,7 +2055,7 @@ test('Windows aguarda EOF de controle antes de concluir sucesso', windowsOnly, a
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
   });
   session.on('error', () => {});
   try {
@@ -2079,11 +2088,11 @@ test(
     const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
       ...baseOptions(),
       supervisorScript: launcher,
-      startupTimeoutMs: 10000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
-      const deadline = Date.now() + 5000;
+      const deadline = Date.now() + ADMISSION_TIMEOUT_MS;
       while (!existsSync(marker) && Date.now() < deadline) await delay(50);
       assert.equal(existsSync(marker), true, 'supervisor sintético não enviou o terminal');
       const early = await Promise.race([
@@ -2111,7 +2120,7 @@ test('Windows não mascara evento duplicado depois do protocolo terminal', windo
   const session = startWindowsJob(process.execPath, ['-e', 'process.exit(0)'], {
     ...baseOptions(),
     supervisorScript: launcher,
-    startupTimeoutMs: 10000,
+    startupTimeoutMs: ADMISSION_TIMEOUT_MS,
   });
   session.on('error', () => {});
   try {
@@ -2321,7 +2330,7 @@ try {
     cwd: ${JSON.stringify(root)},
     env,
     stopTimeoutMs: 5000,
-    startupTimeoutMs: 20000,
+    startupTimeoutMs: ${ADMISSION_TIMEOUT_MS},
     testHook: 'ready-delay',
     testDelayMs: 4000,
     signal: controller.signal,
@@ -2566,7 +2575,7 @@ test(
       ...baseOptions(),
       testHook: 'suspend-reader',
       testDelayMs: 3000,
-      startupTimeoutMs: 15000,
+      startupTimeoutMs: ADMISSION_TIMEOUT_MS,
     });
     session.on('error', () => {});
     try {
