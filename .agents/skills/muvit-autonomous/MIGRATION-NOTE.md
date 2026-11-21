@@ -1,6 +1,8 @@
 # Nota de migração e proveniência
 
-## Estado atual — v9 local, 2026-11-07
+## Registro histórico — v9 local, 2026-11-07
+
+Para o roteamento vigente, consulte [agents.toml](agents.toml) e [o protocolo de delegação](references/superpowers-and-delegation.md).
 
 A v9 reúne `hybrid_go` e `codex_only` em `agents.toml` dentro da skill. O híbrido usa Codex Luna xhigh na coordenação, Sol medium no planejamento e revisão, OpenCode Go DeepSeek V4.1 Flash na implementação e QA visual quando comprovado, e MiMo V2.6 Flash na verificação sob demanda. O perfil somente Codex registra antes do claim a rota `bounded` (Luna medium planeja e implementa mudanças localizadas) ou `complex` (Sol medium planeja e implementa mudanças com riscos ou contratos complexos). Sol medium revisa ambas, Terra medium faz QA visual aplicável, Luna medium verifica sob demanda e Sol high atende escalações fundamentadas. O protocolo permite subworkers delimitados por papel, com dois níveis e teto de quatro agentes vivos. Os TOMLs de `.codex/agents/` foram removidos e `.codex/config.toml` apenas espelha o coordenador para o host. Validação estática não comprova worker, subdelegação ou QA real; a primeira rodada deve verificar o runtime antes de depender dessas capacidades.
 

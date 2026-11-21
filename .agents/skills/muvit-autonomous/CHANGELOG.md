@@ -1,5 +1,9 @@
 # Changelog
 
+## Em desenvolvimento
+
+- Em `hybrid_go`, DeepSeek V4.1 Flash high atende implementação principal, auxiliar e manutenção autorizada. GLM-5.3 Flash high atende diagnóstico e primeira revisão independente do diff sob demanda. Qwen3.8 Flash medium atende QA visual aplicável. GPT-6.2 Sol medium continua no planejamento e na revisão final independente.
+
 ## 9.2.0
 
 - Entrega autorizada em `hybrid_go` até merge em `develop` e fechamento verificado no Linear. O gate exige evidência na HEAD, SHA esperado e ruleset ativo.

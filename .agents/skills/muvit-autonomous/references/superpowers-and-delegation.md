@@ -16,6 +16,8 @@ Registre `hybrid_go` antes do claim manual ou da primeira alteração no Linear 
 
 Confira Codex Plus e OpenCode Go no host, inclusive a autenticação OpenCode do sistema. A lista de contas gerenciadas pelo Orca pode estar vazia mesmo com autenticação válida. Go ou modelo indisponível exige bloqueio. Não troque perfil, provedor, modelo ou esforço durante a rodada para contornar cota ou falha.
 
+No `hybrid_go`, use `planner` também para mudanças simples e `reviewer` para a revisão final independente. Use a rota `implementer` para manutenção autorizada fora de rodada. Para diagnóstico ou primeira revisão do diff que justifique uma investigação independente, use `quality_verifier` sob demanda com briefing delimitado, sessão separada da implementação e acesso somente de leitura. Para revisão, forneça a base e o diff alvo e solicite achados acionáveis com gravidade, arquivo, linha, cenário e evidência. A primeira revisão pode ser dispensada e a revisão final permanece obrigatória.
+
 Em trabalho separado autorizado para `codex_only`, registre antes do claim `bounded` para escopo localizado com critérios e checks claros, ou `complex` diante de ambiguidade, contratos compartilhados ou risco. Essa configuração não habilita o merge da entrega autônoma.
 
 No `codex_only`, o implementador executa os checks existentes com comandos antes de pedir verificador. Prefira execução sequencial, contexto mínimo e reuso do worker nas correções; o teto de quatro agentes é um máximo, não uma meta. Não use Astra, modo Fast ou extras pagos em qualquer perfil. A economia esperada de Luna é uma hipótese a medir por card: as faixas oficiais do Codex Plus variam com tarefa, contexto e esforço, e não garantem consumo ou conclusão por card. Fontes: [uso Codex Plus](https://chatgpt.com/codex/pricing/), [orientação de modelos](https://developers.openai.com/api/docs/guides/model-selection) e [efeito do esforço no uso](https://help.openai.com/en/articles/20001516-managing-usage-with-gpt-6-astra-in-work-and-codex).
@@ -35,7 +37,7 @@ No perfil `hybrid_go`, OpenCode com `--model` exige worktree existente e CLI ver
 | Coordenador | Todos os papéis | Mantém ownership da rodada, Git, Linear, PR e gates |
 | Planejador | Verificador | Check concreto necessário para fechar o plano |
 | Implementador | Implementador auxiliar | Subtarefa independente com arquivos de escrita disjuntos |
-| Implementador | Verificador | Diagnóstico independente de falha ou evidência complexa |
+| Implementador | Verificador | Diagnóstico independente de falha ou evidência complexa, ou primeira revisão do diff sob demanda em `hybrid_go` |
 | Implementador | QA visual | Interface pronta para teste na aplicação real |
 | Implementador | Planejador | Descoberta que invalida materialmente o plano |
 | QA visual | Verificador | Investigar logs ou defeito observado |
@@ -49,7 +51,7 @@ Há no máximo **dois níveis** de delegação abaixo do coordenador: coordenado
 
 1. Prepare briefing autossuficiente com perfil escolhido, papel, objetivo, aceite, plano, caminhos permitidos/proibidos, AGENTS.md, Superpowers pertinentes, comandos e evidências, vagas de auxiliares e condições de delegação. Indique que há outros agentes. Incorpore `instructions` de `[roles.<papel>]` em `agents.toml` e as regras da etapa desta skill. Referencie documentos locais em vez de copiar toda a conversa. Registre o briefing em `artifacts/<issue-ou-escopo>/<execucao>/` e use `--spec-file` para preservar UTF-8.
 2. Escolha workspace explicitamente. Após o isolamento, especialistas usam a mesma worktree do card. `--worktree current` só vale se o chamador já estiver na worktree certa; caso contrário use seletor exato. A preparação de `.env` segue `environment.md`.
-3. Inicie com `--agent codex --model ... --effort ...` para Codex. Para os quatro papéis Go de `hybrid_go`, use `--agent opencode --model opencode-go/deepseek-v4.1-flash`. O `opencode.jsonc` da raiz da worktree aplica `reasoningEffort: "high"` aos pedidos desse modelo, conforme o manifesto. Confira a configuração antes de iniciar. O chat Orca com OpenCode 2.3.2 recusa o sufixo `#high` e `worker-start` recusa `--effort` para OpenCode. Se a configuração da worktree estiver ausente ou divergente, bloqueie o lançamento. O exemplo é do planejador do perfil `hybrid_go` e da rota `complex` do `codex_only`; na rota `bounded`, use Luna medium.
+3. Inicie com `--agent codex --model ... --effort ...` para Codex. Para OpenCode Go, use `--agent opencode --model <ID-base-do-papel-no-manifesto>`. Confira o `opencode.jsonc` da raiz da worktree antes de iniciar: DeepSeek e GLM usam `settings.reasoningEffort` para enviar `reasoning_effort: "high"` em Chat Completions. Qwen usa `settings.effort` para enviar `output_config.effort: "medium"` em Messages. Em OpenCode, omita `--effort` e sufixos de variante. Se a configuração estiver ausente ou divergente, bloqueie o lançamento. O exemplo abaixo serve ao planejador `hybrid_go` e à rota `complex` do `codex_only`. Na rota `bounded`, use Luna medium.
 
 ```text
 ORCA orchestration worker-start --worktree "<seletor-exato-da-worktree-do-card>" --agent codex --model gpt-6.2-sol --effort medium --spec-file "artifacts/<issue-ou-escopo>/<execucao>/planner.md" --json
