@@ -354,9 +354,37 @@ function sameJson(left, right) {
   return false;
 }
 
-// O Next 16 acrescenta ao `include` os globs de tipos do `distDir` efetivo.
-// Restaura o conteúdo anterior somente quando a única diferença observada é
-// exatamente esse acréscimo conhecido, preservando qualquer edição concorrente.
+// O escritor do Next preserva os comentários do tsconfig: divergência em
+// comentário não pode ser atribuída a ele e exige preservar o arquivo.
+function collectJsoncComments(content) {
+  if (typeof content !== 'string') return null;
+  const scanner = ts.createScanner(ts.ScriptTarget.ESNext, false, ts.LanguageVariant.Standard);
+  scanner.setText(content.replaceAll('\r\n', '\n'));
+  const comments = [];
+  for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+    if (
+      kind === ts.SyntaxKind.SingleLineCommentTrivia ||
+      kind === ts.SyntaxKind.MultiLineCommentTrivia
+    )
+      comments.push(scanner.getTokenText());
+  }
+  return comments;
+}
+
+function sameJsoncComments(left, right) {
+  const leftComments = collectJsoncComments(left);
+  const rightComments = collectJsoncComments(right);
+  if (leftComments === null || rightComments === null) return false;
+  return (
+    leftComments.length === rightComments.length &&
+    leftComments.every((comment, index) => comment === rightComments[index])
+  );
+}
+
+// O Next 16 acrescenta ao `include` os globs de tipos do `distDir` efetivo e
+// preserva os comentários do JSONC ao reescrever. Restaura o conteúdo anterior
+// somente quando a única diferença observada é exatamente esse acréscimo
+// conhecido, inclusive nos comentários, preservando qualquer edição concorrente.
 export async function restoreGeneratedWebTsConfig({
   file,
   before,
@@ -374,7 +402,7 @@ export async function restoreGeneratedWebTsConfig({
   }
   for (const glob of distDirTypeGlobs(distDir))
     if (!expected.include.includes(glob)) expected.include.push(glob);
-  if (!sameJson(parseJsonObject(current), expected)) {
+  if (!sameJson(parseJsonObject(current), expected) || !sameJsoncComments(current, before)) {
     onWarning?.(webTsconfigDivergentWarning);
     return 'preserved';
   }

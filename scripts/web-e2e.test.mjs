@@ -144,34 +144,65 @@ test('isola o distDir de produção por runId e envia o caminho explícito ao Ne
   assert.match(runner.generatedNextEnvContent(first), /\.next-e2e-aaaa11\/types\/routes\.d\.ts/);
 });
 
-test('restaura o tsconfig rastreado após globs de tipos do distDir do Next instalado', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-restore-'));
+function eligibleJsoncTsConfigFixture() {
+  return `{
+  // Configuração compartilhada do workspace.
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "incremental": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "plugins": [{ "name": "next" }]
+  },
+  /* Inclui fontes e tipos gerados. */
+  "include": ["next-env.d.ts", "src/**/*"],
+  "exclude": ["node_modules"]
+}
+`;
+}
+
+async function writeNextTsConfigDefaults(file, distDir) {
+  const requireFromWeb = createRequire(new URL('../apps/web/package.json', import.meta.url));
+  const { writeConfigurationDefaults } = requireFromWeb(
+    'next/dist/lib/typescript/writeConfigurationDefaults.js',
+  );
+  const typescript = requireFromWeb('typescript');
+  const previousNodeEnv = process.env.NODE_ENV;
+  try {
+    process.env.NODE_ENV = 'production';
+    await writeConfigurationDefaults(typescript.version, file, false, true, distDir, false, false);
+  } finally {
+    if (previousNodeEnv === undefined) process.env.NODE_ENV = undefined;
+    else process.env.NODE_ENV = previousNodeEnv;
+  }
+}
+
+test('escritor real do Next deixa o tsconfig rastreado inalterado e a restauração confirma', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-tracked-'));
   try {
     const file = join(dir, 'tsconfig.json');
+    const distDir = runner.productionDistDir('eeee55');
     const before = await readFile(
       join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'tsconfig.json'),
       'utf8',
     );
-    const distDir = runner.productionDistDir('aaaa11');
-    const requireFromWeb = createRequire(new URL('../apps/web/package.json', import.meta.url));
-    const { getTypeDefinitionGlobPatterns } = requireFromWeb(
-      'next/dist/lib/typescript/type-paths.js',
-    );
-    const previousNodeEnv = process.env.NODE_ENV;
-    let nextGlobs;
-    try {
-      process.env.NODE_ENV = 'production';
-      nextGlobs = getTypeDefinitionGlobPatterns(distDir);
-    } finally {
-      if (previousNodeEnv === undefined) process.env.NODE_ENV = undefined;
-      else process.env.NODE_ENV = previousNodeEnv;
-    }
-    assert.deepEqual(nextGlobs, [`${distDir}/types/**/*.ts`, `${distDir}/dev/types/**/*.ts`]);
-    const nextWritten = JSON.parse(before);
-    for (const glob of nextGlobs)
-      if (!nextWritten.include.includes(glob)) nextWritten.include.push(glob);
-    await writeFile(file, `${JSON.stringify(nextWritten, null, 2)}\n`, 'utf8');
+    // O escritor do Next retorna antes de gravar na presença de extends ou
+    // references; o teste falha se o tsconfig rastreado deixar de estender.
+    assert.match(before, /"extends"\s*:/, 'tsconfig rastreado sem extends muda a premissa');
+    await writeFile(file, before, 'utf8');
+    await writeNextTsConfigDefaults(file, distDir);
 
+    const afterWriter = await readFile(file, 'utf8');
+    assert.equal(afterWriter, before, 'escritor do Next alterou o tsconfig rastreado');
     const warnings = [];
     const status = await runner.restoreGeneratedWebTsConfig({
       file,
@@ -180,21 +211,15 @@ test('restaura o tsconfig rastreado após globs de tipos do distDir do Next inst
       onWarning: (message) => warnings.push(message),
     });
 
-    assert.equal(status, 'restored');
+    assert.equal(status, 'unchanged');
     assert.equal(await readFile(file, 'utf8'), before);
     assert.deepEqual(warnings, []);
-    const restored = JSON.parse(await readFile(file, 'utf8'));
-    assert.equal(
-      restored.include.some((entry) => entry.includes('.next-e2e-')),
-      false,
-      'glob por run permaneceu no tsconfig rastreado',
-    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });
 
-test('preserva tsconfig com edição concorrente em vez de apagar globs por run', async () => {
+test('preserva edição concorrente de valor no tsconfig rastreado', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-concurrent-'));
   try {
     const file = join(dir, 'tsconfig.json');
@@ -203,10 +228,12 @@ test('preserva tsconfig com edição concorrente em vez de apagar globs por run'
       'utf8',
     );
     const distDir = runner.productionDistDir('bbbb22');
-    const concurrent = JSON.parse(before);
-    concurrent.include.push(`${distDir}/types/**/*.ts`);
-    concurrent.compilerOptions.strict = true;
-    const concurrentContent = `${JSON.stringify(concurrent, null, 2)}\n`;
+    const concurrentContent = before.replace('"allowJs": true', '"allowJs": false');
+    assert.notEqual(
+      concurrentContent,
+      before,
+      'âncora de edição não encontrada no tsconfig rastreado',
+    );
     await writeFile(file, concurrentContent, 'utf8');
 
     const warnings = [];
@@ -226,28 +253,24 @@ test('preserva tsconfig com edição concorrente em vez de apagar globs por run'
   }
 });
 
-test('restaura tsconfig JSONC com comentários após globs de tipos do distDir', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-jsonc-'));
+test('restaura tsconfig JSONC elegível reescrito pelo escritor real do Next', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-next-writer-'));
   try {
     const file = join(dir, 'tsconfig.json');
-    const distDir = runner.productionDistDir('cccc33');
-    const before = `{
-  // Configuração compartilhada do workspace.
-  "extends": "@muvit/config/tsconfig.next.json",
-  "compilerOptions": {
-    "allowJs": true // preservado pelo Next
-  },
-  /* Inclui fontes e tipos gerados. */
-  "include": ["next-env.d.ts", "src/**/*"],
-  "exclude": ["node_modules"]
-}
-`;
-    const current = before.replace(
-      '"include": ["next-env.d.ts", "src/**/*"]',
-      `"include": ["next-env.d.ts", "src/**/*", "${distDir}/types/**/*.ts", "${distDir}/dev/types/**/*.ts"]`,
-    );
-    await writeFile(file, current, 'utf8');
+    const distDir = runner.productionDistDir('ffff66');
+    const before = eligibleJsoncTsConfigFixture();
+    await writeFile(file, before, 'utf8');
+    await writeNextTsConfigDefaults(file, distDir);
 
+    const written = await readFile(file, 'utf8');
+    assert.notEqual(written, before, 'escritor do Next não reescreveu a fixture elegível');
+    assert.ok(written.includes(`${distDir}/types/**/*.ts`));
+    assert.ok(written.includes(`${distDir}/dev/types/**/*.ts`));
+    assert.match(
+      written,
+      /Configuração compartilhada do workspace\./,
+      'escritor do Next descartou comentário da fixture',
+    );
     const warnings = [];
     const status = await runner.restoreGeneratedWebTsConfig({
       file,
@@ -259,6 +282,11 @@ test('restaura tsconfig JSONC com comentários após globs de tipos do distDir',
     assert.equal(status, 'restored');
     assert.equal(await readFile(file, 'utf8'), before);
     assert.deepEqual(warnings, []);
+    assert.equal(
+      written.includes('.next-e2e-') && (await readFile(file, 'utf8')).includes('.next-e2e-'),
+      false,
+      'glob por run permaneceu no tsconfig rastreado',
+    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -285,6 +313,45 @@ test('preserva tsconfig JSONC com edição concorrente', async () => {
   "include": ["next-env.d.ts", "${distDir}/types/**/*.ts", "${distDir}/dev/types/**/*.ts"]
 }
 `;
+    await writeFile(file, concurrent, 'utf8');
+
+    const warnings = [];
+    const status = await runner.restoreGeneratedWebTsConfig({
+      file,
+      before,
+      distDir,
+      onWarning: (message) => warnings.push(message),
+    });
+
+    assert.equal(status, 'preserved');
+    assert.equal(await readFile(file, 'utf8'), concurrent);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /tsconfig/i);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('preserva edição concorrente em comentário antes da primeira leitura da restauração', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-comment-edit-'));
+  try {
+    const file = join(dir, 'tsconfig.json');
+    const distDir = runner.productionDistDir('a1b2c3');
+    const before = eligibleJsoncTsConfigFixture();
+    await writeFile(file, before, 'utf8');
+    await writeNextTsConfigDefaults(file, distDir);
+
+    const written = await readFile(file, 'utf8');
+    assert.match(
+      written,
+      /Configuração compartilhada do workspace\./,
+      'escritor do Next descartou comentário da fixture',
+    );
+    const concurrent = written.replace(
+      'Configuração compartilhada do workspace.',
+      'Configuração editada durante a execução.',
+    );
+    assert.notEqual(concurrent, written, 'âncora de comentário não encontrada no arquivo do Next');
     await writeFile(file, concurrent, 'utf8');
 
     const warnings = [];
