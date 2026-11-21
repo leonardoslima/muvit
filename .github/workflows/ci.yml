@@ -77,6 +77,29 @@ jobs:
       - name: Run workspace tests
         run: pnpm test
 
+  test-windows:
+    name: Test (Windows Job Object)
+    runs-on: windows-latest
+    needs: check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Windows supervisor and fallback tests
+        run: node --test scripts/web-e2e-windows-job.test.mjs scripts/web-e2e.test.mjs
+
   build:
     name: Build (Turborepo)
     runs-on: ubuntu-latest

@@ -368,6 +368,52 @@ test('salva apenas o nome preservando sessão e persistência', async ({
   await page.screenshot({ path: testInfo.outputPath('perfil-nome-persistido.png') });
 });
 
+test('salva dias de inatividade e reabre as preferências persistidas', async ({
+  page,
+  account,
+  api,
+}, testInfo) => {
+  const initialResponse = await api.get('/trainers/me/notification-preferences');
+  expect(initialResponse.ok()).toBeTruthy();
+  const initial = await initialResponse.json();
+  expect(initial.inactivity.afterDays).toBe(7);
+
+  await loginAs(page, account);
+  await page.getByRole('link', { name: 'Configurações', exact: true }).first().click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+  await page.getByRole('link', { name: 'Notificações', exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/notifications$/);
+  await expect(page.getByRole('heading', { name: 'Notificações' })).toBeVisible();
+  await page.waitForFunction(() => {
+    const form = document.querySelector('form');
+    return form !== null && Object.keys(form).some((key) => key.startsWith('__reactFiber'));
+  });
+
+  const inactivityDays = page.getByLabel('Dias de inatividade');
+  await expect(inactivityDays).toHaveValue('7');
+  await inactivityDays.fill('9');
+  await page.getByRole('button', { name: 'Salvar preferências' }).click();
+  await expect(page.getByText('Preferências salvas.', { exact: true })).toBeVisible();
+  await expect(inactivityDays).toHaveValue('9');
+
+  const persistedResponse = await api.get('/trainers/me/notification-preferences');
+  expect(persistedResponse.ok()).toBeTruthy();
+  const persisted = await persistedResponse.json();
+  expect(persisted).toEqual({
+    ...initial,
+    inactivity: { ...initial.inactivity, afterDays: 9 },
+  });
+
+  await page.reload();
+  await expect(page.getByLabel('Dias de inatividade')).toHaveValue('9');
+  await page.getByRole('link', { name: 'Meu perfil', exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+  await page.getByRole('link', { name: 'Notificações', exact: true }).click();
+  await expect(page).toHaveURL(/\/settings\/notifications$/);
+  await expect(page.getByLabel('Dias de inatividade')).toHaveValue('9');
+  await page.screenshot({ path: testInfo.outputPath('preferencias-persistidas.png') });
+});
+
 test('recupera sessão inválida com cookie presente sem ciclo de redirecionamentos', async ({
   page,
   account,
