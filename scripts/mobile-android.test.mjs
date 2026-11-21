@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { after, test } from 'node:test';
 import { buildInvocation } from './mobile-android.mjs';
 
@@ -15,7 +15,7 @@ writeFileSync(apostropheFile, 'globalThis.__muvitProbe = true;\n');
 writeFileSync(escapeFile, 'globalThis.__muvitProbe = true;\n');
 after(() => rmSync(tempDir, { recursive: true, force: true }));
 
-const apostrophePath = apostropheFile.replaceAll('\\', '/');
+const apostropheModule = basename(apostropheFile);
 const escapedPath = escapeFile.replaceAll('\\', '\\\\');
 
 const explicitDnsOrders = [
@@ -27,14 +27,17 @@ const explicitDnsOrders = [
   '--dns_result_order ipv6first',
   '--no-warnings --dns-result-order=ipv6first',
   '"--dns-result-order=ipv6first" --no-warnings',
-  `--require=${apostrophePath} --dns-result-order=ipv6first`,
-  `--require="${apostrophePath}" --dns-result-order=ipv6first`,
+  { nodeOptions: `--require=./${apostropheModule} --dns-result-order=ipv6first`, cwd: tempDir },
+  {
+    nodeOptions: `--require="./${apostropheModule}" --dns-result-order=ipv6first`,
+    cwd: tempDir,
+  },
   `--require="${escapedPath}" --dns-result-order=ipv6first`,
 ];
 
 const defaultDnsOrders = ['', '--no-warnings', '--trace-warnings', '--max-old-space-size=2048'];
 
-function effectiveDnsOrder(nodeOptions) {
+function effectiveDnsOrder(nodeOptions, cwd) {
   const { env } = buildInvocation({ nodeOptions });
   const result = spawnSync(
     process.execPath,
@@ -42,18 +45,19 @@ function effectiveDnsOrder(nodeOptions) {
       '-e',
       'process.stdout.write(JSON.stringify({ order: require("node:dns").getDefaultResultOrder(), nodeOptions: process.env.NODE_OPTIONS }))',
     ],
-    { env, encoding: 'utf8' },
+    { env, cwd, encoding: 'utf8' },
   );
   assert.equal(result.status, 0, result.stderr);
   return JSON.parse(result.stdout);
 }
 
 test('ordem explícita vence o prefixo do wrapper', () => {
-  for (const nodeOptions of explicitDnsOrders) {
+  for (const entry of explicitDnsOrders) {
+    const { nodeOptions, cwd } = typeof entry === 'string' ? { nodeOptions: entry } : entry;
     const invocation = buildInvocation({ nodeOptions });
     assert.equal(invocation.env.NODE_OPTIONS, `${flag} ${nodeOptions}`, nodeOptions);
     assert.ok(!invocation.args.includes(flag), nodeOptions);
-    const effective = effectiveDnsOrder(nodeOptions);
+    const effective = effectiveDnsOrder(nodeOptions, cwd);
     assert.equal(effective.order, 'ipv6first', nodeOptions);
     assert.equal(effective.nodeOptions, `${flag} ${nodeOptions}`, nodeOptions);
   }
