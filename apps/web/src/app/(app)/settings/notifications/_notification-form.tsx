@@ -1,12 +1,13 @@
 'use client';
 
+import type { NotificationFormState } from '@/application/settings/notification-form-data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { GetTrainerNotificationPreferencesResponse } from '@/lib/api/types.gen';
 import { NOTIFICATION_DAY_LIMITS } from '@muvit/validators';
 import { useActionState, useState } from 'react';
-import { type NotificationFormState, updateNotificationPreferencesAction } from './actions';
+import { updateNotificationPreferencesAction } from './actions';
 
 type Preferences = GetTrainerNotificationPreferencesResponse;
 type NotificationChannel = 'email' | 'push' | 'both';

@@ -8,8 +8,6 @@ import { configureServerClient } from '@/lib/api-client';
 import { updateTrainerNotificationPreferences } from '@/lib/api/sdk.gen';
 import { revalidatePath } from 'next/cache';
 
-export type { NotificationFormState };
-
 export async function updateNotificationPreferencesAction(
   _: NotificationFormState,
   formData: FormData,
