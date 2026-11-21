@@ -226,6 +226,84 @@ test('preserva tsconfig com edição concorrente em vez de apagar globs por run'
   }
 });
 
+test('restaura tsconfig JSONC com comentários após globs de tipos do distDir', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-jsonc-'));
+  try {
+    const file = join(dir, 'tsconfig.json');
+    const distDir = runner.productionDistDir('cccc33');
+    const before = `{
+  // Configuração compartilhada do workspace.
+  "extends": "@muvit/config/tsconfig.next.json",
+  "compilerOptions": {
+    "allowJs": true // preservado pelo Next
+  },
+  /* Inclui fontes e tipos gerados. */
+  "include": ["next-env.d.ts", "src/**/*"],
+  "exclude": ["node_modules"]
+}
+`;
+    const current = before.replace(
+      '"include": ["next-env.d.ts", "src/**/*"]',
+      `"include": ["next-env.d.ts", "src/**/*", "${distDir}/types/**/*.ts", "${distDir}/dev/types/**/*.ts"]`,
+    );
+    await writeFile(file, current, 'utf8');
+
+    const warnings = [];
+    const status = await runner.restoreGeneratedWebTsConfig({
+      file,
+      before,
+      distDir,
+      onWarning: (message) => warnings.push(message),
+    });
+
+    assert.equal(status, 'restored');
+    assert.equal(await readFile(file, 'utf8'), before);
+    assert.deepEqual(warnings, []);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('preserva tsconfig JSONC com edição concorrente', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-jsonc-concurrent-'));
+  try {
+    const file = join(dir, 'tsconfig.json');
+    const distDir = runner.productionDistDir('dddd44');
+    const before = `{
+  // Configuração compartilhada do workspace.
+  "compilerOptions": {
+    "strict": false
+  },
+  "include": ["next-env.d.ts"]
+}
+`;
+    const concurrent = `{
+  // Configuração compartilhada do workspace.
+  "compilerOptions": {
+    "strict": true
+  },
+  "include": ["next-env.d.ts", "${distDir}/types/**/*.ts", "${distDir}/dev/types/**/*.ts"]
+}
+`;
+    await writeFile(file, concurrent, 'utf8');
+
+    const warnings = [];
+    const status = await runner.restoreGeneratedWebTsConfig({
+      file,
+      before,
+      distDir,
+      onWarning: (message) => warnings.push(message),
+    });
+
+    assert.equal(status, 'preserved');
+    assert.equal(await readFile(file, 'utf8'), concurrent);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /tsconfig/i);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('restaura next-env.d.ts somente quando o conteúdo é o gerado conhecido do Next', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'muvit-next-env-restore-'));
   try {

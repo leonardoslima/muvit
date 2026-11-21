@@ -5,6 +5,7 @@ import { createServer } from 'node:net';
 import { hostname as currentHostname } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 import { createMailbox } from './e2e-mailbox.mjs';
 import { runCommand, runWithResources, sanitizeRecursively } from './mobile-e2e.mjs';
 import { startWindowsJob } from './web-e2e-windows-job.mjs';
@@ -327,12 +328,16 @@ function distDirTypeGlobs(distDir) {
 
 function parseJsonObject(content) {
   if (typeof content !== 'string') return null;
-  try {
-    const parsed = JSON.parse(content);
-    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
-  } catch {
+  // tsconfig.json é JSONC: o Next o reescreve preservando comentários.
+  const parsed = ts.parseConfigFileTextToJson('tsconfig.json', content);
+  if (
+    parsed.error ||
+    parsed.config === null ||
+    typeof parsed.config !== 'object' ||
+    Array.isArray(parsed.config)
+  )
     return null;
-  }
+  return parsed.config;
 }
 
 function sameJson(left, right) {
