@@ -78,6 +78,42 @@ test('executa build e start local de produção apenas quando solicitado', () =>
   ]);
 });
 
+test('build de produção não reexecuta o prebuild que recompila o runtime compartilhado', () => {
+  assert.deepEqual(runner.webBuildArgs(parseArgs(['--production'])), [
+    '--dir',
+    'apps/web',
+    'exec',
+    'next',
+    'build',
+    '--turbopack',
+  ]);
+  assert.deepEqual(runner.webBuildArgs(parseArgs(['--production', '--webpack'])), [
+    '--dir',
+    'apps/web',
+    'exec',
+    'next',
+    'build',
+    '--webpack',
+  ]);
+  assert.ok(
+    !runner.webBuildArgs(parseArgs(['--production'])).includes('run'),
+    'comando de lifecycle run reexecuta prepare:runtime depois que a API iniciou',
+  );
+});
+
+test('prepara runtime e inicia API antes do build web de produção', async () => {
+  const calls = [];
+  const stage = (name) => async () => calls.push(name);
+  await runStages({
+    database: stage('database'),
+    migration: stage('migration'),
+    api: stage('api'),
+    web: stage('web'),
+    playwright: stage('playwright'),
+  });
+  assert.deepEqual(calls, ['database', 'migration', 'api', 'web', 'playwright']);
+});
+
 test('isola o distDir de produção por runId e envia o caminho explícito ao Next', () => {
   const first = runner.productionDistDir('aaaa11');
   const second = runner.productionDistDir('bbbb22');
@@ -1043,7 +1079,7 @@ test('runAbortableCommand não resolve antes dos descendentes próprios encerrar
   let leaderPid = 0;
   let descendantPid = 0;
   try {
-    const result = await runner.runAbortableCommand(process.execPath, ['-e', leaderCode], {
+    const run = runner.runAbortableCommand(process.execPath, ['-e', leaderCode], {
       timeoutMs: 10000,
       onSpawn: (child) => {
         leaderPid = child.pid;
@@ -1053,10 +1089,24 @@ test('runAbortableCommand não resolve antes dos descendentes próprios encerrar
         if (!descendantPid && Number.isInteger(value) && value > 0) descendantPid = value;
       },
     });
-    assert.equal(result.code, 0);
+    const settled = await run.then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    );
     assert.ok(leaderPid > 0);
     assert.ok(descendantPid > 0);
-    assert.equal(isAlive(descendantPid), false, 'descendente próprio sobreviveu ao close normal');
+    if (process.platform === 'win32') {
+      // Sem dono atual do PID do líder não há prova de que o descendente
+      // pertence a esta execução: a parada falha fechado e não sinaliza.
+      const failure = settled.error;
+      assert.equal(failure?.name, 'StopNotProvenError');
+      assert.equal(failure.stopProven, false);
+      assert.equal(failure.retainLock, true);
+      assert.equal(isAlive(descendantPid), true, 'descendente alheio seria sinalizado sem prova');
+    } else {
+      assert.equal(settled.value.code, 0);
+      assert.equal(isAlive(descendantPid), false, 'descendente próprio sobreviveu ao close normal');
+    }
   } finally {
     for (const pid of [leaderPid, descendantPid]) {
       if (pid && isAlive(pid)) {
@@ -1069,7 +1119,7 @@ test('runAbortableCommand não resolve antes dos descendentes próprios encerrar
 });
 
 test(
-  'Windows remove descendente vivo depois que o líder sai naturalmente',
+  'Windows falha fechado após o líder sair naturalmente sem dono atual do PID',
   { skip: process.platform !== 'win32' },
   async () => {
     const childCode = 'setInterval(() => {}, 1000)';
@@ -1089,11 +1139,13 @@ test(
       assert.notEqual(parent.exitCode, null);
       assert.equal(isAlive(descendantPid), true);
 
-      const result = await runner.stopChild(parent);
-      assert.equal(result.proven, true);
-      assert.ok(result.pids.includes(descendantPid));
+      const failure = await runner.stopChild(parent).catch((error) => error);
+      assert.equal(failure.name, 'StopNotProvenError');
+      assert.equal(failure.stopProven, false);
+      assert.equal(failure.retainLock, true);
+      assert.match(failure.message, /prova|comprovad|sinalizad/i);
       assert.equal(isAlive(parent.pid), false);
-      assert.equal(isAlive(descendantPid), false);
+      assert.equal(isAlive(descendantPid), true, 'órfão sem dono atual foi sinalizado');
     } finally {
       for (const pid of [parent?.pid, descendantPid]) {
         if (isAlive(pid)) {
@@ -1684,6 +1736,89 @@ test(
   },
 );
 
+test('Windows falha fechado sem sinalizar qualquer órfão vivo quando o líder já terminou', async () => {
+  const rootPid = 47011;
+  const ownerCreatedAt = 638000000000020000n;
+  const descendants = [
+    { pid: 47012, createdAt: ownerCreatedAt - 5000n },
+    { pid: 47013, createdAt: ownerCreatedAt },
+    { pid: 47014, createdAt: ownerCreatedAt + 1000n },
+    { pid: 47015, createdAt: null },
+  ];
+  const terminations = [];
+  const signals = [];
+  const failure = await runner
+    .stopChild(
+      { pid: rootPid, exitCode: 0, signalCode: null },
+      {
+        platform: 'win32',
+        timeoutMs: 50,
+        readLeaderIdentity: async () => ({ status: 'present', createdAt: ownerCreatedAt }),
+        listDescendants: async () => descendants,
+        isProcessAlive: (pid) => descendants.some((entry) => entry.pid === pid),
+        runCommand: async (binary, args) => {
+          signals.push([binary, ...args]);
+          return { code: 0, stdout: '', stderr: '' };
+        },
+        terminateOrphans: async (entries) => {
+          terminations.push(entries);
+          return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
+        },
+        waitExit: async () => true,
+        waitPidsGone: async () => true,
+      },
+    )
+    .catch((error) => error);
+  assert.deepEqual(terminations, [], 'órfão vivo enviado ao encerramento sem prova de associação');
+  assert.deepEqual(signals, [], 'sinal enviado sem prova de associação');
+  assert.equal(failure.name, 'StopNotProvenError');
+  assert.equal(failure.stopProven, false);
+  assert.equal(failure.retainLock, true);
+  for (const entry of descendants) assert.match(failure.message, new RegExp(String(entry.pid)));
+});
+
+for (const [label, ownerIdentity] of [
+  ['não tem dono atual', { status: 'gone' }],
+  ['tem identidade desconhecida', { status: 'unknown' }],
+  ['tem status inesperado', { status: 'reused' }],
+  ['não informa criação', { status: 'present' }],
+  ['informa criação inválida', { status: 'present', createdAt: 0n }],
+  ['informa criação não numérica', { status: 'present', createdAt: '638000000000020000' }],
+]) {
+  test(`Windows falha fechado com órfão vivo quando o dono atual do PID do líder ${label}`, async () => {
+    const rootPid = 47101;
+    const descendantPid = 47102;
+    const terminations = [];
+    const failure = await runner
+      .stopChild(
+        { pid: rootPid, exitCode: 0, signalCode: null },
+        {
+          platform: 'win32',
+          timeoutMs: 50,
+          readLeaderIdentity: async () => ownerIdentity,
+          listDescendants: async () => [{ pid: descendantPid, createdAt: 638000000000000001n }],
+          isProcessAlive: (pid) => pid === descendantPid,
+          terminateOrphans: async (entries) => {
+            terminations.push(entries);
+            return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
+          },
+          waitExit: async () => true,
+          waitPidsGone: async () => true,
+        },
+      )
+      .catch((error) => error);
+    assert.deepEqual(
+      terminations,
+      [],
+      `órfão sinalizado com dono ${String(ownerIdentity.status)} (${String(ownerIdentity.createdAt)})`,
+    );
+    assert.equal(failure.name, 'StopNotProvenError');
+    assert.equal(failure.stopProven, false);
+    assert.equal(failure.retainLock, true);
+    assert.match(failure.message, /prova|comprovad|sinalizad/i);
+  });
+}
+
 test('Windows não prova parada nem sinaliza descendente CIM sem CreationDate ainda vivo', async () => {
   const rootPid = 45001;
   const descendantPid = 45002;
@@ -1714,7 +1849,7 @@ test('Windows não prova parada nem sinaliza descendente CIM sem CreationDate ai
   assert.equal(failure.name, 'StopNotProvenError');
   assert.equal(failure.stopProven, false);
   assert.equal(failure.retainLock, true);
-  assert.match(failure.message, /identidade/i);
+  assert.match(failure.message, /prova|identidade|comprovad/i);
 });
 
 test('Windows considera encerrado descendente CIM sem CreationDate que comprovadamente sumiu', async () => {
@@ -1788,7 +1923,7 @@ test('Windows encerra a árvore uma única vez e não repete taskkill em PID reu
   assert.match(failure.message, /remanescentes/i);
 });
 
-test('Windows não sinaliza descendente cuja identidade não foi comprovada', async () => {
+test('Windows não sinaliza descendente vivo quando o líder já terminou mesmo com identidade presente', async () => {
   const rootPid = 42001;
   const descendantPid = 42002;
   const calls = [];
@@ -1815,10 +1950,10 @@ test('Windows não sinaliza descendente cuja identidade não foi comprovada', as
     )
     .catch((error) => error);
   assert.deepEqual(calls, [], 'taskkill por PID não comprovado');
-  assert.equal(terminations.length, 1);
+  assert.deepEqual(terminations, [], 'órfão vivo sinalizado sem prova de associação');
   assert.equal(failure.name, 'StopNotProvenError');
   assert.equal(failure.retainLock, true);
-  assert.match(failure.message, /identidade/i);
+  assert.match(failure.message, /prova|identidade|comprovad/i);
 });
 
 test('falha de parada do subprocesso vira StopNotProvenError', async () => {

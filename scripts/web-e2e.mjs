@@ -96,6 +96,19 @@ export function nextStartArgs(options) {
   ];
 }
 
+export function webBuildArgs(options) {
+  // `exec next build` evita o ciclo `prebuild`/`prepare:runtime`, que recompila
+  // `packages/validators/dist` enquanto a API já importa esse runtime.
+  return [
+    '--dir',
+    'apps/web',
+    'exec',
+    'next',
+    'build',
+    options.webpack ? '--webpack' : '--turbopack',
+  ];
+}
+
 export function productionDistDir(runId) {
   if (typeof runId !== 'string' || !/^[a-f0-9]+$/.test(runId)) throw new Error('runId inválido');
   return `.next-e2e-${runId}`;
@@ -828,29 +841,22 @@ export async function stopChild(
           { pid: child.pid, pids },
         );
     } else {
-      // O líder já terminou: a árvore não pode ser sinalizada pelo root. Só
-      // encerra descendentes do snapshot após comprovar a criação do processo
-      // em um handle aberto; sem identidade provada, falha fechado.
       const orphans = [...descendantsByPid.values()].filter((entry) => alive.includes(entry.pid));
-      let outcomes;
-      try {
-        outcomes = await terminateOrphans(orphans, timeoutMs);
-      } catch (error) {
+      // O líder já terminou: a árvore não pode ser sinalizada pelo root. Um
+      // processo que sobreviveu ao pai mantém o ParentProcessId antigo, que é
+      // apenas o PID do criador e pode apontar para outra encarnação; o dono
+      // atual desse PID também não prova a associação, porque seria uma
+      // reutilização, e a enumeração CIM é transitiva, sem reter a identidade
+      // de cada aresta. Sem a identidade original do líder ou membership de Job
+      // Object não há como comprovar que um órfão vivo pertence a esta
+      // execução: nenhum é sinalizado e a parada falha fechado.
+      if (orphans.length > 0) {
+        const orphanPids = orphans.map((entry) => entry.pid).join(', ');
         throw new StopNotProvenError(
-          `não foi possível encerrar descendentes órfãos de ${child.pid}: ${error.message}`,
-          { pid: child.pid, pids, cause: error },
-        );
-      }
-      const unproven = outcomes.filter(
-        (outcome) => outcome.status !== 'terminated' && outcome.status !== 'gone',
-      );
-      if (unproven.length > 0)
-        throw new StopNotProvenError(
-          `identidade de descendente não comprovada; PID não será sinalizado: ${unproven
-            .map((outcome) => `${outcome.pid} (${outcome.status})`)
-            .join(', ')}.`,
+          `o líder ${child.pid} já terminou e não há prova de que os descendentes vivos (${orphanPids}) pertencem a esta execução; nenhum será sinalizado.`,
           { pid: child.pid, pids },
         );
+      }
     }
     const exitProven = leaderExited || (await waitExit(child, timeoutMs));
     if ((await waitPidsGone(pids, timeoutMs)) && exitProven)
@@ -1414,18 +1420,11 @@ export async function run(options) {
                 }
                 let buildError = null;
                 try {
-                  await command(
-                    'build',
-                    pnpm,
-                    [
-                      '--dir',
-                      'apps/web',
-                      'run',
-                      'build',
-                      options.webpack ? '--webpack' : '--turbopack',
-                    ],
-                    { cwd: root, env: env(webEnv), windowsJob: true },
-                  );
+                  await command('build', pnpm, webBuildArgs(options), {
+                    cwd: root,
+                    env: env(webEnv),
+                    windowsJob: true,
+                  });
                 } catch (error) {
                   buildError = error;
                 }
