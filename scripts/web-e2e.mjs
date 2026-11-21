@@ -354,37 +354,50 @@ function sameJson(left, right) {
   return false;
 }
 
-// O escritor do Next preserva os comentários do tsconfig: divergência em
-// comentário não pode ser atribuída a ele e exige preservar o arquivo.
-function collectJsoncComments(content) {
+// O escritor do Next preserva os comentários do tsconfig e a posição de cada
+// um em relação ao token significativo seguinte; divergência em comentário,
+// inclusive só de posição, não pode ser atribuída a ele e exige preservar.
+function collectJsoncCommentAnchors(content) {
   if (typeof content !== 'string') return null;
   const scanner = ts.createScanner(ts.ScriptTarget.ESNext, false, ts.LanguageVariant.Standard);
   scanner.setText(content.replaceAll('\r\n', '\n'));
-  const comments = [];
+  const anchors = [];
+  let pending = [];
   for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
     if (
       kind === ts.SyntaxKind.SingleLineCommentTrivia ||
       kind === ts.SyntaxKind.MultiLineCommentTrivia
-    )
-      comments.push(scanner.getTokenText());
+    ) {
+      pending.push(scanner.getTokenText());
+      continue;
+    }
+    if (kind === ts.SyntaxKind.NewLineTrivia || kind === ts.SyntaxKind.WhitespaceTrivia) continue;
+    for (const comment of pending) anchors.push([comment, scanner.getTokenText()]);
+    pending = [];
   }
-  return comments;
+  for (const comment of pending) anchors.push([comment, '']);
+  return anchors;
 }
 
 function sameJsoncComments(left, right) {
-  const leftComments = collectJsoncComments(left);
-  const rightComments = collectJsoncComments(right);
-  if (leftComments === null || rightComments === null) return false;
+  const leftAnchors = collectJsoncCommentAnchors(left);
+  const rightAnchors = collectJsoncCommentAnchors(right);
+  if (leftAnchors === null || rightAnchors === null) return false;
   return (
-    leftComments.length === rightComments.length &&
-    leftComments.every((comment, index) => comment === rightComments[index])
+    leftAnchors.length === rightAnchors.length &&
+    leftAnchors.every(
+      ([comment, token], index) =>
+        comment === rightAnchors[index][0] && token === rightAnchors[index][1],
+    )
   );
 }
 
 // O Next 16 acrescenta ao `include` os globs de tipos do `distDir` efetivo e
-// preserva os comentários do JSONC ao reescrever. Restaura o conteúdo anterior
-// somente quando a única diferença observada é exatamente esse acréscimo
-// conhecido, inclusive nos comentários, preservando qualquer edição concorrente.
+// preserva os comentários do JSONC ao reescrever. Com `extends`/`references`
+// no snapshot o escritor do Next retorna sem gravar, então qualquer divergência
+// observada é concorrente. Restaura o conteúdo anterior somente quando a única
+// diferença observada é exatamente esse acréscimo conhecido, inclusive nos
+// comentários e nas suas posições, preservando qualquer edição concorrente.
 export async function restoreGeneratedWebTsConfig({
   file,
   before,
@@ -396,7 +409,12 @@ export async function restoreGeneratedWebTsConfig({
   if (current === before) return 'unchanged';
   const beforeConfig = parseJsonObject(before);
   const expected = beforeConfig === null ? null : JSON.parse(JSON.stringify(beforeConfig));
-  if (expected === null || !Array.isArray(expected.include)) {
+  if (
+    expected === null ||
+    !Array.isArray(expected.include) ||
+    Object.hasOwn(expected, 'extends') ||
+    Object.hasOwn(expected, 'references')
+  ) {
     onWarning?.(webTsconfigDivergentWarning);
     return 'preserved';
   }

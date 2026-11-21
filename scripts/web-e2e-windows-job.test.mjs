@@ -616,6 +616,8 @@ test(
         readyFile,
         '-ResultFile',
         resultFile,
+        '-AdmissionTimeoutMs',
+        String(ADMISSION_TIMEOUT_MS),
       ],
       { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] },
     );
@@ -649,6 +651,125 @@ test(
       assert.equal(result.stop?.provenFlag, true);
       assert.equal(result.marker, false, 'filho executou sob job de host restrito');
       assert.equal(result.leaderAlive, false);
+    } finally {
+      if (isAlive(host.pid)) process.kill(host.pid, 'SIGKILL');
+      await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
+  },
+);
+
+test('host restrito corta a admissão pelo orçamento informado', windowsOnly, async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-job-host-budget-'));
+  const readyFile = join(dir, 'ready.txt');
+  const resultFile = join(dir, 'result.json');
+  const probeFile = join(dir, 'probe.mjs');
+  // A sonda nunca grava o marcador: o host deve cortar pelo orçamento
+  // informado, muito antes do antigo prazo fixo de 30 s.
+  const probeSource = `
+    const delay = (ms) => new Promise((done) => setTimeout(done, ms));
+    await delay(60000);
+  `;
+  await writeFile(probeFile, probeSource, 'utf8');
+  const startedAt = Date.now();
+  const host = spawn(
+    powershell,
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy',
+      'Bypass',
+      '-File',
+      join(root, 'scripts/web-e2e-windows-job-host.ps1'),
+      '-ProbeScript',
+      probeFile,
+      '-ReadyFile',
+      readyFile,
+      '-ResultFile',
+      resultFile,
+      '-AdmissionTimeoutMs',
+      '3000',
+      '-AdmissionMarginMs',
+      '500',
+    ],
+    { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  let stderr = '';
+  host.stderr.setEncoding('utf8');
+  host.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+  try {
+    const code = await new Promise((done, fail) => {
+      host.once('error', fail);
+      host.once('close', done);
+    });
+    const elapsed = Date.now() - startedAt;
+    assert.equal(code, 3, `host job deveria cortar pelo orçamento: ${stderr}`);
+    assert.ok(
+      elapsed < 20000,
+      `corte demorou ${elapsed}ms; prazo parece fixo em vez de derivado do orçamento`,
+    );
+  } finally {
+    if (isAlive(host.pid)) process.kill(host.pid, 'SIGKILL');
+    await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+test(
+  'host restrito não corta admissão permitida dentro do orçamento de 40s',
+  windowsOnly,
+  async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'muvit-job-host-permitted-'));
+    const readyFile = join(dir, 'ready.txt');
+    const resultFile = join(dir, 'result.json');
+    const probeFile = join(dir, 'probe.mjs');
+    // A sonda representa uma admissão que conclui em 32 s, dentro do
+    // orçamento de 40 s, e só então grava o marcador; o antigo prazo fixo
+    // de 30 s cortava esse cenário permitido.
+    const permittedAdmissionDelayMs = 32000;
+    const probeSource = `
+    const [readyFile, resultFile] = process.argv.slice(2);
+    const { writeFile } = await import('node:fs/promises');
+    const delay = (ms) => new Promise((done) => setTimeout(done, ms));
+    await delay(${permittedAdmissionDelayMs});
+    await writeFile(readyFile, 'ready');
+    await writeFile(resultFile, JSON.stringify({ ready: true }));
+  `;
+    await writeFile(probeFile, probeSource, 'utf8');
+    const host = spawn(
+      powershell,
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        join(root, 'scripts/web-e2e-windows-job-host.ps1'),
+        '-ProbeScript',
+        probeFile,
+        '-ReadyFile',
+        readyFile,
+        '-ResultFile',
+        resultFile,
+        '-AdmissionTimeoutMs',
+        String(ADMISSION_TIMEOUT_MS),
+      ],
+      { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+    let stderr = '';
+    host.stderr.setEncoding('utf8');
+    host.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    try {
+      const code = await new Promise((done, fail) => {
+        host.once('error', fail);
+        host.once('close', done);
+      });
+      assert.equal(code, 0, `host job falhou: ${stderr}`);
+      assert.ok(existsSync(readyFile), 'marcador de pronto não foi gravado pela sonda');
+      const result = JSON.parse(await readFile(resultFile, 'utf8'));
+      assert.equal(result.ready, true);
     } finally {
       if (isAlive(host.pid)) process.kill(host.pid, 'SIGKILL');
       await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });

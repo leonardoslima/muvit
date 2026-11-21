@@ -1,7 +1,9 @@
 param(
   [Parameter(Mandatory = $true)][string]$ProbeScript,
   [Parameter(Mandatory = $true)][string]$ReadyFile,
-  [Parameter(Mandatory = $true)][string]$ResultFile
+  [Parameter(Mandatory = $true)][string]$ResultFile,
+  [Parameter(Mandatory = $true)][int]$AdmissionTimeoutMs,
+  [int]$AdmissionMarginMs = 10000
 )
 
 $ErrorActionPreference = 'Stop'
@@ -117,7 +119,9 @@ function Join-MuvitProcessArguments {
 $job = [MuvitHostJobFixture]::Create(10)
 $probeArguments = Join-MuvitProcessArguments @($ProbeScript, $ReadyFile, $ResultFile)
 $probe = Start-Process -FilePath (Get-Command node).Source -ArgumentList $probeArguments -NoNewWindow -PassThru
-$deadline = (Get-Date).AddSeconds(30)
+# O orçamento de admissão cobre o cenário permitido até 40 s; a margem cobre
+# iniciar o Node da sonda e gravar o marcador depois do prazo do orçamento.
+$deadline = (Get-Date).AddMilliseconds($AdmissionTimeoutMs + $AdmissionMarginMs)
 while (-not (Test-Path -LiteralPath $ReadyFile) -and (Get-Date) -lt $deadline -and -not $probe.HasExited) {
   Start-Sleep -Milliseconds 50
 }
