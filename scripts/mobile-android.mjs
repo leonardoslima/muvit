@@ -5,59 +5,31 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const appRoot = join(root, 'apps', 'mobile');
 const expoCli = join(appRoot, 'node_modules', 'expo', 'bin', 'cli');
+const dnsOrderFlag = '--dns-result-order=ipv4first';
 
-function splitNodeOptions(value) {
-  const tokens = [];
-  let token = '';
-  let quote = null;
-
-  for (const character of value) {
-    if (quote) {
-      if (character === quote) quote = null;
-      else token += character;
-      continue;
-    }
-    if (character === '"' || character === "'") {
-      quote = character;
-      continue;
-    }
-    if (/\s/.test(character)) {
-      if (token) {
-        tokens.push(token);
-        token = '';
-      }
-      continue;
-    }
-    token += character;
-  }
-
-  if (token) tokens.push(token);
-  return tokens;
-}
-
-export function hasExplicitDnsResultOrder(nodeOptions = '') {
-  return splitNodeOptions(nodeOptions).some((token) => {
-    const normalized = token.replaceAll('_', '-');
-    return /^--dns-result-order(?:=|$)/.test(normalized);
-  });
-}
-
-export function buildInvocation({ nodeOptions = '', expoCli: cli = expoCli, extraArgs = [] } = {}) {
+export function buildInvocation({
+  nodeOptions = '',
+  expoCli: cli = expoCli,
+  extraArgs = [],
+  env = process.env,
+} = {}) {
+  const childNodeOptions = nodeOptions ? `${dnsOrderFlag} ${nodeOptions}` : dnsOrderFlag;
   return {
-    nodeFlags: hasExplicitDnsResultOrder(nodeOptions) ? [] : ['--dns-result-order=ipv4first'],
     args: [cli, 'start', '--android', '--dev-client', '--localhost', ...extraArgs],
+    env: { ...env, NODE_OPTIONS: childNodeOptions },
   };
 }
 
 function main() {
-  const { nodeFlags, args } = buildInvocation({
+  const { args, env } = buildInvocation({
     nodeOptions: process.env.NODE_OPTIONS ?? '',
     expoCli,
     extraArgs: process.argv.slice(2),
-  });
-  const child = spawn(process.execPath, [...nodeFlags, ...args], {
-    cwd: appRoot,
     env: process.env,
+  });
+  const child = spawn(process.execPath, args, {
+    cwd: appRoot,
+    env,
     stdio: 'inherit',
   });
 
