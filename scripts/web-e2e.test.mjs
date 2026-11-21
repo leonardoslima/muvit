@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   WindowsJobStopError,
   quoteWindowsArgument,
@@ -140,6 +142,88 @@ test('isola o distDir de produção por runId e envia o caminho explícito ao Ne
   assert.equal(runner.developmentDistDir, '.next');
   assert.equal(development.NODE_ENV, 'development');
   assert.match(runner.generatedNextEnvContent(first), /\.next-e2e-aaaa11\/types\/routes\.d\.ts/);
+});
+
+test('restaura o tsconfig rastreado após globs de tipos do distDir do Next instalado', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-restore-'));
+  try {
+    const file = join(dir, 'tsconfig.json');
+    const before = await readFile(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'tsconfig.json'),
+      'utf8',
+    );
+    const distDir = runner.productionDistDir('aaaa11');
+    const requireFromWeb = createRequire(new URL('../apps/web/package.json', import.meta.url));
+    const { getTypeDefinitionGlobPatterns } = requireFromWeb(
+      'next/dist/lib/typescript/type-paths.js',
+    );
+    const previousNodeEnv = process.env.NODE_ENV;
+    let nextGlobs;
+    try {
+      process.env.NODE_ENV = 'production';
+      nextGlobs = getTypeDefinitionGlobPatterns(distDir);
+    } finally {
+      if (previousNodeEnv === undefined) process.env.NODE_ENV = undefined;
+      else process.env.NODE_ENV = previousNodeEnv;
+    }
+    assert.deepEqual(nextGlobs, [`${distDir}/types/**/*.ts`, `${distDir}/dev/types/**/*.ts`]);
+    const nextWritten = JSON.parse(before);
+    for (const glob of nextGlobs)
+      if (!nextWritten.include.includes(glob)) nextWritten.include.push(glob);
+    await writeFile(file, `${JSON.stringify(nextWritten, null, 2)}\n`, 'utf8');
+
+    const warnings = [];
+    const status = await runner.restoreGeneratedWebTsConfig({
+      file,
+      before,
+      distDir,
+      onWarning: (message) => warnings.push(message),
+    });
+
+    assert.equal(status, 'restored');
+    assert.equal(await readFile(file, 'utf8'), before);
+    assert.deepEqual(warnings, []);
+    const restored = JSON.parse(await readFile(file, 'utf8'));
+    assert.equal(
+      restored.include.some((entry) => entry.includes('.next-e2e-')),
+      false,
+      'glob por run permaneceu no tsconfig rastreado',
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('preserva tsconfig com edição concorrente em vez de apagar globs por run', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-web-tsconfig-concurrent-'));
+  try {
+    const file = join(dir, 'tsconfig.json');
+    const before = await readFile(
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'apps', 'web', 'tsconfig.json'),
+      'utf8',
+    );
+    const distDir = runner.productionDistDir('bbbb22');
+    const concurrent = JSON.parse(before);
+    concurrent.include.push(`${distDir}/types/**/*.ts`);
+    concurrent.compilerOptions.strict = true;
+    const concurrentContent = `${JSON.stringify(concurrent, null, 2)}\n`;
+    await writeFile(file, concurrentContent, 'utf8');
+
+    const warnings = [];
+    const status = await runner.restoreGeneratedWebTsConfig({
+      file,
+      before,
+      distDir,
+      onWarning: (message) => warnings.push(message),
+    });
+
+    assert.equal(status, 'preserved');
+    assert.equal(await readFile(file, 'utf8'), concurrentContent);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /tsconfig/i);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test('restaura next-env.d.ts somente quando o conteúdo é o gerado conhecido do Next', async () => {
@@ -1190,9 +1274,6 @@ for (const [label, nextIdentity] of [
             calls.push([binary, ...args]);
             return { code: 0, stdout: '', stderr: '' };
           },
-          terminateOrphans: async () => {
-            throw new Error('não deveria encerrar órfãos sem descendentes');
-          },
           waitExit: async () => false,
           waitPidsGone: async () => false,
         },
@@ -1231,7 +1312,6 @@ test('Windows não sinaliza a árvore quando o líder encerra durante a segunda 
         calls.push([binary, ...args]);
         return { code: 0, stdout: '', stderr: '' };
       },
-      terminateOrphans: async () => [],
       waitExit: async () => true,
       waitPidsGone: async () => true,
     })
@@ -1266,7 +1346,6 @@ test('Windows não sinaliza a árvore quando o líder deixa de estar vivo na seg
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async () => [],
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1280,11 +1359,10 @@ test('Windows não sinaliza a árvore quando o líder deixa de estar vivo na seg
   assert.match(failure.message, /líder|vivo|identidade/i);
 });
 
-test('Windows não usa caminho de órfãos quando o líder desaparece na amostragem de liveness', async () => {
+test('Windows não sinaliza quando o líder desaparece na amostragem de liveness', async () => {
   const rootPid = 43071;
   const descendantPid = 43072;
   const calls = [];
-  const orphanCalls = [];
   let rootSamples = 0;
   const failure = await runner
     .stopChild(
@@ -1307,10 +1385,6 @@ test('Windows não usa caminho de órfãos quando o líder desaparece na amostra
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async (entries) => {
-          orphanCalls.push(entries);
-          return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
-        },
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1318,11 +1392,6 @@ test('Windows não usa caminho de órfãos quando o líder desaparece na amostra
     .catch((error) => error);
   assert.ok(rootSamples >= 2, 'líder não foi amostrado vivo antes do desaparecimento');
   assert.deepEqual(calls, [], 'taskkill executado com o líder desaparecido na amostragem');
-  assert.deepEqual(
-    orphanCalls,
-    [],
-    'caminho de órfãos usado para líder que desapareceu na tentativa',
-  );
   assert.equal(failure.name, 'StopNotProvenError');
   assert.equal(failure.stopProven, false);
   assert.equal(failure.retainLock, true);
@@ -1333,7 +1402,6 @@ test('Windows não deixa consulta posterior apagar a ausência do líder na amos
   const rootPid = 43101;
   const descendantPid = 43102;
   const calls = [];
-  const orphanCalls = [];
   let rootSamples = 0;
   const failure = await runner
     .stopChild(
@@ -1356,10 +1424,6 @@ test('Windows não deixa consulta posterior apagar a ausência do líder na amos
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async (entries) => {
-          orphanCalls.push(entries);
-          return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
-        },
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1367,11 +1431,6 @@ test('Windows não deixa consulta posterior apagar a ausência do líder na amos
     .catch((error) => error);
   assert.ok(rootSamples >= 3, 'líder não foi amostrado ausente na construção de `alive`');
   assert.deepEqual(calls, [], 'taskkill executado com o líder ausente na amostragem');
-  assert.deepEqual(
-    orphanCalls,
-    [],
-    'caminho de órfãos usado depois de observar o líder ausente na amostragem',
-  );
   assert.notEqual(
     failure?.proven,
     true,
@@ -1386,7 +1445,6 @@ test('Windows não deixa consulta posterior apagar a ausência do líder na amos
 test('Windows não prova parada quando consulta posterior encontra o líder ausente na amostragem', async () => {
   const rootPid = 43111;
   const calls = [];
-  const orphanCalls = [];
   let rootSamples = 0;
   const failure = await runner
     .stopChild(
@@ -1406,10 +1464,6 @@ test('Windows não prova parada quando consulta posterior encontra o líder ause
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async (entries) => {
-          orphanCalls.push(entries);
-          return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
-        },
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1417,7 +1471,6 @@ test('Windows não prova parada quando consulta posterior encontra o líder ause
     .catch((error) => error);
   assert.ok(rootSamples >= 3, 'líder não foi amostrado ausente na construção de `alive`');
   assert.deepEqual(calls, [], 'taskkill executado com o líder ausente na amostragem');
-  assert.deepEqual(orphanCalls, [], 'caminho de órfãos usado sem descendentes vivos');
   assert.notEqual(
     failure?.proven,
     true,
@@ -1456,8 +1509,6 @@ test('Windows mantém o lock quando o líder desaparece na amostragem de livenes
               calls.push([binary, ...args]);
               return { code: 0, stdout: '', stderr: '' };
             },
-            terminateOrphans: async (entries) =>
-              entries.map((entry) => ({ pid: entry.pid, status: 'terminated' })),
             waitExit: async () => true,
             waitPidsGone: async () => true,
           },
@@ -1480,7 +1531,6 @@ test('Windows mantém o lock quando consulta posterior apaga a ausência do líd
     const rootPid = 43121;
     const descendantPid = 43122;
     const calls = [];
-    const orphanCalls = [];
     let rootSamples = 0;
     await assert.rejects(
       runner.runWithNextEnvLock({ lockFile, runId: 'cccc33', timeoutMs: 1000 }, () =>
@@ -1502,10 +1552,6 @@ test('Windows mantém o lock quando consulta posterior apaga a ausência do líd
               calls.push([binary, ...args]);
               return { code: 0, stdout: '', stderr: '' };
             },
-            terminateOrphans: async (entries) => {
-              orphanCalls.push(entries);
-              return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
-            },
             waitExit: async () => true,
             waitPidsGone: async () => true,
           },
@@ -1515,7 +1561,6 @@ test('Windows mantém o lock quando consulta posterior apaga a ausência do líd
     );
     assert.ok(rootSamples >= 3, 'líder não foi amostrado ausente na construção de `alive`');
     assert.deepEqual(calls, [], 'taskkill executado com o líder ausente na amostragem');
-    assert.deepEqual(orphanCalls, [], 'caminho de órfãos usado com o líder ausente na amostragem');
     const record = JSON.parse(await readFile(lockFile, 'utf8'));
     assert.equal(record.runId, 'cccc33');
   } finally {
@@ -1542,7 +1587,6 @@ test('Windows não prova parada quando o líder e a árvore somem na amostragem 
         runCommand: async (binary, args) => {
           throw new Error(`não deveria sinalizar: ${binary} ${args.join(' ')}`);
         },
-        terminateOrphans: async () => [],
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1578,7 +1622,6 @@ test('Windows não aceita timestamp divergente dentro da tolerância antiga de 1
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async () => [],
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1610,7 +1653,6 @@ test('Windows exige código 0 do taskkill mesmo quando os PIDs somem depois', as
           alive = false;
           return { code: 1, stdout: '', stderr: 'acesso negado' };
         },
-        terminateOrphans: async () => [],
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
@@ -1640,13 +1682,94 @@ test('Windows prova a parada quando o taskkill retorna código 0', async () => {
         alive = false;
         return { code: 0, stdout: '', stderr: '' };
       },
-      terminateOrphans: async () => [],
       waitExit: async () => true,
       waitPidsGone: async () => true,
     },
   );
   assert.equal(result.proven, true);
   assert.deepEqual(calls, [['taskkill.exe', '/PID', String(rootPid), '/T', '/F']]);
+});
+
+test('Windows não sinaliza depois de esgotar o orçamento único de parada', async () => {
+  const rootPid = 43062;
+  const calls = [];
+  let clock = 0;
+  const failure = await runner
+    .stopChild(
+      { pid: rootPid, exitCode: null, signalCode: null },
+      {
+        platform: 'win32',
+        timeoutMs: 100,
+        now: () => clock,
+        readLeaderIdentity: async () => {
+          clock += 40;
+          return { status: 'present', createdAt: rootCreatedAt };
+        },
+        listDescendants: async () => {
+          clock += 40;
+          return [];
+        },
+        isProcessAlive: (pid) => pid === rootPid,
+        runCommand: async (binary, args) => {
+          calls.push([binary, ...args]);
+          return { code: 0, stdout: '', stderr: '' };
+        },
+        waitExit: async () => true,
+        waitPidsGone: async () => true,
+      },
+    )
+    .catch((error) => error);
+  assert.deepEqual(calls, [], 'taskkill executado após o orçamento de parada esgotar');
+  assert.equal(failure.name, 'StopNotProvenError');
+  assert.equal(failure.stopProven, false);
+  assert.equal(failure.retainLock, true);
+  assert.match(failure.message, /orçamento|prazo|tempo/i);
+});
+
+test('Windows mantém o lock quando o orçamento de parada esgota antes do taskkill', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'muvit-stop-budget-lock-'));
+  try {
+    const lockFile = join(dir, 'next-env.lock');
+    const rootPid = 43063;
+    const calls = [];
+    let clock = 0;
+    await assert.rejects(
+      runner.runWithNextEnvLock({ lockFile, runId: 'eeee55', timeoutMs: 1000 }, () =>
+        runner.stopChild(
+          { pid: rootPid, exitCode: null, signalCode: null },
+          {
+            platform: 'win32',
+            timeoutMs: 100,
+            now: () => clock,
+            readLeaderIdentity: async () => {
+              clock += 40;
+              return { status: 'present', createdAt: rootCreatedAt };
+            },
+            listDescendants: async () => {
+              clock += 40;
+              return [];
+            },
+            isProcessAlive: (pid) => pid === rootPid,
+            runCommand: async (binary, args) => {
+              calls.push([binary, ...args]);
+              return { code: 0, stdout: '', stderr: '' };
+            },
+            waitExit: async () => true,
+            waitPidsGone: async () => true,
+          },
+        ),
+      ),
+      (error) =>
+        error.name === 'StopNotProvenError' &&
+        error.retainLock === true &&
+        /orçamento|prazo|tempo/i.test(error.message),
+    );
+    assert.deepEqual(calls, [], 'taskkill executado após o orçamento de parada esgotar');
+    const record = JSON.parse(await readFile(lockFile, 'utf8'));
+    assert.equal(record.runId, 'eeee55');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test('Windows mantém o lock quando a identidade do líder muda antes do taskkill', async () => {
@@ -1677,7 +1800,6 @@ test('Windows mantém o lock quando a identidade do líder muda antes do taskkil
               rootAlive = false;
               return { code: 0, stdout: '', stderr: '' };
             },
-            terminateOrphans: async () => [],
             waitExit: async () => true,
             waitPidsGone: async () => true,
           },
@@ -1745,7 +1867,6 @@ test('Windows falha fechado sem sinalizar qualquer órfão vivo quando o líder 
     { pid: 47014, createdAt: ownerCreatedAt + 1000n },
     { pid: 47015, createdAt: null },
   ];
-  const terminations = [];
   const signals = [];
   const failure = await runner
     .stopChild(
@@ -1760,16 +1881,11 @@ test('Windows falha fechado sem sinalizar qualquer órfão vivo quando o líder 
           signals.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async (entries) => {
-          terminations.push(entries);
-          return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
-        },
         waitExit: async () => true,
         waitPidsGone: async () => true,
       },
     )
     .catch((error) => error);
-  assert.deepEqual(terminations, [], 'órfão vivo enviado ao encerramento sem prova de associação');
   assert.deepEqual(signals, [], 'sinal enviado sem prova de associação');
   assert.equal(failure.name, 'StopNotProvenError');
   assert.equal(failure.stopProven, false);
@@ -1788,7 +1904,7 @@ for (const [label, ownerIdentity] of [
   test(`Windows falha fechado com órfão vivo quando o dono atual do PID do líder ${label}`, async () => {
     const rootPid = 47101;
     const descendantPid = 47102;
-    const terminations = [];
+    const signals = [];
     const failure = await runner
       .stopChild(
         { pid: rootPid, exitCode: 0, signalCode: null },
@@ -1798,9 +1914,9 @@ for (const [label, ownerIdentity] of [
           readLeaderIdentity: async () => ownerIdentity,
           listDescendants: async () => [{ pid: descendantPid, createdAt: 638000000000000001n }],
           isProcessAlive: (pid) => pid === descendantPid,
-          terminateOrphans: async (entries) => {
-            terminations.push(entries);
-            return entries.map((entry) => ({ pid: entry.pid, status: 'terminated' }));
+          runCommand: async (binary, args) => {
+            signals.push([binary, ...args]);
+            return { code: 0, stdout: '', stderr: '' };
           },
           waitExit: async () => true,
           waitPidsGone: async () => true,
@@ -1808,9 +1924,9 @@ for (const [label, ownerIdentity] of [
       )
       .catch((error) => error);
     assert.deepEqual(
-      terminations,
+      signals,
       [],
-      `órfão sinalizado com dono ${String(ownerIdentity.status)} (${String(ownerIdentity.createdAt)})`,
+      `sinal enviado com dono ${String(ownerIdentity.status)} (${String(ownerIdentity.createdAt)})`,
     );
     assert.equal(failure.name, 'StopNotProvenError');
     assert.equal(failure.stopProven, false);
@@ -1835,11 +1951,6 @@ test('Windows não prova parada nem sinaliza descendente CIM sem CreationDate ai
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: (entries, timeoutMs) =>
-          runner.terminateWindowsOrphans(entries, timeoutMs, async (binary, args) => {
-            calls.push([binary, ...args]);
-            return { code: 0, stdout: '', stderr: '' };
-          }),
         waitExit: async () => true,
         waitPidsGone: async () => false,
       },
@@ -1866,9 +1977,6 @@ test('Windows considera encerrado descendente CIM sem CreationDate que comprovad
       runCommand: async (binary, args) => {
         calls.push([binary, ...args]);
         return { code: 0, stdout: '', stderr: '' };
-      },
-      terminateOrphans: async () => {
-        throw new Error('não deveria encerrar descendente comprovadamente ausente');
       },
       waitExit: async () => true,
       waitPidsGone: async () => true,
@@ -1907,9 +2015,6 @@ test('Windows encerra a árvore uma única vez e não repete taskkill em PID reu
           }
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async () => {
-          throw new Error('não deveria encerrar órfãos com o líder vivo');
-        },
         waitExit: async () => true,
         waitPidsGone: async () => false,
       },
@@ -1927,7 +2032,6 @@ test('Windows não sinaliza descendente vivo quando o líder já terminou mesmo 
   const rootPid = 42001;
   const descendantPid = 42002;
   const calls = [];
-  const terminations = [];
   const failure = await runner
     .stopChild(
       { pid: rootPid, exitCode: 0, signalCode: null },
@@ -1940,17 +2044,12 @@ test('Windows não sinaliza descendente vivo quando o líder já terminou mesmo 
           calls.push([binary, ...args]);
           return { code: 0, stdout: '', stderr: '' };
         },
-        terminateOrphans: async (entries) => {
-          terminations.push(entries);
-          return [{ pid: descendantPid, status: 'identity-mismatch' }];
-        },
         waitExit: async () => true,
         waitPidsGone: async () => false,
       },
     )
     .catch((error) => error);
   assert.deepEqual(calls, [], 'taskkill por PID não comprovado');
-  assert.deepEqual(terminations, [], 'órfão vivo sinalizado sem prova de associação');
   assert.equal(failure.name, 'StopNotProvenError');
   assert.equal(failure.retainLock, true);
   assert.match(failure.message, /prova|identidade|comprovad/i);

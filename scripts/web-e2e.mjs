@@ -22,6 +22,8 @@ const nextEnvDivergentWarning =
   'apps/web/next-env.d.ts não corresponde ao conteúdo gerado conhecido do Next; preservado sem restauração para não sobrescrever edição concorrente.';
 const nextEnvRemovedWarning =
   'apps/web/next-env.d.ts foi removido durante o build; preservado sem recriação para não sobrescrever edição concorrente.';
+const webTsconfigDivergentWarning =
+  'apps/web/tsconfig.json não corresponde ao esperado após o build do Next; preservado sem restauração para não sobrescrever edição concorrente.';
 
 export function parseArgs(argv) {
   const result = {
@@ -318,6 +320,77 @@ export async function restoreGeneratedNextEnv({ file, before, distDir, onWarning
   }
 }
 
+function distDirTypeGlobs(distDir) {
+  const normalized = distDir.replaceAll('\\', '/');
+  return [`${normalized}/types/**/*.ts`, `${normalized}/dev/types/**/*.ts`];
+}
+
+function parseJsonObject(content) {
+  if (typeof content !== 'string') return null;
+  try {
+    const parsed = JSON.parse(content);
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function sameJson(left, right) {
+  if (left === right) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+    return left.every((value, index) => sameJson(value, right[index]));
+  }
+  if (left && right && typeof left === 'object' && typeof right === 'object') {
+    const keys = Object.keys(left);
+    if (keys.length !== Object.keys(right).length) return false;
+    return keys.every((key) => Object.hasOwn(right, key) && sameJson(left[key], right[key]));
+  }
+  return false;
+}
+
+// O Next 16 acrescenta ao `include` os globs de tipos do `distDir` efetivo.
+// Restaura o conteúdo anterior somente quando a única diferença observada é
+// exatamente esse acréscimo conhecido, preservando qualquer edição concorrente.
+export async function restoreGeneratedWebTsConfig({
+  file,
+  before,
+  distDir,
+  onWarning,
+  beforeReplace,
+}) {
+  const current = await readOptionalFile(file);
+  if (current === before) return 'unchanged';
+  const beforeConfig = parseJsonObject(before);
+  const expected = beforeConfig === null ? null : JSON.parse(JSON.stringify(beforeConfig));
+  if (expected === null || !Array.isArray(expected.include)) {
+    onWarning?.(webTsconfigDivergentWarning);
+    return 'preserved';
+  }
+  for (const glob of distDirTypeGlobs(distDir))
+    if (!expected.include.includes(glob)) expected.include.push(glob);
+  if (!sameJson(parseJsonObject(current), expected)) {
+    onWarning?.(webTsconfigDivergentWarning);
+    return 'preserved';
+  }
+  const temp = `${file}.restore-${randomBytes(6).toString('hex')}`;
+  try {
+    await writeFile(temp, before, 'utf8');
+    await beforeReplace?.();
+    const latest = await readOptionalFile(file);
+    if (latest !== current) {
+      onWarning?.(webTsconfigDivergentWarning);
+      return 'preserved';
+    }
+    await rename(temp, file);
+    return 'restored';
+  } finally {
+    await unlink(temp).catch((error) => {
+      if (error?.code !== 'ENOENT') throw error;
+    });
+  }
+}
+
 export async function assertPortFree(port) {
   await new Promise((done, fail) => {
     const server = createServer();
@@ -592,76 +665,6 @@ export async function listWindowsDescendants(rootPid, timeoutMs, run = runBounde
     .filter((entry) => Number.isSafeInteger(entry.pid) && entry.pid > 0);
 }
 
-export async function terminateWindowsOrphans(entries, timeoutMs, run = runBoundedCommand) {
-  if (entries.length === 0) return [];
-  const known = entries.filter(
-    (entry) =>
-      Number.isSafeInteger(entry.pid) &&
-      entry.pid > 0 &&
-      typeof entry.createdAt === 'bigint' &&
-      entry.createdAt > 0n,
-  );
-  const statusByPid = new Map();
-  for (const entry of entries) {
-    if (!known.includes(entry)) statusByPid.set(entry.pid, 'identity-unknown');
-  }
-  if (known.length > 0) {
-    const payload = known.map((entry) => `${entry.pid}:${entry.createdAt}`).join(',');
-    const script = `$ErrorActionPreference = 'Stop'
-$source = @'
-using System;
-using System.Runtime.InteropServices;
-public static class MuvitIdentityTerminate {
-  [DllImport("kernel32.dll", SetLastError = true)] public static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
-  [DllImport("kernel32.dll", SetLastError = true)] public static extern bool GetProcessTimes(IntPtr handle, out long creation, out long exit, out long kernel, out long user);
-  [DllImport("kernel32.dll", SetLastError = true)] public static extern bool TerminateProcess(IntPtr handle, uint code);
-  [DllImport("kernel32.dll", SetLastError = true)] public static extern bool CloseHandle(IntPtr handle);
-  public static string Terminate(uint pid, long expected) {
-    IntPtr handle = OpenProcess(0x1001, false, pid);
-    if (handle == IntPtr.Zero) return "gone";
-    try {
-      long creation;
-      long exit;
-      long kernel;
-      long user;
-      if (!GetProcessTimes(handle, out creation, out exit, out kernel, out user)) return "unreadable";
-      // CIM pode arredondar o último tick do DateTime; 1 ms continua separando
-      // uma reutilização real de PID da criação do snapshot.
-      if (Math.Abs(creation - expected) > 10000) return "identity-mismatch";
-      return TerminateProcess(handle, 1) ? "terminated" : "terminate-failed";
-    } finally {
-      CloseHandle(handle);
-    }
-  }
-}
-'@
-Add-Type -TypeDefinition $source -Language CSharp -ErrorAction Stop
-foreach ($pair in '${payload}'.Split(',', [System.StringSplitOptions]::RemoveEmptyEntries)) {
-  $parts = $pair.Split(':')
-  $result = [MuvitIdentityTerminate]::Terminate([uint32]$parts[0], [long]$parts[1])
-  "$($parts[0]) $result"
-}
-`;
-    const result = await run(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script],
-      timeoutMs,
-    );
-    if (result.code !== 0)
-      throw new Error(
-        `Falha ao encerrar descendentes órfãos (código ${result.code}): ${result.stderr.trim()}`,
-      );
-    for (const line of result.stdout.split(/\r?\n/)) {
-      const match = /^(\d+) ([a-z-]+)$/.exec(line.trim());
-      if (match) statusByPid.set(Number(match[1]), match[2]);
-    }
-  }
-  return entries.map((entry) => ({
-    pid: entry.pid,
-    status: statusByPid.get(entry.pid) ?? 'unknown',
-  }));
-}
-
 async function waitForPidsGone(pids, timeoutMs) {
   const unique = [...new Set(pids)];
   const deadline = Date.now() + timeoutMs;
@@ -689,7 +692,7 @@ export async function stopChild(
     readLeaderIdentity = readWindowsProcessIdentity,
     listDescendants = listWindowsDescendants,
     runCommand = runBoundedCommand,
-    terminateOrphans = terminateWindowsOrphans,
+    now = () => performance.now(),
     isProcessAlive = defaultIsProcessAlive,
     waitExit = waitForExit,
     waitPidsGone = waitForPidsGone,
@@ -732,10 +735,26 @@ export async function stopChild(
           { pid: child.pid, pids },
         );
     };
+    // Um único deadline vale para todas as consultas e para a sinalização.
+    // Cada etapa recebe apenas o saldo restante; sem saldo, nenhuma etapa
+    // posterior (em especial o taskkill) pode começar.
+    const stopDeadline = now() + timeoutMs;
+    const assertStopBudget = (stage, pids) => {
+      const remaining = stopDeadline - now();
+      if (remaining <= 0)
+        throw new StopNotProvenError(
+          `Orçamento de ${timeoutMs}ms esgotado antes de ${stage} do processo ${child.pid}; a árvore não será sinalizada.`,
+          { pid: child.pid, pids },
+        );
+      return remaining;
+    };
     let leaderIdentity = null;
     if (!leaderExited) {
       try {
-        leaderIdentity = await readLeaderIdentity(child.pid, timeoutMs);
+        leaderIdentity = await readLeaderIdentity(
+          child.pid,
+          assertStopBudget('ler a identidade do líder', [child.pid]),
+        );
       } catch (error) {
         throw new StopNotProvenError(
           `Não foi possível comprovar a identidade do líder ${child.pid} antes da enumeração: ${error.message}`,
@@ -753,7 +772,10 @@ export async function stopChild(
     }
     let descendants;
     try {
-      descendants = await listDescendants(child.pid, timeoutMs);
+      descendants = await listDescendants(
+        child.pid,
+        assertStopBudget('enumerar descendentes', [child.pid]),
+      );
     } catch (error) {
       throw new StopNotProvenError(
         `Não foi possível verificar a árvore do processo ${child.pid}: ${error.message}`,
@@ -801,7 +823,10 @@ export async function stopChild(
       // divergência, mesmo abaixo do arredondamento do CIM, pode ser reuso.
       let revalidated;
       try {
-        revalidated = await readLeaderIdentity(child.pid, timeoutMs);
+        revalidated = await readLeaderIdentity(
+          child.pid,
+          assertStopBudget('revalidar a identidade do líder', pids),
+        );
       } catch (error) {
         throw new StopNotProvenError(
           `Não foi possível revalidar a identidade do líder ${child.pid} antes do taskkill: ${error.message}`,
@@ -822,12 +847,13 @@ export async function stopChild(
         );
       // O líder ainda existe: uma única árvore é sinalizada. Nunca há segundo
       // taskkill por descendente, cujo PID pode ter sido reutilizado.
+      const signalBudget = assertStopBudget('sinalizar a árvore', pids);
       let taskkillResult;
       try {
         taskkillResult = await runCommand(
           'taskkill.exe',
           ['/PID', String(child.pid), '/T', '/F'],
-          timeoutMs,
+          signalBudget,
         );
       } catch (error) {
         throw new StopNotProvenError(
@@ -1363,7 +1389,9 @@ export async function run(options) {
             distDir,
           });
           const nextEnvFile = join(root, 'apps/web/next-env.d.ts');
+          const webTsconfigFile = join(root, 'apps/web/tsconfig.json');
           let nextEnvBefore = null;
+          let webTsconfigBefore = null;
           let outputRetained = false;
           let serverStarted = false;
           let serverStopProven = false;
@@ -1375,6 +1403,13 @@ export async function run(options) {
             restoreGeneratedNextEnv({
               file: nextEnvFile,
               before: nextEnvBefore,
+              distDir: restoreDistDir,
+              onWarning: warnNextEnv,
+            });
+          const restoreWebTsconfig = (restoreDistDir) =>
+            restoreGeneratedWebTsConfig({
+              file: webTsconfigFile,
+              before: webTsconfigBefore,
               distDir: restoreDistDir,
               onWarning: warnNextEnv,
             });
@@ -1406,7 +1441,7 @@ export async function run(options) {
                   recordCleanupFailure(
                     'lock-retained',
                     new Error(
-                      `runId ${runId}: lock preservado após parada/restauração não comprovada (pids ${pids}); distDir ${distDir} preservado.`,
+                      `runId ${runId}: lock preservado após parada/restauração não comprovada (pids ${pids}); next-env.d.ts, tsconfig.json e distDir ${distDir} preservados.`,
                     ),
                   );
                 },
@@ -1416,6 +1451,12 @@ export async function run(options) {
                   nextEnvBefore = await readOptionalFile(nextEnvFile);
                 } catch (error) {
                   recordCleanupFailure('next-env-read', error);
+                  throw error;
+                }
+                try {
+                  webTsconfigBefore = await readOptionalFile(webTsconfigFile);
+                } catch (error) {
+                  recordCleanupFailure('tsconfig-read', error);
                   throw error;
                 }
                 let buildError = null;
@@ -1434,7 +1475,7 @@ export async function run(options) {
                     ? buildError.pids.join(', ')
                     : (buildError.pid ?? 'desconhecido');
                   const detail = new StopNotProvenError(
-                    `runId ${runId}: ${buildError.message} (pids ${pids}); next-env.d.ts, lock e distDir ${distDir} preservados.`,
+                    `runId ${runId}: ${buildError.message} (pids ${pids}); next-env.d.ts, tsconfig.json, lock e distDir ${distDir} preservados.`,
                     { pid: buildError.pid, pids: buildError.pids, cause: buildError },
                   );
                   recordCleanupFailure('build-stop', detail);
@@ -1446,6 +1487,24 @@ export async function run(options) {
                   restoreStatus = await restoreNextEnv(distDir);
                 } catch (error) {
                   restoreError = error;
+                }
+                let tsconfigStatus;
+                let tsconfigError = null;
+                try {
+                  tsconfigStatus = await restoreWebTsconfig(distDir);
+                } catch (error) {
+                  tsconfigError = error;
+                }
+                let tsconfigDetail = null;
+                if (tsconfigError || tsconfigStatus === 'preserved') {
+                  tsconfigDetail = new RestoreNotProvenError(
+                    `runId ${runId}: restauração de tsconfig.json não comprovada (${tsconfigError ? `erro ${tsconfigError.message}` : `status ${tsconfigStatus}`}); lock e distDir ${distDir} preservados.`,
+                    {
+                      status: tsconfigError ? 'error' : tsconfigStatus,
+                      cause: tsconfigError ?? undefined,
+                    },
+                  );
+                  recordCleanupFailure('tsconfig-restore', tsconfigDetail);
                 }
                 if (restoreError || restoreStatus === 'preserved') {
                   outputRetained = true;
@@ -1459,6 +1518,11 @@ export async function run(options) {
                   );
                   recordCleanupFailure('next-env-restore', detail);
                   throw detail;
+                }
+                if (tsconfigDetail) {
+                  outputRetained = true;
+                  if (buildError) recordCleanupFailure('build', buildError);
+                  throw tsconfigDetail;
                 }
                 restoreProven = true;
                 if (buildError) throw buildError;
@@ -1479,7 +1543,7 @@ export async function run(options) {
                 recordCleanupFailure(
                   'lock-retained',
                   new Error(
-                    `runId ${runId}: lock preservado porque ${reason} (pid ${serverStarted ? child.pid : 'não iniciado'}); next-env.d.ts e lock preservados.`,
+                    `runId ${runId}: lock preservado porque ${reason} (pid ${serverStarted ? child.pid : 'não iniciado'}); next-env.d.ts, tsconfig.json e lock preservados.`,
                   ),
                 );
                 return;

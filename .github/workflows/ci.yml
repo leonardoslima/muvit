@@ -97,8 +97,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Windows supervisor tests
-        run: node --test scripts/web-e2e-windows-job.test.mjs
+      - name: Run Windows supervisor and fallback tests
+        run: node --test scripts/web-e2e-windows-job.test.mjs scripts/web-e2e.test.mjs
 
   build:
     name: Build (Turborepo)
